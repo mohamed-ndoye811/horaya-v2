@@ -1,0 +1,12 @@
+{
+  "name": "@horaya/application",
+  "version": "0.0.0",
+  "description": "Horayav2 Application",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
+}
