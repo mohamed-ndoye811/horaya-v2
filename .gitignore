@@ -1,1 +1,18 @@
 node_modules/
+
+# TypeScript build artifacts
+*.js
+*.js.map
+*.d.ts
+*.d.ts.map
+*.tsbuildinfo
+
+# Keep config files
+!*.config.js
+!vitest.config.js
+!vite.config.js
+
+# Drizzle
+packages/infrastructure/drizzle/*.sql
+packages/infrastructure/drizzle/*.json
+!packages/infrastructure/drizzle/.gitkeep
