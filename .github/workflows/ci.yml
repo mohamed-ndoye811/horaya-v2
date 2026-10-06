@@ -12,6 +12,23 @@ concurrency:
 jobs:
   check:
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: horaya
+          POSTGRES_PASSWORD: horaya
+          POSTGRES_DB: horaya
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U horaya"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      # Les tests d'intégration créent et migrent leur propre base `horaya_test`.
+      DATABASE_URL: postgres://horaya:horaya@localhost:5432/horaya
     steps:
       - uses: actions/checkout@v4
 

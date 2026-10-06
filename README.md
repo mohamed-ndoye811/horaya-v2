@@ -9,6 +9,7 @@ packages/
   core/   Métier pur : entités, règles, cas d'usage, ports (interfaces de dépôt).
           Aucune dépendance à Next.js, Hono ou Postgres. Validation avec Zod.
   db/     Postgres + Drizzle : schéma, migrations, implémentation des ports du core.
+  auth/   Better Auth (e-mail/mot de passe, organisations = tenants, rôles).
 apps/
   web/    Next.js (App Router) : admin + pages publiques des organisateurs.
           Appelle directement les cas d'usage du core côté serveur, jamais l'API HTTP.
@@ -42,11 +43,26 @@ pnpm dev            # http://localhost:3000
 | `pnpm dev` | App web en développement |
 | `pnpm build` | Build de tous les packages |
 | `pnpm typecheck` | Vérification TypeScript |
-| `pnpm test` | Tests (Vitest) |
+| `pnpm test` | Tests (Vitest). Ceux de `db` créent une base `<base>_test` jetable |
 | `pnpm lint` / `pnpm format` | Biome |
 | `pnpm db:generate` | Génère une migration depuis le schéma Drizzle |
 | `pnpm db:migrate` | Applique les migrations |
 | `pnpm db:studio` | Drizzle Studio |
+| `pnpm db:auth-schema` | Régénère `packages/db/src/schema/auth.ts` depuis la config Better Auth |
+
+## Données
+
+- Un **tenant** = une `organization` Better Auth ; ses réglages vivent dans `tenant_settings` (1:1).
+- `packages/db/src/schema/auth.ts` est **généré** : ne pas l'éditer, relancer `pnpm db:auth-schema`.
+- Les valeurs des enums Postgres viennent des constantes du core (source unique).
+- Montants en centimes (entiers), dates en `timestamptz`, identifiants UUID v7.
+- Règles garanties par la base, en plus du core :
+  - un exemplaire de matériel n'est jamais alloué deux fois sur la même période
+    (contrainte d'exclusion `item_allocation_no_overlap`, migration `0001`) ;
+  - une réservation d'événement pointe toujours vers un événement, une location a une période valide ;
+  - un client est unique par e-mail (insensible à la casse) dans un tenant.
+- La surréservation est empêchée par une règle du core (`decideBookingStatus`), à appliquer
+  sous verrou de ligne sur l'événement (`SELECT … FOR UPDATE`) dans le dépôt des réservations.
 
 ## Design
 
