@@ -1,25 +1,22 @@
-version: '3.8'
-
 services:
   postgres:
     image: postgres:16-alpine
     container_name: horaya-postgres
     restart: unless-stopped
     environment:
-      POSTGRES_USER: user
-      POSTGRES_PASSWORD: pass
+      POSTGRES_USER: horaya
+      POSTGRES_PASSWORD: horaya
       POSTGRES_DB: horaya
     ports:
-      - '5432:5432'
+      - "5432:5432"
     volumes:
-      - postgres_data:/var/lib/postgresql/data
-      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+      - horaya_pg16:/var/lib/postgresql/data
     healthcheck:
-      test: ['CMD-SHELL', 'pg_isready -U user -d horaya']
-      interval: 10s
+      test: ["CMD-SHELL", "pg_isready -U horaya -d horaya"]
+      interval: 5s
       timeout: 5s
-      retries: 5
+      retries: 10
 
 volumes:
-  postgres_data:
-    driver: local
+  # Nouveau volume : l'ancien (postgres_data, identifiants user/pass) reste intact sur ta machine.
+  horaya_pg16:

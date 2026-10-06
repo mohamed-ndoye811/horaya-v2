@@ -1,41 +1,18 @@
 {
-    "$schema": "https://json.schemastore.org/tsconfig",
-    "compilerOptions": {
-        // --- Cible & modules ---
-        "target": "ES2022",
-        "lib": [
-            "ES2023"
-        ],
-        "module": "es2022",
-        "moduleResolution": "bundler",
-        // --- Rigueur (le socle non négociable) ---
-        "strict": true,
-        "noUncheckedIndexedAccess": true,
-        "exactOptionalPropertyTypes": true,
-        "noImplicitOverride": true,
-        "noFallthroughCasesInSwitch": true,
-        "forceConsistentCasingInFileNames": true,
-        // --- Project references (frontières physiques) ---
-        "composite": true,
-        "declaration": true,
-        "declarationMap": true,
-        "sourceMap": true,
-        // --- Confort / perf ---
-        "skipLibCheck": true,
-        "esModuleInterop": true,
-        "resolveJsonModule": true,
-        "isolatedModules": true,
-        "verbatimModuleSyntax": true,
-        "paths": {
-            "@horaya/domain/*": [
-                "./packages/domain/src/*"
-            ],
-            "@horaya/application/*": [
-                "./packages/application/src/*"
-            ],
-            "@horaya/infrastructure/*": [
-                "./packages/infrastructure/src/*"
-            ]
-        }
-    }
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["ES2023"],
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "noImplicitOverride": true,
+    "exactOptionalPropertyTypes": false,
+    "isolatedModules": true,
+    "verbatimModuleSyntax": true,
+    "esModuleInterop": true,
+    "resolveJsonModule": true,
+    "skipLibCheck": true,
+    "noEmit": true
+  }
 }

@@ -1,22 +1,26 @@
+# Dependencies
 node_modules/
 
-# Environment variables
+# Environment
 .env
-.env.local
+.env.*
+!.env.example
 
-# TypeScript build artifacts
-*.js
-*.js.map
-*.d.ts
-*.d.ts.map
+# Build output
+.next/
+dist/
+out/
 *.tsbuildinfo
+next-env.d.ts
 
-# Keep config files
-!*.config.js
-!vitest.config.js
-!vite.config.js
+# Tests
+coverage/
 
-# Drizzle
-packages/infrastructure/drizzle/*.sql
-packages/infrastructure/drizzle/*.json
-!packages/infrastructure/drizzle/.gitkeep
+# Logs & OS
+*.log
+.DS_Store
+
+# IDE
+.idea/
+.vscode/*
+!.vscode/extensions.json

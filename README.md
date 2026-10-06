@@ -1,208 +1,61 @@
-# 🎉 Configuration complète - Horaya v2
+# Horaya
 
-## 📦 Stack technique
+Réservations, événements et matériel dans un seul agenda, sous la marque de l'organisateur.
 
-### Backend
-- **Runtime**: Bun
-- **Framework API**: Hono
-- **ORM**: Drizzle ORM
-- **Database**: PostgreSQL 16
-- **Architecture**: DDD + Effect
-- **Documentation API**: Scalar (OpenAPI 3.0)
+## Architecture
 
-### Frontend (à venir)
-- **Framework**: Astro
-- **UI**: React + Tailwind
+```
+packages/
+  core/   Métier pur : entités, règles, cas d'usage, ports (interfaces de dépôt).
+          Aucune dépendance à Next.js, Hono ou Postgres. Validation avec Zod.
+  db/     Postgres + Drizzle : schéma, migrations, implémentation des ports du core.
+apps/
+  web/    Next.js (App Router) : admin + pages publiques des organisateurs.
+          Appelle directement les cas d'usage du core côté serveur, jamais l'API HTTP.
+  api/    (à venir) Hono : API publique pour les intégrateurs et futures apps
+          mobiles / logicielles. Même core derrière.
+```
 
-## 🚀 Démarrage rapide
+Règles :
 
-### 1. Démarrer la base de données
+- Le **core** ne dépend de rien d'autre que de lui-même (et de Zod).
+- Les **portes d'entrée** (web, api) traduisent les erreurs du core (`DomainError`) dans leur format.
+- Code organisé **par module** : `tenants`, `events`, `bookings`, `customers`, `inventory`, `settings`.
+- Multi-tenant par chemin : `horaya.app/<slug>`.
+
+## Démarrer
+
+Prérequis : Node 22+, pnpm 9, Docker.
+
 ```bash
-docker compose up -d
+pnpm install
+cp .env.example .env
+pnpm db:up          # Postgres 16 en local
+pnpm db:migrate     # applique les migrations
+pnpm dev            # http://localhost:3000
 ```
 
-### 2. Appliquer les migrations
-```bash
-cd packages/infrastructure
-pnpm run db:migrate
-```
+## Scripts
 
-### 3. Lancer l'API
-```bash
-cd apps/rest-api
-pnpm run dev
-```
+| Script | Rôle |
+|---|---|
+| `pnpm dev` | App web en développement |
+| `pnpm build` | Build de tous les packages |
+| `pnpm typecheck` | Vérification TypeScript |
+| `pnpm test` | Tests (Vitest) |
+| `pnpm lint` / `pnpm format` | Biome |
+| `pnpm db:generate` | Génère une migration depuis le schéma Drizzle |
+| `pnpm db:migrate` | Applique les migrations |
+| `pnpm db:studio` | Drizzle Studio |
 
-L'API est disponible sur: `http://localhost:3000`
+## Design
 
-### 4. Accéder à la documentation
-Ouvrez votre navigateur: `http://localhost:3000/docs`
+Maquettes et tokens dans le fichier Paper **HORAYA** (pages 00 à 05). Les tokens
+(couleurs, typo) sont reportés dans `apps/web/src/app/globals.css`.
 
-Interface Scalar avec:
-- Documentation interactive
-- Test des endpoints
-- Exemples de requêtes
-- Schémas détaillés
+Polices, toutes Google Fonts (libres de droits), chargées via `next/font` :
 
-## 📚 Documentation disponible
-
-- **DATABASE.md** - Guide d'utilisation de PostgreSQL
-- **DRIZZLE.md** - Guide Drizzle ORM et migrations
-- Ce fichier - Vue d'ensemble
-
-## 🛠️ Commandes utiles
-
-### Base de données
-```bash
-# Démarrer PostgreSQL
-docker compose up -d
-
-# Arrêter PostgreSQL
-docker compose stop
-
-# Tout supprimer (données incluses)
-docker compose down -v
-
-# Se connecter à la base
-docker compose exec postgres psql -U user -d horaya
-```
-
-### Migrations
-```bash
-cd packages/infrastructure
-
-# Générer une migration après modification du schéma
-pnpm run db:generate
-
-# Appliquer les migrations
-pnpm run db:migrate
-
-# Push direct (dev uniquement)
-pnpm run db:push
-
-# Interface visuelle Drizzle Studio
-pnpm run db:studio
-```
-
-### API REST
-```bash
-cd apps/rest-api
-
-# Développement
-pnpm run dev
-
-# TypeCheck
-pnpm typecheck
-
-# Voir les logs
-# (les logs s'affichent dans le terminal)
-```
-
-## 🧪 Tester l'API
-
-### Créer un événement
-```bash
-curl -X POST http://localhost:3000/events \
-  -H "Content-Type: application/json" \
-  -d '{
-    "id": "123e4567-e89b-12d3-a456-426614174000",
-    "tenantId": "123e4567-e89b-12d3-a456-426614174001",
-    "title": "Concert de Jazz",
-    "start": "2024-12-25T20:00:00Z",
-    "end": "2024-12-25T23:00:00Z",
-    "capacity": 100,
-    "description": "Un magnifique concert de jazz"
-  }'
-```
-
-### Lister les événements
-```bash
-curl http://localhost:3000/events
-```
-
-## 📁 Structure du projet
-
-```
-horaya-v2/
-├── apps/
-│   └── rest-api/              # API REST Hono
-│       ├── src/
-│       │   ├── index.ts       # Point d'entrée + config Scalar
-│       │   ├── routes/        # Définition des routes OpenAPI
-│       │   └── mappers/       # Conversion entités -> API
-│       └── package.json
-│
-├── packages/
-│   ├── domain/                # Logique métier (DDD)
-│   │   ├── event/
-│   │   ├── event-type/
-│   │   └── shared/
-│   │
-│   ├── application/           # Use cases (Effect)
-│   │   └── event/
-│   │
-│   └── infrastructure/        # Implémentation technique
-│       ├── src/
-│       │   ├── persistence/
-│       │   │   └── postgres/
-│       │   │       ├── schema.ts           # Schéma Drizzle
-│       │   │       ├── PostgresDatabase.ts # Connexion DB
-│       │   │       ├── repositories/       # Implémentation repos
-│       │   │       └── mappers/           # DB <-> Domain
-│       │   ├── config/
-│       │   └── migrate.ts     # Script de migration
-│       ├── drizzle/           # Fichiers de migration SQL
-│       └── drizzle.config.ts  # Config Drizzle
-│
-├── docker-compose.yml         # PostgreSQL
-├── .env                       # Variables d'environnement
-└── pnpm-workspace.yaml        # Configuration monorepo
-```
-
-## 🎯 Prochaines étapes
-
-### Backend
-- [ ] Ajouter l'authentification
-- [ ] Implémenter les bookings
-- [ ] Ajouter la pagination
-- [ ] Mettre en place les tests
-
-### Frontend
-- [ ] Configurer Astro
-- [ ] Créer les pages principales
-- [ ] Intégrer avec l'API REST
-- [ ] Ajouter le design system
-
-### DevOps
-- [ ] CI/CD pipeline
-- [ ] Environnements (staging, prod)
-- [ ] Monitoring et logs
-- [ ] Backups automatiques
-
-## 💡 Tips
-
-### Workflow de développement
-1. Modifier le schéma dans `packages/infrastructure/src/persistence/postgres/schema.ts`
-2. Générer la migration: `pnpm run db:generate`
-3. Appliquer: `pnpm run db:migrate`
-4. Les routes OpenAPI sont automatiquement documentées dans Scalar
-
-### Ajouter une nouvelle route
-1. Créer la route dans `apps/rest-api/src/routes/`
-2. Utiliser `createRoute()` pour la définition OpenAPI
-3. Utiliser `.openapi()` pour le handler
-4. Monter la route dans `index.ts`
-5. Elle apparaîtra automatiquement dans `/docs` !
-
-### Debug
-- Logs de l'API: dans le terminal où tourne `pnpm run dev`
-- Logs PostgreSQL: `docker compose logs -f postgres`
-- Explorer la DB: `pnpm run db:studio` ou `psql`
-
-## 📞 Support
-
-Pour toute question:
-- Documentation OpenAPI: `/docs`
-- Drizzle docs: https://orm.drizzle.team
-- Hono docs: https://hono.dev
-- Effect docs: https://effect.website
+- **Archivo** (variable, axe de largeur) pour les titres. Remplace Sztos des maquettes.
+  Utilitaires : `font-headline` (gros titres) et `font-section` (en-têtes de section).
+- **Urbanist** pour l'interface.
+- **Geist Mono** pour les labels et les données.

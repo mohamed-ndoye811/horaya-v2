@@ -1,0 +1,73 @@
+@import "tailwindcss";
+
+/*
+ * Tokens issus du fichier Paper « HORAYA ».
+ * À garder synchronisés : mcp get_tokens (format tailwind) sur le fichier de design.
+ */
+@theme {
+  --color-bg: #f2f0ef;
+  --color-surface: #faf9f8;
+  --color-line-soft: #dcd8d4;
+  --color-neutral: #595959;
+  --color-ink: #264489;
+  --color-ink-muted: #4e669d;
+  --color-ink-subtle: #8c9ac0;
+  --color-on-ink: #f7f5f3;
+  --color-link: #1f63b8;
+
+  --color-success: #397a5c;
+  --color-success-bg: #e4efe9;
+  --color-warning: #9a6b12;
+  --color-warning-bg: #f6ebd3;
+  --color-danger: #9e3a3a;
+  --color-danger-bg: #f2e3e3;
+  --color-info: #213f7c;
+  --color-info-bg: #dce4f5;
+  --color-draft: #3a3a3a;
+  --color-draft-bg: #e8e5e2;
+
+  --color-cat-seminaire: #528d74;
+  --color-cat-atelier: #d8bc66;
+  --color-cat-reunion: #cf879c;
+  --color-cat-meetup: #66537c;
+
+  --text-label: 12px;
+  --text-sm: 14px;
+  --text-base: 16px;
+  --text-lg: 18px;
+  --text-section: 22px;
+  --text-kpi: 44px;
+  --text-display: 64px;
+
+  --radius-dot: 999px;
+}
+
+@theme inline {
+  /* Archivo remplace Sztos (maquettes Paper) : même famille de grotesque condensée, libre de droits. */
+  --font-display: var(--font-archivo), sans-serif;
+  --font-ui: var(--font-urbanist), system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
+}
+
+/* Gros titres (équivalent Sztos Bold des maquettes). */
+@utility font-headline {
+  font-family: var(--font-display);
+  font-weight: 900;
+  font-variation-settings: "wdth" 66;
+  text-transform: uppercase;
+  letter-spacing: -0.02em;
+}
+
+/* En-têtes de section (équivalent Sztos Regular élargi). */
+@utility font-section {
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-variation-settings: "wdth" 76;
+  text-transform: uppercase;
+}
+
+body {
+  background-color: var(--color-bg);
+  color: var(--color-ink);
+  font-family: var(--font-ui);
+}
