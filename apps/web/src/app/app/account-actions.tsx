@@ -1,32 +1,8 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { authClient } from "@/lib/auth-client";
 import { authErrorMessage } from "@/lib/auth-errors";
-
-export function SignOutButton() {
-  const router = useRouter();
-  const [pending, setPending] = useState(false);
-
-  async function signOut() {
-    setPending(true);
-    await authClient.signOut();
-    router.replace("/connexion");
-    router.refresh();
-  }
-
-  return (
-    <button
-      type="button"
-      onClick={signOut}
-      disabled={pending}
-      className="shrink-0 border-2 border-on-ink px-4 py-2 text-sm font-bold text-on-ink transition-colors hover:bg-on-ink hover:text-ink disabled:opacity-60"
-    >
-      {pending ? "Déconnexion…" : "Se déconnecter"}
-    </button>
-  );
-}
 
 /** Rappel tant que l'adresse e-mail n'est pas confirmée. */
 export function VerifyEmailBanner({ email }: { email: string }) {

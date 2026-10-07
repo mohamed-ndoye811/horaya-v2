@@ -184,6 +184,7 @@ export function WorkspaceOnboarding() {
         </fieldset>
 
         <Button
+          size="lg"
           type="submit"
           arrow
           pending={pending}

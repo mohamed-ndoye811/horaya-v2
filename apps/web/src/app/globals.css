@@ -31,6 +31,10 @@
   --color-cat-reunion: #cf879c;
   --color-cat-meetup: #66537c;
 
+  /* Calendrier (maquettes 06–08) : jour courant et week-end. */
+  --color-today: #e6eaf4;
+  --color-weekend: #ece9e6;
+
   --text-label: 12px;
   --text-sm: 14px;
   --text-base: 16px;

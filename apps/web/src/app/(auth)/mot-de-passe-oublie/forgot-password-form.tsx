@@ -92,6 +92,7 @@ export function ForgotPasswordForm() {
         </div>
         {error && <FormAlert>{error}</FormAlert>}
         <Button
+          size="lg"
           type="button"
           variant="secondary"
           onClick={() => void sendLink()}
@@ -131,7 +132,7 @@ export function ForgotPasswordForm() {
           />
         )}
       </Field>
-      <Button type="submit" arrow pending={pending} className="w-full">
+      <Button size="lg" type="submit" arrow pending={pending} className="w-full">
         {pending ? "Envoi…" : "Recevoir le lien"}
       </Button>
     </form>

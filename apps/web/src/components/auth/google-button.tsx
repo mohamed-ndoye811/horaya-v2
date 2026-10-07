@@ -33,7 +33,7 @@ export function GoogleButton({ label }: { label: string }) {
         type="button"
         onClick={signIn}
         disabled={pending}
-        className={buttonClasses("secondary", "w-full")}
+        className={buttonClasses({ variant: "secondary", size: "lg", className: "w-full" })}
       >
         <GoogleLogo />
         {pending ? "Redirection vers Google…" : label}

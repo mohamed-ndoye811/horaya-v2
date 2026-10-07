@@ -104,6 +104,23 @@ confirmée d'office, séries qui gardent l'heure locale au changement d'heure, r
 `PREFIXE-AAMM-NNNN` par tenant. Côté web : `deps` et `requireMember()` dans
 `apps/web/src/server/services.ts`.
 
+## Design system (admin)
+
+Composants dans `apps/web/src/components/` (vitrine en direct : `/app/design-system`) :
+
+| Dossier | Contenu |
+|---|---|
+| `app/` | `Sidebar` (colonne 232 px, tiroir sur mobile), `PageHeader` |
+| `ui/` | `Button` / `IconButton` / `ButtonLink`, `StatusBadge` (+ `status.ts` : libellés des statuts métier), `Avatar`, `Stat` / `StatGrid`, `ProgressBar`, `DataTable`, cellules (`PersonCell`, `EventCell`, `DateBlock`, `MoneyCell`), `SearchInput`, `SegmentedLinks` / `SegmentedControl`, `ChoiceCards`, `Select`, `Field` / `AffixInput` / `Switch` / `Checkbox`, `Banner`, `Tabs`, `Timeline`, `Chip` / `ChoiceChips`, `Dialog`, `ActionMenu`, `EmptyState` |
+| `calendar/` | `MonthCalendar`, `TimeGridCalendar` (semaine et jour), `CalendarLegend` |
+
+Logique pure testée dans `apps/web/src/lib/` : formats français (`format.ts`), couleur de
+texte lisible sur une couleur de catégorie (`colors.ts`), grilles et placement des
+événements qui se chevauchent (`calendar.ts`).
+
+Règle : pas de fusion de classes Tailwind. `className` sert à la mise en page ; pour une
+autre apparence, ajouter une variante au composant.
+
 ## Design
 
 Maquettes et tokens dans le fichier Paper **HORAYA** (pages 00 à 05). Les tokens

@@ -37,3 +37,13 @@ export async function requireSession() {
 export const listMyWorkspaces = cache(async () =>
   auth.api.listOrganizations({ headers: await headers() }),
 );
+
+/** Utilisateur connecté et son espace actif ; renvoie vers l'onboarding s'il n'en a pas. */
+export const requireWorkspace = cache(async () => {
+  const { user, session } = await requireSession();
+  const workspaces = await listMyWorkspaces();
+  const workspace =
+    workspaces.find((candidate) => candidate.id === session.activeOrganizationId) ?? workspaces[0];
+  if (!workspace) redirect("/inscription/espace");
+  return { user, session, workspace };
+});

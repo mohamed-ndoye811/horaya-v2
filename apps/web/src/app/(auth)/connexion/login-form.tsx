@@ -67,7 +67,7 @@ export function LoginForm({ googleEnabled }: { googleEnabled: boolean }) {
             />
           )}
         </Field>
-        <Button type="submit" arrow className="w-full">
+        <Button size="lg" type="submit" arrow className="w-full">
           Continuer
         </Button>
         {googleEnabled && (
@@ -134,7 +134,7 @@ export function LoginForm({ googleEnabled }: { googleEnabled: boolean }) {
         </Link>
       </div>
 
-      <Button type="submit" arrow pending={pending} className="w-full">
+      <Button size="lg" type="submit" arrow pending={pending} className="w-full">
         {pending ? "Connexion…" : "Se connecter"}
       </Button>
     </form>

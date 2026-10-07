@@ -12,10 +12,13 @@ export default function Home() {
         Réservations, événements et matériel dans un seul agenda, sous ta marque.
       </p>
       <div className="flex flex-wrap gap-3">
-        <Link href="/inscription" className={buttonClasses("inverse")}>
+        <Link href="/inscription" className={buttonClasses({ variant: "inverse", size: "lg" })}>
           Créer un espace
         </Link>
-        <Link href="/connexion" className={buttonClasses("inverse-outline")}>
+        <Link
+          href="/connexion"
+          className={buttonClasses({ variant: "inverse-outline", size: "lg" })}
+        >
           Se connecter
         </Link>
       </div>

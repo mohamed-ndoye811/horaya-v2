@@ -34,7 +34,7 @@ export default async function PaymentsStepPage() {
           Le paiement en ligne arrive très bientôt. En attendant, tes réservations fonctionnent avec
           un règlement sur place ou par virement.
         </FormAlert>
-        <ButtonLink href="/app" arrow className="w-full">
+        <ButtonLink size="lg" href="/app" arrow className="w-full">
           Accéder à mon espace
         </ButtonLink>
       </div>

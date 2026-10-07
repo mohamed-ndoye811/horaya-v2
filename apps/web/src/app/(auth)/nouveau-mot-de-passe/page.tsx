@@ -36,7 +36,7 @@ export default async function ResetPasswordPage({
               Demande-en un nouveau, ça prend quelques secondes.
             </AuthLead>
           </div>
-          <ButtonLink href="/mot-de-passe-oublie" arrow className="w-full">
+          <ButtonLink size="lg" href="/mot-de-passe-oublie" arrow className="w-full">
             Demander un nouveau lien
           </ButtonLink>
         </div>

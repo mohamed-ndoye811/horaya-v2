@@ -33,6 +33,12 @@ export function inputClasses(
 
 interface FieldProps {
   label: string;
+  /** Astérisque rouge après le libellé. */
+  required?: boolean;
+  /** Information à droite du libellé (compteur « 312 / 2000 »). */
+  aside?: ReactNode;
+  /** Groupe de choix (boutons radio) : libellé simple, le groupe porte son propre nom. */
+  group?: boolean;
   error?: string | undefined;
   hint?: ReactNode;
   children: (props: {
@@ -43,14 +49,38 @@ interface FieldProps {
 }
 
 /** Libellé + champ + message d'erreur, reliés pour les lecteurs d'écran. */
-export function Field({ label, error, hint, children }: FieldProps) {
+export function Field({ label, required, aside, group, error, hint, children }: FieldProps) {
   const id = useId();
   const messageId = `${id}-message`;
   return (
     <div className="flex flex-col gap-2">
-      <label htmlFor={id} className="text-sm font-bold leading-[18px] text-ink">
-        {label}
-      </label>
+      <div className="flex items-baseline justify-between gap-3">
+        {(() => {
+          const content = (
+            <>
+              {label}
+              {required && (
+                <span aria-hidden="true" className="ml-1 text-danger">
+                  *
+                </span>
+              )}
+            </>
+          );
+          const className = "text-sm font-bold leading-[18px] text-ink";
+          return group ? (
+            <span className={className}>{content}</span>
+          ) : (
+            <label htmlFor={id} className={className}>
+              {content}
+            </label>
+          );
+        })()}
+        {aside && (
+          <span className="font-mono text-label font-semibold leading-4 text-ink-muted">
+            {aside}
+          </span>
+        )}
+      </div>
       {children({
         id,
         ...(error ? { "aria-invalid": true as const, "aria-describedby": messageId } : {}),
@@ -62,6 +92,43 @@ export function Field({ label, error, hint, children }: FieldProps) {
       ) : (
         hint
       )}
+    </div>
+  );
+}
+
+/** Zone de texte multiligne (description). */
+export function textareaClasses() {
+  return cn(inputBase, "min-h-32 resize-y px-3.5 py-3 text-base leading-[23px]");
+}
+
+interface AffixInputProps extends Omit<ComponentProps<"input">, "size" | "className"> {
+  /** Icône avant la valeur (calendrier, repère). */
+  leading?: ReactNode;
+  /** Unité après la valeur (« places », « € TTC »). */
+  suffix?: ReactNode;
+  /** Chiffres en mono, comme les maquettes (places, prix, heures). */
+  mono?: boolean;
+}
+
+/** Champ avec icône et/ou unité intégrées ; le cadre réagit au focus du champ. */
+export function AffixInput({ leading, suffix, mono = false, ...props }: AffixInputProps) {
+  return (
+    <div
+      className={cn(
+        "flex h-12 min-w-0 items-center gap-2.5 border-[1.5px] border-ink-subtle bg-surface px-3.5 transition-[border-color,box-shadow]",
+        "focus-within:border-ink focus-within:shadow-[0_0_0_0.5px_var(--color-ink)]",
+        "has-aria-invalid:border-danger",
+      )}
+    >
+      {leading && <span className="flex shrink-0 text-ink-muted">{leading}</span>}
+      <input
+        className={cn(
+          "h-full min-w-0 grow bg-transparent text-ink outline-none placeholder:text-ink-subtle",
+          mono ? "font-mono text-[15px] font-semibold" : "text-base font-medium",
+        )}
+        {...props}
+      />
+      {suffix && <span className="shrink-0 text-sm font-medium text-ink-muted">{suffix}</span>}
     </div>
   );
 }
