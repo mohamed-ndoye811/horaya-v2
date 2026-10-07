@@ -107,8 +107,15 @@ Fonctions pures de dépendances : `cas(deps, acteur, entrée)`. `deps` vient de
 | Événements | `createEventType`, `updateEventType`, `archiveEventType`, `createEvent` (simple ou série), `updateEvent`, `publishEvent`, `cancelEvent` |
 | Réservations | `createEventBooking`, `confirmBooking`, `refuseBooking`, `cancelBooking`, `cancelBookingWithToken` |
 | Clients | `createCustomer`, `updateCustomer`, `addCustomerNote` |
+| Paiements | `connectPaymentAccount`, `refreshPaymentAccount`, `startCheckout`, `completeCheckout`, `expireCheckout`, `refundBooking`, `refundAfterCancellation` |
 | Paramètres | `updateTenantSettings` (marque, TVA, acompte, annulation), `saveNotificationPreferences` (par membre) |
 | Matériel | `createItem`, `updateItem`, `setItemQuantity`, `setEventItemQuantity`, `removeEventItem`, `scheduleMaintenance`, `cancelMaintenance`, `createRentalBooking` |
+
+Paiements : Stripe Connect, chaque organisateur encaisse sur son propre compte (activé depuis
+Paramètres › Paiements) ; le client paie tout ou l'acompte sur la page Stripe Checkout, le
+webhook `/api/stripe/webhook` confirme le paiement (ou annule la réservation si la page expire)
+et une annulation rembourse selon la politique de l'espace. Sans `STRIPE_SECRET_KEY`, une
+passerelle de test simule Stripe (`/paiement-test`).
 
 E-mails : `createDeps(db, { afterCommit })` reçoit, après chaque transaction validée, les
 entrées du journal d'activité ; l'app web s'en sert pour écrire aux participants (validation,

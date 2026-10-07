@@ -35,6 +35,7 @@ export async function getWorkspaceSettings(db: Executor, organizationId: string)
       freeCancellationHours: sql<number>`coalesce(${tenantSettings.freeCancellationHours}, 72)`,
       lateCancellationRefundPercent: sql<number>`coalesce(${tenantSettings.lateCancellationRefundPercent}, 50)`,
       stripeAccountStatus: sql<string>`coalesce(${tenantSettings.stripeAccountStatus}::text, 'not_connected')`,
+      stripeAccountId: tenantSettings.stripeAccountId,
     })
     .from(organization)
     .leftJoin(tenantSettings, eq(tenantSettings.organizationId, organization.id))

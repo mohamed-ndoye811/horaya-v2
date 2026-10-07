@@ -120,11 +120,35 @@ export function tenantSettingsReader(db: Executor): TenantSettingsStore {
           timezone: tenantSettings.timezone,
           currency: tenantSettings.currency,
           bookingReferencePrefix: tenantSettings.bookingReferencePrefix,
+          freeCancellationHours: tenantSettings.freeCancellationHours,
+          lateCancellationRefundPercent: tenantSettings.lateCancellationRefundPercent,
+          paymentAccountId: tenantSettings.stripeAccountId,
+          paymentAccountStatus: tenantSettings.stripeAccountStatus,
         })
         .from(tenantSettings)
         .where(eq(tenantSettings.organizationId, organizationId));
       // Espace sans ligne de réglages (créé hors parcours) : valeurs par défaut.
-      return row ?? { timezone: "Europe/Paris", currency: "EUR", bookingReferencePrefix: "HRY" };
+      return (
+        row ?? {
+          timezone: "Europe/Paris",
+          currency: "EUR",
+          bookingReferencePrefix: "HRY",
+          freeCancellationHours: 72,
+          lateCancellationRefundPercent: 50,
+          paymentAccountId: null,
+          paymentAccountStatus: "not_connected",
+        }
+      );
+    },
+
+    async setPaymentAccount(organizationId, accountId, status) {
+      await db
+        .insert(tenantSettings)
+        .values({ organizationId, stripeAccountId: accountId, stripeAccountStatus: status })
+        .onConflictDoUpdate({
+          target: tenantSettings.organizationId,
+          set: { stripeAccountId: accountId, stripeAccountStatus: status, updatedAt: new Date() },
+        });
     },
 
     async update(organizationId, patch) {

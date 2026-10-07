@@ -46,6 +46,7 @@ import {
   organization,
   payment,
   referenceCounter,
+  tenantSettings,
   user,
 } from "./schema";
 import { createUnitOfWork } from "./unit-of-work";
@@ -75,6 +76,11 @@ if (reset) {
       .from(booking)
       .where(eq(booking.organizationId, org.id));
     await tx.delete(bookingParticipant).where(inArray(bookingParticipant.bookingId, bookingIds));
+    // Paiements : on repart d'un espace sans compte Stripe connecté.
+    await tx
+      .update(tenantSettings)
+      .set({ stripeAccountId: null, stripeAccountStatus: "not_connected" })
+      .where(eq(tenantSettings.organizationId, org.id));
     // Équipe : on garde le propriétaire, on retire les autres membres et les invitations.
     await tx.delete(invitation).where(eq(invitation.organizationId, org.id));
     await tx.delete(member).where(and(eq(member.organizationId, org.id), ne(member.role, "owner")));

@@ -1,11 +1,15 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { Button } from "@/components/ui/button";
 import { Dialog } from "@/components/ui/dialog";
 import { FormAlert } from "@/components/ui/form-alert";
-import { cancelManagedBookingAction, resendBookingEmailAction } from "../../actions";
+import {
+  cancelManagedBookingAction,
+  payManagedBookingAction,
+  resendBookingEmailAction,
+} from "../../actions";
 
 /** « Rien reçu ? … renvoie l'e-mail. » */
 export function ResendEmail({ slug, token }: { slug: string; token: string }) {
@@ -90,5 +94,51 @@ export function CancelBooking({
         </Dialog>
       )}
     </>
+  );
+}
+
+/** Reprend le paiement en ligne (page de paiement sécurisée). */
+export function PayButton({ slug, token, label }: { slug: string; token: string; label: string }) {
+  const [pending, startTransition] = useTransition();
+  const [error, setError] = useState<string | null>(null);
+  return (
+    <>
+      {error && <FormAlert>{error}</FormAlert>}
+      <Button
+        size="lg"
+        arrow
+        pending={pending}
+        className="w-full"
+        onClick={() =>
+          startTransition(async () => {
+            const result = await payManagedBookingAction(slug, token);
+            if (result?.error) setError(result.error);
+          })
+        }
+      >
+        {label}
+      </Button>
+    </>
+  );
+}
+
+/** Retour de Stripe : on relit la page le temps que le webhook confirme le paiement. */
+export function PaymentPending() {
+  const router = useRouter();
+  const [tries, setTries] = useState(0);
+  useEffect(() => {
+    if (tries >= 15) return;
+    const timer = setTimeout(() => {
+      setTries((count) => count + 1);
+      router.refresh();
+    }, 2000);
+    return () => clearTimeout(timer);
+  }, [tries, router]);
+  return (
+    <p role="status" className="text-sm font-semibold text-ink-muted">
+      {tries >= 15
+        ? "Le paiement met du temps à se confirmer : tu recevras un e-mail dès que c'est fait."
+        : "Confirmation du paiement…"}
+    </p>
   );
 }

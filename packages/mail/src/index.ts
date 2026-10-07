@@ -1,10 +1,13 @@
 export {
   type BookingMail,
+  bookingAwaitingPaymentEmail,
   bookingCancelledEmail,
   bookingConfirmedEmail,
   bookingLinkEmail,
+  bookingPaymentReceivedEmail,
   bookingPendingEmail,
   bookingPromotedEmail,
+  bookingRefundedEmail,
   bookingRefusedEmail,
   bookingWaitlistedEmail,
   teamBookingEmail,

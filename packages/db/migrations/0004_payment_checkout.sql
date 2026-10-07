@@ -1,0 +1,2 @@
+ALTER TABLE "payment" ADD COLUMN "checkout_reference" text;--> statement-breakpoint
+ALTER TABLE "payment" ADD CONSTRAINT "payment_provider_checkoutReference_unique" UNIQUE("provider","checkout_reference");

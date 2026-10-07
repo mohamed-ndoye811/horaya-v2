@@ -13,6 +13,9 @@ const schema = z.object({
   MAIL_FROM: z.string().default("Horaya <bonjour@horaya.app>"),
   GOOGLE_CLIENT_ID: optional,
   GOOGLE_CLIENT_SECRET: optional,
+  /** Clés de la plateforme Stripe Connect (Horaya) ; sans elles, passerelle de test. */
+  STRIPE_SECRET_KEY: optional,
+  STRIPE_WEBHOOK_SECRET: optional,
 });
 
 /** Variables d'environnement serveur, validées au démarrage. Ne jamais importer côté client. */

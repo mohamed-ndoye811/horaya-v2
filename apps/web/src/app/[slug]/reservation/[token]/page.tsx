@@ -1,5 +1,11 @@
-import { hashToken } from "@horaya/core";
-import { getManagedBooking } from "@horaya/db";
+import {
+  amountDueOnline,
+  awaitsOnlinePayment,
+  hashToken,
+  paidCents,
+  refundForCancellation,
+} from "@horaya/core";
+import { getManagedBooking, listBookingPayments } from "@horaya/db";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -17,15 +23,9 @@ import { cancellationPolicy } from "@/lib/public-booking";
 import { param } from "@/lib/search-params";
 import { db } from "@/server/db";
 import { getWorkspaceBySlug } from "@/server/public";
-import { CancelBooking, ResendEmail } from "./manage-actions";
+import { CancelBooking, PayButton, PaymentPending, ResendEmail } from "./manage-actions";
 
 export const metadata: Metadata = { title: "Ta réservation", robots: { index: false } };
-
-const PAYMENT_LINES: Record<string, string> = {
-  on_site: "À régler sur place",
-  online: "À régler auprès de l'organisateur",
-  deposit: "À régler auprès de l'organisateur",
-};
 
 /** Écran 19 (juste après la réservation, ?nouvelle=1) et page « Gérer ma réservation ». */
 export default async function ManagedBookingPage({
@@ -46,7 +46,16 @@ export default async function ManagedBookingPage({
       />
     );
   }
-  const fresh = param((await searchParams).nouvelle) === "1";
+  const query = await searchParams;
+  const fresh = param(query.nouvelle) === "1";
+  const paymentReturn = param(query.paiement);
+  const payments = await listBookingPayments(db, booking.id);
+  const paid = paidCents(payments);
+  const refunded = payments
+    .filter((entry) => entry.kind === "refund" && entry.status === "succeeded")
+    .reduce((total, entry) => total + entry.amountCents, 0);
+  const awaitsPayment = workspace.onlinePayments && awaitsOnlinePayment(booking);
+  const due = amountDueOnline(booking);
   const tz = workspace.timezone;
   const startsAt = booking.eventStartsAt ?? booking.rentalStartsAt;
   const endsAt = booking.eventEndsAt ?? booking.rentalEndsAt;
@@ -90,9 +99,23 @@ export default async function ManagedBookingPage({
         title: "Sur liste d'attente",
         text: `Merci ${booking.customerFirstName}. « ${title} » est complet : si une place se libère, ta demande passe automatiquement et tu es prévenu·e par e-mail.`,
       };
+    if (awaitsPayment)
+      return {
+        title: paymentReturn === "ok" ? "Paiement en cours" : "Plus qu'à payer",
+        text:
+          paymentReturn === "ok"
+            ? "Stripe confirme ton paiement : ça ne prend que quelques secondes."
+            : `${yourPlaces} pour « ${title} » ${agree("est retenue", "sont retenues")} le temps du paiement en ligne (${formatMoney(due)}). Sans paiement, ${agree("elle est libérée", "elles sont libérées")} au bout de 30 minutes.`,
+      };
+    const paidNote =
+      booking.paymentStatus === "paid"
+        ? booking.paymentMode === "deposit"
+          ? ", acompte payé"
+          : agree(" et payée", " et payées")
+        : "";
     return {
       title: fresh ? "C'est réservé !" : "Ta réservation",
-      text: `${fresh ? `Merci ${booking.customerFirstName}. ` : ""}${yourPlaces} pour « ${title} » ${agree("est confirmée", "sont confirmées")}.`,
+      text: `${fresh ? `Merci ${booking.customerFirstName}. ` : ""}${yourPlaces} pour « ${title} » ${agree("est confirmée", "sont confirmées")}${paidNote}.`,
     };
   })();
 
@@ -102,7 +125,7 @@ export default async function ManagedBookingPage({
         <PublicNav workspace={workspace} active={fresh ? undefined : "bookings"} />
         <div className="flex flex-col gap-8 px-5 pt-10 pb-10 sm:flex-row sm:items-end sm:justify-between sm:gap-12 sm:px-16 sm:pt-16 sm:pb-14">
           <div className="flex flex-col gap-6">
-            {fresh && active && (
+            {fresh && active && !awaitsPayment && (
               <span
                 aria-hidden="true"
                 className="flex size-[72px] items-center justify-center bg-[var(--on-brand)] text-[var(--brand)]"
@@ -157,7 +180,19 @@ export default async function ManagedBookingPage({
           <Fact label="Participants">{participants}</Fact>
           <div className="flex items-center justify-between gap-4 border-t border-line-soft pt-3.5">
             <span className="text-[15px] font-semibold text-ink-muted">
-              {booking.amountCents > 0 ? PAYMENT_LINES[booking.paymentMode] : places}
+              {booking.amountCents === 0
+                ? places
+                : refunded > 0
+                  ? `Remboursé ${formatMoney(refunded)}`
+                  : paid > 0
+                    ? booking.paymentMode === "deposit"
+                      ? `Acompte payé · reste ${formatMoney(booking.amountCents - paid)} sur place`
+                      : "Payé par carte"
+                    : awaitsPayment
+                      ? "À payer en ligne"
+                      : booking.paymentMode === "on_site"
+                        ? "À régler sur place"
+                        : "À régler auprès de l'organisateur"}
             </span>
             <span className="text-section font-extrabold leading-[26px] text-ink">
               {booking.amountCents > 0 ? formatMoney(booking.amountCents) : "Gratuit"}
@@ -211,7 +246,11 @@ export default async function ManagedBookingPage({
           </div>
           {active && <ResendEmail slug={slug} token={token} />}
           <div className="mt-auto flex flex-col gap-3 pt-4">
-            {fresh ? (
+            {awaitsPayment && paymentReturn === "ok" && <PaymentPending />}
+            {awaitsPayment && paymentReturn !== "ok" && (
+              <PayButton slug={slug} token={token} label={`Payer ${formatMoney(due)}`} />
+            )}
+            {fresh && !awaitsPayment ? (
               <Link
                 href={manageHref}
                 className="flex h-[52px] items-center justify-center gap-2.5 bg-ink text-base font-extrabold text-on-ink transition-colors hover:bg-info"
@@ -224,9 +263,19 @@ export default async function ManagedBookingPage({
                 slug={slug}
                 token={token}
                 policy={
-                  startsAt && booking.amountCents > 0
-                    ? cancellationPolicy(startsAt, workspace, tz)
-                    : null
+                  paid > 0
+                    ? `${cancellationPolicy(startsAt ?? new Date(), workspace, tz)} Tu seras remboursé·e de ${formatMoney(
+                        refundForCancellation({
+                          paidCents: paid,
+                          cancelledBy: "customer",
+                          startsAt,
+                          now: new Date(),
+                          policy: workspace,
+                        }),
+                      )}.`
+                    : startsAt && booking.amountCents > 0
+                      ? cancellationPolicy(startsAt, workspace, tz)
+                      : null
                 }
               />
             ) : (

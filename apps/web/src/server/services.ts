@@ -11,7 +11,14 @@ import { db } from "./db";
  * Dépendances des cas d'usage du core : l'app web les appelle directement, sans passer par l'API.
  * Après chaque transaction validée, les changements de réservation partent par e-mail.
  */
-export const deps: Deps = createDeps(db, { afterCommit: notifyFromActivity });
+export const deps: Deps = createDeps(db, {
+  async afterCommit(entries) {
+    await notifyFromActivity(entries);
+    // Import différé : les effets de paiement dépendent eux-mêmes de `deps`.
+    const { paymentEffects } = await import("./payments/effects");
+    await paymentEffects(entries);
+  },
+});
 
 export type MemberActor = Extract<Actor, { type: "member" }>;
 

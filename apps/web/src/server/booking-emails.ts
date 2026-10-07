@@ -1,4 +1,9 @@
-import type { ActivityEntry, NotificationType } from "@horaya/core";
+import {
+  type ActivityEntry,
+  amountDueOnline,
+  awaitsOnlinePayment,
+  type NotificationType,
+} from "@horaya/core";
 import {
   getBookingDetail,
   getWorkspaceSettings,
@@ -7,11 +12,14 @@ import {
 } from "@horaya/db";
 import {
   type BookingMail,
+  bookingAwaitingPaymentEmail,
   bookingCancelledEmail,
   bookingConfirmedEmail,
   bookingLinkEmail,
+  bookingPaymentReceivedEmail,
   bookingPendingEmail,
   bookingPromotedEmail,
+  bookingRefundedEmail,
   bookingRefusedEmail,
   bookingWaitlistedEmail,
   type EmailContent,
@@ -49,10 +57,19 @@ async function loadBooking(organizationId: string, bookingId: string) {
   const title =
     booking.event?.title ??
     `Location · ${detail.rentalItems.map((entry) => entry.name).join(", ")}`;
+  const onlinePayments = workspace.stripeAccountStatus === "active";
+  const paymentNote =
+    booking.paymentMode === "on_site"
+      ? "à régler sur place"
+      : booking.paymentStatus === "paid"
+        ? booking.paymentMode === "deposit"
+          ? `acompte de ${formatMoney(booking.depositCents ?? 0)} payé, le reste sur place`
+          : "payé en ligne"
+        : onlinePayments
+          ? "à payer en ligne"
+          : "à régler auprès de l'organisateur";
   const amount =
-    booking.amountCents > 0
-      ? `${formatMoney(booking.amountCents)} · ${booking.paymentMode === "on_site" ? "à régler sur place" : "à régler auprès de l'organisateur"}`
-      : null;
+    booking.amountCents > 0 ? `${formatMoney(booking.amountCents)} · ${paymentNote}` : null;
   const mail = (url: string): BookingMail => ({
     workspace: {
       name: workspace.name,
@@ -73,6 +90,7 @@ async function loadBooking(organizationId: string, bookingId: string) {
     workspace,
     title,
     mail,
+    onlinePayments,
     eventsUrl: absoluteUrl(`/${workspace.slug}`),
     // Sans jeton (stocké haché), on renvoie vers « Mes réservations » qui en génère un neuf.
     linkRequestUrl: absoluteUrl(
@@ -98,6 +116,17 @@ export async function sendBookingCreatedEmail(
   const loaded = await loadBooking(organizationId, bookingId);
   if (!loaded || !["pending", "confirmed", "waitlisted"].includes(loaded.booking.status)) return;
   const mail = loaded.mail(manageUrl(loaded.workspace.slug, manageToken));
+  if (loaded.onlinePayments && awaitsOnlinePayment(loaded.booking)) {
+    await send(
+      loaded.booking.customer.email,
+      bookingAwaitingPaymentEmail({
+        ...mail,
+        due: formatMoney(amountDueOnline(loaded.booking)),
+        minutes: 30,
+      }),
+    );
+    return;
+  }
   const template =
     loaded.booking.status === "pending"
       ? bookingPendingEmail
@@ -157,8 +186,55 @@ export async function notifyFromActivity(entries: ActivityEntry[]) {
           );
         }
         break;
+      case "booking.paid": {
+        const paid = Number(entry.data?.amountCents ?? 0);
+        const remaining = booking.paymentMode === "deposit" ? booking.amountCents - paid : 0;
+        await send(
+          to,
+          bookingPaymentReceivedEmail({
+            ...mail(linkRequestUrl),
+            paid: formatMoney(paid),
+            remaining: remaining > 0 ? formatMoney(remaining) : null,
+          }),
+        );
+        await notifyTeam(
+          entry.organizationId,
+          "payment_received",
+          teamBookingEmail({
+            workspaceName: workspace.name,
+            kind: "paid",
+            customerName,
+            title,
+            seats: booking.seats,
+            status: formatMoney(paid),
+            url: adminUrl,
+          }),
+        );
+        break;
+      }
+      case "booking.refunded":
+        await send(
+          to,
+          bookingRefundedEmail({
+            ...mail(linkRequestUrl),
+            refunded: formatMoney(Number(entry.data?.amountCents ?? 0)),
+          }),
+        );
+        break;
       case "booking.confirmed":
-        await send(to, bookingConfirmedEmail(mail(linkRequestUrl)));
+        // Validée, mais le paiement en ligne reste à faire : on l'annonce plutôt qu'un « C'est réservé ».
+        if (loaded.onlinePayments && awaitsOnlinePayment(booking)) {
+          await send(
+            to,
+            bookingAwaitingPaymentEmail({
+              ...mail(linkRequestUrl),
+              due: formatMoney(amountDueOnline(booking)),
+              minutes: null,
+            }),
+          );
+        } else {
+          await send(to, bookingConfirmedEmail(mail(linkRequestUrl)));
+        }
         break;
       case "booking.refused":
         await send(to, bookingRefusedEmail({ ...mail(linkRequestUrl), reason, eventsUrl }));
@@ -179,7 +255,12 @@ export async function notifyFromActivity(entries: ActivityEntry[]) {
           bookingCancelledEmail({
             ...mail(linkRequestUrl),
             byCustomer,
-            reason: reason === "customer_request" ? null : reason,
+            reason:
+              reason === "customer_request"
+                ? null
+                : reason === "payment_expired"
+                  ? "paiement en ligne non finalisé dans les 30 minutes"
+                  : reason,
             eventsUrl,
           }),
         );

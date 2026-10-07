@@ -15,16 +15,10 @@ import {
   bookingState,
   cancellationPolicy,
   describeRecurrence,
+  paymentNote,
 } from "@/lib/public-booking";
 import { db } from "@/server/db";
 import { getWorkspaceBySlug } from "@/server/public";
-
-const PAYMENT_NOTES: Record<string, string> = {
-  free: "Gratuit",
-  on_site: "Paiement sur place",
-  online: "Paiement auprès de l'organisateur",
-  deposit: "Paiement auprès de l'organisateur",
-};
 
 async function load(params: PageProps<"/[slug]/[event]">["params"]) {
   const { slug, event: eventSlug } = await params;
@@ -71,7 +65,7 @@ export default async function PublicEventPage({ params }: PageProps<"/[slug]/[ev
     .map((text) => text.trim())
     .filter(Boolean);
   const notes = [
-    PAYMENT_NOTES[event.paymentMode],
+    paymentNote(event.paymentMode, workspace.onlinePayments, event.depositPercent),
     event.requiresApproval ? "Sur validation de l'organisateur" : null,
     event.paymentMode !== "free"
       ? cancellationPolicy(event.startsAt, workspace, tz).split(".")[0]

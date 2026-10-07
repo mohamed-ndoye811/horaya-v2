@@ -149,28 +149,87 @@ export function bookingLinkEmail(mail: BookingMail): EmailContent {
 /** Prévient l'équipe d'une nouvelle réservation ou d'une annulation (préférences de notification). */
 export function teamBookingEmail(input: {
   workspaceName: string;
-  kind: "created" | "cancelled";
+  kind: "created" | "cancelled" | "paid";
   customerName: string;
   title: string;
   seats: number;
   status: string;
   url: string;
 }): EmailContent {
-  const created = input.kind === "created";
+  const texts = {
+    created: {
+      subject: `Nouvelle réservation : ${input.customerName} · ${input.title}`,
+      title: "Nouvelle réservation",
+      text: `${input.customerName} vient de réserver ${places(input.seats)} pour « ${input.title} » (${input.status}).`,
+    },
+    cancelled: {
+      subject: `Annulation : ${input.customerName} · ${input.title}`,
+      title: "Réservation annulée",
+      text: `${input.customerName} a annulé sa réservation de ${places(input.seats)} pour « ${input.title} ».`,
+    },
+    paid: {
+      subject: `Paiement reçu : ${input.customerName} · ${input.title}`,
+      title: "Paiement reçu",
+      text: `${input.customerName} a payé ${input.status} pour « ${input.title} ».`,
+    },
+  }[input.kind];
   return {
-    subject: created
-      ? `Nouvelle réservation : ${input.customerName} · ${input.title}`
-      : `Annulation : ${input.customerName} · ${input.title}`,
+    subject: texts.subject,
     ...renderEmail({
       preheader: `${input.customerName} · ${places(input.seats)} · ${input.title}`,
-      title: created ? "Nouvelle réservation" : "Réservation annulée",
-      paragraphs: [
-        created
-          ? `${input.customerName} vient de réserver ${places(input.seats)} pour « ${input.title} » (${input.status}).`
-          : `${input.customerName} a annulé sa réservation de ${places(input.seats)} pour « ${input.title} ».`,
-      ],
+      title: texts.title,
+      paragraphs: [texts.text],
       action: { label: "Voir la réservation", url: input.url },
       footnote: `Tu reçois cet e-mail en tant que membre de ${input.workspaceName}. Règle tes notifications dans Paramètres › Paiements & notifications.`,
     }),
   };
+}
+
+/** Réservation retenue le temps du paiement en ligne (le lien permet de payer plus tard). */
+export function bookingAwaitingPaymentEmail(
+  /** `minutes` : places retenues le temps du paiement ; null pour une demande tout juste validée. */
+  mail: BookingMail & { due: string; minutes: number | null },
+): EmailContent {
+  return bookingEmail(mail, {
+    subject: `Plus qu'à payer : ${mail.title}`,
+    title: "Plus qu'à payer",
+    preheader: mail.minutes
+      ? `Tes places sont retenues ${mail.minutes} minutes, le temps du paiement.`
+      : "Ta demande est validée : règle ton paiement pour confirmer.",
+    paragraphs: mail.minutes
+      ? [
+          `Tes ${places(mail.seats)} pour « ${mail.title} » sont retenues ${mail.minutes} minutes, le temps de régler ${mail.due} en ligne. Sans paiement, elles sont libérées pour d'autres participants.`,
+          "Si la page de paiement s'est fermée, le lien ci-dessous permet de reprendre.",
+        ]
+      : [
+          `Bonne nouvelle : ${mail.workspace.name} a validé ta demande pour « ${mail.title} ». Il ne reste plus qu'à régler ${mail.due} en ligne pour confirmer tes places.`,
+        ],
+    action: { label: `Payer ${mail.due}`, url: mail.manageUrl },
+  });
+}
+
+/** Reçu de paiement (tout, ou l'acompte avec le reste à régler sur place). */
+export function bookingPaymentReceivedEmail(
+  mail: BookingMail & { paid: string; remaining?: string | null },
+): EmailContent {
+  return bookingEmail(mail, {
+    subject: `Paiement reçu : ${mail.title}`,
+    title: "Paiement reçu",
+    preheader: `${mail.paid} reçus pour ${mail.title}.`,
+    paragraphs: [
+      `Merci ! ${mail.workspace.name} a bien reçu ${mail.paid} pour « ${mail.title} ». Ta réservation est confirmée.`,
+      ...(mail.remaining ? [`Reste ${mail.remaining} à régler sur place.`] : []),
+    ],
+  });
+}
+
+export function bookingRefundedEmail(mail: BookingMail & { refunded: string }): EmailContent {
+  return bookingEmail(mail, {
+    subject: `Remboursement : ${mail.title}`,
+    title: "Remboursement en route",
+    preheader: `${mail.refunded} remboursés sur ta carte.`,
+    paragraphs: [
+      `${mail.workspace.name} t'a remboursé ${mail.refunded} pour « ${mail.title} ». Le montant apparaît sur ton compte sous 5 à 10 jours, selon ta banque.`,
+    ],
+  });
 }

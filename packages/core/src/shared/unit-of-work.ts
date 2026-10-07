@@ -6,6 +6,7 @@ import type {
 } from "../bookings/ports";
 import type { EventRepository, EventTypeRepository } from "../events/ports";
 import type { InventoryRepository } from "../inventory/ports";
+import type { PaymentRepository } from "../payments/ports";
 import type { NotificationPreferenceRepository } from "../tenants/ports";
 import type { TenantSettingsStore } from "../tenants/settings";
 import type { Clock } from "./clock";
@@ -21,6 +22,7 @@ export interface Repositories {
   settings: TenantSettingsStore;
   inventory: InventoryRepository;
   notifications: NotificationPreferenceRepository;
+  payments: PaymentRepository;
 }
 
 /** Exécute un travail dans une transaction : tout est validé, ou rien. */

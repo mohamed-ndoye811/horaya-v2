@@ -69,13 +69,13 @@ describe("textes", () => {
   });
   it("résume la politique d'annulation", () => {
     const startsAt = new Date("2026-06-15T12:00:00Z");
+    const policy = { freeCancellationHours: 72, lateCancellationRefundPercent: 50 };
     expect(
-      cancellationPolicy(
-        startsAt,
-        { freeCancellationHours: 72, lateCancellationRefundPercent: 50 },
-        "Europe/Paris",
-      ),
+      cancellationPolicy(startsAt, policy, "Europe/Paris", new Date("2026-06-01T00:00:00Z")),
     ).toBe("Annulation gratuite jusqu'au 12 juin. Ensuite, 50 % remboursés.");
+    expect(
+      cancellationPolicy(startsAt, policy, "Europe/Paris", new Date("2026-06-14T00:00:00Z")),
+    ).toBe("Délai d'annulation gratuite passé : 50 % remboursés.");
     expect(
       cancellationPolicy(
         startsAt,

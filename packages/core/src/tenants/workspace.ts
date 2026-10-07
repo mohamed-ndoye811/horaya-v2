@@ -24,6 +24,7 @@ export const RESERVED_SLUGS: ReadonlySet<string> = new Set([
   "mentions-legales",
   "mot-de-passe-oublie",
   "nouveau-mot-de-passe",
+  "paiement-test",
   "parametres",
   "public",
   "static",

@@ -6,12 +6,13 @@ import { useState, useTransition } from "react";
 import {
   cancelBookingAction,
   confirmBookingAction,
+  refundBookingAction,
   refuseBookingAction,
 } from "@/app/app/reservations/actions";
 import { Button, IconButton } from "@/components/ui/button";
 import { ChoiceChips } from "@/components/ui/chip";
 import { Dialog } from "@/components/ui/dialog";
-import { textareaClasses } from "@/components/ui/field";
+import { AffixInput, Field, textareaClasses } from "@/components/ui/field";
 import { FormAlert } from "@/components/ui/form-alert";
 import { Check, CloseIcon } from "@/components/ui/icons";
 import { ActionMenu } from "@/components/ui/menu";
@@ -302,6 +303,62 @@ export function BookingHeaderActions({
         />
       )}
       {!dialog && <Toast message={message} />}
+    </>
+  );
+}
+
+/** Remboursement (tout ou partie) d'une réservation payée en ligne. */
+export function RefundButton({ bookingId, maxCents }: { bookingId: string; maxCents: number }) {
+  const { pending, message, run } = useBookingAction();
+  const [open, setOpen] = useState(false);
+  const [amount, setAmount] = useState((maxCents / 100).toFixed(2).replace(".", ","));
+  const max = (maxCents / 100).toFixed(2).replace(".", ",");
+  return (
+    <>
+      <Button variant="secondary" className="h-10 px-4 text-sm" onClick={() => setOpen(true)}>
+        Rembourser
+      </Button>
+      {open && (
+        <Dialog
+          open
+          onClose={() => setOpen(false)}
+          title="Rembourser"
+          description={`Jusqu'à ${max} € : le client est remboursé sur sa carte (5 à 10 jours selon sa banque) et reçoit un e-mail.`}
+          footer={
+            <>
+              <Button variant="secondary" onClick={() => setOpen(false)}>
+                Retour
+              </Button>
+              <Button
+                variant="danger"
+                pending={pending}
+                onClick={() =>
+                  run(
+                    () => refundBookingAction(bookingId, amount),
+                    () => setOpen(false),
+                  )
+                }
+              >
+                Rembourser {amount} €
+              </Button>
+            </>
+          }
+        >
+          <Field label="Montant">
+            {(field) => (
+              <AffixInput
+                {...field}
+                inputMode="decimal"
+                value={amount}
+                onChange={(event) => setAmount(event.target.value)}
+                suffix="€"
+                mono
+              />
+            )}
+          </Field>
+        </Dialog>
+      )}
+      <Toast message={message} />
     </>
   );
 }

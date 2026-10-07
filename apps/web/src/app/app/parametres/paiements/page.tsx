@@ -1,9 +1,5 @@
 import { can, withDefaultPreferences } from "@horaya/core";
-import {
-  getNotificationPreferences,
-  getWorkspaceSettings,
-  sumConfirmedBookingsSince,
-} from "@horaya/db";
+import { getNotificationPreferences, getWorkspaceSettings, sumCollectedSince } from "@horaya/db";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { SettingsShell } from "@/components/app/settings-shell";
@@ -11,8 +7,11 @@ import { StatusBadge } from "@/components/ui/badge";
 import { Button, ButtonLink } from "@/components/ui/button";
 import { startOfDay, todayIn } from "@/lib/dates";
 import { formatMoney } from "@/lib/format";
+import { param } from "@/lib/search-params";
 import { db } from "@/server/db";
+import { paymentGateway, testPayments } from "@/server/payments";
 import { getWorkspaceContext } from "@/server/workspace";
+import { connectStripeAction } from "./actions";
 import { PaymentsForm } from "./payments-form";
 
 export const metadata: Metadata = { title: "Paiements & notifications · Horaya" };
@@ -33,18 +32,54 @@ const MONTHS = [
 ];
 
 /** Écran 26 : connexion des paiements, réglages de facturation et notifications du membre. */
-export default async function PaymentsSettingsPage() {
+const ACCOUNT_STATES: Record<
+  string,
+  { badge: string; tone: "success" | "warning" | "draft" | "danger"; line: string }
+> = {
+  not_connected: {
+    badge: "Non connecté",
+    tone: "draft",
+    line: "Connecte ton compte pour encaisser les réservations par carte",
+  },
+  pending: {
+    badge: "À finaliser",
+    tone: "warning",
+    line: "Activation à terminer chez Stripe (identité, IBAN)",
+  },
+  restricted: {
+    badge: "À vérifier",
+    tone: "danger",
+    line: "Stripe demande des informations : paiements suspendus",
+  },
+  active: { badge: "Connecté", tone: "success", line: "Compte vérifié · versements automatiques" },
+};
+
+export default async function PaymentsSettingsPage({
+  searchParams,
+}: PageProps<"/app/parametres/paiements">) {
   const { workspace, actor, timeZone } = await getWorkspaceContext();
+  const stripeError = param((await searchParams).stripe) === "erreur";
   if (actor.type !== "member") notFound();
   const today = todayIn(timeZone);
-  const [settings, saved, booked] = await Promise.all([
+  const [settings, saved, collected] = await Promise.all([
     getWorkspaceSettings(db, workspace.id),
     getNotificationPreferences(db, actor.memberId),
-    sumConfirmedBookingsSince(db, workspace.id, startOfDay({ ...today, day: 1 }, timeZone)),
+    sumCollectedSince(db, workspace.id, startOfDay({ ...today, day: 1 }, timeZone)),
   ]);
   if (!settings) notFound();
   const editable = can(actor.role, "settings", "update");
+  const canConnect = can(actor.role, "billing", "manage");
   const connected = settings.stripeAccountStatus === "active";
+  const state = ACCOUNT_STATES[settings.stripeAccountStatus] ?? ACCOUNT_STATES.not_connected;
+  const accountId = settings.stripeAccountId;
+  const balance =
+    connected && accountId ? await paymentGateway.getBalance(accountId).catch(() => null) : null;
+  const dayMonth = new Intl.DateTimeFormat("fr-FR", {
+    weekday: "short",
+    day: "numeric",
+    month: "long",
+    timeZone,
+  });
 
   return (
     <SettingsShell
@@ -52,8 +87,8 @@ export default async function PaymentsSettingsPage() {
       breadcrumb="Paiements & notifications"
       subtitle={
         connected
-          ? "Paiements en ligne via Stripe"
-          : "Paiements sur place pour l'instant · paiement en ligne bientôt"
+          ? `Paiements en ligne via Stripe${testPayments ? " (mode test)" : ""} · versements automatiques`
+          : "Paiements sur place tant que Stripe n'est pas connecté"
       }
       actions={
         <>
@@ -82,22 +117,56 @@ export default async function PaymentsSettingsPage() {
               <div className="flex min-w-0 flex-col gap-[3px]">
                 <p className="text-base font-extrabold text-ink">Stripe · {workspace.name}</p>
                 <p className="font-mono text-label text-ink-muted">
-                  {connected ? "compte vérifié" : "non connecté · paiement en ligne bientôt"}
+                  {accountId ? `${accountId.slice(0, 9)}…${accountId.slice(-4)} · ` : ""}
+                  {state.line}
                 </p>
               </div>
-              <StatusBadge tone={connected ? "success" : "draft"}>
-                {connected ? "Connecté" : "Bientôt"}
-              </StatusBadge>
+              <StatusBadge tone={state.tone}>{state.badge}</StatusBadge>
             </div>
-            <Button variant="secondary" disabled className="h-10 px-4 text-sm">
-              Connecter Stripe
-            </Button>
+            {connected ? (
+              testPayments ? (
+                <span className="font-mono text-label font-semibold uppercase tracking-[0.055em] text-warning">
+                  Mode test
+                </span>
+              ) : (
+                <a
+                  href="https://dashboard.stripe.com/"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="flex h-10 items-center gap-2 border-2 border-ink px-4 text-sm font-bold text-ink transition-colors hover:bg-bg"
+                >
+                  Ouvrir Stripe ↗
+                </a>
+              )
+            ) : canConnect ? (
+              <form action={connectStripeAction}>
+                <Button type="submit" className="h-10 px-4 text-sm">
+                  {settings.stripeAccountStatus === "not_connected"
+                    ? "Connecter Stripe"
+                    : "Reprendre l'activation"}
+                </Button>
+              </form>
+            ) : (
+              <p className="text-[13px] font-medium text-ink-muted">
+                Le propriétaire de l'espace connecte Stripe.
+              </p>
+            )}
           </div>
+          {stripeError && (
+            <p className="border-b border-line-soft bg-danger-bg px-5 py-3 text-sm font-semibold text-danger">
+              Stripe n'a pas pu être joint. Réessaie dans un instant.
+            </p>
+          )}
           <dl className="grid sm:grid-cols-3">
             {[
-              ["Solde disponible", "—"],
-              ["Prochain virement", "—"],
-              [`Réservé en ${MONTHS[today.month - 1]}`, formatMoney(booked)],
+              ["Solde disponible", balance ? formatMoney(balance.availableCents) : "—"],
+              [
+                "Prochain virement",
+                balance?.nextPayoutAt
+                  ? dayMonth.format(balance.nextPayoutAt).replace(/^./, (c) => c.toUpperCase())
+                  : "—",
+              ],
+              [`Encaissé en ${MONTHS[today.month - 1]}`, formatMoney(collected)],
             ].map(([label, value], index) => (
               <div
                 key={label}

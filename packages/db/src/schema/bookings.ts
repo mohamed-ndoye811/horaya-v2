@@ -106,11 +106,14 @@ export const payment = pgTable(
     currency: currency(),
     provider: text().notNull().default("stripe"),
     providerReference: text(),
+    /** Page de paiement (session Checkout) d'où vient ce paiement. */
+    checkoutReference: text(),
     createdAt: createdAt(),
   },
   (t) => [
     index().on(t.bookingId),
     unique().on(t.provider, t.providerReference),
+    unique().on(t.provider, t.checkoutReference),
     check("payment_amount_positive", sql`${t.amountCents} > 0`),
   ],
 );

@@ -88,6 +88,13 @@ export function bookingRepository(db: Executor): BookingRepository {
       return rows as Booking[];
     },
 
+    async updatePaymentStatus(organizationId, bookingId, status) {
+      await db
+        .update(booking)
+        .set({ paymentStatus: status, updatedAt: new Date() })
+        .where(and(eq(booking.organizationId, organizationId), eq(booking.id, bookingId)));
+    },
+
     async setManageTokenHash(organizationId, bookingId, tokenHash) {
       await db
         .update(booking)

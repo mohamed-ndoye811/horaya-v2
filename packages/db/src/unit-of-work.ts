@@ -9,6 +9,7 @@ import type { Db, Executor } from "./client";
 import { bookingRepository } from "./repositories/bookings";
 import { eventRepository, eventTypeRepository } from "./repositories/events";
 import { inventoryRepository } from "./repositories/inventory";
+import { paymentRepository } from "./repositories/payments";
 import {
   activityLogRepository,
   customerRepository,
@@ -28,6 +29,7 @@ export function repositoriesFor(db: Executor): Repositories {
     settings: tenantSettingsReader(db),
     inventory: inventoryRepository(db),
     notifications: notificationPreferenceRepository(db),
+    payments: paymentRepository(db),
   };
 }
 

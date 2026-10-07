@@ -1,10 +1,12 @@
 "use server";
 
 import {
+  awaitsOnlinePayment,
   cancelBookingWithToken,
   createEventBooking,
   hashToken,
   reissueManageLinks,
+  startCheckout,
 } from "@horaya/core";
 import { getManagedBooking, getPublicEvent } from "@horaya/db";
 import { revalidatePath } from "next/cache";
@@ -12,6 +14,8 @@ import { redirect } from "next/navigation";
 import { sendBookingCreatedEmail, sendBookingLinkEmail } from "@/server/booking-emails";
 import { db } from "@/server/db";
 import { type FormState, toFormState } from "@/server/form-state";
+import { absoluteUrl } from "@/server/mailer";
+import { paymentDeps } from "@/server/payments";
 import { getWorkspaceBySlug } from "@/server/public";
 import { deps } from "@/server/services";
 
@@ -71,6 +75,7 @@ export async function createPublicBookingAction(
     return { error: "Vérifie les champs en rouge.", fieldErrors };
 
   let manageToken: string;
+  let next: string;
   try {
     const created = await createEventBooking(
       deps,
@@ -88,10 +93,64 @@ export async function createPublicBookingAction(
     );
     manageToken = created.manageToken;
     await sendBookingCreatedEmail(workspace.id, created.booking.id, manageToken);
+    next = `/${slug}/reservation/${manageToken}?nouvelle=1`;
+    // Paiement en ligne (tout ou l'acompte) : direction la page de paiement sécurisée.
+    if (workspace.onlinePayments && awaitsOnlinePayment(created.booking)) {
+      next = await checkoutUrl(
+        slug,
+        manageToken,
+        workspace.id,
+        created.booking.id,
+        event.title,
+        seats,
+      ).catch((error) => {
+        console.error("Page de paiement indisponible", error);
+        return next;
+      });
+    }
   } catch (error) {
     return toFormState(error);
   }
-  redirect(`/${slug}/reservation/${manageToken}?nouvelle=1`);
+  redirect(next);
+}
+
+async function checkoutUrl(
+  slug: string,
+  token: string,
+  organizationId: string,
+  bookingId: string,
+  title: string,
+  seats: number,
+): Promise<string> {
+  const { url } = await startCheckout(paymentDeps, organizationId, bookingId, {
+    description: `${title} · ${seats} place${seats > 1 ? "s" : ""}`,
+    successUrl: absoluteUrl(`/${slug}/reservation/${token}?nouvelle=1&paiement=ok`),
+    cancelUrl: absoluteUrl(`/${slug}/reservation/${token}?paiement=annule`),
+  });
+  return url;
+}
+
+/** « Payer » depuis « Gérer ma réservation » : reprend un paiement abandonné. */
+export async function payManagedBookingAction(slug: string, token: string): Promise<FormState> {
+  const workspace = await getWorkspaceBySlug(slug);
+  const booking = workspace
+    ? await getManagedBooking(db, workspace.id, await hashToken(token))
+    : null;
+  if (!workspace || !booking) return { error: "Lien invalide." };
+  let url: string;
+  try {
+    url = await checkoutUrl(
+      slug,
+      token,
+      workspace.id,
+      booking.id,
+      booking.eventTitle ?? "Location",
+      booking.seats,
+    );
+  } catch (error) {
+    return toFormState(error);
+  }
+  redirect(url);
 }
 
 /** « Gérer ma réservation » : annulation par le client, jusqu'au début de l'événement. */

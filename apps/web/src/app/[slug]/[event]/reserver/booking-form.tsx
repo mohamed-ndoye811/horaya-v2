@@ -56,6 +56,7 @@ export function BookingForm({
   workspaceName,
   submitLabel,
   summary,
+  payment,
 }: {
   slug: string;
   eventSlug: string;
@@ -64,6 +65,8 @@ export function BookingForm({
   workspaceName: string;
   submitLabel: string;
   summary: ReactNode;
+  /** Paiement en ligne juste après (tout ou l'acompte). */
+  payment: { due: string; deposit: boolean; rest: string } | null;
 }) {
   const { state, onSubmit, pending } = useFormAction<FormState>(
     createPublicBookingAction.bind(null, slug, eventSlug, seats),
@@ -202,6 +205,47 @@ export function BookingForm({
             )}
           </Field>
         </FormSection>
+
+        {payment && (
+          <section className="flex flex-col gap-4">
+            <div className="flex items-baseline justify-between gap-3 border-b-2 border-ink pb-2.5">
+              <h2 className="flex items-baseline gap-3">
+                <span className="font-mono text-label font-semibold tracking-[0.055em] text-ink-muted">
+                  02
+                </span>
+                <span className="font-section text-section leading-7 text-ink">Paiement</span>
+              </h2>
+              <span className="font-mono text-[11px] font-semibold uppercase tracking-[0.5px] text-ink-muted">
+                Sécurisé par Stripe
+              </span>
+            </div>
+            <div className="flex items-center gap-3 border-[1.5px] border-ink-subtle bg-surface px-4 py-4">
+              <svg
+                width="22"
+                height="16"
+                viewBox="0 0 22 16"
+                aria-hidden="true"
+                className="shrink-0 text-ink-muted"
+              >
+                <rect
+                  x="1"
+                  y="1"
+                  width="20"
+                  height="14"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.6"
+                />
+                <path d="M1 5H21" stroke="currentColor" strokeWidth="2" />
+              </svg>
+              <p className="text-[15px] font-medium leading-5 text-ink">
+                {payment.deposit
+                  ? `Tu règles l'acompte de ${payment.due} par carte sur la page sécurisée de Stripe ; le reste (${payment.rest}) sur place.`
+                  : `Tu règles ${payment.due} par carte sur la page sécurisée de Stripe, juste après.`}
+              </p>
+            </div>
+          </section>
+        )}
 
         <div className="flex flex-col gap-2">
           <Checkbox

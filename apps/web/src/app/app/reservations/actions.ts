@@ -1,10 +1,18 @@
 "use server";
 
-import { cancelBooking, confirmBooking, createEventBooking, refuseBooking } from "@horaya/core";
+import {
+  cancelBooking,
+  confirmBooking,
+  createEventBooking,
+  refundBooking,
+  refuseBooking,
+} from "@horaya/core";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { parseEuroToCents } from "@/lib/money";
 import { sendBookingCreatedEmail } from "@/server/booking-emails";
 import { type FormState, toFormState } from "@/server/form-state";
+import { paymentDeps } from "@/server/payments";
 import { deps } from "@/server/services";
 import { getWorkspaceContext } from "@/server/workspace";
 
@@ -63,4 +71,12 @@ export async function createBookingAction(
   }
   revalidatePath("/app", "layout");
   redirect(`/app/reservations/${bookingId}`);
+}
+
+/** « Rembourser » sur la fiche d'une réservation payée en ligne. */
+export async function refundBookingAction(bookingId: string, amount: string): Promise<FormState> {
+  const { actor } = await getWorkspaceContext();
+  const cents = parseEuroToCents(amount);
+  if (!Number.isInteger(cents) || cents <= 0) return { error: "Montant invalide." };
+  return run(() => refundBooking(paymentDeps, actor, bookingId, cents), "Remboursement envoyé.");
 }

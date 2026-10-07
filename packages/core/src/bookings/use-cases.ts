@@ -265,6 +265,22 @@ export async function cancelBooking(
   });
 }
 
+/**
+ * Annulation automatique dans une transaction déjà ouverte (paiement en ligne abandonné) :
+ * les places sont libérées et la liste d'attente monte.
+ */
+export async function cancelBookingBySystem(
+  repositories: Repositories,
+  organizationId: string,
+  bookingId: string,
+  now: Date,
+  reason: string,
+): Promise<Booking> {
+  const actor: Actor = { type: "system", organizationId };
+  const { booking, event } = await lockBooking(repositories, organizationId, bookingId);
+  return cancelLocked(repositories, actor, booking, event, now, reason);
+}
+
 /** Annulation par le client depuis son lien « Gérer ma réservation », jusqu'au début de l'événement. */
 export async function cancelBookingWithToken(
   deps: Deps,

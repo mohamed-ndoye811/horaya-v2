@@ -1,7 +1,7 @@
 import type { Customer, CustomerNote } from "../customers/model";
 import type { ActorType } from "../tenants/types";
 import type { Booking, CustomerContact, ParticipantInput } from "./model";
-import type { BookingStatus } from "./types";
+import type { BookingPaymentStatus, BookingStatus } from "./types";
 
 export type NewBooking = Omit<
   Booking,
@@ -43,6 +43,11 @@ export interface BookingRepository {
     email: string,
     now: Date,
   ): Promise<Booking[]>;
+  updatePaymentStatus(
+    organizationId: string,
+    bookingId: string,
+    status: BookingPaymentStatus,
+  ): Promise<void>;
   /** Remplace le jeton du lien « Gérer ma réservation » (l'ancien lien cesse de marcher). */
   setManageTokenHash(organizationId: string, bookingId: string, tokenHash: string): Promise<void>;
 }

@@ -8,20 +8,13 @@ import { Check } from "@/components/ui/icons";
 import { cn } from "@/lib/cn";
 import { displayFontClass } from "@/lib/fonts";
 import { formatEventRange, formatMoney } from "@/lib/format";
-import { bookingState, cancellationPolicy } from "@/lib/public-booking";
+import { bookingState, cancellationPolicy, paymentNote } from "@/lib/public-booking";
 import { param } from "@/lib/search-params";
 import { db } from "@/server/db";
 import { getWorkspaceBySlug } from "@/server/public";
 import { BookingForm } from "./booking-form";
 
 export const metadata: Metadata = { title: "Réserver tes places", robots: { index: false } };
-
-const PAYMENT_LINES: Record<string, string> = {
-  free: "Gratuit",
-  on_site: "À régler sur place",
-  online: "À régler auprès de l'organisateur",
-  deposit: "À régler auprès de l'organisateur",
-};
 
 /** Écran 18 : coordonnées des participants. */
 export default async function BookEventPage({
@@ -51,12 +44,28 @@ export default async function BookEventPage({
     event.paymentMode === "free"
       ? null
       : cancellationPolicy(event.startsAt, workspace, workspace.timezone);
+  const depositCents =
+    event.paymentMode === "deposit" && event.depositPercent !== null
+      ? Math.round((total * event.depositPercent) / 100)
+      : null;
+  // Paiement en ligne tout de suite : réservation confirmée d'office (ni validation ni liste d'attente).
+  const payNow =
+    workspace.onlinePayments &&
+    (event.paymentMode === "online" || event.paymentMode === "deposit") &&
+    state.kind === "open" &&
+    !event.requiresApproval &&
+    total > 0;
+  const dueNow = event.paymentMode === "deposit" ? (depositCents ?? total) : total;
   const submitLabel =
     state.kind === "waitlist"
       ? "Rejoindre la liste d'attente"
       : event.requiresApproval
         ? "Envoyer ma demande"
-        : "Confirmer ma réservation";
+        : payNow
+          ? event.paymentMode === "deposit"
+            ? `Payer l'acompte de ${formatMoney(dueNow)}`
+            : `Payer ${formatMoney(dueNow)}`
+          : "Confirmer ma réservation";
 
   return (
     <>
@@ -112,6 +121,15 @@ export default async function BookEventPage({
         customFields={event.customFields}
         workspaceName={workspace.name}
         submitLabel={submitLabel}
+        payment={
+          payNow
+            ? {
+                due: formatMoney(dueNow),
+                deposit: event.paymentMode === "deposit",
+                rest: formatMoney(total - dueNow),
+              }
+            : null
+        }
         summary={
           <>
             <div className="flex flex-col gap-2 bg-[var(--brand)] px-6 py-5 text-[var(--on-brand)]">
@@ -145,7 +163,9 @@ export default async function BookEventPage({
               </p>
               <p className="flex justify-between gap-4 text-sm font-medium text-ink-muted">
                 <span>Paiement</span>
-                <span>{PAYMENT_LINES[event.paymentMode]}</span>
+                <span>
+                  {paymentNote(event.paymentMode, workspace.onlinePayments, event.depositPercent)}
+                </span>
               </p>
             </div>
             <div className="flex items-baseline justify-between px-6 pt-5 pb-1">

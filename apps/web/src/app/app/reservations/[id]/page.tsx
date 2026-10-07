@@ -1,9 +1,9 @@
-import { rentalDays } from "@horaya/core";
-import { getBookingDetail } from "@horaya/db";
+import { can, paidCents, rentalDays } from "@horaya/core";
+import { getBookingDetail, listBookingPayments } from "@horaya/db";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { BookingHeaderActions } from "@/components/app/booking-actions";
+import { BookingHeaderActions, RefundButton } from "@/components/app/booking-actions";
 import { ItemTile } from "@/components/app/item-tile";
 import { PageHeader } from "@/components/app/page-header";
 import { Avatar, CategorySwatch } from "@/components/ui/avatar";
@@ -13,6 +13,7 @@ import { Eyebrow } from "@/components/ui/section";
 import { BOOKING_STATUS_BADGE } from "@/components/ui/status";
 import { Timeline } from "@/components/ui/timeline";
 import { describeBookingActivity } from "@/lib/activity";
+import { cn } from "@/lib/cn";
 import {
   compactUnitLabels,
   formatEventRange,
@@ -31,6 +32,36 @@ function since(date: Date, now: Date): string {
   return days === 1 ? "1 jour" : `${days} jours`;
 }
 
+const PAYMENT_KIND_LABELS: Record<string, string> = {
+  charge: "Paiement",
+  deposit: "Acompte",
+  balance: "Solde",
+  refund: "Remboursement",
+};
+const PAYMENT_STATUS_LABELS: Record<string, string> = {
+  pending: "En cours",
+  succeeded: "Réussi",
+  failed: "Abandonné",
+};
+
+function paymentSummary(
+  booking: { paymentMode: string; paymentStatus: string; amountCents: number },
+  paid: number,
+): string {
+  if (booking.paymentMode === "free") return "Rien à régler";
+  if (booking.paymentStatus === "refunded") return "Remboursé";
+  if (booking.paymentStatus === "partially_refunded")
+    return `Remboursé en partie · ${formatMoney(paid)} gardés`;
+  if (booking.paymentStatus === "paid") {
+    return booking.paymentMode === "deposit"
+      ? `Acompte payé · ${formatMoney(booking.amountCents - paid)} sur place`
+      : "Payé en ligne";
+  }
+  return booking.paymentMode === "on_site"
+    ? "À régler sur place"
+    : "En attente du paiement en ligne";
+}
+
 /** Écran 17 : fiche d'une réservation. */
 export default async function BookingDetailPage({ params }: PageProps<"/app/reservations/[id]">) {
   const { id } = await params;
@@ -39,6 +70,10 @@ export default async function BookingDetailPage({ params }: PageProps<"/app/rese
   if (!detail) notFound();
 
   const { booking, participants, activity, customerStats, eventSeatsHeld, rentalItems } = detail;
+  const { actor } = await getWorkspaceContext();
+  const payments = await listBookingPayments(db, booking.id);
+  const paid = paidCents(payments);
+  const canRefund = actor.type === "member" && can(actor.role, "booking", "refund") && paid > 0;
   const name = `${booking.customer.firstName} ${booking.customer.lastName}`;
   const badge = BOOKING_STATUS_BADGE[booking.status];
   const now = new Date();
@@ -115,12 +150,13 @@ export default async function BookingDetailPage({ params }: PageProps<"/app/rese
                   <dd className="text-lg font-extrabold text-ink">
                     {PAYMENT_MODE_LABELS[booking.paymentMode]}
                   </dd>
-                  <dd className="text-[13px] font-medium text-warning">
-                    {booking.paymentMode === "free"
-                      ? "Rien à régler"
-                      : booking.paymentMode === "on_site"
-                        ? "À régler sur place"
-                        : "Paiement en ligne bientôt disponible"}
+                  <dd
+                    className={cn(
+                      "text-[13px] font-medium",
+                      booking.paymentStatus === "paid" ? "text-success" : "text-warning",
+                    )}
+                  >
+                    {paymentSummary(booking, paid)}
                   </dd>
                 </div>
               </dl>
@@ -197,6 +233,50 @@ export default async function BookingDetailPage({ params }: PageProps<"/app/rese
                   </dd>
                 </div>
               </dl>
+            </section>
+          )}
+
+          {payments.length > 0 && (
+            <section className="flex flex-col gap-3">
+              <div className="flex items-center justify-between gap-4">
+                <Eyebrow>Paiements en ligne</Eyebrow>
+                {canRefund && <RefundButton bookingId={booking.id} maxCents={paid} />}
+              </div>
+              <ul className="flex flex-col border-t border-line-soft">
+                {payments.map((entry) => (
+                  <li
+                    key={entry.id}
+                    className="flex items-center justify-between gap-4 border-b border-line-soft py-3"
+                  >
+                    <span className="flex flex-col gap-0.5">
+                      <span className="text-[15px] font-bold text-ink">
+                        {PAYMENT_KIND_LABELS[entry.kind]}
+                      </span>
+                      <span className="font-mono text-label text-ink-muted">
+                        {formatShortDateTime(entry.createdAt, timeZone)} ·{" "}
+                        {entry.provider === "test" ? "paiement de test" : "Stripe"}
+                      </span>
+                    </span>
+                    <span className="flex items-center gap-3">
+                      <StatusBadge
+                        tone={
+                          entry.status === "succeeded"
+                            ? "success"
+                            : entry.status === "pending"
+                              ? "warning"
+                              : "draft"
+                        }
+                      >
+                        {PAYMENT_STATUS_LABELS[entry.status]}
+                      </StatusBadge>
+                      <span className="w-24 text-right font-mono text-sm font-semibold text-ink">
+                        {entry.kind === "refund" ? "−" : ""}
+                        {formatMoney(entry.amountCents)}
+                      </span>
+                    </span>
+                  </li>
+                ))}
+              </ul>
             </section>
           )}
 
@@ -291,8 +371,9 @@ export default async function BookingDetailPage({ params }: PageProps<"/app/rese
           </section>
           <section className="mt-auto flex flex-col gap-3 px-7 py-6">
             <p className="text-[13px] font-medium leading-5 text-ink-muted">
-              Remboursements : ils arriveront avec les paiements en ligne. Pour l'instant, un
-              règlement sur place se rembourse hors d'Horaya.
+              Une réservation payée en ligne et annulée est remboursée automatiquement sur la carte
+              du client (selon ta politique d'annulation s'il annule lui-même). Un règlement sur
+              place se rembourse hors d'Horaya.
             </p>
           </section>
         </aside>

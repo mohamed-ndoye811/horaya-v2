@@ -34,6 +34,8 @@ export async function getPublicWorkspace(db: Executor, slug: string) {
       timezone: sql<string>`coalesce(${tenantSettings.timezone}, 'Europe/Paris')`,
       freeCancellationHours: sql<number>`coalesce(${tenantSettings.freeCancellationHours}, 72)`,
       lateCancellationRefundPercent: sql<number>`coalesce(${tenantSettings.lateCancellationRefundPercent}, 50)`,
+      /** Paiement en ligne possible : compte Stripe de l'organisateur actif. */
+      onlinePayments: sql<boolean>`coalesce(${tenantSettings.stripeAccountStatus} = 'active', false)`,
     })
     .from(organization)
     .leftJoin(tenantSettings, eq(tenantSettings.organizationId, organization.id))
@@ -139,6 +141,8 @@ export async function getManagedBooking(db: Executor, organizationId: string, to
       amountCents: booking.amountCents,
       depositCents: booking.depositCents,
       paymentMode: booking.paymentMode,
+      paymentStatus: booking.paymentStatus,
+      currency: booking.currency,
       refusalReason: booking.refusalReason,
       rentalStartsAt: booking.rentalStartsAt,
       rentalEndsAt: booking.rentalEndsAt,

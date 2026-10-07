@@ -81,6 +81,7 @@ export function cancellationPolicy(
   startsAt: Date,
   policy: { freeCancellationHours: number; lateCancellationRefundPercent: number },
   timeZone: string,
+  now = new Date(),
 ): string {
   const late =
     policy.lateCancellationRefundPercent === 0
@@ -88,6 +89,7 @@ export function cancellationPolicy(
       : `${policy.lateCancellationRefundPercent} % remboursés`;
   if (policy.freeCancellationHours === 0) return `Annulation possible jusqu'au début, ${late}.`;
   const deadline = new Date(startsAt.getTime() - policy.freeCancellationHours * 3_600_000);
+  if (now > deadline) return `Délai d'annulation gratuite passé : ${late}.`;
   const day = new Intl.DateTimeFormat("fr-FR", { day: "numeric", month: "long", timeZone }).format(
     deadline,
   );
@@ -96,3 +98,17 @@ export function cancellationPolicy(
 
 /** « Séminaire » → « Séminaires » (filtres de la page publique). */
 export const pluralize = (word: string) => (/[sxz]$/i.test(word) ? word : `${word}s`);
+
+/** Conditions de paiement affichées sur la page publique. */
+export function paymentNote(
+  paymentMode: string,
+  onlinePayments: boolean,
+  depositPercent: number | null,
+): string {
+  if (paymentMode === "free") return "Gratuit";
+  if (paymentMode === "on_site") return "Paiement sur place";
+  if (!onlinePayments) return "Paiement auprès de l'organisateur";
+  return paymentMode === "deposit"
+    ? `Acompte de ${depositPercent ?? 0} % par carte, le reste sur place`
+    : "Paiement sécurisé par carte";
+}
