@@ -7,16 +7,20 @@ import { monoLinkClasses } from "./button";
 export function SectionHeading({
   title,
   action,
+  flush = false,
   className,
 }: {
   title: string;
   action?: { label: string; href: string };
+  /** Sans marges latérales (titre placé dans une colonne déjà espacée). */
+  flush?: boolean;
   className?: string;
 }) {
   return (
     <div
       className={cn(
-        "flex items-center justify-between gap-4 border-b-2 border-ink px-4 py-5 sm:pr-8 sm:pl-10",
+        "flex items-center justify-between gap-4 border-b-2 border-ink py-5",
+        flush ? "px-0" : "px-4 sm:pr-8 sm:pl-10",
         className,
       )}
     >

@@ -70,7 +70,7 @@ core) est appliquée côté interface et dans un hook Better Auth.
 | `pnpm db:generate` | Génère une migration depuis le schéma Drizzle |
 | `pnpm db:migrate` | Applique les migrations |
 | `pnpm db:studio` | Drizzle Studio |
-| `pnpm db:seed-demo <adresse>` | Remplit un espace avec les données des maquettes (types, événements, réservations) |
+| `pnpm db:seed-demo <adresse> [--reset]` | Remplit un espace avec les données des maquettes ; `--reset` le vide d'abord |
 | `pnpm db:auth-schema` | Régénère `packages/db/src/schema/auth.ts` depuis la config Better Auth |
 
 ## Données

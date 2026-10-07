@@ -11,9 +11,12 @@ export interface FormState {
 export function toFormState(error: unknown): FormState {
   if (error instanceof ValidationError) {
     const fieldErrors: Record<string, string> = {};
+    // Chemin complet (« customer.email ») et premier segment (« customer ») : le
+    // formulaire affiche l'erreur sur le champ précis ou, à défaut, sur le groupe.
     for (const issue of error.issues) {
-      const key = issue.path.split(".")[0] || "form";
-      fieldErrors[key] ??= issue.message;
+      const full = issue.path || "form";
+      fieldErrors[full] ??= issue.message;
+      fieldErrors[full.split(".")[0] ?? full] ??= issue.message;
     }
     return {
       error: Object.keys(fieldErrors).length > 0 ? "Vérifie les champs en rouge." : error.message,

@@ -16,7 +16,7 @@ import {
   updateEvent,
   updateEventType,
 } from "@horaya/core";
-import { and, eq } from "drizzle-orm";
+import { and, asc, eq } from "drizzle-orm";
 import { afterAll, beforeEach, describe, expect, it } from "vitest";
 import { activityLog, booking, customer, event as eventTable } from "../src/schema";
 import {
@@ -201,7 +201,8 @@ describe("cycle de vie d'une réservation", () => {
     const actions = await db
       .select({ action: activityLog.action })
       .from(activityLog)
-      .where(and(eq(activityLog.entityType, "booking"), eq(activityLog.entityId, request.id)));
+      .where(and(eq(activityLog.entityType, "booking"), eq(activityLog.entityId, request.id)))
+      .orderBy(asc(activityLog.createdAt), asc(activityLog.id));
     expect(actions.map((row) => row.action)).toEqual(["booking.created", "booking.confirmed"]);
   });
 

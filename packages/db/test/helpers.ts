@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import type { Actor, Clock, Deps } from "@horaya/core";
 import { createDb } from "../src/client";
-import { organization, tenantSettings } from "../src/schema";
+import { member as memberTable, organization, tenantSettings, user } from "../src/schema";
 import { createUnitOfWork } from "../src/unit-of-work";
 
 export const db = createDb(process.env.TEST_DATABASE_URL ?? "");
@@ -52,3 +52,24 @@ export const contact = (email = "camille.roux@mail.com") => ({
   lastName: "Roux",
   email,
 });
+
+/** Membre réel (utilisateur + adhésion en base), pour les tables qui le référencent. */
+export async function createMember(
+  organizationId: string,
+  role: "owner" | "admin" | "editor" | "viewer" = "owner",
+): Promise<Actor> {
+  const userId = randomUUID();
+  const memberId = randomUUID();
+  await db.insert(user).values({
+    id: userId,
+    name: "Mohamed Ndoye",
+    email: `membre-${userId.slice(0, 8)}@test.dev`,
+    emailVerified: true,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  });
+  await db
+    .insert(memberTable)
+    .values({ id: memberId, organizationId, userId, role, createdAt: new Date() });
+  return { type: "member", organizationId, userId, memberId, role };
+}

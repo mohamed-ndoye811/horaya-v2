@@ -2,10 +2,13 @@
  * Remplit un espace avec des données de démonstration (reprises des maquettes Paper),
  * en passant par les cas d'usage du core : mêmes règles que l'app.
  *
- *   pnpm db:seed-demo <adresse-de-l-espace>
+ *   pnpm db:seed-demo <adresse-de-l-espace> [--reset]
+ *
+ * --reset vide d'abord l'espace (événements, réservations, clients, historique).
  */
 import {
   type Actor,
+  addCustomerNote,
   addDays,
   cancelBooking,
   createEvent,
@@ -15,14 +18,29 @@ import {
   publishEvent,
   systemClock,
   toZonedParts,
+  updateCustomer,
 } from "@horaya/core";
-import { and, eq } from "drizzle-orm";
+import { and, eq, inArray } from "drizzle-orm";
 import { createDb } from "./client";
-import { event, member, organization } from "./schema";
+import {
+  activityLog,
+  booking,
+  bookingParticipant,
+  customer,
+  customerNote,
+  event,
+  eventSeries,
+  eventType,
+  member,
+  organization,
+  payment,
+  referenceCounter,
+} from "./schema";
 import { createUnitOfWork } from "./unit-of-work";
 
 const TZ = "Europe/Paris";
-const slug = process.argv[2];
+const slug = process.argv.slice(2).find((arg) => !arg.startsWith("--"));
+const reset = process.argv.includes("--reset");
 if (!slug) {
   console.error("Usage : pnpm db:seed-demo <adresse-de-l-espace>");
   process.exit(1);
@@ -38,13 +56,38 @@ const [owner] = await db
   .from(member)
   .where(and(eq(member.organizationId, org.id), eq(member.role, "owner")));
 if (!owner) throw new Error("Cet espace n'a pas de propriétaire");
+if (reset) {
+  await db.transaction(async (tx) => {
+    const bookingIds = tx
+      .select({ id: booking.id })
+      .from(booking)
+      .where(eq(booking.organizationId, org.id));
+    await tx.delete(bookingParticipant).where(inArray(bookingParticipant.bookingId, bookingIds));
+    for (const table of [
+      payment,
+      booking,
+      event,
+      eventSeries,
+      eventType,
+      customerNote,
+      customer,
+      activityLog,
+      referenceCounter,
+    ]) {
+      await tx.delete(table).where(eq(table.organizationId, org.id));
+    }
+  });
+  console.info(`Espace « ${org.name} » vidé.`);
+}
 const [existing] = await db
   .select({ id: event.id })
   .from(event)
   .where(eq(event.organizationId, org.id))
   .limit(1);
 if (existing) {
-  console.error(`L'espace « ${slug} » a déjà des événements : rien n'est ajouté.`);
+  console.error(
+    `L'espace « ${slug} » a déjà des événements : rien n'est ajouté (--reset pour repartir de zéro).`,
+  );
   process.exit(1);
 }
 
@@ -111,7 +154,7 @@ type Plan = {
   paymentMode?: "free" | "online" | "deposit" | "on_site";
   depositPercent?: number;
   publish?: boolean;
-  bookings?: Array<[string, string, number, ("pending" | "cancel")?]>;
+  bookings?: Array<[string, string, number, ("pending" | "cancel")?, string?]>;
 };
 
 const plans: Plan[] = [
@@ -299,7 +342,7 @@ for (const plan of plans) {
   if (new Date(created.startsAt) > new Date()) await publishEvent(deps, actor, created.id);
   else continue;
 
-  for (const [firstName, lastName, seats, state] of plan.bookings ?? []) {
+  for (const [firstName, lastName, seats, state, message] of plan.bookings ?? []) {
     const local = `${firstName}.${lastName}`
       .toLowerCase()
       .normalize("NFD")
@@ -312,6 +355,7 @@ for (const plan of plans) {
         eventId: created.id,
         seats,
         customer: { firstName, lastName, email },
+        customerMessage: message ?? null,
       });
       if (state === "cancel") await cancelBooking(deps, actor, booking.id, "Empêchement");
       bookingCount++;
@@ -319,6 +363,35 @@ for (const plan of plans) {
       console.warn(`  ${plan.title} / ${firstName} : ${(error as Error).message}`);
     }
   }
+}
+
+// Fiches clients plus complètes (entreprises, téléphone, étiquettes, notes).
+const profiles: Record<
+  string,
+  { company?: string; phone?: string; tags?: string[]; notes?: string[] }
+> = {
+  "camille.roux@mail.com": {
+    company: "Cabinet Vidal",
+    phone: "06 12 34 56 78",
+    tags: ["vip"],
+    notes: [
+      "Allergie aux fruits à coque — prévenir le traiteur.",
+      "Réserve souvent pour toute son équipe (6–8 pers.). Préfère une facture unique en fin de mois.",
+    ],
+  },
+  "julie.moreau@mail.com": { company: "Groupe Azur RH" },
+  "marc.dupont@mail.com": { company: "Leadership & Co", phone: "06 98 76 54 32" },
+  "lea.fontaine@mail.com": { phone: "06 12 34 56 78" },
+};
+for (const [email, profile] of Object.entries(profiles)) {
+  const [found] = await db
+    .select({ id: customer.id })
+    .from(customer)
+    .where(and(eq(customer.organizationId, org.id), eq(customer.email, email)));
+  if (!found) continue;
+  const { notes, ...fields } = profile;
+  await updateCustomer(deps, actor, found.id, fields);
+  for (const body of notes ?? []) await addCustomerNote(deps, actor, found.id, { body });
 }
 
 console.info(

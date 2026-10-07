@@ -1,3 +1,4 @@
+import type { Customer, CustomerNote } from "../customers/model";
 import type { ActorType } from "../tenants/types";
 import type { Booking, CustomerContact, ParticipantInput } from "./model";
 import type { BookingStatus } from "./types";
@@ -34,7 +35,24 @@ export interface BookingRepository {
 export interface CustomerRepository {
   /** Retrouve le client par e-mail (insensible à la casse) ou le crée. */
   upsertByEmail(organizationId: string, contact: CustomerContact): Promise<{ id: string }>;
+  find(organizationId: string, customerId: string): Promise<Customer | null>;
+  /** Lève une ConflictError si l'e-mail est déjà pris dans l'espace. */
+  insert(organizationId: string, data: NewCustomer): Promise<Customer>;
+  update(
+    organizationId: string,
+    customerId: string,
+    patch: Partial<NewCustomer>,
+  ): Promise<Customer>;
+  insertNote(
+    organizationId: string,
+    note: { customerId: string; authorMemberId: string | null; body: string; pinned: boolean },
+  ): Promise<CustomerNote>;
 }
+
+export type NewCustomer = Pick<
+  Customer,
+  "firstName" | "lastName" | "email" | "phone" | "company" | "tags" | "marketingConsent"
+>;
 
 export interface ReferenceCounter {
   /** Incrémente atomiquement le compteur (tenant, portée, période) et renvoie la nouvelle valeur. */
@@ -43,7 +61,7 @@ export interface ReferenceCounter {
 
 export interface ActivityEntry {
   organizationId: string;
-  entityType: "booking" | "event" | "event_type";
+  entityType: "booking" | "event" | "event_type" | "customer";
   entityId: string;
   action: string;
   actorType: ActorType;

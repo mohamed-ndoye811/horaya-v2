@@ -1,6 +1,7 @@
 import { getEventDetail } from "@horaya/db";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import { BookingRowActions } from "@/components/app/booking-actions";
 import { PageHeader } from "@/components/app/page-header";
 import { CategorySwatch } from "@/components/ui/avatar";
 import { StatusBadge } from "@/components/ui/badge";
@@ -156,6 +157,7 @@ export default async function EventDetailPage({
                 cell: (row) => (
                   <PersonCell
                     name={row.customerName}
+                    href={`/app/reservations/${row.id}`}
                     avatarSize="md"
                     detail={[
                       row.customerEmail,
@@ -203,6 +205,19 @@ export default async function EventDetailPage({
                   <StatusBadge tone={BOOKING_STATUS_BADGE[row.status].tone}>
                     {BOOKING_STATUS_BADGE[row.status].label}
                   </StatusBadge>
+                ),
+              },
+              {
+                key: "actions",
+                header: <span className="sr-only">Actions</span>,
+                width: 110,
+                align: "right",
+                cell: (row) => (
+                  <BookingRowActions
+                    bookingId={row.id}
+                    customerName={row.customerName}
+                    status={row.status}
+                  />
                 ),
               },
             ]}

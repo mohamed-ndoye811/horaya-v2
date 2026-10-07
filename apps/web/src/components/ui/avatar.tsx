@@ -6,6 +6,8 @@ const sizes = {
   sm: "size-8 text-label",
   md: "size-9 text-sm",
   lg: "size-10 text-sm",
+  /** En-tête de fiche client (96 px, initiales en Archivo). */
+  xl: "size-24 font-headline text-[40px]",
 };
 
 /** Avatar carré à initiales ; la couleur est stable pour un même nom. */

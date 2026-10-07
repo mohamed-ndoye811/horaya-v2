@@ -46,7 +46,7 @@ export function Dialog({
         if (event.target === event.currentTarget) onClose();
       }}
       className={cn(
-        "m-auto w-[calc(100%-32px)] border-2 border-ink bg-bg p-0 text-ink backdrop:bg-ink/45",
+        "m-auto w-[calc(100%-32px)] border-2 border-ink bg-bg p-0 text-left text-ink backdrop:bg-ink/45",
         size === "md" ? "max-w-[520px]" : "max-w-[720px]",
       )}
     >

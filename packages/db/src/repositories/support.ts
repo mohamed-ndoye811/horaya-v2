@@ -1,13 +1,24 @@
-import type {
-  ActivityLog,
-  CustomerRepository,
-  ReferenceCounter,
-  TenantSettingsReader,
+import {
+  type ActivityLog,
+  ConflictError,
+  type Customer,
+  type CustomerNote,
+  type CustomerRepository,
+  type ReferenceCounter,
+  type TenantSettingsReader,
 } from "@horaya/core";
-import { eq, sql } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 import { v7 as uuidv7 } from "uuid";
 import type { Executor } from "../client";
-import { activityLog, customer, referenceCounter, tenantSettings } from "../schema";
+import { activityLog, customer, customerNote, referenceCounter, tenantSettings } from "../schema";
+
+/** E-mail déjà utilisé par un autre client de l'espace (index unique sur lower(email)). */
+function duplicateEmail(error: unknown): never {
+  const code =
+    (error as { cause?: { code?: string } }).cause?.code ?? (error as { code?: string }).code;
+  if (code === "23505") throw new ConflictError("Un client existe déjà avec cet e-mail");
+  throw error;
+}
 
 export function customerRepository(db: Executor): CustomerRepository {
   return {
@@ -24,6 +35,42 @@ export function customerRepository(db: Executor): CustomerRepository {
       const row = rows[0];
       if (!row) throw new Error("Client non enregistré");
       return { id: row.id };
+    },
+
+    async find(organizationId, customerId) {
+      const [found] = await db
+        .select()
+        .from(customer)
+        .where(and(eq(customer.organizationId, organizationId), eq(customer.id, customerId)));
+      return (found as Customer | undefined) ?? null;
+    },
+
+    async insert(organizationId, data) {
+      const [created] = await db
+        .insert(customer)
+        .values({ organizationId, ...data })
+        .returning()
+        .catch(duplicateEmail);
+      return created as Customer;
+    },
+
+    async update(organizationId, customerId, patch) {
+      const [updated] = await db
+        .update(customer)
+        .set(patch)
+        .where(and(eq(customer.organizationId, organizationId), eq(customer.id, customerId)))
+        .returning()
+        .catch(duplicateEmail);
+      if (!updated) throw new Error(`Client introuvable : ${customerId}`);
+      return updated as Customer;
+    },
+
+    async insertNote(organizationId, note) {
+      const [created] = await db
+        .insert(customerNote)
+        .values({ organizationId, ...note })
+        .returning();
+      return created as CustomerNote;
     },
   };
 }
