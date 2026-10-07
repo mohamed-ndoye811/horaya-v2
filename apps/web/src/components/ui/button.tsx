@@ -3,7 +3,8 @@ import type { ComponentProps, ReactNode } from "react";
 import { cn } from "@/lib/cn";
 import { ArrowRight } from "./icons";
 
-type Variant = "primary" | "secondary";
+/** `inverse` et `inverse-outline` : versions pour fond bleu encre. */
+type Variant = "primary" | "secondary" | "inverse" | "inverse-outline";
 
 const base =
   "inline-flex h-[54px] items-center justify-center gap-3 px-6 text-base transition-colors " +
@@ -15,7 +16,16 @@ const variants: Record<Variant, string> = {
   secondary:
     "border-2 border-ink font-bold text-ink hover:bg-surface " +
     "disabled:border-ink-subtle disabled:text-ink-subtle disabled:hover:bg-transparent",
+  inverse: "bg-on-ink font-extrabold text-ink hover:bg-surface focus-visible:outline-on-ink",
+  "inverse-outline":
+    "border-2 border-on-ink font-bold text-on-ink hover:bg-on-ink hover:text-ink " +
+    "focus-visible:outline-on-ink",
 };
+
+/*
+ * Pas de fusion de classes (pas de tailwind-merge) : `className` ne doit servir qu'à la mise
+ * en page (largeur, marges), jamais à surcharger couleurs ou bordures — créer une variante.
+ */
 
 export function buttonClasses(variant: Variant = "primary", className?: string) {
   return cn(base, variants[variant], className);

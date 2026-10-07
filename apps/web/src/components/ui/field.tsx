@@ -7,17 +7,28 @@ const inputBase =
   "w-full min-w-0 border-[1.5px] border-ink-subtle bg-surface font-medium text-ink outline-none " +
   "placeholder:text-ink-subtle transition-[border-color,box-shadow] " +
   "focus:border-ink focus:shadow-[0_0_0_0.5px_var(--color-ink)] " +
-  "aria-invalid:border-danger aria-invalid:focus:shadow-[0_0_0_0.5px_var(--color-danger)]";
+  "aria-invalid:border-danger aria-invalid:focus:shadow-[0_0_0_0.5px_var(--color-danger)] " +
+  "data-[valid=true]:border-success";
 
 const sizes = {
-  md: "h-12 px-3.5 text-base",
-  lg: "h-[52px] px-4 text-[17px]",
+  md: "h-12 pl-3.5 text-base",
+  lg: "h-[52px] pl-4 text-[17px]",
+};
+
+/** Marge droite : normale, ou réservée à une icône / un bouton placé dans le champ. */
+const trailingPadding = {
+  none: { md: "pr-3.5", lg: "pr-4" },
+  icon: { md: "pr-10", lg: "pr-10" },
+  action: { md: "pr-24", lg: "pr-24" },
 };
 
 export type InputSize = keyof typeof sizes;
 
-export function inputClasses(size: InputSize = "md", className?: string) {
-  return cn(inputBase, sizes[size], className);
+export function inputClasses(
+  size: InputSize = "md",
+  trailing: keyof typeof trailingPadding = "none",
+) {
+  return cn(inputBase, sizes[size], trailingPadding[trailing][size]);
 }
 
 interface FieldProps {
@@ -55,19 +66,19 @@ export function Field({ label, error, hint, children }: FieldProps) {
   );
 }
 
-interface PasswordInputProps extends Omit<ComponentProps<"input">, "type" | "size"> {
+interface PasswordInputProps extends Omit<ComponentProps<"input">, "type" | "size" | "className"> {
   inputSize?: InputSize;
 }
 
 /** Champ mot de passe avec bouton « Afficher / Masquer ». */
-export function PasswordInput({ inputSize = "md", className, ...props }: PasswordInputProps) {
+export function PasswordInput({ inputSize = "md", ...props }: PasswordInputProps) {
   const [visible, setVisible] = useState(false);
   return (
     <div className="relative">
       <input
         {...props}
         type={visible ? "text" : "password"}
-        className={inputClasses(inputSize, cn("pr-24", className))}
+        className={inputClasses(inputSize, "action")}
       />
       <button
         type="button"

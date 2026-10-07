@@ -128,7 +128,7 @@ export function WorkspaceOnboarding() {
                 name="sector"
                 required
                 defaultValue=""
-                className={inputClasses("md", "appearance-none pr-10")}
+                className={cn(inputClasses("md", "icon"), "appearance-none")}
               >
                 <option value="" disabled>
                   Choisis ton secteur

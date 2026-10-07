@@ -82,7 +82,7 @@ export function ResetPasswordForm({ token, maskedEmail }: { token: string; maske
             required
             value={confirmation}
             onChange={(event) => setConfirmation(event.target.value)}
-            className={matches ? "border-success" : undefined}
+            data-valid={matches}
           />
         )}
       </Field>
