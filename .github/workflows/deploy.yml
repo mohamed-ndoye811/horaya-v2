@@ -58,8 +58,8 @@ jobs:
       - uses: actions/checkout@v4
         with:
           repository: mohamed-ndoye811/diamondinfra_cloud
-          # PAT à grain fin : Contents en lecture/écriture sur diamondinfra_cloud uniquement.
-          token: ${{ secrets.INFRA_REPO_TOKEN }}
+          # Clé de déploiement en écriture sur diamondinfra_cloud uniquement.
+          ssh-key: ${{ secrets.INFRA_DEPLOY_KEY }}
 
       - name: Épingler le SHA des deux images
         run: |
