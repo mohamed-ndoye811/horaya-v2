@@ -202,7 +202,13 @@ const plans: Plan[] = [
     priceCents: 3500,
     paymentMode: "online",
     bookings: [
-      ["Léa", "Fontaine", 1, "pending"],
+      [
+        "Léa",
+        "Fontaine",
+        1,
+        "pending",
+        "Bonjour ! C'est ma première fois : faut-il apporter un tablier ? Et je suis allergique au gluten, est-ce un problème pour la collation ? Merci !",
+      ],
       ["Sophie", "Martin", 3],
       ["Marc", "Dupont", 2],
     ],
