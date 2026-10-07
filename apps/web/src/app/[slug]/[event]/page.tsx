@@ -17,21 +17,28 @@ import {
   describeRecurrence,
   paymentNote,
 } from "@/lib/public-booking";
+import { param, withParams } from "@/lib/search-params";
 import { db } from "@/server/db";
-import { getWorkspaceBySlug, workspacePaymentChannel } from "@/server/public";
+import { getCalendarLink, getWorkspaceBySlug, workspacePaymentChannel } from "@/server/public";
 
-async function load(params: PageProps<"/[slug]/[event]">["params"]) {
+async function load(
+  params: PageProps<"/[slug]/[event]">["params"],
+  searchParams: PageProps<"/[slug]/[event]">["searchParams"],
+) {
   const { slug, event: eventSlug } = await params;
   const workspace = await getWorkspaceBySlug(slug);
   if (!workspace) notFound();
-  const event = await getPublicEvent(db, workspace.id, eventSlug);
-  return { workspace, event };
+  // Arrivé par un lien calendrier : il peut ouvrir un événement « sur invitation ».
+  const link = await getCalendarLink(workspace.id, param((await searchParams).lien));
+  const event = await getPublicEvent(db, workspace.id, eventSlug, link);
+  return { workspace, event, link };
 }
 
 export async function generateMetadata({
   params,
+  searchParams,
 }: PageProps<"/[slug]/[event]">): Promise<Metadata> {
-  const { workspace, event } = await load(params);
+  const { workspace, event } = await load(params, searchParams);
   return {
     title: event
       ? `${event.title} · ${workspace.name}`
@@ -41,14 +48,18 @@ export async function generateMetadata({
 }
 
 /** Écran 10 : page publique d'un événement. */
-export default async function PublicEventPage({ params }: PageProps<"/[slug]/[event]">) {
-  const { workspace, event } = await load(params);
+export default async function PublicEventPage({
+  params,
+  searchParams,
+}: PageProps<"/[slug]/[event]">) {
+  const { workspace, event, link } = await load(params, searchParams);
+  const homeHref = link ? `/${workspace.slug}/calendrier/${link.slug}` : `/${workspace.slug}`;
   if (!event) {
     return (
       <NotFoundScreen
         wordmark={false}
         title="Cet événement a quitté l'agenda."
-        primary={{ label: "Voir les événements à venir", href: `/${workspace.slug}` }}
+        primary={{ label: "Voir les événements à venir", href: homeHref }}
       />
     );
   }
@@ -59,7 +70,7 @@ export default async function PublicEventPage({ params }: PageProps<"/[slug]/[ev
   const schedule = formatPublicSchedule(event.startsAt, event.endsAt, tz);
   const recurrence = describeRecurrence(event.seriesRule);
   const place = event.locationName ?? (event.onlineUrl ? "En ligne" : "À préciser");
-  const bookHref = `/${workspace.slug}/${event.slug}/reserver`;
+  const bookHref = withParams(`/${workspace.slug}/${event.slug}/reserver`, { lien: link?.slug });
   const paragraphs = event.description
     .split(/\n\s*\n/)
     .map((text) => text.trim())

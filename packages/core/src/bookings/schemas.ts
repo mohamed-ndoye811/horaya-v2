@@ -35,6 +35,8 @@ export const createEventBookingSchema = z
     customer: customerContactSchema,
     participants: z.array(participantSchema).max(1000).default([]),
     customerMessage: optionalText(1000),
+    /** Lien calendrier par lequel le client est arrivé (vaut invitation). */
+    calendarLinkSlug: optionalText(120),
   })
   .refine((input) => input.participants.length <= input.seats, {
     message: "Plus de participants que de places",

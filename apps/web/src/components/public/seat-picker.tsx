@@ -66,7 +66,7 @@ export function SeatPicker({
       </div>
       <div className="px-6 pt-4">
         <Link
-          href={`${bookHref}?places=${seats}`}
+          href={`${bookHref}${bookHref.includes("?") ? "&" : "?"}places=${seats}`}
           className="flex h-14 items-center justify-center gap-3 bg-ink text-[17px] font-extrabold text-on-ink transition-colors hover:bg-info"
         >
           {label}

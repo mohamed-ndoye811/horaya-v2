@@ -1,3 +1,5 @@
+import type { CalendarLink } from "../calendar-links/model";
+import { calendarLinkAllows } from "../calendar-links/rules";
 import type { Event } from "../events/model";
 import { type Actor, actorRef, assertMemberCan } from "../shared/actor";
 import { ConflictError, ForbiddenError, NotFoundError, ValidationError } from "../shared/errors";
@@ -23,14 +25,18 @@ const SOURCE_BY_ACTOR: Record<Actor["type"], BookingSource> = {
   system: "api",
 };
 
-/** Règles propres aux réservations faites par le client lui-même. */
+/**
+ * Règles propres aux réservations faites par le client lui-même. Un événement « sur
+ * invitation » n'est réservable que par un lien calendrier actif qui le contient.
+ */
 function assertCustomerCanBook(
   event: Event,
   rules: { minAdvanceHours?: number; maxSeatsPerBooking?: number },
   seats: number,
   now: Date,
+  link: CalendarLink | null,
 ): void {
-  if (event.visibility === "invite_only")
+  if (event.visibility === "invite_only" && !(link && calendarLinkAllows(link, event)))
     throw new ForbiddenError("Cet événement est sur invitation");
   const closesAt = event.startsAt.getTime() - (rules.minAdvanceHours ?? 0) * 3_600_000;
   if (now.getTime() >= closesAt)
@@ -77,8 +83,12 @@ export async function createEventBooking(
           : "Publie l'événement avant d'y inscrire quelqu'un",
       );
     }
-    if (actor.type === "customer")
-      assertCustomerCanBook(event, eventType.bookingRules, data.seats, now);
+    if (actor.type === "customer") {
+      const link = data.calendarLinkSlug
+        ? await repositories.calendarLinks.findBySlug(actor.organizationId, data.calendarLinkSlug)
+        : null;
+      assertCustomerCanBook(event, eventType.bookingRules, data.seats, now, link);
+    }
     if (event.endsAt <= now) throw new ConflictError("Cet événement est terminé");
 
     const status = decideBookingStatus({

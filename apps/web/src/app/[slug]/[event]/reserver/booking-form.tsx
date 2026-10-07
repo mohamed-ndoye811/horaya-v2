@@ -147,6 +147,7 @@ function ExtraParticipant({
 export function BookingForm({
   slug,
   eventSlug,
+  linkSlug,
   seats,
   customFields,
   workspaceName,
@@ -156,6 +157,8 @@ export function BookingForm({
 }: {
   slug: string;
   eventSlug: string;
+  /** Lien calendrier par lequel arrive le visiteur (vaut invitation). */
+  linkSlug: string | null;
   seats: number;
   customFields: CustomFieldDefinition[];
   workspaceName: string;
@@ -171,7 +174,7 @@ export function BookingForm({
   } | null;
 }) {
   const { state, onSubmit, pending } = useFormAction<FormState>(
-    createPublicBookingAction.bind(null, slug, eventSlug, seats),
+    createPublicBookingAction.bind(null, slug, eventSlug, linkSlug, seats),
     {},
   );
   const errors = state.fieldErrors ?? {};

@@ -13,7 +13,7 @@ import {
   uuid,
 } from "drizzle-orm/pg-core";
 import { cents, createdAt, currency, id, organizationId, updatedAt } from "./_columns";
-import { eventStatus, eventVisibility, paymentMode } from "./enums";
+import { calendarLinkFilter, eventStatus, eventVisibility, paymentMode } from "./enums";
 
 export const eventType = pgTable(
   "event_type",
@@ -112,4 +112,26 @@ export const eventMedia = pgTable(
     createdAt: createdAt(),
   },
   (t) => [index().on(t.eventId, t.position)],
+);
+
+/**
+ * Lien calendrier : page publique qui ne montre qu'une partie des événements
+ * (tous, certains types, ou une liste). Il vaut invitation pour les événements
+ * « sur invitation » qu'il contient.
+ */
+export const calendarLink = pgTable(
+  "calendar_link",
+  {
+    id: id(),
+    organizationId: organizationId(),
+    name: text().notNull(),
+    slug: text().notNull(),
+    filterMode: calendarLinkFilter().notNull(),
+    /** Types d'événements ou événements retenus, selon le mode (vide pour « tous »). */
+    filterIds: uuid().array().notNull().default(sql`'{}'::uuid[]`),
+    isActive: boolean().notNull().default(true),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (t) => [unique().on(t.organizationId, t.slug)],
 );

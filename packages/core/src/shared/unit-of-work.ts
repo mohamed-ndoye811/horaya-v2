@@ -4,6 +4,7 @@ import type {
   CustomerRepository,
   ReferenceCounter,
 } from "../bookings/ports";
+import type { CalendarLinkRepository } from "../calendar-links/ports";
 import type { EventRepository, EventTypeRepository } from "../events/ports";
 import type { InventoryRepository } from "../inventory/ports";
 import type { PaymentRepository } from "../payments/ports";
@@ -23,6 +24,7 @@ export interface Repositories {
   inventory: InventoryRepository;
   notifications: NotificationPreferenceRepository;
   payments: PaymentRepository;
+  calendarLinks: CalendarLinkRepository;
 }
 
 /** Exécute un travail dans une transaction : tout est validé, ou rien. */

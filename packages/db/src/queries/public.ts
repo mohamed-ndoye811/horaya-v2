@@ -1,9 +1,17 @@
-import type { BookingRules, CustomFieldDefinition, PaymentMode } from "@horaya/core";
+import {
+  type BookingRules,
+  type CalendarLink,
+  type CustomFieldDefinition,
+  calendarLinkAllows,
+  type EventVisibility,
+  type PaymentMode,
+} from "@horaya/core";
 import { and, asc, eq, gte, sql } from "drizzle-orm";
 import type { Executor } from "../client";
 import {
   booking,
   bookingParticipant,
+  calendarLink,
   customer,
   event,
   eventSeries,
@@ -11,6 +19,7 @@ import {
   organization,
   tenantSettings,
 } from "../schema";
+import { calendarLinkCondition } from "./calendar-links";
 
 /**
  * Lectures des pages publiques (horaya.app/<espace>) : seulement ce qu'un visiteur peut voir,
@@ -72,6 +81,7 @@ const publicEventColumns = {
   typeName: eventType.name,
   typeColor: eventType.color,
   bookingRules: eventType.bookingRules,
+  visibility: event.visibility,
   seatsHeld,
 };
 
@@ -96,6 +106,7 @@ export interface PublicEventRow {
   typeName: string;
   typeColor: string;
   bookingRules: BookingRules;
+  visibility: EventVisibility;
   seatsHeld: number;
 }
 
@@ -121,8 +132,16 @@ export async function listPublicEvents(
   return rows as PublicEventRow[];
 }
 
-/** Écran 10 : un événement publié et public, par son adresse. */
-export async function getPublicEvent(db: Executor, organizationId: string, slug: string) {
+/**
+ * Écran 10 : un événement publié, par son adresse. Public, ou « sur invitation » quand
+ * le visiteur arrive par un lien calendrier actif qui le contient.
+ */
+export async function getPublicEvent(
+  db: Executor,
+  organizationId: string,
+  slug: string,
+  link: CalendarLink | null = null,
+) {
   const [row] = await db
     .select({
       ...publicEventColumns,
@@ -132,8 +151,18 @@ export async function getPublicEvent(db: Executor, organizationId: string, slug:
     .from(event)
     .innerJoin(eventType, eq(eventType.id, event.eventTypeId))
     .leftJoin(eventSeries, eq(eventSeries.id, event.seriesId))
-    .where(and(isPublic(organizationId), eq(event.slug, slug)));
-  return (row ?? null) as
+    .where(
+      and(
+        eq(event.organizationId, organizationId),
+        eq(event.status, "published"),
+        eq(event.slug, slug),
+      ),
+    );
+  const visible =
+    row &&
+    (row.visibility === "public" ||
+      (link !== null && calendarLinkAllows(link, { id: row.id, eventTypeId: row.typeId })));
+  return (visible ? row : null) as
     | (PublicEventRow & { customFields: CustomFieldDefinition[]; seriesRule: string | null })
     | null;
 }
@@ -164,6 +193,7 @@ export async function getManagedBooking(db: Executor, organizationId: string, to
       eventStartsAt: event.startsAt,
       eventEndsAt: event.endsAt,
       eventStatus: event.status,
+      eventVisibility: event.visibility,
       locationName: event.locationName,
       locationAddress: event.locationAddress,
       onlineUrl: event.onlineUrl,
@@ -184,3 +214,45 @@ export async function getManagedBooking(db: Executor, organizationId: string, to
   return { ...row, participants };
 }
 export type ManagedBooking = NonNullable<Awaited<ReturnType<typeof getManagedBooking>>>;
+
+/** Lien calendrier actif d'un espace, par son adresse (null s'il est désactivé ou inconnu). */
+export async function getPublicCalendarLink(
+  db: Executor,
+  organizationId: string,
+  slug: string,
+): Promise<CalendarLink | null> {
+  const [row] = await db
+    .select()
+    .from(calendarLink)
+    .where(
+      and(
+        eq(calendarLink.organizationId, organizationId),
+        eq(calendarLink.slug, slug),
+        eq(calendarLink.isActive, true),
+      ),
+    );
+  return (row as CalendarLink | undefined) ?? null;
+}
+
+/** Événements à venir d'un lien calendrier, « sur invitation » compris. */
+export async function listCalendarLinkEvents(
+  db: Executor,
+  link: CalendarLink,
+  now: Date,
+): Promise<PublicEventRow[]> {
+  if (!link.isActive) return [];
+  const rows = await db
+    .select(publicEventColumns)
+    .from(event)
+    .innerJoin(eventType, eq(eventType.id, event.eventTypeId))
+    .where(
+      and(
+        eq(event.organizationId, link.organizationId),
+        eq(event.status, "published"),
+        gte(event.startsAt, now),
+        calendarLinkCondition(link),
+      ),
+    )
+    .orderBy(asc(event.startsAt));
+  return rows as PublicEventRow[];
+}

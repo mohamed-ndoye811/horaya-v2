@@ -93,6 +93,9 @@ export default async function EventsPage({ searchParams }: PageProps<"/app/evene
         subtitle={`${counts.all} événement${counts.all > 1 ? "s" : ""} · ${counts.published} à venir · ${counts.draft} brouillon${counts.draft > 1 ? "s" : ""}`}
         actions={
           <>
+            <ButtonLink href="/app/evenements/liens" variant="secondary">
+              Liens calendrier
+            </ButtonLink>
             <ButtonLink href="/app/evenements/types" variant="secondary">
               Types d'événements
             </ButtonLink>

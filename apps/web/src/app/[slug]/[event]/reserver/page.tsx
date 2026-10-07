@@ -9,9 +9,9 @@ import { cn } from "@/lib/cn";
 import { displayFontClass } from "@/lib/fonts";
 import { formatEventRange, formatMoney } from "@/lib/format";
 import { bookingState, cancellationPolicy, paymentNote } from "@/lib/public-booking";
-import { param } from "@/lib/search-params";
+import { param, withParams } from "@/lib/search-params";
 import { db } from "@/server/db";
-import { getWorkspaceBySlug, workspacePaymentChannel } from "@/server/public";
+import { getCalendarLink, getWorkspaceBySlug, workspacePaymentChannel } from "@/server/public";
 import { BookingForm } from "./booking-form";
 
 export const metadata: Metadata = { title: "Réserver tes places", robots: { index: false } };
@@ -22,22 +22,27 @@ export default async function BookEventPage({
   searchParams,
 }: PageProps<"/[slug]/[event]/reserver">) {
   const { slug, event: eventSlug } = await params;
+  const query = await searchParams;
   const workspace = await getWorkspaceBySlug(slug);
   if (!workspace) notFound();
-  const event = await getPublicEvent(db, workspace.id, eventSlug);
+  const link = await getCalendarLink(workspace.id, param(query.lien));
+  const event = await getPublicEvent(db, workspace.id, eventSlug, link);
   if (!event) {
     return (
       <NotFoundScreen
         wordmark={false}
         title="Cet événement a quitté l'agenda."
-        primary={{ label: "Voir les événements à venir", href: `/${slug}` }}
+        primary={{
+          label: "Voir les événements à venir",
+          href: link ? `/${slug}/calendrier/${link.slug}` : `/${slug}`,
+        }}
       />
     );
   }
   const state = bookingState(event, new Date());
-  const eventHref = `/${slug}/${eventSlug}`;
+  const eventHref = withParams(`/${slug}/${eventSlug}`, { lien: link?.slug });
   if (state.kind === "full" || state.kind === "closed") redirect(eventHref);
-  const requested = Number(param((await searchParams).places) ?? 1);
+  const requested = Number(param(query.places) ?? 1);
   const seats = Number.isInteger(requested) ? Math.min(Math.max(requested, 1), state.maxSeats) : 1;
   const total = event.priceCents * seats;
   const policy =
@@ -115,6 +120,7 @@ export default async function BookEventPage({
       <BookingForm
         slug={slug}
         eventSlug={eventSlug}
+        linkSlug={link?.slug ?? null}
         seats={seats}
         customFields={event.customFields}
         workspaceName={workspace.name}

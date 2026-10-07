@@ -106,11 +106,20 @@ export async function archiveEventType(
   });
 }
 
+/** Pages publiques d'un espace dont l'adresse ne peut pas servir à un événement. */
+const RESERVED_EVENT_SLUGS: ReadonlySet<string> = new Set([
+  "calendrier",
+  "mentions-legales",
+  "mes-reservations",
+  "reservation",
+]);
+
 /** Adresse unique dans l'espace : « seminaire-annuel », puis « seminaire-annuel-2 »… */
 async function uniqueSlug(repositories: Repositories, organizationId: string, base: string) {
   const root = base || "evenement";
   for (let attempt = 1; attempt <= 50; attempt++) {
     const slug = attempt === 1 ? root : `${root}-${attempt}`;
+    if (RESERVED_EVENT_SLUGS.has(slug)) continue;
     if (!(await repositories.events.slugExists(organizationId, slug))) return slug;
   }
   return `${root}-${Date.now().toString(36)}`;

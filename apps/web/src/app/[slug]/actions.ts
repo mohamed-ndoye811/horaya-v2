@@ -16,7 +16,7 @@ import { db } from "@/server/db";
 import { type FormState, toFormState } from "@/server/form-state";
 import { absoluteUrl } from "@/server/mailer";
 import { paymentDeps } from "@/server/payments";
-import { getWorkspaceBySlug, workspacePaymentChannel } from "@/server/public";
+import { getCalendarLink, getWorkspaceBySlug, workspacePaymentChannel } from "@/server/public";
 import { clientIp, rateLimited } from "@/server/rate-limit";
 import { deps } from "@/server/services";
 
@@ -26,12 +26,14 @@ const text = (form: FormData, key: string) => String(form.get(key) ?? "").trim()
 export async function createPublicBookingAction(
   slug: string,
   eventSlug: string,
+  linkSlug: string | null,
   seats: number,
   _previous: FormState,
   form: FormData,
 ): Promise<FormState> {
   const workspace = await getWorkspaceBySlug(slug);
-  const event = workspace ? await getPublicEvent(db, workspace.id, eventSlug) : null;
+  const link = workspace ? await getCalendarLink(workspace.id, linkSlug ?? undefined) : null;
+  const event = workspace ? await getPublicEvent(db, workspace.id, eventSlug, link) : null;
   if (!workspace || !event) return { error: "Cet événement n'est plus disponible." };
   const blocked = await rateLimited(`booking:ip:${await clientIp()}`, 20, 3600);
   if (blocked) return { error: blocked };
@@ -92,6 +94,8 @@ export async function createPublicBookingAction(
           email: participant.email || null,
         })),
         customerMessage: text(form, "customerMessage") || null,
+        // Le core revérifie que le lien est actif et contient l'événement.
+        calendarLinkSlug: link?.slug ?? null,
       },
     );
     manageToken = created.manageToken;

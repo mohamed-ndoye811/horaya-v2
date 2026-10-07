@@ -175,7 +175,7 @@ export default async function ManagedBookingPage({
             )}
           </div>
           <Fact label="Quoi">
-            {booking.eventSlug ? (
+            {booking.eventSlug && booking.eventVisibility === "public" ? (
               <Link href={`/${slug}/${booking.eventSlug}`} className="hover:underline">
                 {title}
               </Link>

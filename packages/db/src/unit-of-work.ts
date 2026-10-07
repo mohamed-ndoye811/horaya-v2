@@ -7,6 +7,7 @@ import {
 } from "@horaya/core";
 import type { Db, Executor } from "./client";
 import { bookingRepository } from "./repositories/bookings";
+import { calendarLinkRepository } from "./repositories/calendar-links";
 import { eventRepository, eventTypeRepository } from "./repositories/events";
 import { inventoryRepository } from "./repositories/inventory";
 import { paymentRepository } from "./repositories/payments";
@@ -30,6 +31,7 @@ export function repositoriesFor(db: Executor): Repositories {
     inventory: inventoryRepository(db),
     notifications: notificationPreferenceRepository(db),
     payments: paymentRepository(db),
+    calendarLinks: calendarLinkRepository(db),
   };
 }
 

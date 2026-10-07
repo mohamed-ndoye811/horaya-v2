@@ -6,6 +6,7 @@ import {
   BOOKING_PAYMENT_STATUSES,
   BOOKING_SOURCES,
   BOOKING_STATUSES,
+  CALENDAR_LINK_FILTERS,
   EVENT_STATUSES,
   EVENT_VISIBILITIES,
   ITEM_UNIT_STATUSES,
@@ -29,3 +30,4 @@ export const paymentRecordStatus = pgEnum("payment_record_status", PAYMENT_RECOR
 export const itemUnitStatus = pgEnum("item_unit_status", ITEM_UNIT_STATUSES);
 export const allocationKind = pgEnum("allocation_kind", ALLOCATION_KINDS);
 export const actorType = pgEnum("actor_type", ACTOR_TYPES);
+export const calendarLinkFilter = pgEnum("calendar_link_filter", CALENDAR_LINK_FILTERS);
