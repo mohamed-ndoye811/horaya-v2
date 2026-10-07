@@ -8,8 +8,7 @@ type Variant = "primary" | "secondary" | "inverse" | "inverse-outline";
 
 const base =
   "inline-flex h-[54px] items-center justify-center gap-3 px-6 text-base transition-colors " +
-  "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink " +
-  "disabled:cursor-not-allowed";
+  "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink";
 
 const variants: Record<Variant, string> = {
   primary: "bg-ink font-extrabold text-on-ink hover:bg-info disabled:bg-ink-subtle",

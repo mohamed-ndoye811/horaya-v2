@@ -99,11 +99,11 @@ interface CheckboxProps extends Omit<ComponentProps<"input">, "type"> {
 /** Case à cocher carrée (pas d'arrondis dans le système Horaya). */
 export function Checkbox({ label, className, ...props }: CheckboxProps) {
   return (
-    <label className={cn("flex cursor-pointer items-start gap-2.5", className)}>
+    <label className={cn("flex items-start gap-2.5", className)}>
       <span className="relative mt-px flex size-5 shrink-0">
         <input
           type="checkbox"
-          className="peer size-5 cursor-pointer appearance-none border-2 border-ink-subtle bg-surface checked:border-ink checked:bg-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
+          className="peer size-5 appearance-none border-2 border-ink-subtle bg-surface checked:border-ink checked:bg-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
           {...props}
         />
         <svg

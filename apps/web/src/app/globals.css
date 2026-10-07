@@ -68,6 +68,26 @@
   text-transform: uppercase;
 }
 
+/*
+ * Tout ce qui est cliquable affiche la main (Tailwind v4 l'a retiré des boutons).
+ * Les éléments désactivés affichent l'interdiction.
+ */
+@layer base {
+  button,
+  [role="button"],
+  select,
+  summary,
+  label:has(input:not(:disabled)),
+  input:is([type="checkbox"], [type="radio"], [type="submit"], [type="button"], [type="file"]) {
+    cursor: pointer;
+  }
+
+  :is(button, select, input, label:has(input)):disabled,
+  label:has(input:disabled) {
+    cursor: not-allowed;
+  }
+}
+
 body {
   background-color: var(--color-bg);
   color: var(--color-ink);

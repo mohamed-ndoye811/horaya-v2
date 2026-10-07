@@ -155,7 +155,7 @@ export function WorkspaceOnboarding() {
                 <label
                   key={color}
                   className={cn(
-                    "flex size-10 cursor-pointer items-center justify-center border-2 has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-ink",
+                    "flex size-10 items-center justify-center border-2 has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-ink",
                     selected ? "border-ink" : "border-transparent",
                   )}
                 >
