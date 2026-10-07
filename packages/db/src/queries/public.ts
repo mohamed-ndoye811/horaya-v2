@@ -38,6 +38,11 @@ export async function getPublicWorkspace(db: Executor, slug: string) {
       onlinePayments: sql<boolean>`coalesce(${tenantSettings.stripeAccountStatus} = 'active', false)`,
       /** Lien de paiement externe par défaut de l'espace. */
       paymentLinkUrl: tenantSettings.paymentLinkUrl,
+      contactEmail: tenantSettings.contactEmail,
+      contactPhone: tenantSettings.contactPhone,
+      address: tenantSettings.address,
+      legalName: tenantSettings.legalName,
+      siret: tenantSettings.siret,
     })
     .from(organization)
     .leftJoin(tenantSettings, eq(tenantSettings.organizationId, organization.id))

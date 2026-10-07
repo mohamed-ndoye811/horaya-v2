@@ -1,10 +1,18 @@
-import { listTeam } from "@horaya/db";
+import { getJoinLink, listTeam } from "@horaya/db";
 import type { Metadata } from "next";
 import { SettingsShell } from "@/components/app/settings-shell";
+import { formatHour } from "@/lib/format";
 import { canManageTeam } from "@/lib/roles";
 import { db } from "@/server/db";
+import { env } from "@/server/env";
 import { getWorkspaceContext } from "@/server/workspace";
-import { InviteMemberButton, type TeamRow, TeamTable } from "./team";
+import {
+  InviteMemberButton,
+  JoinLinkButton,
+  type JoinLinkView,
+  type TeamRow,
+  TeamTable,
+} from "./team";
 
 export const metadata: Metadata = { title: "Membres & rôles · Horaya" };
 
@@ -37,10 +45,25 @@ function since(date: Date, now: Date): string {
 
 /** Écran 25 : membres de l'espace, invitations et rôles. */
 export default async function MembersSettingsPage() {
-  const { workspace, actor } = await getWorkspaceContext();
+  const { workspace, actor, timeZone } = await getWorkspaceContext();
   const now = new Date();
-  const { members, invitations } = await listTeam(db, workspace.id, now);
   const manageable = actor.type === "member" && canManageTeam(actor.role);
+  const [{ members, invitations }, joinLink] = await Promise.all([
+    listTeam(db, workspace.id, now),
+    manageable ? getJoinLink(db, workspace.id) : null,
+  ]);
+  const link: JoinLinkView | null =
+    joinLink && joinLink.expiresAt > now && joinLink.role !== "owner"
+      ? {
+          url: new URL(`/rejoindre/${joinLink.token}`, env.BETTER_AUTH_URL).toString(),
+          role: joinLink.role,
+          validUntil: `jusqu'au ${new Intl.DateTimeFormat("fr-FR", {
+            day: "numeric",
+            month: "long",
+            timeZone,
+          }).format(joinLink.expiresAt)}, ${formatHour(joinLink.expiresAt, timeZone)}`,
+        }
+      : null;
   const myMemberId = actor.type === "member" ? actor.memberId : null;
 
   const rows: TeamRow[] = [
@@ -73,7 +96,14 @@ export default async function MembersSettingsPage() {
       section="membres"
       breadcrumb="Membres & rôles"
       subtitle={`${plural(members.length, "membre")} actif${members.length > 1 ? "s" : ""} · ${plural(invitations.length, "invitation")} en attente`}
-      actions={manageable ? <InviteMemberButton /> : undefined}
+      actions={
+        manageable ? (
+          <>
+            <JoinLinkButton link={link} />
+            <InviteMemberButton />
+          </>
+        ) : undefined
+      }
     >
       <div className="flex flex-col gap-8">
         <TeamTable rows={rows} manageable={manageable} />

@@ -3,6 +3,7 @@
 // et ses cas d'usage ; packages/db implémente les ports.
 export * from "./accounts/password";
 export * from "./bookings/capacity";
+export * from "./bookings/check-in";
 export * from "./bookings/model";
 export * from "./bookings/ports";
 export * from "./bookings/pricing";
@@ -21,6 +22,7 @@ export * from "./events/schemas";
 export * from "./events/types";
 export * from "./events/use-cases";
 export * from "./inventory/availability";
+export * from "./inventory/csv-import";
 export * from "./inventory/model";
 export * from "./inventory/ports";
 export * from "./inventory/pricing";

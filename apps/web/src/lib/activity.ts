@@ -64,6 +64,10 @@ export function describeBookingActivity(
         title: `${entry.data?.manual ? "Remboursement noté" : "Remboursé"}${by(entry)} · ${formatMoney(Number(entry.data?.amountCents ?? 0))}`,
         tone: "warning",
       };
+    case "booking.checked_in":
+      return { title: `Arrivée pointée${by(entry)}`, tone: "success" };
+    case "booking.check_in_undone":
+      return { title: `Pointage annulé${by(entry)}`, tone: "ink" };
     default:
       return { title: entry.action, tone: "ink" };
   }

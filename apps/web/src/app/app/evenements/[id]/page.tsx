@@ -1,7 +1,8 @@
+import { isCheckInOpen } from "@horaya/core";
 import { getEventDetail, listEventItems, listItemsAvailableBetween } from "@horaya/db";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { BookingRowActions } from "@/components/app/booking-actions";
+import { BookingRowActions, CheckInToggle } from "@/components/app/booking-actions";
 import { PageHeader } from "@/components/app/page-header";
 import { CategorySwatch } from "@/components/ui/avatar";
 import { StatusBadge } from "@/components/ui/badge";
@@ -15,6 +16,7 @@ import { BOOKING_STATUS_BADGE, eventStatusBadge } from "@/components/ui/status";
 import { Tabs } from "@/components/ui/tabs";
 import {
   formatEventRange,
+  formatHour,
   formatMoney,
   formatShortDateTime,
   PAYMENT_MODE_LABELS,
@@ -49,6 +51,20 @@ export default async function EventDetailPage({
   const pending = bookings.filter((entry) => entry.status === "pending").length;
   const badge = eventStatusBadge(event.status, event);
   const remaining = event.capacity === null ? null : Math.max(0, event.capacity - event.seatsHeld);
+
+  // Check-in : à partir de la veille, la fiche sert à pointer les arrivées.
+  const now = new Date();
+  const checkIn = event.status === "published" && isCheckInOpen(event, now);
+  const confirmed = bookings.filter((entry) => entry.status === "confirmed");
+  const arrivals = confirmed.filter((entry) => entry.checkedInAt);
+  const seatsArrived = arrivals.reduce((total, entry) => total + entry.seats, 0);
+  const seatsConfirmed = confirmed.reduce((total, entry) => total + entry.seats, 0);
+  const firstArrival = arrivals.reduce<Date | null>(
+    (first, entry) =>
+      entry.checkedInAt && (!first || entry.checkedInAt < first) ? entry.checkedInAt : first,
+    null,
+  );
+  const clock = new Intl.DateTimeFormat("fr-FR", { hour: "2-digit", minute: "2-digit", timeZone });
 
   return (
     <>
@@ -111,18 +127,32 @@ export default async function EventDetailPage({
           value={waitlisted}
           footer={waitlisted > 0 ? "Prévenus si une place se libère" : "Personne en attente"}
         />
-        <Stat
-          label={pending > 0 ? "À valider" : "Places restantes"}
-          value={pending > 0 ? pending : remaining === null ? "∞" : remaining}
-          highlight={pending > 0}
-          footer={
-            pending > 0
-              ? "Demandes en attente de ta réponse"
-              : event.requiresApproval
-                ? "Validation manuelle"
-                : "Réservation automatique"
-          }
-        />
+        {checkIn ? (
+          <Stat
+            label="Taux de présence"
+            value={`${seatsArrived} / ${seatsConfirmed}`}
+            footer={
+              !firstArrival
+                ? "Pointe les arrivées dans la liste"
+                : event.endsAt > now
+                  ? `Check-in en cours depuis ${formatHour(firstArrival, timeZone)}`
+                  : `${seatsConfirmed > 0 ? Math.round((seatsArrived / seatsConfirmed) * 100) : 0} % de présence`
+            }
+          />
+        ) : (
+          <Stat
+            label={pending > 0 ? "À valider" : "Places restantes"}
+            value={pending > 0 ? pending : remaining === null ? "∞" : remaining}
+            highlight={pending > 0}
+            footer={
+              pending > 0
+                ? "Demandes en attente de ta réponse"
+                : event.requiresApproval
+                  ? "Validation manuelle"
+                  : "Réservation automatique"
+            }
+          />
+        )}
       </StatGrid>
 
       <div className="border-b-2 border-ink px-4 sm:px-10">
@@ -207,6 +237,25 @@ export default async function EventDetailPage({
                   />
                 ),
               },
+              ...(checkIn
+                ? [
+                    {
+                      key: "check-in",
+                      header: "Check-in",
+                      width: 150,
+                      cell: (row: (typeof bookings)[number]) =>
+                        row.status === "confirmed" ? (
+                          <CheckInToggle
+                            bookingId={row.id}
+                            customerName={row.customerName}
+                            arrivedAt={row.checkedInAt ? clock.format(row.checkedInAt) : null}
+                          />
+                        ) : (
+                          <span className="text-[13px] font-semibold text-ink-muted">—</span>
+                        ),
+                    },
+                  ]
+                : []),
               {
                 key: "status",
                 header: "Statut",

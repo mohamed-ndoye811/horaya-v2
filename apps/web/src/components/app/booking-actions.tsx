@@ -2,9 +2,10 @@
 
 import type { BookingStatus } from "@horaya/core";
 import { useRouter } from "next/navigation";
-import { useState, useTransition } from "react";
+import { useOptimistic, useState, useTransition } from "react";
 import {
   cancelBookingAction,
+  checkInAction,
   confirmBookingAction,
   markPaidAction,
   recordRefundAction,
@@ -18,6 +19,7 @@ import { AffixInput, Field, textareaClasses } from "@/components/ui/field";
 import { FormAlert } from "@/components/ui/form-alert";
 import { Check, CloseIcon } from "@/components/ui/icons";
 import { ActionMenu } from "@/components/ui/menu";
+import { cn } from "@/lib/cn";
 
 const REFUSAL_REASONS = [
   "Événement complet",
@@ -229,6 +231,58 @@ export function BookingRowActions({
         />
       )}
       {!dialog && <Toast message={message} />}
+    </>
+  );
+}
+
+/**
+ * Case de check-in d'une ligne de participants (écran 15) : un clic pointe l'arrivée,
+ * un second l'annule. L'affichage suit le clic sans attendre le serveur.
+ */
+export function CheckInToggle({
+  bookingId,
+  customerName,
+  arrivedAt,
+}: {
+  bookingId: string;
+  customerName: string;
+  /** Heure d'arrivée déjà formatée (« 13:52 »), ou null. */
+  arrivedAt: string | null;
+}) {
+  const { pending, message, run } = useBookingAction();
+  const [present, setPresent] = useOptimistic(arrivedAt !== null);
+  const toggle = () =>
+    run(async () => {
+      setPresent(!present);
+      return checkInAction(bookingId, !present);
+    });
+  return (
+    <>
+      <label className="flex items-center gap-2 text-[13px] leading-4">
+        <input
+          type="checkbox"
+          checked={present}
+          disabled={pending}
+          onChange={toggle}
+          aria-label={`Arrivée de ${customerName}`}
+          className="peer sr-only"
+        />
+        <span
+          aria-hidden
+          className={cn(
+            "size-5 shrink-0 border-2 peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-ink",
+            present ? "border-success bg-success" : "border-ink bg-transparent",
+          )}
+        />
+        {present ? (
+          <span className="font-bold text-success">
+            {arrivedAt ? `Arrivé·e ${arrivedAt}` : "Arrivé·e"}
+          </span>
+        ) : (
+          <span className="font-semibold text-ink-muted">Pas arrivé·e</span>
+        )}
+      </label>
+      {message?.tone === "danger" && <Toast message={message} />}
     </>
   );
 }

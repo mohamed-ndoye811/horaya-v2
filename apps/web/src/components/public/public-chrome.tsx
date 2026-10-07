@@ -82,11 +82,38 @@ export function PublicNav({
   );
 }
 
-export function PublicFooter({ name }: { name: string }) {
+/** Pied des pages publiques : « © année Espace · Mentions légales · Contact » (écran 18). */
+export function PublicFooter({
+  workspace,
+}: {
+  workspace: {
+    name: string;
+    slug: string;
+    contactEmail: string | null;
+    contactPhone: string | null;
+  };
+}) {
+  const contact = workspace.contactEmail
+    ? `mailto:${workspace.contactEmail}`
+    : workspace.contactPhone
+      ? `tel:${workspace.contactPhone.replace(/[^+\d]/g, "")}`
+      : null;
+  const link = "hover:text-ink hover:underline underline-offset-[3px]";
   return (
     <footer className="flex flex-col-reverse gap-3 border-t-2 border-ink px-5 py-6 sm:flex-row sm:items-center sm:justify-between sm:px-16">
       <p className="text-sm font-semibold text-ink-muted">
-        © {new Date().getFullYear()} {name}
+        © {new Date().getFullYear()} {workspace.name} ·{" "}
+        <Link href={`/${workspace.slug}/mentions-legales`} className={link}>
+          Mentions légales
+        </Link>
+        {contact && (
+          <>
+            {" · "}
+            <a href={contact} className={link}>
+              Contact
+            </a>
+          </>
+        )}
       </p>
       <Link href="/" className="flex items-center gap-2 text-ink">
         <span className="font-mono text-[11px] font-semibold uppercase tracking-[0.5px] text-ink-muted">

@@ -95,6 +95,16 @@ export function bookingRepository(db: Executor): BookingRepository {
         .where(and(eq(booking.organizationId, organizationId), eq(booking.id, bookingId)));
     },
 
+    async setCheckedIn(organizationId, bookingId, at) {
+      const [updated] = await db
+        .update(booking)
+        .set({ checkedInAt: at, updatedAt: new Date() })
+        .where(and(eq(booking.organizationId, organizationId), eq(booking.id, bookingId)))
+        .returning(columns);
+      if (!updated) throw new Error(`Réservation introuvable : ${bookingId}`);
+      return updated as Booking;
+    },
+
     async setManageTokenHash(organizationId, bookingId, tokenHash) {
       await db
         .update(booking)

@@ -11,11 +11,13 @@ import { Field, inputClasses } from "@/components/ui/field";
 import { FormAlert } from "@/components/ui/form-alert";
 import { ActionMenu, type MenuItem } from "@/components/ui/menu";
 import { Select } from "@/components/ui/select";
-import { ASSIGNABLE_ROLES, type AssignableRole, ROLE_LABELS } from "@/lib/roles";
+import { ASSIGNABLE_ROLES, type AssignableRole, JOIN_LINK_ROLES, ROLE_LABELS } from "@/lib/roles";
 import { useFormAction } from "@/lib/use-form-action";
 import type { FormState } from "@/server/form-state";
 import {
   cancelInvitationAction,
+  createJoinLinkAction,
+  disableJoinLinkAction,
   inviteMemberAction,
   removeMemberAction,
   resendInvitationAction,
@@ -215,6 +217,121 @@ export function TeamTable({ rows, manageable }: { rows: TeamRow[]; manageable: b
       )}
       <Toast message={message} />
     </>
+  );
+}
+
+/** Lien d'invitation général tel que l'écran l'affiche (null : aucun lien actif). */
+export interface JoinLinkView {
+  url: string;
+  role: AssignableRole;
+  /** « jusqu'au 15 octobre, 14h ». */
+  validUntil: string;
+}
+
+/**
+ * « Copier le lien d'invitation » (écran 25) : un lien à partager, valable 7 jours, avec un
+ * rôle limité (lecteur ou éditeur). Le régénérer coupe l'ancien.
+ */
+export function JoinLinkButton({ link }: { link: JoinLinkView | null }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <>
+      <Button variant="secondary" onClick={() => setOpen(true)}>
+        Copier le lien d'invitation
+      </Button>
+      {open && <JoinLinkDialog link={link} onClose={() => setOpen(false)} />}
+    </>
+  );
+}
+
+function JoinLinkDialog({ link, onClose }: { link: JoinLinkView | null; onClose: () => void }) {
+  const { pending, message, run, setMessage } = useTeamAction();
+  const [role, setRole] = useState<AssignableRole>(link?.role ?? "viewer");
+  const copy = (url: string) =>
+    navigator.clipboard
+      .writeText(url)
+      .then(() => setMessage({ tone: "success", text: "Lien copié." }))
+      .catch(() => setMessage({ tone: "danger", text: "Copie impossible : sélectionne le lien." }));
+
+  return (
+    <Dialog
+      open
+      onClose={onClose}
+      title="Lien d'invitation"
+      description="Toute personne qui a ce lien peut rejoindre l'espace avec le rôle choisi, pendant 7 jours. Ne le partage qu'avec ton équipe."
+      footer={
+        link ? (
+          <>
+            <Button variant="danger" disabled={pending} onClick={() => run(disableJoinLinkAction)}>
+              Désactiver
+            </Button>
+            <Button
+              variant="secondary"
+              pending={pending}
+              onClick={() => run(() => createJoinLinkAction(role))}
+            >
+              Régénérer
+            </Button>
+          </>
+        ) : (
+          <>
+            <Button variant="secondary" onClick={onClose}>
+              Fermer
+            </Button>
+            <Button pending={pending} onClick={() => run(() => createJoinLinkAction(role))}>
+              Créer le lien
+            </Button>
+          </>
+        )
+      }
+    >
+      <div className="flex flex-col gap-4">
+        {message && <FormAlert tone={message.tone}>{message.text}</FormAlert>}
+        <Field
+          label="Rôle des personnes qui rejoignent"
+          hint={
+            link && role !== link.role ? (
+              <p className="text-[13px] font-medium text-ink-muted">
+                Régénère le lien pour appliquer ce rôle.
+              </p>
+            ) : undefined
+          }
+        >
+          {(field) => (
+            <Select
+              {...field}
+              value={role}
+              onChange={(event) => setRole(event.target.value as AssignableRole)}
+            >
+              {JOIN_LINK_ROLES.map((entry) => (
+                <option key={entry} value={entry}>
+                  {ROLE_LABELS[entry]}
+                </option>
+              ))}
+            </Select>
+          )}
+        </Field>
+        {link && (
+          <div className="flex flex-col gap-2">
+            <div className="flex gap-2">
+              <input
+                readOnly
+                aria-label="Lien d'invitation"
+                value={link.url}
+                onFocus={(event) => event.currentTarget.select()}
+                className={inputClasses()}
+              />
+              <Button className="shrink-0" onClick={() => copy(link.url)}>
+                Copier
+              </Button>
+            </div>
+            <p className="text-[13px] font-medium text-ink-muted">
+              {ROLE_LABELS[link.role]} · valable {link.validUntil}
+            </p>
+          </div>
+        )}
+      </div>
+    </Dialog>
   );
 }
 

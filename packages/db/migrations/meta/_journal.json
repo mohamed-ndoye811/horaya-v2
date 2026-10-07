@@ -50,6 +50,20 @@
       "when": 1791401856614,
       "tag": "0006_rate_limit",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1791411850098,
+      "tag": "0007_booking_check_in",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1791412454265,
+      "tag": "0008_join_link_and_legal_info",
+      "breakpoints": true
     }
   ]
 }

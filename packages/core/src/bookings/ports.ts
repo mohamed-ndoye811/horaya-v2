@@ -9,6 +9,7 @@ export type NewBooking = Omit<
   | "createdAt"
   | "updatedAt"
   | "cancelledAt"
+  | "checkedInAt"
   | "refusalReason"
   | "paymentStatus"
   | "rentalStartsAt"
@@ -48,6 +49,8 @@ export interface BookingRepository {
     bookingId: string,
     status: BookingPaymentStatus,
   ): Promise<void>;
+  /** Pointe l'arrivée (date) ou l'annule (null). */
+  setCheckedIn(organizationId: string, bookingId: string, at: Date | null): Promise<Booking>;
   /** Remplace le jeton du lien « Gérer ma réservation » (l'ancien lien cesse de marcher). */
   setManageTokenHash(organizationId: string, bookingId: string, tokenHash: string): Promise<void>;
 }

@@ -8,10 +8,14 @@ import {
 } from "@horaya/core";
 import { afterAll, beforeEach, describe, expect, it } from "vitest";
 import {
+  deleteJoinLink,
+  findUsableJoinLink,
   getInvitationSummary,
+  getJoinLink,
   getNotificationPreferences,
   getWorkspaceSettings,
   listTeam,
+  saveJoinLink,
 } from "../src/queries";
 import { invitation } from "../src/schema";
 import { createMember, createOrganization, db, testDeps } from "./helpers";
@@ -134,6 +138,54 @@ describe("équipe", () => {
       status: "pending",
       organizationName: "Cabinet Vidal",
       inviterName: "Mohamed Ndoye",
+    });
+  });
+});
+
+describe("lien d'invitation général", () => {
+  it("ne vaut que jusqu'à son expiration et se remplace en régénérant", async () => {
+    const now = new Date("2026-10-08T10:00:00Z");
+    await saveJoinLink(db, {
+      organizationId,
+      token: "ancien-jeton-0123456789",
+      role: "viewer",
+      expiresAt: new Date("2026-10-15T10:00:00Z"),
+      createdByMemberId: owner.type === "member" ? owner.memberId : null,
+    });
+    expect(await findUsableJoinLink(db, "ancien-jeton-0123456789", now)).toMatchObject({
+      organizationId,
+      role: "viewer",
+    });
+    expect(
+      await findUsableJoinLink(db, "ancien-jeton-0123456789", new Date("2026-10-16T00:00:00Z")),
+    ).toBeNull();
+
+    await saveJoinLink(db, {
+      organizationId,
+      token: "nouveau-jeton-0123456789",
+      role: "editor",
+      expiresAt: new Date("2026-10-15T10:00:00Z"),
+      createdByMemberId: null,
+    });
+    expect(await findUsableJoinLink(db, "ancien-jeton-0123456789", now)).toBeNull();
+    expect(await getJoinLink(db, organizationId)).toMatchObject({
+      token: "nouveau-jeton-0123456789",
+      role: "editor",
+    });
+
+    await deleteJoinLink(db, organizationId);
+    expect(await getJoinLink(db, organizationId)).toBeNull();
+  });
+
+  it("enregistre les coordonnées affichées sur la page publique", async () => {
+    await updateTenantSettings(deps, owner, {
+      contactEmail: "Contact@Cabinet-Vidal.fr",
+      siret: "123 456 789 00012",
+    });
+    expect(await getWorkspaceSettings(db, organizationId)).toMatchObject({
+      contactEmail: "contact@cabinet-vidal.fr",
+      siret: "12345678900012",
+      legalName: null,
     });
   });
 });

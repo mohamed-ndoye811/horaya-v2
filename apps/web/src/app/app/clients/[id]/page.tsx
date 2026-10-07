@@ -1,3 +1,4 @@
+import { attendanceOf, attendanceRate } from "@horaya/core";
 import { getCustomerDetail, listCustomerBookings } from "@horaya/db";
 import type { Metadata } from "next";
 import Link from "next/link";
@@ -9,7 +10,7 @@ import { DateBlock } from "@/components/ui/cells";
 import { Envelope, PlusIcon } from "@/components/ui/icons";
 import { Eyebrow, SectionHeading } from "@/components/ui/section";
 import { Stat, StatGrid } from "@/components/ui/stat";
-import { BOOKING_STATUS_BADGE } from "@/components/ui/status";
+import { ATTENDANCE_BADGE, BOOKING_STATUS_BADGE } from "@/components/ui/status";
 import { Tag } from "@/components/ui/tag";
 import { customerTags } from "@/lib/customer-tags";
 import { formatMoney, PAYMENT_MODE_LABELS } from "@/lib/format";
@@ -30,6 +31,15 @@ export default async function CustomerDetailPage({ params }: PageProps<"/app/cli
   ]);
   if (!detail) notFound();
   const { customer, notes } = detail;
+  const attendances = new Map(
+    bookings.map((entry) => [
+      entry.id,
+      entry.eventEndsAt
+        ? attendanceOf(entry, { endsAt: entry.eventEndsAt, checkInUsed: entry.checkInUsed }, now)
+        : null,
+    ]),
+  );
+  const presence = attendanceRate([...attendances.values()]);
   const name = `${customer.firstName} ${customer.lastName}`;
   const since = new Intl.DateTimeFormat("fr-FR", {
     month: "long",
@@ -83,7 +93,7 @@ export default async function CustomerDetailPage({ params }: PageProps<"/app/cli
       <StatGrid>
         <Stat label="Réservations" value={customer.bookings} />
         <Stat label="Total dépensé" value={formatMoney(customer.spentCents)} />
-        <Stat label="Annulations" value={customer.cancellations} />
+        <Stat label="Taux de présence" value={presence === null ? "—" : `${presence} %`} />
         <Stat
           label="Prochaine venue"
           value={customer.nextVisit ? shortDate(customer.nextVisit) : "—"}
@@ -157,7 +167,13 @@ export default async function CustomerDetailPage({ params }: PageProps<"/app/cli
           )}
           <ul>
             {bookings.map((entry) => {
-              const badge = BOOKING_STATUS_BADGE[entry.status];
+              const attendance = attendances.get(entry.id);
+              const badge =
+                attendance === "present"
+                  ? ATTENDANCE_BADGE.present
+                  : attendance === "absent"
+                    ? ATTENDANCE_BADGE.absent
+                    : BOOKING_STATUS_BADGE[entry.status];
               return (
                 <li
                   key={entry.id}

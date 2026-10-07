@@ -15,11 +15,12 @@ import { SearchInput } from "@/components/ui/search-input";
 import { SegmentedLinks } from "@/components/ui/segmented";
 import { Stat, StatGrid } from "@/components/ui/stat";
 import { cn } from "@/lib/cn";
-import { startOfDay, todayIn } from "@/lib/dates";
+import { addMonths, startOfDay, todayIn } from "@/lib/dates";
 import { formatDateTimeShort, formatMoney } from "@/lib/format";
 import { param, withParams } from "@/lib/search-params";
 import { db } from "@/server/db";
 import { getWorkspaceContext } from "@/server/workspace";
+import { ImportItemsButton } from "./import-items";
 
 export const metadata: Metadata = { title: "Matériel · Horaya" };
 
@@ -44,6 +45,12 @@ const MONTHS = [
   "décembre",
 ];
 
+/** Évolution en % par rapport au mois dernier à la même date (null sans point de comparaison). */
+function revenueTrend(current: number, previous: number): number | null {
+  if (previous === 0) return null;
+  return Math.round(((current - previous) / previous) * 100);
+}
+
 /** Écran 20 : inventaire du matériel. */
 export default async function InventoryPage({ searchParams }: PageProps<"/app/materiel">) {
   const { workspace, timeZone } = await getWorkspaceContext();
@@ -52,6 +59,7 @@ export default async function InventoryPage({ searchParams }: PageProps<"/app/ma
   const search = param(query.q);
   const now = new Date();
   const today = todayIn(timeZone, now);
+  const previousMonth = addMonths({ ...today, day: 1 }, -1);
 
   const [rows, all, stats] = await Promise.all([
     listItems(db, workspace.id, { tab, now, search }),
@@ -60,6 +68,7 @@ export default async function InventoryPage({ searchParams }: PageProps<"/app/ma
       now,
       dayEnd: startOfDay(addDays(today, 1), timeZone),
       monthStart: startOfDay({ ...today, day: 1 }, timeZone),
+      previousMonthStart: startOfDay(previousMonth, timeZone),
     }),
   ]);
   const counts: Record<ItemTab, number> = {
@@ -68,6 +77,7 @@ export default async function InventoryPage({ searchParams }: PageProps<"/app/ma
     out: all.filter((row) => row.availableNow < row.units - row.inMaintenanceNow).length,
     maintenance: all.filter((row) => row.inMaintenanceNow > 0).length,
   };
+  const trend = revenueTrend(stats.rentalRevenueCents, stats.previousRentalRevenueCents);
   const href = (overrides: Record<string, string | undefined>) =>
     withParams("/app/materiel", {
       filtre: tab === "all" ? undefined : tab,
@@ -82,9 +92,12 @@ export default async function InventoryPage({ searchParams }: PageProps<"/app/ma
         title="Matériel"
         subtitle={`${stats.items} article${stats.items > 1 ? "s" : ""} · ${stats.outNow} en location aujourd'hui · ${stats.maintenanceUnits} à réviser`}
         actions={
-          <ButtonLink href="/app/materiel/nouveau" icon={<PlusIcon />}>
-            Ajouter un article
-          </ButtonLink>
+          <>
+            <ImportItemsButton />
+            <ButtonLink href="/app/materiel/nouveau" icon={<PlusIcon />}>
+              Ajouter un article
+            </ButtonLink>
+          </>
         }
       />
       <StatGrid>
@@ -105,7 +118,12 @@ export default async function InventoryPage({ searchParams }: PageProps<"/app/ma
         <Stat
           label={`Revenus location · ${MONTHS[today.month - 1]}`}
           value={formatMoney(stats.rentalRevenueCents)}
-          footer="Locations confirmées"
+          footer={
+            trend === null
+              ? "Locations confirmées"
+              : `${trend >= 0 ? "▲ +" : "▼ −"}${Math.abs(trend)} % vs ${MONTHS[previousMonth.month - 1]}`
+          }
+          footerTone={trend === null ? "muted" : trend >= 0 ? "success" : "danger"}
         />
         <Stat
           label="À réviser"

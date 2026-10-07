@@ -28,7 +28,12 @@ export const tenantSettings = pgTable("tenant_settings", {
   /** Secteur d'activité (valeurs : TENANT_SECTORS du core). */
   sector: text(),
   description: text(),
+  /** Coordonnées et identité légale, affichées sur la page publique (contact, mentions légales). */
+  contactEmail: text(),
+  contactPhone: text(),
   address: text(),
+  legalName: text(),
+  siret: text(),
   timezone: text().notNull().default("Europe/Paris"),
   locale: text().notNull().default("fr"),
   currency: currency(),
@@ -112,6 +117,22 @@ export const activityLog = pgTable(
     index("activity_log_entity_idx").on(t.organizationId, t.entityType, t.entityId, t.createdAt),
   ],
 );
+
+/**
+ * Lien d'invitation général de l'espace (écran 25) : un seul à la fois, à durée limitée.
+ * Le jeton est gardé en clair pour que l'équipe puisse recopier le lien (comme les
+ * invitations par e-mail de Better Auth) ; le régénérer coupe l'ancien.
+ */
+export const joinLink = pgTable("join_link", {
+  organizationId: uuid()
+    .primaryKey()
+    .references(() => organization.id, { onDelete: "cascade" }),
+  token: text().notNull().unique(),
+  role: text().notNull(),
+  expiresAt: timestamp({ withTimezone: true }).notNull(),
+  createdByMemberId: uuid().references(() => member.id, { onDelete: "set null" }),
+  createdAt: createdAt(),
+});
 
 /**
  * Limitation de débit des actions publiques (demande de liens, réservations, renvoi d'e-mails) :

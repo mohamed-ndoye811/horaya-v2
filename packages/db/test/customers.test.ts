@@ -12,6 +12,7 @@ import {
   publishEvent,
   updateCustomer,
 } from "@horaya/core";
+import { eq } from "drizzle-orm";
 import { afterAll, beforeEach, describe, expect, it } from "vitest";
 import {
   countBookingsByTab,
@@ -23,6 +24,7 @@ import {
   listCustomerBookings,
   listCustomers,
 } from "../src/queries";
+import { booking } from "../src/schema";
 import {
   contact,
   createMember,
@@ -164,5 +166,14 @@ describe("réservations", () => {
     expect(detail?.eventSeatsHeld).toBe(3);
     const history = await listCustomerBookings(db, organizationId, camille.id);
     expect(history).toHaveLength(1);
+    expect(history[0]?.checkInUsed).toBe(false);
+  });
+
+  it("signale les événements dont l'équipe a fait le check-in", async () => {
+    const { confirmed, camille } = await seed();
+    await db.update(booking).set({ checkedInAt: new Date() }).where(eq(booking.id, confirmed.id));
+    const [entry] = await listCustomerBookings(db, organizationId, camille.id);
+    expect(entry?.checkInUsed).toBe(true);
+    expect(entry?.checkedInAt).toBeNull();
   });
 });

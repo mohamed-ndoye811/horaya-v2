@@ -1,11 +1,14 @@
 "use server";
 
+import { generateToken } from "@horaya/core";
+import { deleteJoinLink, saveJoinLink } from "@horaya/db";
 import { revalidatePath } from "next/cache";
 import { headers } from "next/headers";
 import { z } from "zod";
-import { ASSIGNABLE_ROLES, type AssignableRole } from "@/lib/roles";
+import { ASSIGNABLE_ROLES, type AssignableRole, canManageTeam, JOIN_LINK_ROLES } from "@/lib/roles";
 import { auth } from "@/server/auth";
 import { authApiFormState } from "@/server/auth-errors";
+import { db } from "@/server/db";
 import type { FormState } from "@/server/form-state";
 import { getWorkspaceContext } from "@/server/workspace";
 
@@ -90,4 +93,38 @@ export async function removeMemberAction(memberId: string): Promise<FormState> {
       }),
     "Membre retiré de l'espace.",
   );
+}
+
+/** Durée de validité du lien d'invitation général. */
+const JOIN_LINK_DAYS = 7;
+
+/** Le lien d'invitation se gère hors Better Auth : on vérifie le rôle ici. */
+async function teamManager() {
+  const { actor, workspace } = await getWorkspaceContext();
+  return actor.type === "member" && canManageTeam(actor.role) ? { actor, workspace } : null;
+}
+
+/** Crée le lien d'invitation, ou le régénère : l'ancien cesse aussitôt de marcher. */
+export async function createJoinLinkAction(role: AssignableRole): Promise<FormState> {
+  const manager = await teamManager();
+  if (!manager) return { error: "Seuls le propriétaire et les admins gèrent l'équipe." };
+  if (!(JOIN_LINK_ROLES as readonly string[]).includes(role))
+    return { error: "Rôle non autorisé." };
+  await saveJoinLink(db, {
+    organizationId: manager.workspace.id,
+    token: generateToken(),
+    role,
+    expiresAt: new Date(Date.now() + JOIN_LINK_DAYS * 86_400_000),
+    createdByMemberId: manager.actor.memberId,
+  });
+  revalidatePath("/app/parametres/membres");
+  return { success: "Nouveau lien créé." };
+}
+
+export async function disableJoinLinkAction(): Promise<FormState> {
+  const manager = await teamManager();
+  if (!manager) return { error: "Seuls le propriétaire et les admins gèrent l'équipe." };
+  await deleteJoinLink(db, manager.workspace.id);
+  revalidatePath("/app/parametres/membres");
+  return { success: "Lien désactivé." };
 }

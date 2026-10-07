@@ -10,6 +10,12 @@ export const BOOKING_STATUS_BADGE: Record<BookingStatus, { label: string; tone: 
   cancelled: { label: "Annulée", tone: "draft" },
 };
 
+/** Présence à un événement passé, d'après le check-in (fiche client). */
+export const ATTENDANCE_BADGE = {
+  present: { label: "Venu·e", tone: "info" },
+  absent: { label: "Absent·e", tone: "danger" },
+} satisfies Record<string, { label: string; tone: Tone }>;
+
 /**
  * Statut affiché d'un événement : on précise « Presque complet » (≥ 80 %) et « Complet »
  * pour un événement publié, sinon publié / brouillon / annulé.

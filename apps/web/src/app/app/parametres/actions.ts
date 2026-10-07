@@ -62,6 +62,11 @@ export async function saveOrganizationAction(
       brandColor: text(form, "brandColor"),
       displayFont: text(form, "displayFont") as DisplayFont,
       description: text(form, "description"),
+      contactEmail: text(form, "contactEmail"),
+      contactPhone: text(form, "contactPhone"),
+      address: text(form, "address"),
+      legalName: text(form, "legalName"),
+      siret: text(form, "siret"),
     });
   } catch (error) {
     return toFormState(error);

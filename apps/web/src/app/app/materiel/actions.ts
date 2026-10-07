@@ -5,6 +5,7 @@ import {
   createItem,
   createRentalBooking,
   fromZonedParts,
+  importItems,
   scheduleMaintenance,
   setItemQuantity,
   updateItem,
@@ -143,4 +144,20 @@ export async function createRentalAction(
   }
   revalidatePath("/app", "layout");
   redirect(`/app/reservations/${bookingId}`);
+}
+
+/** « Importer CSV » (écran 20) : tout le fichier est importé, ou rien. */
+export async function importItemsAction(_previous: FormState, form: FormData): Promise<FormState> {
+  const { actor } = await getWorkspaceContext();
+  const file = form.get("file");
+  if (!(file instanceof File) || file.size === 0) return { error: "Choisis un fichier CSV." };
+  if (file.size > 900_000) return { error: "Fichier trop lourd : 900 Ko maximum." };
+  let count: number;
+  try {
+    count = (await importItems(deps, actor, await file.text())).length;
+  } catch (error) {
+    return toFormState(error);
+  }
+  revalidatePath("/app/materiel");
+  return { success: `${count} article${count > 1 ? "s" : ""} importé${count > 1 ? "s" : ""}.` };
 }

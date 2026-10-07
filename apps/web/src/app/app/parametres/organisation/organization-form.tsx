@@ -42,6 +42,11 @@ export function OrganizationForm({
     brandColor: string;
     displayFont: string;
     description: string;
+    contactEmail: string;
+    contactPhone: string;
+    address: string;
+    legalName: string;
+    siret: string;
   };
   events: PreviewEvent[];
 }) {
@@ -254,6 +259,78 @@ export function OrganizationForm({
                 })}
               </div>
             </fieldset>
+          </FormSection>
+
+          <FormSection number={3} title="Coordonnées & mentions légales">
+            <p className="-mt-1 text-[13px] font-medium leading-[18px] text-ink-muted">
+              Affichées en bas de ta page publique (« Contact », « Mentions légales »). Laisse vide
+              ce que tu ne veux pas montrer.
+            </p>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <Field label="E-mail de contact" error={errors.contactEmail}>
+                {(field) => (
+                  <input
+                    {...field}
+                    type="email"
+                    name="contactEmail"
+                    maxLength={120}
+                    defaultValue={initial.contactEmail}
+                    placeholder="contact@entreprise.fr"
+                    className={inputClasses()}
+                  />
+                )}
+              </Field>
+              <Field label="Téléphone" error={errors.contactPhone}>
+                {(field) => (
+                  <input
+                    {...field}
+                    type="tel"
+                    name="contactPhone"
+                    maxLength={30}
+                    defaultValue={initial.contactPhone}
+                    className={inputClasses()}
+                  />
+                )}
+              </Field>
+            </div>
+            <Field label="Adresse" error={errors.address}>
+              {(field) => (
+                <textarea
+                  {...field}
+                  name="address"
+                  rows={2}
+                  maxLength={300}
+                  defaultValue={initial.address}
+                  className={textareaClasses()}
+                />
+              )}
+            </Field>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <Field label="Raison sociale" error={errors.legalName}>
+                {(field) => (
+                  <input
+                    {...field}
+                    name="legalName"
+                    maxLength={120}
+                    defaultValue={initial.legalName}
+                    placeholder="Cabinet Vidal SARL"
+                    className={inputClasses()}
+                  />
+                )}
+              </Field>
+              <Field label="SIRET" error={errors.siret}>
+                {(field) => (
+                  <input
+                    {...field}
+                    name="siret"
+                    inputMode="numeric"
+                    maxLength={17}
+                    defaultValue={initial.siret}
+                    className={inputClasses()}
+                  />
+                )}
+              </Field>
+            </div>
           </FormSection>
         </fieldset>
       </form>

@@ -225,6 +225,7 @@ export interface EventBookingRow {
   paymentMode: PaymentMode;
   createdAt: Date;
   customerMessage: string | null;
+  checkedInAt: Date | null;
   customerName: string;
   customerEmail: string;
 }
@@ -256,6 +257,7 @@ export async function getEventDetail(db: Executor, organizationId: string, event
       paymentMode: booking.paymentMode,
       createdAt: booking.createdAt,
       customerMessage: booking.customerMessage,
+      checkedInAt: booking.checkedInAt,
       customerName: sql<string>`${customer.firstName} || ' ' || ${customer.lastName}`,
       customerEmail: customer.email,
     })

@@ -5,6 +5,7 @@ import { generateToken, hashToken } from "../shared/tokens";
 import type { Deps, Repositories } from "../shared/unit-of-work";
 import { validate } from "../shared/validate";
 import { decideBookingStatus, SEAT_HOLDING_STATUSES } from "./capacity";
+import { CHECK_IN_OPENS_BEFORE_HOURS, isCheckInOpen } from "./check-in";
 import type { Booking } from "./model";
 import { priceBooking } from "./pricing";
 import { formatBookingReference, referencePeriod } from "./reference";
@@ -203,6 +204,53 @@ export async function refuseBooking(
       await promoteWaitlist(repositories, event, actor, deps.clock.now());
     }
     return refused;
+  });
+}
+
+/**
+ * Check-in du jour J : pointe l'arrivée d'une réservation confirmée (toute la réservation,
+ * accompagnants compris), ou annule le pointage. Ne touche pas aux places.
+ */
+export async function setBookingCheckIn(
+  deps: Deps,
+  actor: Actor,
+  bookingId: string,
+  present: boolean,
+): Promise<Booking> {
+  assertMemberCan(actor, "booking", "update");
+
+  return deps.uow.run(async (repositories) => {
+    const booking = await repositories.bookings.find(actor.organizationId, bookingId);
+    if (!booking) throw new NotFoundError("Réservation", bookingId);
+    const event = booking.eventId
+      ? await repositories.events.find(actor.organizationId, booking.eventId)
+      : null;
+    if (!event) throw new ConflictError("Le check-in concerne les réservations d'événement");
+    if (booking.status !== "confirmed") {
+      throw new ConflictError("Seule une réservation confirmée peut être pointée");
+    }
+    if (event.status === "cancelled") throw new ConflictError("Cet événement est annulé");
+    const now = deps.clock.now();
+    if (!isCheckInOpen(event, now)) {
+      throw new ConflictError(
+        `Le check-in ouvre ${CHECK_IN_OPENS_BEFORE_HOURS} h avant le début de l'événement`,
+      );
+    }
+    if (present === (booking.checkedInAt !== null)) return booking;
+
+    const updated = await repositories.bookings.setCheckedIn(
+      actor.organizationId,
+      bookingId,
+      present ? now : null,
+    );
+    await repositories.activity.record({
+      organizationId: actor.organizationId,
+      entityType: "booking",
+      entityId: bookingId,
+      action: present ? "booking.checked_in" : "booking.check_in_undone",
+      ...actorRef(actor),
+    });
+    return updated;
   });
 }
 

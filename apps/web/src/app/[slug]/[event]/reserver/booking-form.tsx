@@ -1,7 +1,7 @@
 "use client";
 
 import type { CustomFieldDefinition } from "@horaya/core";
-import type { ReactNode } from "react";
+import { type FormEvent, type ReactNode, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Checkbox, Field, inputClasses, textareaClasses } from "@/components/ui/field";
 import { FormAlert } from "@/components/ui/form-alert";
@@ -44,6 +44,102 @@ function CustomField({
         )
       }
     </Field>
+  );
+}
+
+/** Résumé d'un participant replié : nom puis réponses aux champs personnalisés. */
+function participantSummary(
+  fieldset: HTMLFieldSetElement,
+  index: number,
+  fields: CustomFieldDefinition[],
+) {
+  const value = (name: string) => {
+    const element = fieldset.elements.namedItem(`p${index}.${name}`);
+    if (element instanceof HTMLInputElement && element.type === "checkbox") {
+      return element.checked ? (fields.find((field) => field.key === name)?.label ?? "") : "";
+    }
+    return element instanceof HTMLInputElement || element instanceof HTMLSelectElement
+      ? element.value.trim()
+      : "";
+  };
+  const name = [value("firstName"), value("lastName")].filter(Boolean).join(" ");
+  return [name, ...fields.map((field) => value(field.key))].filter(Boolean).join(" · ");
+}
+
+/**
+ * Participants 2 et suivants : repliés en une ligne (nom et réponses) avec « Modifier »,
+ * dépliés pour la saisie. Les champs restent dans le formulaire une fois repliés.
+ */
+function ExtraParticipant({
+  index,
+  customFields,
+  errors,
+}: {
+  index: number;
+  customFields: CustomFieldDefinition[];
+  errors: Record<string, string>;
+}) {
+  const hasError = Object.keys(errors).some((key) => key.startsWith(`p${index}.`));
+  const [open, setOpen] = useState(false);
+  const [summary, setSummary] = useState("");
+  const expanded = open || hasError;
+  const panelId = `participant-${index}`;
+  return (
+    <fieldset
+      onInput={(event: FormEvent<HTMLFieldSetElement>) =>
+        setSummary(participantSummary(event.currentTarget, index, customFields))
+      }
+      onChange={(event: FormEvent<HTMLFieldSetElement>) =>
+        setSummary(participantSummary(event.currentTarget, index, customFields))
+      }
+      className="flex flex-col gap-3 border-[1.5px] border-ink-subtle bg-surface px-4 py-3.5"
+    >
+      <legend className="sr-only">Participant {index + 1}</legend>
+      <div className="flex items-center justify-between gap-4">
+        <div className="flex min-w-0 flex-col gap-0.5">
+          <span className="text-[15px] font-extrabold leading-5 text-ink">
+            Participant {index + 1}
+          </span>
+          <span className="truncate text-sm font-medium leading-[18px] text-ink-muted">
+            {summary || "Facultatif : tu peux compléter plus tard."}
+          </span>
+        </div>
+        <button
+          type="button"
+          aria-expanded={expanded}
+          aria-controls={panelId}
+          onClick={() => setOpen(!expanded)}
+          className="shrink-0 text-sm font-bold leading-[18px] text-ink underline decoration-1 underline-offset-2"
+        >
+          {expanded ? "Fermer" : summary ? "Modifier" : "Compléter"}
+        </button>
+      </div>
+      <div id={panelId} hidden={!expanded} className="grid gap-3 sm:grid-cols-2">
+        <Field label="Prénom" error={errors[`p${index}.firstName`]}>
+          {(field) => (
+            <input
+              {...field}
+              name={`p${index}.firstName`}
+              maxLength={60}
+              className={inputClasses()}
+            />
+          )}
+        </Field>
+        <Field label="Nom" error={errors[`p${index}.lastName`]}>
+          {(field) => (
+            <input
+              {...field}
+              name={`p${index}.lastName`}
+              maxLength={60}
+              className={inputClasses()}
+            />
+          )}
+        </Field>
+        {customFields.map((field) => (
+          <CustomField key={field.key} field={field} index={index} />
+        ))}
+      </div>
+    </fieldset>
   );
 }
 
@@ -161,43 +257,12 @@ export function BookingForm({
             ))}
           </div>
           {Array.from({ length: seats - 1 }, (_, offset) => offset + 1).map((index) => (
-            <fieldset
+            <ExtraParticipant
               key={index}
-              className="flex flex-col gap-3 border-[1.5px] border-ink-subtle bg-surface px-4 py-3.5"
-            >
-              <legend className="sr-only">Participant {index + 1}</legend>
-              <p className="flex flex-wrap items-baseline justify-between gap-2">
-                <span className="text-[15px] font-extrabold text-ink">Participant {index + 1}</span>
-                <span className="text-[13px] font-medium text-ink-muted">
-                  Facultatif : tu peux compléter plus tard.
-                </span>
-              </p>
-              <div className="grid gap-3 sm:grid-cols-2">
-                <Field label="Prénom" error={errors[`p${index}.firstName`]}>
-                  {(field) => (
-                    <input
-                      {...field}
-                      name={`p${index}.firstName`}
-                      maxLength={60}
-                      className={inputClasses()}
-                    />
-                  )}
-                </Field>
-                <Field label="Nom" error={errors[`p${index}.lastName`]}>
-                  {(field) => (
-                    <input
-                      {...field}
-                      name={`p${index}.lastName`}
-                      maxLength={60}
-                      className={inputClasses()}
-                    />
-                  )}
-                </Field>
-                {customFields.map((field) => (
-                  <CustomField key={field.key} field={field} index={index} />
-                ))}
-              </div>
-            </fieldset>
+              index={index}
+              customFields={customFields}
+              errors={errors}
+            />
           ))}
           <Field label="Un mot pour l'organisateur">
             {(field) => (

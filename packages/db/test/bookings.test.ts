@@ -13,6 +13,7 @@ import {
   ForbiddenError,
   publishEvent,
   refuseBooking,
+  setBookingCheckIn,
   updateEvent,
   updateEventType,
 } from "@horaya/core";
@@ -226,6 +227,55 @@ describe("cycle de vie d'une réservation", () => {
     const cancelled = await cancelBookingWithToken(deps, organizationId, manageToken);
     expect(cancelled.id).toBe(created.id);
     expect(cancelled.status).toBe("cancelled");
+  });
+});
+
+describe("check-in", () => {
+  it("pointe une arrivée à partir de la veille, puis annule le pointage", async () => {
+    const clock = fixedClock();
+    deps = testDeps(clock);
+    const published = await publishedEvent();
+    const { booking: created } = await book(owner, published.id);
+
+    await expect(setBookingCheckIn(deps, owner, created.id, true)).rejects.toThrow(
+      "Le check-in ouvre 24 h avant le début de l'événement",
+    );
+
+    clock.set(new Date("2026-11-10T09:20:00Z"));
+    const checked = await setBookingCheckIn(deps, owner, created.id, true);
+    expect(checked.checkedInAt).toEqual(new Date("2026-11-10T09:20:00Z"));
+
+    const undone = await setBookingCheckIn(deps, owner, created.id, false);
+    expect(undone.checkedInAt).toBeNull();
+
+    const actions = await db
+      .select({ action: activityLog.action })
+      .from(activityLog)
+      .where(eq(activityLog.entityId, created.id))
+      .orderBy(asc(activityLog.createdAt));
+    expect(actions.map((row) => row.action)).toEqual([
+      "booking.created",
+      "booking.checked_in",
+      "booking.check_in_undone",
+    ]);
+  });
+
+  it("ne pointe que les réservations confirmées", async () => {
+    const clock = fixedClock(new Date("2026-11-10T09:00:00Z"));
+    const published = await publishedEvent({ requiresApproval: true });
+    const { booking: created } = await createEventBooking(
+      testDeps(),
+      customerActor(organizationId),
+      {
+        eventId: published.id,
+        seats: 1,
+        customer: contact(),
+      },
+    );
+    expect(created.status).toBe("pending");
+    await expect(setBookingCheckIn(testDeps(clock), owner, created.id, true)).rejects.toThrow(
+      "Seule une réservation confirmée peut être pointée",
+    );
   });
 });
 

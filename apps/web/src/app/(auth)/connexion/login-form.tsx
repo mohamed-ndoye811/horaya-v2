@@ -11,6 +11,7 @@ import { Checkbox, Field, inputClasses, PasswordInput } from "@/components/ui/fi
 import { FormAlert } from "@/components/ui/form-alert";
 import { authClient } from "@/lib/auth-client";
 import { authErrorMessage } from "@/lib/auth-errors";
+import type { JoinTarget } from "@/server/invitation";
 
 /** Écrans 01 et 02 : e-mail, puis mot de passe. */
 export function LoginForm({
@@ -19,7 +20,7 @@ export function LoginForm({
 }: {
   googleEnabled: boolean;
   /** Arrivée depuis une invitation : e-mail prérempli, retour à l'invitation après connexion. */
-  invitation?: { id: string; email: string; organizationName: string };
+  invitation?: JoinTarget;
 }) {
   const router = useRouter();
   const [step, setStep] = useState<"email" | "password">("email");
@@ -48,7 +49,7 @@ export function LoginForm({
       setPending(false);
       return;
     }
-    router.replace(invitation ? `/invitation/${invitation.id}` : "/app");
+    router.replace(invitation ? invitation.returnTo : "/app");
     router.refresh();
   }
 

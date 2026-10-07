@@ -54,6 +54,8 @@ export const booking = pgTable(
     manageTokenHash: text(),
     confirmedAt: timestamp({ withTimezone: true }),
     cancelledAt: timestamp({ withTimezone: true }),
+    /** Arrivée pointée le jour J (check-in), pour toute la réservation. */
+    checkedInAt: timestamp({ withTimezone: true }),
     createdAt: createdAt(),
     updatedAt: updatedAt(),
   },
@@ -85,7 +87,6 @@ export const bookingParticipant = pgTable(
     email: text(),
     /** Réponses aux champs personnalisés du type d'événement, par clé. */
     customAnswers: jsonb().$type<Record<string, string | boolean>>().notNull().default({}),
-    checkedInAt: timestamp({ withTimezone: true }),
     createdAt: createdAt(),
   },
   (t) => [index().on(t.bookingId)],

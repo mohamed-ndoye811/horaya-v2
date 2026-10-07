@@ -23,6 +23,8 @@ export interface Booking {
   rentalEndsAt: Date | null;
   confirmedAt: Date | null;
   cancelledAt: Date | null;
+  /** Arrivée pointée le jour J, pour toute la réservation. */
+  checkedInAt: Date | null;
   createdAt: Date;
   updatedAt: Date;
 }

@@ -166,7 +166,6 @@ export async function getCustomerDetail(
       createdAt: customer.createdAt,
       anonymizedAt: customer.anonymizedAt,
       ...aggregates(now),
-      cancellations: sql<number>`(select count(*) from booking b where b.customer_id = "customer"."id" and b.status = 'cancelled')::int`,
     })
     .from(customer)
     .where(and(eq(customer.organizationId, organizationId), eq(customer.id, customerId)));

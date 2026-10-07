@@ -13,6 +13,14 @@ export type DisplayFont = (typeof DISPLAY_FONTS)[number]["value"];
 /** Délais d'annulation gratuite proposés (en heures ; 0 = pas d'annulation gratuite). */
 export const FREE_CANCELLATION_HOURS = [0, 24, 48, 72, 168] as const;
 
+const optionalText = (max: number) =>
+  z
+    .string()
+    .trim()
+    .max(max, `${max} caractères maximum`)
+    .nullish()
+    .transform((value) => value || null);
+
 const percent = (label: string) =>
   z
     .int({ error: `${label} invalide` })
@@ -28,6 +36,23 @@ export const updateTenantSettingsSchema = z
       .string()
       .trim()
       .max(280, "280 caractères maximum")
+      .nullish()
+      .transform((value) => value || null),
+    /** Coordonnées et identité légale, affichées sur la page publique. */
+    contactEmail: z
+      .string()
+      .trim()
+      .toLowerCase()
+      .pipe(z.union([z.literal(""), z.email("Adresse e-mail invalide")]))
+      .nullish()
+      .transform((value) => value || null),
+    contactPhone: optionalText(30),
+    address: optionalText(300),
+    legalName: optionalText(120),
+    siret: z
+      .string()
+      .transform((value) => value.replace(/\s/g, ""))
+      .pipe(z.union([z.literal(""), z.string().regex(/^\d{14}$/, "Le SIRET compte 14 chiffres")]))
       .nullish()
       .transform((value) => value || null),
     /** TVA en points de base : 2000 = 20 %. */

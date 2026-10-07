@@ -1,15 +1,15 @@
 import type { Metadata } from "next";
 import { AuthShell } from "@/components/auth/auth-shell";
 import { googleEnabled } from "@/server/env";
-import { invitationContext } from "@/server/invitation";
+import { joinTarget } from "@/server/invitation";
 import { redirectIfSignedIn } from "../redirect-if-signed-in";
 import { LoginForm } from "./login-form";
 
 export const metadata: Metadata = { title: "Connexion · Horaya" };
 
 export default async function LoginPage({ searchParams }: PageProps<"/connexion">) {
-  const invitation = await invitationContext((await searchParams).invitation);
-  await redirectIfSignedIn(invitation ? `/invitation/${invitation.id}` : undefined);
+  const invitation = await joinTarget(await searchParams);
+  await redirectIfSignedIn(invitation?.returnTo);
 
   return (
     <AuthShell
@@ -18,7 +18,7 @@ export default async function LoginPage({ searchParams }: PageProps<"/connexion"
           ? {
               prompt: "Pas encore de compte ?",
               label: "Créer mon compte",
-              href: `/inscription?invitation=${invitation.id}`,
+              href: `/inscription?${invitation.query}`,
             }
           : { prompt: "Pas encore de compte ?", label: "Créer un espace", href: "/inscription" }
       }

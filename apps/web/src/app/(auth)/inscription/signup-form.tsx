@@ -12,6 +12,7 @@ import { Checkbox, Field, inputClasses, PasswordInput } from "@/components/ui/fi
 import { FormAlert } from "@/components/ui/form-alert";
 import { authClient } from "@/lib/auth-client";
 import { authErrorMessage } from "@/lib/auth-errors";
+import type { JoinTarget } from "@/server/invitation";
 
 /** Écran 11 : création du compte (étape 1 sur 3). */
 export function SignupForm({
@@ -20,7 +21,7 @@ export function SignupForm({
 }: {
   googleEnabled: boolean;
   /** Arrivée depuis une invitation : pas de création d'espace, on rejoint celui qui invite. */
-  invitation?: { id: string; email: string; organizationName: string };
+  invitation?: JoinTarget;
 }) {
   const router = useRouter();
   const [password, setPassword] = useState("");
@@ -53,14 +54,14 @@ export function SignupForm({
       lastName,
       email,
       password,
-      callbackURL: invitation ? `/invitation/${invitation.id}` : "/app",
+      callbackURL: invitation ? invitation.returnTo : "/app",
     });
     if (error) {
       setError(authErrorMessage(error));
       setPending(false);
       return;
     }
-    router.push(invitation ? `/invitation/${invitation.id}` : "/inscription/espace");
+    router.push(invitation ? invitation.returnTo : "/inscription/espace");
   }
 
   return (
@@ -115,7 +116,7 @@ export function SignupForm({
             type="email"
             autoComplete="email"
             required
-            defaultValue={invitation?.email}
+            defaultValue={invitation?.email ?? undefined}
             placeholder="toi@entreprise.fr"
             className={inputClasses()}
           />

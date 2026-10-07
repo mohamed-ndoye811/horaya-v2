@@ -9,7 +9,7 @@ export default async function PublicLayout({ children, params }: LayoutProps<"/[
   return (
     <div style={brandStyle(workspace.brandColor)} className="flex min-h-dvh flex-col bg-bg">
       <div className="flex flex-1 flex-col">{children}</div>
-      <PublicFooter name={workspace.name} />
+      <PublicFooter workspace={workspace} />
     </div>
   );
 }

@@ -50,6 +50,11 @@ export default async function OrganizationSettingsPage() {
           brandColor: settings.brandColor,
           displayFont: settings.displayFont,
           description: settings.description ?? "",
+          contactEmail: settings.contactEmail ?? "",
+          contactPhone: settings.contactPhone ?? "",
+          address: settings.address ?? "",
+          legalName: settings.legalName ?? "",
+          siret: settings.siret ?? "",
         }}
         events={events.map((entry) => ({
           id: entry.id,

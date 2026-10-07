@@ -330,7 +330,11 @@ export async function listCustomerBookings(
       eventId: event.id,
       eventTitle: bookingTitle,
       eventStartsAt: bookingStartsAt,
+      eventEndsAt: event.endsAt,
       typeColor: eventType.color,
+      checkedInAt: booking.checkedInAt,
+      /** L'équipe a pointé au moins une arrivée sur cet événement. */
+      checkInUsed: sql<boolean>`exists (select 1 from booking b where b.event_id = ${booking.eventId} and b.checked_in_at is not null)`,
     })
     .from(booking)
     .leftJoin(event, eq(event.id, booking.eventId))

@@ -98,14 +98,19 @@ export async function listItems(
 export async function getInventoryStats(
   db: Executor,
   organizationId: string,
-  bounds: { now: Date; dayEnd: Date; monthStart: Date },
+  bounds: { now: Date; dayEnd: Date; monthStart: Date; previousMonthStart: Date },
 ) {
+  // Comparaison à date : le mois dernier, du 1er au même jour que maintenant.
+  const previousUntil = new Date(
+    bounds.previousMonthStart.getTime() + (bounds.now.getTime() - bounds.monthStart.getTime()),
+  );
   const rows = await db.execute<{
     items: number;
     types: number;
     out_now: number;
     returns_today: number;
     rental_revenue: number;
+    previous_rental_revenue: number;
     maintenance: number;
   }>(sql`
     select
@@ -120,6 +125,10 @@ export async function getInventoryStats(
       (select coalesce(sum(amount_cents), 0) from booking
         where organization_id = ${organizationId} and kind = 'rental' and status = 'confirmed'
         and created_at >= ${iso(bounds.monthStart)})::int as rental_revenue,
+      (select coalesce(sum(amount_cents), 0) from booking
+        where organization_id = ${organizationId} and kind = 'rental' and status = 'confirmed'
+        and created_at >= ${iso(bounds.previousMonthStart)}
+        and created_at < ${iso(previousUntil < bounds.monthStart ? previousUntil : bounds.monthStart)})::int as previous_rental_revenue,
       (select count(distinct a.item_unit_id) from item_allocation a
         where a.organization_id = ${organizationId} and a.cancelled_at is null and a.kind = 'maintenance'
         and a.ends_at > ${iso(bounds.now)})::int as maintenance`);
@@ -130,6 +139,7 @@ export async function getInventoryStats(
     outNow: row?.out_now ?? 0,
     returnsToday: row?.returns_today ?? 0,
     rentalRevenueCents: row?.rental_revenue ?? 0,
+    previousRentalRevenueCents: row?.previous_rental_revenue ?? 0,
     maintenanceUnits: row?.maintenance ?? 0,
   };
 }

@@ -8,6 +8,7 @@ import {
   recordManualRefund,
   refundBooking,
   refuseBooking,
+  setBookingCheckIn,
 } from "@horaya/core";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
@@ -43,6 +44,12 @@ export async function refuseBookingAction(bookingId: string, reason: string): Pr
 export async function cancelBookingAction(bookingId: string, reason: string): Promise<FormState> {
   const { actor } = await getWorkspaceContext();
   return run(() => cancelBooking(deps, actor, bookingId, reason), "Réservation annulée.");
+}
+
+/** Check-in du jour J : coche ou décoche l'arrivée d'un participant. */
+export async function checkInAction(bookingId: string, present: boolean): Promise<FormState> {
+  const { actor } = await getWorkspaceContext();
+  return run(() => setBookingCheckIn(deps, actor, bookingId, present), "");
 }
 
 /** « Ajouter une réservation » : l'équipe inscrit un client (nouveau ou existant). */

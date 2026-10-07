@@ -8,6 +8,7 @@ import {
   createItem,
   createRentalBooking,
   type Deps,
+  importItems,
   publishEvent,
   scheduleMaintenance,
   setEventItemQuantity,
@@ -26,7 +27,7 @@ import {
   listItems,
   listItemsAvailableBetween,
 } from "../src/queries";
-import { itemAllocation, itemUnit } from "../src/schema";
+import { booking, itemAllocation, itemUnit } from "../src/schema";
 import { createMember, createOrganization, db, fixedClock, testDeps } from "./helpers";
 
 afterAll(() => db.$client.end());
@@ -224,6 +225,70 @@ describe("locations", () => {
   });
 });
 
+describe("import CSV", () => {
+  it("crée les articles et leurs exemplaires", async () => {
+    const items = await importItems(
+      deps,
+      owner,
+      "Nom;Référence;Catégorie;Quantité;Tarif par jour\nMicro HF;MIC-001;Son;2;12\nTable pliante;;Mobilier;6;\n",
+    );
+    expect(items.map((item) => item.reference)).toEqual(["MIC-001", expect.any(String)]);
+    const units = await db
+      .select()
+      .from(itemUnit)
+      .where(eq(itemUnit.itemId, items[1]?.id ?? ""));
+    expect(units).toHaveLength(6);
+  });
+
+  it("n'importe rien si une ligne pose problème, et dit laquelle", async () => {
+    await projector();
+    const [existing] = await listItems(db, organizationId, { tab: "all", now: new Date() });
+    await expect(
+      importItems(deps, owner, `Nom;Référence\nMicro;MIC-002\nProjecteur;${existing?.reference}\n`),
+    ).rejects.toThrow(`Ligne 3 : La référence ${existing?.reference} est déjà utilisée`);
+    await expect(
+      importItems(deps, owner, "Nom;Quantité;Location\nMicro;zéro;oui\nTable;1;peut-être\n"),
+    ).rejects.toThrow(
+      "Ligne 2 (Quantité) : Quantité invalide\nLigne 3 (Location) : oui ou non attendu",
+    );
+    expect(await listItems(db, organizationId, { tab: "all", now: new Date() })).toHaveLength(1);
+  });
+});
+
+describe("revenus de location", () => {
+  it("compare le mois en cours au mois dernier à la même date", async () => {
+    const item = await projector(3);
+    // La date d'une réservation est celle de sa création en base : on la fixe à la main.
+    const rentOn = async (day: number, createdAt: string) => {
+      const { bookingId } = await createRentalBooking(deps, owner, {
+        itemId: item.id,
+        quantity: 1,
+        startsAt: `2026-11-${day}T08:00:00Z`,
+        endsAt: `2026-11-${day}T18:00:00Z`,
+        customer: { firstName: "Camille", lastName: "Roux", email: "camille@mail.com" },
+      });
+      await db
+        .update(booking)
+        .set({ createdAt: new Date(createdAt) })
+        .where(eq(booking.id, bookingId));
+    };
+    await rentOn(10, "2026-09-03T10:00:00Z"); // compte : avant le 5 septembre
+    await rentOn(11, "2026-09-20T10:00:00Z"); // ne compte pas : après la même date
+    await rentOn(12, "2026-10-02T10:00:00Z");
+    await rentOn(13, "2026-10-04T10:00:00Z");
+
+    const stats = await getInventoryStats(db, organizationId, {
+      now: new Date("2026-10-05T10:00:00Z"),
+      dayEnd: new Date("2026-10-05T22:00:00Z"),
+      monthStart: new Date("2026-10-01T00:00:00Z"),
+      previousMonthStart: new Date("2026-09-01T00:00:00Z"),
+    });
+    // Même tarif pour chaque location : deux ce mois-ci, une seule le mois dernier à date.
+    expect(stats.previousRentalRevenueCents).toBeGreaterThan(0);
+    expect(stats.rentalRevenueCents).toBe(stats.previousRentalRevenueCents * 2);
+  });
+});
+
 describe("lectures du matériel", () => {
   it("résume l'inventaire, la fiche article et le matériel d'un événement", async () => {
     const item = await projector(3);
@@ -282,6 +347,7 @@ describe("lectures du matériel", () => {
       now,
       dayEnd: new Date("2026-10-01T22:00:00Z"),
       monthStart: new Date("2026-10-01T00:00:00Z"),
+      previousMonthStart: new Date("2026-09-01T00:00:00Z"),
     });
     expect(stats).toMatchObject({ items: 1, types: 1, maintenanceUnits: 1 });
   });
