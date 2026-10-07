@@ -157,6 +157,29 @@ export function IconButton({
   );
 }
 
+/** Lien carré à icône (flèches précédent / suivant du calendrier). */
+export function IconLink({
+  label,
+  className,
+  children,
+  ...props
+}: ComponentProps<typeof Link> & { label: string }) {
+  return (
+    <Link
+      aria-label={label}
+      title={label}
+      className={cn(
+        "inline-flex size-10 shrink-0 items-center justify-center border-2 border-ink text-ink transition-colors hover:bg-surface",
+        "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink",
+        className,
+      )}
+      {...props}
+    >
+      {children}
+    </Link>
+  );
+}
+
 /** Lien texte souligné, comme dans les maquettes (« Mot de passe oublié ? »). */
 export const textLinkClasses =
   "font-bold text-ink underline decoration-1 underline-offset-[3px] hover:text-link " +

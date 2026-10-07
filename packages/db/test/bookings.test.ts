@@ -1,5 +1,6 @@
 import {
   type Actor,
+  archiveEventType,
   ConflictError,
   cancelBooking,
   cancelBookingWithToken,
@@ -13,6 +14,7 @@ import {
   publishEvent,
   refuseBooking,
   updateEvent,
+  updateEventType,
 } from "@horaya/core";
 import { and, eq } from "drizzle-orm";
 import { afterAll, beforeEach, describe, expect, it } from "vitest";
@@ -335,5 +337,40 @@ describe("événements", () => {
       .where(eq(eventTable.organizationId, organizationId));
     expect(new Set(slugs.map((row) => row.slug)).size).toBe(2);
     expect([first.slug, second.slug]).toEqual(["seminaire-annuel", "seminaire-annuel-2"]);
+  });
+
+  it("modifie un type sans écraser ses champs non fournis", async () => {
+    const type = await createEventType(deps, owner, {
+      name: "Séminaire",
+      color: "#528d74",
+      customFields: [{ key: "entreprise", label: "Entreprise", type: "text", required: true }],
+      bookingRules: { waitlistEnabled: true },
+    });
+    expect(type.color).toBe("#528D74");
+    const updated = await updateEventType(deps, owner, type.id, { defaultPriceCents: 12000 });
+    expect(updated.defaultPriceCents).toBe(12000);
+    expect(updated.customFields).toHaveLength(1);
+    expect(updated.bookingRules.waitlistEnabled).toBe(true);
+  });
+
+  it("n'utilise plus un type archivé pour créer des événements", async () => {
+    const type = await createEventType(deps, owner, { name: "Ancien format", color: "#66537C" });
+    await archiveEventType(deps, owner, type.id);
+    await expect(
+      createEvent(deps, owner, {
+        eventTypeId: type.id,
+        title: "Test",
+        startsAt: "2026-11-12T09:00:00Z",
+        endsAt: "2026-11-12T12:00:00Z",
+        timezone: "Europe/Paris",
+      }),
+    ).rejects.toThrow("Type d'événement introuvable");
+  });
+
+  it("refuse deux types du même nom avec un message clair", async () => {
+    await createEventType(deps, owner, { name: "Atelier", color: "#D8BC66" });
+    await expect(
+      createEventType(deps, owner, { name: "Atelier", color: "#528D74" }),
+    ).rejects.toThrow("Un type d'événement porte déjà ce nom");
   });
 });

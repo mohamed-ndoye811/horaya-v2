@@ -1,0 +1,327 @@
+/**
+ * Remplit un espace avec des données de démonstration (reprises des maquettes Paper),
+ * en passant par les cas d'usage du core : mêmes règles que l'app.
+ *
+ *   pnpm db:seed-demo <adresse-de-l-espace>
+ */
+import {
+  type Actor,
+  addDays,
+  cancelBooking,
+  createEvent,
+  createEventBooking,
+  createEventType,
+  fromZonedParts,
+  publishEvent,
+  systemClock,
+  toZonedParts,
+} from "@horaya/core";
+import { and, eq } from "drizzle-orm";
+import { createDb } from "./client";
+import { event, member, organization } from "./schema";
+import { createUnitOfWork } from "./unit-of-work";
+
+const TZ = "Europe/Paris";
+const slug = process.argv[2];
+if (!slug) {
+  console.error("Usage : pnpm db:seed-demo <adresse-de-l-espace>");
+  process.exit(1);
+}
+
+const db = createDb(process.env.DATABASE_URL ?? "", { maxConnections: 2 });
+const deps = { uow: createUnitOfWork(db), clock: systemClock };
+
+const [org] = await db.select().from(organization).where(eq(organization.slug, slug));
+if (!org) throw new Error(`Aucun espace avec l'adresse « ${slug} »`);
+const [owner] = await db
+  .select()
+  .from(member)
+  .where(and(eq(member.organizationId, org.id), eq(member.role, "owner")));
+if (!owner) throw new Error("Cet espace n'a pas de propriétaire");
+const [existing] = await db
+  .select({ id: event.id })
+  .from(event)
+  .where(eq(event.organizationId, org.id))
+  .limit(1);
+if (existing) {
+  console.error(`L'espace « ${slug} » a déjà des événements : rien n'est ajouté.`);
+  process.exit(1);
+}
+
+const actor: Actor = {
+  type: "member",
+  organizationId: org.id,
+  userId: owner.userId,
+  memberId: owner.id,
+  role: "owner",
+};
+
+const today = toZonedParts(new Date(), TZ);
+/** Date dans `days` jours à `hour` h `minute` (heure de Paris). */
+const at = (days: number, hour: number, minute = 0) =>
+  fromZonedParts({ ...addDays(today, days), hour, minute }, TZ).toISOString();
+
+const types = Object.fromEntries(
+  await Promise.all(
+    [
+      {
+        key: "seminaire",
+        name: "Séminaire",
+        color: "#528D74",
+        defaultDurationMinutes: 60 * 24,
+        defaultPriceCents: 12000,
+        requiresApproval: true,
+        bookingRules: { waitlistEnabled: true },
+      },
+      {
+        key: "atelier",
+        name: "Atelier",
+        color: "#D8BC66",
+        defaultDurationMinutes: 180,
+        defaultPriceCents: 3500,
+      },
+      { key: "reunion", name: "Réunion", color: "#CF879C", defaultDurationMinutes: 60 },
+      {
+        key: "meetup",
+        name: "Meetup",
+        color: "#66537C",
+        defaultDurationMinutes: 150,
+        bookingRules: { waitlistEnabled: true },
+      },
+      {
+        key: "formation",
+        name: "Formation",
+        color: "#264489",
+        defaultDurationMinutes: 60 * 24,
+        defaultPriceCents: 18000,
+      },
+      { key: "webinaire", name: "Webinaire", color: "#3165B8", defaultDurationMinutes: 90 },
+    ].map(async ({ key, ...input }) => [key, await createEventType(deps, actor, input)] as const),
+  ),
+);
+
+type Plan = {
+  type: keyof typeof types;
+  title: string;
+  start: [number, number, number?];
+  end: [number, number, number?];
+  location?: string;
+  capacity?: number | null;
+  priceCents?: number;
+  paymentMode?: "free" | "online" | "deposit" | "on_site";
+  depositPercent?: number;
+  publish?: boolean;
+  bookings?: Array<[string, string, number, ("pending" | "cancel")?]>;
+};
+
+const plans: Plan[] = [
+  {
+    type: "seminaire",
+    title: "Séminaire annuel",
+    start: [1, 14],
+    end: [2, 16, 30],
+    location: "445 rue de la Thèse, Puget-Ville",
+    capacity: 50,
+    priceCents: 12000,
+    paymentMode: "on_site",
+    bookings: [
+      ["Camille", "Roux", 2],
+      ["Thomas", "Bernard", 1],
+      ["Julie", "Moreau", 2],
+      ["Hugo", "Petit", 1, "pending"],
+      ["Léa", "Fontaine", 1],
+      ["Antoine", "Leroy", 4],
+    ],
+  },
+  {
+    type: "meetup",
+    title: "Daily standup",
+    start: [1, 9, 30],
+    end: [1, 10],
+    location: "Visio",
+    capacity: null,
+  },
+  {
+    type: "reunion",
+    title: "Point client Vidal",
+    start: [1, 11],
+    end: [1, 12],
+    location: "Salle Horizon, 2e étage",
+    capacity: 6,
+  },
+  {
+    type: "atelier",
+    title: "Atelier poterie",
+    start: [2, 11],
+    end: [2, 12, 30],
+    location: "Pot's, 12 rue des Arts",
+    capacity: 8,
+    priceCents: 3500,
+    paymentMode: "online",
+    bookings: [
+      ["Léa", "Fontaine", 1, "pending"],
+      ["Sophie", "Martin", 3],
+      ["Marc", "Dupont", 2],
+    ],
+  },
+  {
+    type: "atelier",
+    title: "Atelier design thinking",
+    start: [5, 9],
+    end: [5, 12],
+    location: "Studio Créa",
+    capacity: 12,
+    priceCents: 4500,
+    paymentMode: "on_site",
+    bookings: [
+      ["Isabelle", "Chen", 2],
+      ["Julie", "Moreau", 2],
+    ],
+  },
+  {
+    type: "formation",
+    title: "Formation Excel avancé",
+    start: [7, 14],
+    end: [7, 17],
+    location: "En ligne",
+    capacity: 20,
+    priceCents: 18000,
+    paymentMode: "deposit",
+    depositPercent: 30,
+    bookings: [
+      ["Hugo", "Petit", 1, "pending"],
+      ["Thomas", "Bernard", 3],
+      ["Camille", "Roux", 1],
+    ],
+  },
+  {
+    type: "reunion",
+    title: "Réunion stratégique Q3",
+    start: [10, 10],
+    end: [10, 12],
+    location: "Salle Horizon",
+    capacity: 20,
+    publish: false,
+  },
+  {
+    type: "meetup",
+    title: "Hackathon IA & design",
+    start: [13, 9],
+    end: [13, 18],
+    location: "Station F",
+    capacity: 25,
+    bookings: [
+      ["Antoine", "Leroy", 4, "pending"],
+      ["Sophie", "Martin", 5],
+      ["Marc", "Dupont", 3],
+      ["Isabelle", "Chen", 5],
+      ["Léa", "Fontaine", 5],
+    ],
+  },
+  {
+    type: "seminaire",
+    title: "Séminaire leadership",
+    start: [17, 11],
+    end: [17, 17],
+    location: "Hôtel Lutetia",
+    capacity: 30,
+    priceCents: 24000,
+    paymentMode: "on_site",
+    bookings: [
+      ["Marc", "Dupont", 3, "cancel"],
+      ["Julie", "Moreau", 2],
+    ],
+  },
+  {
+    type: "atelier",
+    title: "Atelier prise de parole",
+    start: [23, 10],
+    end: [23, 12],
+    location: "Cabinet Orator",
+    capacity: 8,
+    priceCents: 8000,
+    paymentMode: "deposit",
+    depositPercent: 30,
+    bookings: [
+      ["Thomas", "Bernard", 1],
+      ["Camille", "Roux", 2],
+    ],
+  },
+  {
+    type: "webinaire",
+    title: "Webinaire cloud & DevOps",
+    start: [26, 11],
+    end: [26, 12, 30],
+    location: "En ligne",
+    capacity: 100,
+    bookings: [["Hugo", "Petit", 1]],
+  },
+  {
+    type: "seminaire",
+    title: "Conférence RSE",
+    start: [30, 14],
+    end: [30, 18],
+    location: "Palais des Congrès",
+    capacity: 80,
+    publish: false,
+  },
+  {
+    type: "meetup",
+    title: "Team building nature",
+    start: [40, 9],
+    end: [40, 17],
+    location: "Forêt de Fontainebleau",
+    capacity: 12,
+    bookings: [
+      ["Sophie", "Martin", 6],
+      ["Antoine", "Leroy", 6],
+    ],
+  },
+];
+
+let bookingCount = 0;
+for (const plan of plans) {
+  const [created] = await createEvent(deps, actor, {
+    eventTypeId: types[plan.type]?.id ?? "",
+    title: plan.title,
+    startsAt: at(...(plan.start as [number, number, number?])),
+    endsAt: at(...(plan.end as [number, number, number?])),
+    timezone: TZ,
+    locationName: plan.location,
+    capacity: plan.capacity === undefined ? 20 : plan.capacity,
+    priceCents: plan.priceCents ?? 0,
+    paymentMode: plan.paymentMode ?? "free",
+    depositPercent: plan.depositPercent ?? null,
+  });
+  if (!created) continue;
+  if (plan.publish === false) continue;
+  // Un événement déjà commencé ne peut plus être publié : on décale la publication d'office.
+  if (new Date(created.startsAt) > new Date()) await publishEvent(deps, actor, created.id);
+  else continue;
+
+  for (const [firstName, lastName, seats, state] of plan.bookings ?? []) {
+    const local = `${firstName}.${lastName}`
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/\p{Diacritic}/gu, "");
+    const email = `${local}@mail.com`;
+    const bookingActor: Actor =
+      state === "pending" ? { type: "customer", organizationId: org.id } : actor;
+    try {
+      const { booking } = await createEventBooking(deps, bookingActor, {
+        eventId: created.id,
+        seats,
+        customer: { firstName, lastName, email },
+      });
+      if (state === "cancel") await cancelBooking(deps, actor, booking.id, "Empêchement");
+      bookingCount++;
+    } catch (error) {
+      console.warn(`  ${plan.title} / ${firstName} : ${(error as Error).message}`);
+    }
+  }
+}
+
+console.info(
+  `Espace « ${org.name} » : ${Object.keys(types).length} types, ${plans.length} événements, ${bookingCount} réservations.`,
+);
+await db.$client.end();

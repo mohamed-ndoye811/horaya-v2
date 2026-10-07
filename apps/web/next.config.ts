@@ -8,6 +8,9 @@ try {
   // Pas de .env (CI, production) : les variables viennent de l'environnement.
 }
 
-const nextConfig: NextConfig = {};
+const nextConfig: NextConfig = {
+  // Pas de badge Next.js en bas de l'écran : les captures pour le vault restent propres.
+  devIndicators: false,
+};
 
 export default nextConfig;

@@ -18,7 +18,8 @@
     "db:generate": "pnpm --filter @horaya/db generate",
     "db:migrate": "pnpm --filter @horaya/db migrate",
     "db:studio": "pnpm --filter @horaya/db studio",
-    "db:auth-schema": "pnpm --filter @horaya/auth generate-schema"
+    "db:auth-schema": "pnpm --filter @horaya/auth generate-schema",
+    "db:seed-demo": "pnpm --filter @horaya/db seed-demo"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.5.15",

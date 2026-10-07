@@ -21,7 +21,9 @@ import {
   createEventSchema,
   createEventTypeSchema,
   type UpdateEventInput,
+  type UpdateEventTypeInput,
   updateEventSchema,
+  updateEventTypeSchema,
 } from "./schemas";
 
 export async function createEventType(
@@ -36,7 +38,6 @@ export async function createEventType(
     const eventType = await repositories.eventTypes.insert({
       organizationId: actor.organizationId,
       ...data,
-      color: data.color.toUpperCase(),
       defaultDurationMinutes: data.defaultDurationMinutes ?? null,
       defaultPriceCents: data.defaultPriceCents ?? null,
       defaultCapacity: data.defaultCapacity ?? null,
@@ -49,6 +50,59 @@ export async function createEventType(
       ...actorRef(actor),
     });
     return eventType;
+  });
+}
+
+export async function updateEventType(
+  deps: Deps,
+  actor: Actor,
+  eventTypeId: string,
+  input: UpdateEventTypeInput,
+): Promise<EventType> {
+  assertMemberCan(actor, "event", "update");
+  const patch = validate(updateEventTypeSchema, input);
+
+  return deps.uow.run(async (repositories) => {
+    const existing = await repositories.eventTypes.find(actor.organizationId, eventTypeId);
+    if (!existing || existing.archivedAt) throw new NotFoundError("Type d'événement", eventTypeId);
+    const updated = await repositories.eventTypes.update(actor.organizationId, eventTypeId, patch);
+    await repositories.activity.record({
+      organizationId: actor.organizationId,
+      entityType: "event_type",
+      entityId: eventTypeId,
+      action: "event_type.updated",
+      ...actorRef(actor),
+      data: { fields: Object.keys(patch) },
+    });
+    return updated;
+  });
+}
+
+/**
+ * « Supprimer le type » : on l'archive. Les événements existants le gardent (historique,
+ * couleurs) ; il n'est simplement plus proposé à la création.
+ */
+export async function archiveEventType(
+  deps: Deps,
+  actor: Actor,
+  eventTypeId: string,
+): Promise<EventType> {
+  assertMemberCan(actor, "event", "delete");
+
+  return deps.uow.run(async (repositories) => {
+    const existing = await repositories.eventTypes.find(actor.organizationId, eventTypeId);
+    if (!existing || existing.archivedAt) throw new NotFoundError("Type d'événement", eventTypeId);
+    const archived = await repositories.eventTypes.update(actor.organizationId, eventTypeId, {
+      archivedAt: deps.clock.now(),
+    });
+    await repositories.activity.record({
+      organizationId: actor.organizationId,
+      entityType: "event_type",
+      entityId: eventTypeId,
+      action: "event_type.archived",
+      ...actorRef(actor),
+    });
+    return archived;
   });
 }
 

@@ -11,7 +11,8 @@
     "generate": "drizzle-kit generate",
     "migrate": "tsx --env-file=../../.env src/migrate.ts",
     "studio": "drizzle-kit studio",
-    "test": "vitest run"
+    "test": "vitest run",
+    "seed-demo": "tsx --env-file=../../.env src/seed-demo.ts"
   },
   "dependencies": {
     "@horaya/core": "workspace:^",

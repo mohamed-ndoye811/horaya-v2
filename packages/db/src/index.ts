@@ -1,6 +1,9 @@
 // Implémentation Postgres des ports du core (dépôts), plus le client Drizzle.
 export { createDb, type Db, type DbTransaction, type Executor } from "./client";
 export { countPendingBookings } from "./queries/bookings";
+export * from "./queries/dashboard";
+export * from "./queries/events";
+export { tenantSettingsReader } from "./repositories/support";
 export { tenantSettingsRepository } from "./repositories/tenant-settings";
 export { workspaceDirectory } from "./repositories/workspace-directory";
 export * as schema from "./schema";

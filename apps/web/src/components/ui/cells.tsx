@@ -108,7 +108,13 @@ export function DateBlock({
     </span>
   );
   return (
-    <time dateTime={date.toISOString()} className="flex w-14 shrink-0 flex-col gap-1">
+    <time
+      dateTime={date.toISOString()}
+      className={cn(
+        "flex shrink-0 flex-col gap-1 whitespace-nowrap",
+        layout === "month-first" && "w-14",
+      )}
+    >
       {layout === "month-first" ? (
         <>
           {label}

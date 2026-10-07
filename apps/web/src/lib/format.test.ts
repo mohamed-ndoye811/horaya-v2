@@ -37,3 +37,16 @@ describe("format", () => {
     expect(initials("Camille")).toBe("CA");
   });
 });
+
+describe("formatEventRange", () => {
+  it("écrit une période sur une journée ou plusieurs jours", async () => {
+    const { formatEventRange, formatShortDateTime } = await import("./format");
+    expect(
+      formatEventRange(new Date("2026-06-17T09:00:00Z"), new Date("2026-06-17T10:30:00Z")),
+    ).toBe("Mer. 17 juin · 11h – 12h30");
+    expect(
+      formatEventRange(new Date("2026-06-15T12:00:00Z"), new Date("2026-06-16T14:30:00Z")),
+    ).toBe("Lun. 15 juin, 14h → mar. 16 juin, 16h30");
+    expect(formatShortDateTime(new Date("2026-06-12T14:45:00Z"))).toBe("12/06 · 16:45");
+  });
+});

@@ -67,3 +67,33 @@ export function initials(name: string): string {
   if (words.length === 1) return first.slice(0, 2).toUpperCase();
   return `${first.charAt(0)}${words.at(-1)?.charAt(0) ?? ""}`.toUpperCase();
 }
+
+function dayMonth(date: Date, timeZone: string): string {
+  return part(date, timeZone, { day: "numeric", month: "long" });
+}
+
+/**
+ * Période d'un événement : « Lun. 15 juin · 14h – 16h » sur une journée,
+ * « Lun. 15 juin, 14h → mar. 16 juin, 16h30 » sur plusieurs jours.
+ */
+export function formatEventRange(start: Date, end: Date, timeZone = DEFAULT_TIME_ZONE): string {
+  const sameDay = dayMonth(start, timeZone) === dayMonth(end, timeZone);
+  if (sameDay) {
+    return `${formatWeekdayShort(start, timeZone)} ${dayMonth(start, timeZone)} · ${formatTimeRange(start, end, timeZone)}`;
+  }
+  return `${formatWeekdayShort(start, timeZone)} ${dayMonth(start, timeZone)}, ${formatHour(start, timeZone)} → ${formatWeekdayShort(end, timeZone).toLowerCase()} ${dayMonth(end, timeZone)}, ${formatHour(end, timeZone)}`;
+}
+
+/** « 12/06 · 16:45 » (colonnes « Inscrit le »). */
+export function formatShortDateTime(date: Date, timeZone = DEFAULT_TIME_ZONE): string {
+  const day = part(date, timeZone, { day: "2-digit", month: "2-digit" });
+  const time = part(date, timeZone, { hour: "2-digit", minute: "2-digit", hourCycle: "h23" });
+  return `${day} · ${time}`;
+}
+
+export const PAYMENT_MODE_LABELS: Record<string, string> = {
+  free: "Gratuit",
+  online: "Carte",
+  deposit: "Acompte",
+  on_site: "Sur place",
+};

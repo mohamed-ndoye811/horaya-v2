@@ -9,9 +9,12 @@ export type EventPatch = Partial<
   Omit<Event, "id" | "organizationId" | "eventTypeId" | "seriesId" | "createdAt" | "updatedAt">
 >;
 
+export type EventTypePatch = Partial<Omit<EventType, "id" | "organizationId">>;
+
 export interface EventTypeRepository {
   insert(eventType: NewEventType): Promise<EventType>;
   find(organizationId: string, eventTypeId: string): Promise<EventType | null>;
+  update(organizationId: string, eventTypeId: string, patch: EventTypePatch): Promise<EventType>;
 }
 
 export interface EventRepository {

@@ -1,12 +1,26 @@
-import type { Event, EventRepository, EventType, EventTypeRepository } from "@horaya/core";
+import {
+  ConflictError,
+  type Event,
+  type EventRepository,
+  type EventType,
+  type EventTypeRepository,
+} from "@horaya/core";
 import { and, eq } from "drizzle-orm";
 import type { Executor } from "../client";
 import { event, eventSeries, eventType } from "../schema";
 
+/** Nom déjà pris dans l'espace (contrainte unique organization_id + name). */
+function duplicateName(error: unknown): never {
+  const code =
+    (error as { cause?: { code?: string } }).cause?.code ?? (error as { code?: string }).code;
+  if (code === "23505") throw new ConflictError("Un type d'événement porte déjà ce nom");
+  throw error;
+}
+
 export function eventTypeRepository(db: Executor): EventTypeRepository {
   return {
     async insert(values) {
-      const [created] = await db.insert(eventType).values(values).returning();
+      const [created] = await db.insert(eventType).values(values).returning().catch(duplicateName);
       return created as EventType;
     },
 
@@ -16,6 +30,17 @@ export function eventTypeRepository(db: Executor): EventTypeRepository {
         .from(eventType)
         .where(and(eq(eventType.organizationId, organizationId), eq(eventType.id, eventTypeId)));
       return (found as EventType | undefined) ?? null;
+    },
+
+    async update(organizationId, eventTypeId, patch) {
+      const [updated] = await db
+        .update(eventType)
+        .set(patch)
+        .where(and(eq(eventType.organizationId, organizationId), eq(eventType.id, eventTypeId)))
+        .returning()
+        .catch(duplicateName);
+      if (!updated) throw new Error(`Type d'événement introuvable : ${eventTypeId}`);
+      return updated as EventType;
     },
   };
 }
