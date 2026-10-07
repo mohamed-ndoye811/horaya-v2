@@ -220,7 +220,14 @@ export default async function BookingsPage({ searchParams }: PageProps<"/app/res
                 cell: (row) => (
                   <MoneyCell
                     cents={row.amountCents}
-                    caption={PAYMENT_MODE_LABELS[row.paymentMode]}
+                    caption={
+                      row.status === "confirmed" &&
+                      (row.paymentMode === "online" || row.paymentMode === "deposit") &&
+                      (row.paymentStatus === "none" || row.paymentStatus === "failed") &&
+                      row.amountCents > 0
+                        ? "à payer"
+                        : PAYMENT_MODE_LABELS[row.paymentMode]
+                    }
                   />
                 ),
               },

@@ -16,7 +16,7 @@ import { db } from "@/server/db";
 import { type FormState, toFormState } from "@/server/form-state";
 import { absoluteUrl } from "@/server/mailer";
 import { paymentDeps } from "@/server/payments";
-import { getWorkspaceBySlug } from "@/server/public";
+import { getWorkspaceBySlug, workspacePaymentChannel } from "@/server/public";
 import { deps } from "@/server/services";
 
 const text = (form: FormData, key: string) => String(form.get(key) ?? "").trim();
@@ -94,8 +94,13 @@ export async function createPublicBookingAction(
     manageToken = created.manageToken;
     await sendBookingCreatedEmail(workspace.id, created.booking.id, manageToken);
     next = `/${slug}/reservation/${manageToken}?nouvelle=1`;
-    // Paiement en ligne (tout ou l'acompte) : direction la page de paiement sécurisée.
-    if (workspace.onlinePayments && awaitsOnlinePayment(created.booking)) {
+    // Paiement intégré (tout ou l'acompte) : direction la page de paiement sécurisée.
+    // Avec un lien externe, la page de confirmation propose le bouton « Payer ».
+    if (
+      workspacePaymentChannel(workspace, event.paymentMode, event.paymentLinkUrl)?.kind ===
+        "stripe" &&
+      awaitsOnlinePayment(created.booking)
+    ) {
       next = await checkoutUrl(
         slug,
         manageToken,
@@ -122,7 +127,9 @@ async function checkoutUrl(
   title: string,
   seats: number,
 ): Promise<string> {
-  const { url } = await startCheckout(paymentDeps, organizationId, bookingId, {
+  const deps = paymentDeps;
+  if (!deps) throw new Error("Paiement intégré désactivé");
+  const { url } = await startCheckout(deps, organizationId, bookingId, {
     description: `${title} · ${seats} place${seats > 1 ? "s" : ""}`,
     successUrl: absoluteUrl(`/${slug}/reservation/${token}?nouvelle=1&paiement=ok`),
     cancelUrl: absoluteUrl(`/${slug}/reservation/${token}?paiement=annule`),

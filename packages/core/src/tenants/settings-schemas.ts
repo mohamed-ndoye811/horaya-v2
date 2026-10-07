@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { paymentLinkSchema } from "../shared/links";
 import { hexColorSchema } from "./workspace";
 
 /** Police des titres de la page publique (écran 24). */
@@ -37,6 +38,8 @@ export const updateTenantSettingsSchema = z
       .min(0)
       .max(24 * 30, "30 jours maximum"),
     lateCancellationRefundPercent: percent("Remboursement"),
+    /** Lien de paiement par défaut de l'espace (paiement hors Horaya). */
+    paymentLinkUrl: paymentLinkSchema,
   })
   .partial();
 export type UpdateTenantSettingsInput = z.input<typeof updateTenantSettingsSchema>;

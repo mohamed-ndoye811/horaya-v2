@@ -134,6 +134,8 @@ await updateTenantSettings(deps, actor, {
   defaultDepositPercent: 30,
   freeCancellationHours: 72,
   lateCancellationRefundPercent: 50,
+  // Lien de paiement d'exemple (domaine réservé example.com) pour la démo du paiement par lien.
+  paymentLinkUrl: "https://example.com/paiement-cabinet-vidal",
 });
 
 const today = toZonedParts(new Date(), TZ);

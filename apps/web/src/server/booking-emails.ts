@@ -27,8 +27,10 @@ import {
 } from "@horaya/mail";
 import { textOn } from "@/lib/colors";
 import { formatEventRange, formatMoney } from "@/lib/format";
+import { paymentChannel } from "@/lib/payment-channel";
 import { db } from "./db";
 import { absoluteUrl, mailer } from "./mailer";
+import { integratedPaymentsEnabled } from "./payments/config";
 
 /**
  * E-mails liés aux réservations : aux participants (au nom de l'espace) et à l'équipe
@@ -57,7 +59,13 @@ async function loadBooking(organizationId: string, bookingId: string) {
   const title =
     booking.event?.title ??
     `Location · ${detail.rentalItems.map((entry) => entry.name).join(", ")}`;
-  const onlinePayments = workspace.stripeAccountStatus === "active";
+  const channel = paymentChannel({
+    paymentMode: booking.paymentMode,
+    stripeReady: integratedPaymentsEnabled && workspace.stripeAccountStatus === "active",
+    eventLink: booking.event?.paymentLinkUrl ?? null,
+    workspaceLink: workspace.paymentLinkUrl ?? null,
+  });
+  const onlinePayments = channel !== null;
   const paymentNote =
     booking.paymentMode === "on_site"
       ? "à régler sur place"
@@ -91,6 +99,7 @@ async function loadBooking(organizationId: string, bookingId: string) {
     title,
     mail,
     onlinePayments,
+    channel,
     eventsUrl: absoluteUrl(`/${workspace.slug}`),
     // Sans jeton (stocké haché), on renvoie vers « Mes réservations » qui en génère un neuf.
     linkRequestUrl: absoluteUrl(
@@ -116,13 +125,15 @@ export async function sendBookingCreatedEmail(
   const loaded = await loadBooking(organizationId, bookingId);
   if (!loaded || !["pending", "confirmed", "waitlisted"].includes(loaded.booking.status)) return;
   const mail = loaded.mail(manageUrl(loaded.workspace.slug, manageToken));
-  if (loaded.onlinePayments && awaitsOnlinePayment(loaded.booking)) {
+  if (loaded.channel && awaitsOnlinePayment(loaded.booking)) {
     await send(
       loaded.booking.customer.email,
       bookingAwaitingPaymentEmail({
         ...mail,
         due: formatMoney(amountDueOnline(loaded.booking)),
-        minutes: 30,
+        ...(loaded.channel.kind === "stripe"
+          ? { reason: "checkout" as const, payUrl: mail.manageUrl, minutes: 30 }
+          : { reason: "link" as const, payUrl: loaded.channel.url }),
       }),
     );
     return;
@@ -218,18 +229,21 @@ export async function notifyFromActivity(entries: ActivityEntry[]) {
           bookingRefundedEmail({
             ...mail(linkRequestUrl),
             refunded: formatMoney(Number(entry.data?.amountCents ?? 0)),
+            manual: entry.data?.manual === true,
           }),
         );
         break;
       case "booking.confirmed":
         // Validée, mais le paiement en ligne reste à faire : on l'annonce plutôt qu'un « C'est réservé ».
-        if (loaded.onlinePayments && awaitsOnlinePayment(booking)) {
+        if (loaded.channel && awaitsOnlinePayment(booking)) {
           await send(
             to,
             bookingAwaitingPaymentEmail({
               ...mail(linkRequestUrl),
               due: formatMoney(amountDueOnline(booking)),
-              minutes: null,
+              ...(loaded.channel.kind === "stripe"
+                ? { reason: "validated" as const, payUrl: linkRequestUrl }
+                : { reason: "link" as const, payUrl: loaded.channel.url }),
             }),
           );
         } else {

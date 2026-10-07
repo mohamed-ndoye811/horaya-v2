@@ -36,6 +36,8 @@ export async function getPublicWorkspace(db: Executor, slug: string) {
       lateCancellationRefundPercent: sql<number>`coalesce(${tenantSettings.lateCancellationRefundPercent}, 50)`,
       /** Paiement en ligne possible : compte Stripe de l'organisateur actif. */
       onlinePayments: sql<boolean>`coalesce(${tenantSettings.stripeAccountStatus} = 'active', false)`,
+      /** Lien de paiement externe par défaut de l'espace. */
+      paymentLinkUrl: tenantSettings.paymentLinkUrl,
     })
     .from(organization)
     .leftJoin(tenantSettings, eq(tenantSettings.organizationId, organization.id))
@@ -60,6 +62,7 @@ const publicEventColumns = {
   depositPercent: event.depositPercent,
   requiresApproval: event.requiresApproval,
   highlights: event.highlights,
+  paymentLinkUrl: event.paymentLinkUrl,
   typeId: eventType.id,
   typeName: eventType.name,
   typeColor: eventType.color,
@@ -83,6 +86,7 @@ export interface PublicEventRow {
   depositPercent: number | null;
   requiresApproval: boolean;
   highlights: string[];
+  paymentLinkUrl: string | null;
   typeId: string;
   typeName: string;
   typeColor: string;
@@ -158,6 +162,7 @@ export async function getManagedBooking(db: Executor, organizationId: string, to
       locationName: event.locationName,
       locationAddress: event.locationAddress,
       onlineUrl: event.onlineUrl,
+      eventPaymentLinkUrl: event.paymentLinkUrl,
       typeColor: eventType.color,
     })
     .from(booking)

@@ -3,7 +3,12 @@ import { getBookingDetail, listBookingPayments } from "@horaya/db";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { BookingHeaderActions, RefundButton } from "@/components/app/booking-actions";
+import {
+  BookingHeaderActions,
+  ManualRefundButton,
+  MarkPaidButton,
+  RefundButton,
+} from "@/components/app/booking-actions";
 import { ItemTile } from "@/components/app/item-tile";
 import { PageHeader } from "@/components/app/page-header";
 import { Avatar, CategorySwatch } from "@/components/ui/avatar";
@@ -22,6 +27,7 @@ import {
   PAYMENT_MODE_LABELS,
 } from "@/lib/format";
 import { db } from "@/server/db";
+import { integratedPaymentsEnabled } from "@/server/payments/config";
 import { getWorkspaceContext } from "@/server/workspace";
 
 export const metadata: Metadata = { title: "Réservation · Horaya" };
@@ -74,6 +80,25 @@ export default async function BookingDetailPage({ params }: PageProps<"/app/rese
   const payments = await listBookingPayments(db, booking.id);
   const paid = paidCents(payments);
   const canRefund = actor.type === "member" && can(actor.role, "booking", "refund") && paid > 0;
+  // Remboursement en ligne seulement si l'argent est passé par Stripe ; sinon on le note.
+  const refundsOnline = payments.some(
+    (entry) =>
+      entry.kind !== "refund" && entry.status === "succeeded" && entry.provider !== "manual",
+  );
+  const active =
+    booking.status === "pending" ||
+    booking.status === "confirmed" ||
+    booking.status === "waitlisted";
+  const canMarkPaid =
+    actor.type === "member" &&
+    can(actor.role, "booking", "update") &&
+    active &&
+    booking.paymentMode !== "free" &&
+    booking.amountCents > paid;
+  const markPaidDefault =
+    booking.paymentMode === "deposit" && paid === 0 && booking.depositCents
+      ? booking.depositCents
+      : booking.amountCents - paid;
   const name = `${booking.customer.firstName} ${booking.customer.lastName}`;
   const badge = BOOKING_STATUS_BADGE[booking.status];
   const now = new Date();
@@ -236,12 +261,34 @@ export default async function BookingDetailPage({ params }: PageProps<"/app/rese
             </section>
           )}
 
-          {payments.length > 0 && (
+          {(payments.length > 0 || canMarkPaid) && (
             <section className="flex flex-col gap-3">
-              <div className="flex items-center justify-between gap-4">
-                <Eyebrow>Paiements en ligne</Eyebrow>
-                {canRefund && <RefundButton bookingId={booking.id} maxCents={paid} />}
+              <div className="flex flex-wrap items-center justify-between gap-4">
+                <Eyebrow>Paiements</Eyebrow>
+                <div className="flex flex-wrap gap-2">
+                  {canMarkPaid && (
+                    <MarkPaidButton bookingId={booking.id} defaultCents={markPaidDefault} />
+                  )}
+                  {canRefund &&
+                    (refundsOnline ? (
+                      <RefundButton bookingId={booking.id} maxCents={paid} />
+                    ) : (
+                      <ManualRefundButton bookingId={booking.id} maxCents={paid} />
+                    ))}
+                </div>
               </div>
+              {booking.status === "cancelled" && paid > 0 && !refundsOnline && (
+                <p className="border-[1.5px] border-warning bg-warning-bg px-4 py-3 text-sm font-semibold text-warning">
+                  Ce client avait payé {formatMoney(paid)} hors Horaya : rembourse-le selon ta
+                  politique d'annulation, puis note le remboursement.
+                </p>
+              )}
+              {payments.length === 0 && (
+                <p className="text-sm font-medium text-ink-muted">
+                  Rien d'encaissé pour l'instant. Quand le paiement arrive, note-le avec « Marquer
+                  comme payé ».
+                </p>
+              )}
               <ul className="flex flex-col border-t border-line-soft">
                 {payments.map((entry) => (
                   <li
@@ -254,7 +301,11 @@ export default async function BookingDetailPage({ params }: PageProps<"/app/rese
                       </span>
                       <span className="font-mono text-label text-ink-muted">
                         {formatShortDateTime(entry.createdAt, timeZone)} ·{" "}
-                        {entry.provider === "test" ? "paiement de test" : "Stripe"}
+                        {entry.provider === "manual"
+                          ? "noté par l'équipe"
+                          : entry.provider === "test"
+                            ? "paiement de test"
+                            : "Stripe"}
                       </span>
                     </span>
                     <span className="flex items-center gap-3">
@@ -371,9 +422,9 @@ export default async function BookingDetailPage({ params }: PageProps<"/app/rese
           </section>
           <section className="mt-auto flex flex-col gap-3 px-7 py-6">
             <p className="text-[13px] font-medium leading-5 text-ink-muted">
-              Une réservation payée en ligne et annulée est remboursée automatiquement sur la carte
-              du client (selon ta politique d'annulation s'il annule lui-même). Un règlement sur
-              place se rembourse hors d'Horaya.
+              {integratedPaymentsEnabled
+                ? "Une réservation payée en ligne et annulée est remboursée automatiquement sur la carte du client (selon ta politique d'annulation s'il annule lui-même). Un règlement sur place se rembourse hors d'Horaya."
+                : "Les paiements passent par ton lien de paiement : note ici chaque paiement reçu et chaque remboursement fait, le client reçoit un e-mail à chaque fois."}
             </p>
           </section>
         </aside>

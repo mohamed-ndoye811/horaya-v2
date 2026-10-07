@@ -40,6 +40,8 @@ export const tenantSettings = pgTable("tenant_settings", {
   /** Part remboursée en cas d'annulation tardive. */
   lateCancellationRefundPercent: integer().notNull().default(50),
   bookingReferencePrefix: text().notNull().default("HRY"),
+  /** Lien de paiement externe par défaut (paiement hors Horaya). */
+  paymentLinkUrl: text(),
   stripeAccountId: text(),
   stripeAccountStatus: stripeAccountStatus().notNull().default("not_connected"),
   createdAt: createdAt(),

@@ -54,6 +54,10 @@ function eventFields(form: FormData, timeZone: string) {
     priceCents: paymentMode === "free" ? 0 : parseEuroToCents(text(form, "price")),
     paymentMode,
     depositPercent: paymentMode === "deposit" && deposit !== "" ? Number(deposit) : null,
+    paymentLinkUrl:
+      paymentMode === "online" || paymentMode === "deposit"
+        ? text(form, "paymentLinkUrl") || null
+        : null,
     requiresApproval: form.get("requiresApproval") === "on",
     highlights: text(form, "highlights")
       .split(",")

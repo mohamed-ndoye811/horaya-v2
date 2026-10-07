@@ -66,7 +66,13 @@ export function BookingForm({
   submitLabel: string;
   summary: ReactNode;
   /** Paiement en ligne juste après (tout ou l'acompte). */
-  payment: { due: string; deposit: boolean; rest: string } | null;
+  payment: {
+    kind: "stripe" | "link";
+    organization: string;
+    due: string;
+    deposit: boolean;
+    rest: string;
+  } | null;
 }) {
   const { state, onSubmit, pending } = useFormAction<FormState>(
     createPublicBookingAction.bind(null, slug, eventSlug, seats),
@@ -216,7 +222,7 @@ export function BookingForm({
                 <span className="font-section text-section leading-7 text-ink">Paiement</span>
               </h2>
               <span className="font-mono text-[11px] font-semibold uppercase tracking-[0.5px] text-ink-muted">
-                Sécurisé par Stripe
+                {payment.kind === "stripe" ? "Sécurisé par Stripe" : "Lien de paiement"}
               </span>
             </div>
             <div className="flex items-center gap-3 border-[1.5px] border-ink-subtle bg-surface px-4 py-4">
@@ -239,9 +245,11 @@ export function BookingForm({
                 <path d="M1 5H21" stroke="currentColor" strokeWidth="2" />
               </svg>
               <p className="text-[15px] font-medium leading-5 text-ink">
-                {payment.deposit
-                  ? `Tu règles l'acompte de ${payment.due} par carte sur la page sécurisée de Stripe ; le reste (${payment.rest}) sur place.`
-                  : `Tu règles ${payment.due} par carte sur la page sécurisée de Stripe, juste après.`}
+                {payment.kind === "stripe"
+                  ? payment.deposit
+                    ? `Tu règles l'acompte de ${payment.due} par carte sur la page sécurisée de Stripe ; le reste (${payment.rest}) sur place.`
+                    : `Tu règles ${payment.due} par carte sur la page sécurisée de Stripe, juste après.`
+                  : `Juste après ta réservation, tu règles ${payment.deposit ? `l'acompte de ${payment.due}` : payment.due} via le lien de paiement de ${payment.organization}${payment.deposit ? ` (le reste, ${payment.rest}, sur place)` : ""}. ${payment.organization} confirme ensuite la réception.`}
               </p>
             </div>
           </section>

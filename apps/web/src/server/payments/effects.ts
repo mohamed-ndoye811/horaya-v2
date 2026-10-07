@@ -6,12 +6,15 @@ import { paymentDeps } from ".";
  * remboursée (selon la politique si c'est le client, entièrement si c'est l'organisateur).
  */
 export async function paymentEffects(entries: ActivityEntry[]) {
+  // Sans paiement intégré, l'argent est rendu hors Horaya (l'équipe le note).
+  const deps = paymentDeps;
+  if (!deps) return;
   for (const entry of entries) {
     if (entry.entityType !== "booking" || entry.action !== "booking.cancelled") continue;
     if (entry.data?.reason === "payment_expired") continue;
     try {
       await refundAfterCancellation(
-        paymentDeps,
+        deps,
         entry.organizationId,
         entry.entityId,
         entry.actorType === "customer" ? "customer" : "organizer",

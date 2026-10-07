@@ -22,7 +22,7 @@ import { googleCalendarUrl } from "@/lib/ics";
 import { cancellationPolicy } from "@/lib/public-booking";
 import { param } from "@/lib/search-params";
 import { db } from "@/server/db";
-import { getWorkspaceBySlug } from "@/server/public";
+import { getWorkspaceBySlug, workspacePaymentChannel } from "@/server/public";
 import { CancelBooking, PayButton, PaymentPending, ResendEmail } from "./manage-actions";
 
 export const metadata: Metadata = { title: "Ta réservation", robots: { index: false } };
@@ -54,7 +54,12 @@ export default async function ManagedBookingPage({
   const refunded = payments
     .filter((entry) => entry.kind === "refund" && entry.status === "succeeded")
     .reduce((total, entry) => total + entry.amountCents, 0);
-  const awaitsPayment = workspace.onlinePayments && awaitsOnlinePayment(booking);
+  const channel = workspacePaymentChannel(
+    workspace,
+    booking.paymentMode,
+    booking.eventPaymentLinkUrl,
+  );
+  const awaitsPayment = channel !== null && awaitsOnlinePayment(booking);
   const due = amountDueOnline(booking);
   const tz = workspace.timezone;
   const startsAt = booking.eventStartsAt ?? booking.rentalStartsAt;
@@ -101,11 +106,16 @@ export default async function ManagedBookingPage({
       };
     if (awaitsPayment)
       return {
-        title: paymentReturn === "ok" ? "Paiement en cours" : "Plus qu'à payer",
+        title:
+          channel?.kind === "stripe" && paymentReturn === "ok"
+            ? "Paiement en cours"
+            : "Plus qu'à payer",
         text:
-          paymentReturn === "ok"
-            ? "Stripe confirme ton paiement : ça ne prend que quelques secondes."
-            : `${yourPlaces} pour « ${title} » ${agree("est retenue", "sont retenues")} le temps du paiement en ligne (${formatMoney(due)}). Sans paiement, ${agree("elle est libérée", "elles sont libérées")} au bout de 30 minutes.`,
+          channel?.kind === "link"
+            ? `${fresh ? `Merci ${booking.customerFirstName}. ` : ""}${yourPlaces} pour « ${title} » ${agree("est réservée", "sont réservées")} : règle ${formatMoney(due)} via le lien de paiement de ${workspace.name}, qui confirmera la réception par e-mail.`
+            : paymentReturn === "ok"
+              ? "Stripe confirme ton paiement : ça ne prend que quelques secondes."
+              : `${yourPlaces} pour « ${title} » ${agree("est retenue", "sont retenues")} le temps du paiement en ligne (${formatMoney(due)}). Sans paiement, ${agree("elle est libérée", "elles sont libérées")} au bout de 30 minutes.`,
       };
     const paidNote =
       booking.paymentStatus === "paid"
@@ -246,9 +256,27 @@ export default async function ManagedBookingPage({
           </div>
           {active && <ResendEmail slug={slug} token={token} />}
           <div className="mt-auto flex flex-col gap-3 pt-4">
-            {awaitsPayment && paymentReturn === "ok" && <PaymentPending />}
-            {awaitsPayment && paymentReturn !== "ok" && (
+            {awaitsPayment && channel?.kind === "stripe" && paymentReturn === "ok" && (
+              <PaymentPending />
+            )}
+            {awaitsPayment && channel?.kind === "stripe" && paymentReturn !== "ok" && (
               <PayButton slug={slug} token={token} label={`Payer ${formatMoney(due)}`} />
+            )}
+            {awaitsPayment && channel?.kind === "link" && (
+              <>
+                <a
+                  href={channel.url}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="flex h-14 items-center justify-center gap-3 bg-ink text-[17px] font-extrabold text-on-ink transition-colors hover:bg-info"
+                >
+                  Payer {formatMoney(due)} ↗
+                </a>
+                <p className="text-[13px] font-medium text-ink-muted">
+                  Le paiement s'ouvre chez le prestataire de {workspace.name}. Tu recevras un reçu
+                  dès qu'il est confirmé.
+                </p>
+              </>
             )}
             {fresh && !awaitsPayment ? (
               <Link

@@ -10,6 +10,8 @@ import {
   type PaymentDeps,
   type PaymentGateway,
   publishEvent,
+  recordManualPayment,
+  recordManualRefund,
   refundAfterCancellation,
   refundBooking,
   startCheckout,
@@ -179,6 +181,28 @@ describe("paiement en ligne", () => {
     await expireCheckout(deps, "test", checkout(1));
     const [row] = await db.select().from(bookingTable).where(eq(bookingTable.id, booking.id));
     expect(row?.status).toBe("cancelled");
+  });
+
+  it("note un paiement reçu hors Horaya, puis un remboursement", async () => {
+    const event = await paidEvent("deposit");
+    const { booking } = await createEventBooking(deps, customerActor(organizationId), {
+      eventId: event.id,
+      seats: 2,
+      customer: contact(),
+    });
+    await recordManualPayment(deps, owner, booking.id, 2100);
+    expect(await statusOf(booking.id)).toBe("paid");
+    const [first] = await db.select().from(payment).where(eq(payment.bookingId, booking.id));
+    expect(first).toMatchObject({ provider: "manual", kind: "deposit", status: "succeeded" });
+    await expect(recordManualPayment(deps, owner, booking.id, 6000)).rejects.toThrow("au plus");
+    await expect(recordManualRefund(deps, owner, booking.id, 5000)).rejects.toThrow(
+      "plus que ce qui a été payé",
+    );
+    await recordManualRefund(deps, owner, booking.id, 2100);
+    expect(await statusOf(booking.id)).toBe("refunded");
+    await expect(
+      recordManualPayment(deps, member(organizationId, "viewer"), booking.id, 100),
+    ).rejects.toThrow(ForbiddenError);
   });
 
   it("refuse le paiement en ligne sans compte actif", async () => {

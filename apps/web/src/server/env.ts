@@ -16,6 +16,8 @@ const schema = z.object({
   /** Clés de la plateforme Stripe Connect (Horaya) ; sans elles, passerelle de test. */
   STRIPE_SECRET_KEY: optional,
   STRIPE_WEBHOOK_SECRET: optional,
+  /** « 1 » : passerelle de test (/paiement-test) sans clés Stripe, pour le développement. */
+  PAYMENTS_TEST_GATEWAY: optional,
 });
 
 /** Variables d'environnement serveur, validées au démarrage. Ne jamais importer côté client. */

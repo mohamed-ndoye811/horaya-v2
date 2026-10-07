@@ -6,6 +6,8 @@ import { useState, useTransition } from "react";
 import {
   cancelBookingAction,
   confirmBookingAction,
+  markPaidAction,
+  recordRefundAction,
   refundBookingAction,
   refuseBookingAction,
 } from "@/app/app/reservations/actions";
@@ -360,5 +362,120 @@ export function RefundButton({ bookingId, maxCents }: { bookingId: string; maxCe
       )}
       <Toast message={message} />
     </>
+  );
+}
+
+/** Montant à saisir puis action (« Marquer comme payé », « Noter un remboursement »). */
+function AmountActionButton({
+  label,
+  title,
+  description,
+  defaultCents,
+  confirm,
+  tone,
+  action,
+}: {
+  label: string;
+  title: string;
+  description: string;
+  defaultCents: number;
+  confirm: (amount: string) => string;
+  tone: "primary" | "danger";
+  action: (amount: string) => Promise<Result>;
+}) {
+  const { pending, message, run } = useBookingAction();
+  const [open, setOpen] = useState(false);
+  const [amount, setAmount] = useState((defaultCents / 100).toFixed(2).replace(".", ","));
+  return (
+    <>
+      <Button
+        variant={tone === "primary" ? "primary" : "secondary"}
+        className="h-10 px-4 text-sm"
+        onClick={() => setOpen(true)}
+      >
+        {label}
+      </Button>
+      {open && (
+        <Dialog
+          open
+          onClose={() => setOpen(false)}
+          title={title}
+          description={description}
+          footer={
+            <>
+              <Button variant="secondary" onClick={() => setOpen(false)}>
+                Retour
+              </Button>
+              <Button
+                variant={tone === "primary" ? "primary" : "danger"}
+                pending={pending}
+                onClick={() =>
+                  run(
+                    () => action(amount),
+                    () => setOpen(false),
+                  )
+                }
+              >
+                {confirm(amount)}
+              </Button>
+            </>
+          }
+        >
+          <Field label="Montant">
+            {(field) => (
+              <AffixInput
+                {...field}
+                inputMode="decimal"
+                value={amount}
+                onChange={(event) => setAmount(event.target.value)}
+                suffix="€"
+                mono
+              />
+            )}
+          </Field>
+        </Dialog>
+      )}
+      <Toast message={message} />
+    </>
+  );
+}
+
+export function MarkPaidButton({
+  bookingId,
+  defaultCents,
+}: {
+  bookingId: string;
+  defaultCents: number;
+}) {
+  return (
+    <AmountActionButton
+      label="Marquer comme payé"
+      title="Paiement reçu"
+      description="Note un paiement reçu hors Horaya (lien de paiement, espèces, virement…). Le client reçoit son reçu par e-mail."
+      defaultCents={defaultCents}
+      confirm={(amount) => `Noter ${amount} €`}
+      tone="primary"
+      action={(amount) => markPaidAction(bookingId, amount)}
+    />
+  );
+}
+
+export function ManualRefundButton({
+  bookingId,
+  maxCents,
+}: {
+  bookingId: string;
+  maxCents: number;
+}) {
+  return (
+    <AmountActionButton
+      label="Noter un remboursement"
+      title="Remboursement"
+      description={`Rembourse le client avec ton outil de paiement, puis note-le ici (${(maxCents / 100).toFixed(2).replace(".", ",")} € au plus). Le client reçoit un e-mail.`}
+      defaultCents={maxCents}
+      confirm={(amount) => `Noter ${amount} € remboursés`}
+      tone="danger"
+      action={(amount) => recordRefundAction(bookingId, amount)}
+    />
   );
 }

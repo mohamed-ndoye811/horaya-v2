@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { paymentLinkSchema } from "../shared/links";
 import { isValidTimeZone } from "../shared/time";
 import { recurrenceSchema } from "./recurrence";
 import { EVENT_VISIBILITIES, PAYMENT_MODES } from "./types";
@@ -94,6 +95,7 @@ const eventFields = {
     .nullable(),
   requiresApproval: z.boolean(),
   highlights: z.array(z.string().trim().min(1).max(80)).max(6),
+  paymentLinkUrl: paymentLinkSchema,
 };
 
 export const createEventSchema = z.object({
@@ -108,6 +110,7 @@ export const createEventSchema = z.object({
   /** Par défaut, celui du type d'événement. */
   requiresApproval: eventFields.requiresApproval.optional(),
   highlights: eventFields.highlights.default([]),
+  paymentLinkUrl: eventFields.paymentLinkUrl.default(null),
   recurrence: recurrenceSchema.optional(),
 });
 export type CreateEventInput = z.input<typeof createEventSchema>;

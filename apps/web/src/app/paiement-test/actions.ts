@@ -12,19 +12,16 @@ function safe(url: string): string {
 }
 
 export async function simulatePaymentAction(checkoutId: string, successUrl: string) {
-  if (!testPayments) notFound();
-  await completeCheckout(
-    paymentDeps,
-    "test",
-    checkoutId,
-    `pi_test_${crypto.randomUUID().slice(0, 12)}`,
-  );
+  const deps = paymentDeps;
+  if (!testPayments || !deps) notFound();
+  await completeCheckout(deps, "test", checkoutId, `pi_test_${crypto.randomUUID().slice(0, 12)}`);
   redirect(safe(successUrl));
 }
 
 export async function simulateExpiryAction(checkoutId: string, cancelUrl: string) {
-  if (!testPayments) notFound();
-  await expireCheckout(paymentDeps, "test", checkoutId);
+  const deps = paymentDeps;
+  if (!testPayments || !deps) notFound();
+  await expireCheckout(deps, "test", checkoutId);
   redirect(safe(cancelUrl));
 }
 

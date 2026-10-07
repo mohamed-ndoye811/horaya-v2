@@ -102,13 +102,16 @@ export const pluralize = (word: string) => (/[sxz]$/i.test(word) ? word : `${wor
 /** Conditions de paiement affichées sur la page publique. */
 export function paymentNote(
   paymentMode: string,
-  onlinePayments: boolean,
+  channel: { kind: "stripe" } | { kind: "link"; url: string } | null,
   depositPercent: number | null,
 ): string {
   if (paymentMode === "free") return "Gratuit";
   if (paymentMode === "on_site") return "Paiement sur place";
-  if (!onlinePayments) return "Paiement auprès de l'organisateur";
+  if (!channel) return "Paiement auprès de l'organisateur";
+  const how = channel.kind === "stripe" ? "par carte" : "en ligne";
   return paymentMode === "deposit"
-    ? `Acompte de ${depositPercent ?? 0} % par carte, le reste sur place`
-    : "Paiement sécurisé par carte";
+    ? `Acompte de ${depositPercent ?? 0} % ${how}, le reste sur place`
+    : channel.kind === "stripe"
+      ? "Paiement sécurisé par carte"
+      : "Paiement en ligne après la réservation";
 }

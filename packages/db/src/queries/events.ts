@@ -236,6 +236,7 @@ export async function getEventDetail(db: Executor, organizationId: string, event
       ...eventColumns,
       description: event.description,
       highlights: event.highlights,
+      paymentLinkUrl: event.paymentLinkUrl,
       requiresApproval: event.requiresApproval,
       depositPercent: event.depositPercent,
       publishedAt: event.publishedAt,
@@ -270,6 +271,7 @@ export async function getEventDetail(db: Executor, organizationId: string, event
     event: row as EventRow & {
       description: string;
       highlights: string[];
+      paymentLinkUrl: string | null;
       requiresApproval: boolean;
       depositPercent: number | null;
       publishedAt: Date | null;

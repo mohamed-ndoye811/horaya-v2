@@ -54,3 +54,14 @@ describe("paiements dans l'historique", () => {
     ).toBe("Annulée : paiement en ligne non finalisé");
   });
 });
+
+it("distingue un paiement noté par l'équipe", () => {
+  expect(
+    describeBookingActivity({
+      action: "booking.paid",
+      actorType: "member",
+      actorName: "Camille Roux",
+      data: { amountCents: 3500, kind: "charge", manual: true },
+    }).title,
+  ).toBe(`Paiement noté par Camille · ${formatMoney(3500)}`);
+});

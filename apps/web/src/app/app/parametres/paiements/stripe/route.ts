@@ -7,8 +7,10 @@ import { getWorkspaceContext } from "@/server/workspace";
 /** Retour de l'activation Stripe : on relit l'état du compte (ou on relance un lien expiré). */
 export async function GET(request: Request) {
   const { actor, user, workspace } = await getWorkspaceContext();
+  const deps = paymentDeps;
+  if (!deps) redirect("/app/parametres/paiements");
   if (new URL(request.url).searchParams.get("relancer")) {
-    const { url } = await connectPaymentAccount(paymentDeps, actor, {
+    const { url } = await connectPaymentAccount(deps, actor, {
       email: user.email,
       businessName: workspace.name,
       returnUrl: absoluteUrl("/app/parametres/paiements/stripe"),
@@ -16,6 +18,6 @@ export async function GET(request: Request) {
     });
     redirect(url);
   }
-  await refreshPaymentAccount(paymentDeps, workspace.id);
+  await refreshPaymentAccount(deps, workspace.id);
   redirect("/app/parametres/paiements");
 }

@@ -78,3 +78,26 @@ export async function sumCollectedSince(
     );
   return row?.value ?? 0;
 }
+
+/** Reste à encaisser : réservations confirmées qui attendent leur paiement en ligne (tout ou l'acompte). */
+export async function sumAwaitingPayment(
+  db: Executor,
+  organizationId: string,
+): Promise<{ count: number; cents: number }> {
+  const [row] = await db
+    .select({
+      count: sql<number>`count(*)::int`,
+      cents: sql<number>`coalesce(sum(case when ${booking.paymentMode} = 'deposit' then coalesce(${booking.depositCents}, ${booking.amountCents}) else ${booking.amountCents} end), 0)::int`,
+    })
+    .from(booking)
+    .where(
+      and(
+        eq(booking.organizationId, organizationId),
+        eq(booking.status, "confirmed"),
+        sql`${booking.paymentMode} in ('online', 'deposit')`,
+        sql`${booking.paymentStatus} in ('none', 'failed')`,
+        sql`${booking.amountCents} > 0`,
+      ),
+    );
+  return row ?? { count: 0, cents: 0 };
+}

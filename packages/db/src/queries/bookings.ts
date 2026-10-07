@@ -224,6 +224,7 @@ export async function getBookingDetail(db: Executor, organizationId: string, boo
         locationName: event.locationName,
         capacity: event.capacity,
         status: event.status,
+        paymentLinkUrl: event.paymentLinkUrl,
       },
       typeColor: eventType.color,
     })

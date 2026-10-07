@@ -5,7 +5,7 @@ import {
   NOTIFICATION_TYPES,
   type NotificationPreference,
 } from "@horaya/core";
-import { AffixInput, Field } from "@/components/ui/field";
+import { AffixInput, Field, inputClasses } from "@/components/ui/field";
 import { FormAlert } from "@/components/ui/form-alert";
 import { FormSection } from "@/components/ui/section";
 import { Select } from "@/components/ui/select";
@@ -27,6 +27,7 @@ export function PaymentsForm({
   editable,
   initial,
   preferences,
+  showPaymentLink,
 }: {
   editable: boolean;
   initial: {
@@ -34,7 +35,10 @@ export function PaymentsForm({
     defaultDepositPercent: string;
     freeCancellationHours: number;
     lateCancellationRefundPercent: number;
+    paymentLinkUrl: string;
   };
+  /** Paiement par lien (pas de Stripe intégré) : lien par défaut de l'espace. */
+  showPaymentLink: boolean;
   preferences: NotificationPreference[];
 }) {
   const { state, onSubmit } = useFormAction<FormState>(savePaymentsAction, {});
@@ -133,6 +137,30 @@ export function PaymentsForm({
                 </Select>
               )}
             </Field>
+            {showPaymentLink && (
+              <Field
+                label="Lien de paiement par défaut"
+                error={errors.paymentLinkUrl}
+                hint={
+                  <p className="text-[13px] font-medium text-ink-muted">
+                    Pour les événements payés en ligne ou par acompte qui n'ont pas leur propre
+                    lien.
+                  </p>
+                }
+              >
+                {(field) => (
+                  <input
+                    {...field}
+                    type="url"
+                    name="paymentLinkUrl"
+                    maxLength={500}
+                    defaultValue={initial.paymentLinkUrl}
+                    placeholder="https://buy.stripe.com/…"
+                    className={inputClasses()}
+                  />
+                )}
+              </Field>
+            )}
           </FormSection>
         </fieldset>
 

@@ -185,26 +185,44 @@ export function teamBookingEmail(input: {
   };
 }
 
-/** Réservation retenue le temps du paiement en ligne (le lien permet de payer plus tard). */
+/**
+ * « Plus qu'à payer » :
+ * - `checkout` : places retenues le temps du paiement intégré (le lien permet de reprendre) ;
+ * - `validated` : demande validée par l'équipe, paiement en ligne à faire ;
+ * - `link` : paiement via le lien externe de l'organisateur, qui confirme ensuite la réception.
+ */
 export function bookingAwaitingPaymentEmail(
-  /** `minutes` : places retenues le temps du paiement ; null pour une demande tout juste validée. */
-  mail: BookingMail & { due: string; minutes: number | null },
+  mail: BookingMail & {
+    due: string;
+    reason: "checkout" | "validated" | "link";
+    payUrl: string;
+    minutes?: number;
+  },
 ): EmailContent {
+  const paragraphs = {
+    checkout: [
+      `Tes ${places(mail.seats)} pour « ${mail.title} » sont retenues ${mail.minutes ?? 30} minutes, le temps de régler ${mail.due} en ligne. Sans paiement, elles sont libérées pour d'autres participants.`,
+      "Si la page de paiement s'est fermée, le lien ci-dessous permet de reprendre.",
+    ],
+    validated: [
+      `Bonne nouvelle : ${mail.workspace.name} a validé ta demande pour « ${mail.title} ». Il ne reste plus qu'à régler ${mail.due} en ligne pour confirmer tes places.`,
+    ],
+    link: [
+      `Tes ${places(mail.seats)} pour « ${mail.title} » sont réservées. Règle ${mail.due} via le lien de paiement de ${mail.workspace.name} : tu recevras un reçu dès qu'il aura confirmé la réception.`,
+      `Pour consulter ou annuler ta réservation : ${mail.manageUrl}`,
+    ],
+  }[mail.reason];
   return bookingEmail(mail, {
     subject: `Plus qu'à payer : ${mail.title}`,
     title: "Plus qu'à payer",
-    preheader: mail.minutes
-      ? `Tes places sont retenues ${mail.minutes} minutes, le temps du paiement.`
-      : "Ta demande est validée : règle ton paiement pour confirmer.",
-    paragraphs: mail.minutes
-      ? [
-          `Tes ${places(mail.seats)} pour « ${mail.title} » sont retenues ${mail.minutes} minutes, le temps de régler ${mail.due} en ligne. Sans paiement, elles sont libérées pour d'autres participants.`,
-          "Si la page de paiement s'est fermée, le lien ci-dessous permet de reprendre.",
-        ]
-      : [
-          `Bonne nouvelle : ${mail.workspace.name} a validé ta demande pour « ${mail.title} ». Il ne reste plus qu'à régler ${mail.due} en ligne pour confirmer tes places.`,
-        ],
-    action: { label: `Payer ${mail.due}`, url: mail.manageUrl },
+    preheader:
+      mail.reason === "checkout"
+        ? `Tes places sont retenues ${mail.minutes ?? 30} minutes, le temps du paiement.`
+        : mail.reason === "validated"
+          ? "Ta demande est validée : règle ton paiement pour confirmer."
+          : `Règle ${mail.due} pour finaliser ta réservation.`,
+    paragraphs,
+    action: { label: `Payer ${mail.due}`, url: mail.payUrl },
   });
 }
 
@@ -223,13 +241,20 @@ export function bookingPaymentReceivedEmail(
   });
 }
 
-export function bookingRefundedEmail(mail: BookingMail & { refunded: string }): EmailContent {
+export function bookingRefundedEmail(
+  mail: BookingMail & {
+    refunded: string /** Remboursement fait hors Horaya et noté par l'équipe. */;
+    manual?: boolean;
+  },
+): EmailContent {
   return bookingEmail(mail, {
     subject: `Remboursement : ${mail.title}`,
     title: "Remboursement en route",
-    preheader: `${mail.refunded} remboursés sur ta carte.`,
+    preheader: `${mail.refunded} remboursés.`,
     paragraphs: [
-      `${mail.workspace.name} t'a remboursé ${mail.refunded} pour « ${mail.title} ». Le montant apparaît sur ton compte sous 5 à 10 jours, selon ta banque.`,
+      mail.manual
+        ? `${mail.workspace.name} t'a remboursé ${mail.refunded} pour « ${mail.title} », par le même moyen que ton paiement. Selon ta banque, comptes quelques jours.`
+        : `${mail.workspace.name} t'a remboursé ${mail.refunded} pour « ${mail.title} ». Le montant apparaît sur ton compte sous 5 à 10 jours, selon ta banque.`,
     ],
   });
 }

@@ -1,5 +1,10 @@
 import { can, refreshPaymentAccount, withDefaultPreferences } from "@horaya/core";
-import { getNotificationPreferences, getWorkspaceSettings, sumCollectedSince } from "@horaya/db";
+import {
+  getNotificationPreferences,
+  getWorkspaceSettings,
+  sumAwaitingPayment,
+  sumCollectedSince,
+} from "@horaya/db";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { SettingsShell } from "@/components/app/settings-shell";
@@ -69,6 +74,7 @@ export default async function PaymentsSettingsPage({
   if (!settings) notFound();
   // Activation en cours chez Stripe : on relit l'état du compte à chaque visite.
   if (
+    paymentDeps &&
     settings.stripeAccountId &&
     (settings.stripeAccountStatus === "pending" || settings.stripeAccountStatus === "restricted")
   ) {
@@ -82,7 +88,10 @@ export default async function PaymentsSettingsPage({
   const state = ACCOUNT_STATES[settings.stripeAccountStatus] ?? ACCOUNT_STATES.not_connected;
   const accountId = settings.stripeAccountId;
   const balance =
-    connected && accountId ? await paymentGateway.getBalance(accountId).catch(() => null) : null;
+    paymentGateway && connected && accountId
+      ? await paymentGateway.getBalance(accountId).catch(() => null)
+      : null;
+  const awaiting = await sumAwaitingPayment(db, workspace.id);
   const dayMonth = new Intl.DateTimeFormat("fr-FR", {
     weekday: "short",
     day: "numeric",
@@ -95,9 +104,13 @@ export default async function PaymentsSettingsPage({
       section="paiements"
       breadcrumb="Paiements & notifications"
       subtitle={
-        connected
-          ? `Paiements en ligne via Stripe${testPayments ? " (mode test)" : ""} · versements automatiques`
-          : "Paiements sur place tant que Stripe n'est pas connecté"
+        !paymentGateway
+          ? settings.paymentLinkUrl
+            ? "Paiement en ligne par lien · réception confirmée par l'équipe"
+            : "Paiements sur place ou auprès de l'organisateur"
+          : connected
+            ? `Paiements en ligne via Stripe${testPayments ? " (mode test)" : ""} · versements automatiques`
+            : "Paiements sur place tant que Stripe n'est pas connecté"
       }
       actions={
         <>
@@ -111,84 +124,126 @@ export default async function PaymentsSettingsPage({
       }
     >
       <div className="flex flex-col gap-8">
-        <section
-          aria-label="Paiements en ligne"
-          className="flex flex-col border-2 border-ink bg-surface"
-        >
-          <div className="flex flex-wrap items-center justify-between gap-4 border-b border-line-soft px-5 py-4">
-            <div className="flex min-w-0 items-center gap-3.5">
-              <span
-                aria-hidden="true"
-                className="flex size-10 shrink-0 items-center justify-center bg-[#635BFF] text-xl font-extrabold text-white"
-              >
-                S
-              </span>
-              <div className="flex min-w-0 flex-col gap-[3px]">
-                <p className="text-base font-extrabold text-ink">Stripe · {workspace.name}</p>
-                <p className="font-mono text-label text-ink-muted">
-                  {accountId ? `${accountId.slice(0, 9)}…${accountId.slice(-4)} · ` : ""}
-                  {state.line}
-                </p>
-              </div>
-              <StatusBadge tone={state.tone}>{state.badge}</StatusBadge>
-            </div>
-            {connected ? (
-              testPayments ? (
-                <span className="font-mono text-label font-semibold uppercase tracking-[0.055em] text-warning">
-                  Mode test
-                </span>
-              ) : (
-                <a
-                  href="https://dashboard.stripe.com/"
-                  target="_blank"
-                  rel="noreferrer"
-                  className="flex h-10 items-center gap-2 border-2 border-ink px-4 text-sm font-bold text-ink transition-colors hover:bg-bg"
+        {paymentGateway ? (
+          <section
+            aria-label="Paiements en ligne"
+            className="flex flex-col border-2 border-ink bg-surface"
+          >
+            <div className="flex flex-wrap items-center justify-between gap-4 border-b border-line-soft px-5 py-4">
+              <div className="flex min-w-0 items-center gap-3.5">
+                <span
+                  aria-hidden="true"
+                  className="flex size-10 shrink-0 items-center justify-center bg-[#635BFF] text-xl font-extrabold text-white"
                 >
-                  Ouvrir Stripe ↗
-                </a>
-              )
-            ) : canConnect ? (
-              <form action={connectStripeAction}>
-                <Button type="submit" className="h-10 px-4 text-sm">
-                  {settings.stripeAccountStatus === "not_connected"
-                    ? "Connecter Stripe"
-                    : "Reprendre l'activation"}
-                </Button>
-              </form>
-            ) : (
-              <p className="text-[13px] font-medium text-ink-muted">
-                Le propriétaire de l'espace connecte Stripe.
+                  S
+                </span>
+                <div className="flex min-w-0 flex-col gap-[3px]">
+                  <p className="text-base font-extrabold text-ink">Stripe · {workspace.name}</p>
+                  <p className="font-mono text-label text-ink-muted">
+                    {accountId ? `${accountId.slice(0, 9)}…${accountId.slice(-4)} · ` : ""}
+                    {state.line}
+                  </p>
+                </div>
+                <StatusBadge tone={state.tone}>{state.badge}</StatusBadge>
+              </div>
+              {connected ? (
+                testPayments ? (
+                  <span className="font-mono text-label font-semibold uppercase tracking-[0.055em] text-warning">
+                    Mode test
+                  </span>
+                ) : (
+                  <a
+                    href="https://dashboard.stripe.com/"
+                    target="_blank"
+                    rel="noreferrer"
+                    className="flex h-10 items-center gap-2 border-2 border-ink px-4 text-sm font-bold text-ink transition-colors hover:bg-bg"
+                  >
+                    Ouvrir Stripe ↗
+                  </a>
+                )
+              ) : canConnect ? (
+                <form action={connectStripeAction}>
+                  <Button type="submit" className="h-10 px-4 text-sm">
+                    {settings.stripeAccountStatus === "not_connected"
+                      ? "Connecter Stripe"
+                      : "Reprendre l'activation"}
+                  </Button>
+                </form>
+              ) : (
+                <p className="text-[13px] font-medium text-ink-muted">
+                  Le propriétaire de l'espace connecte Stripe.
+                </p>
+              )}
+            </div>
+            {stripeError && (
+              <p className="border-b border-line-soft bg-danger-bg px-5 py-3 text-sm font-semibold text-danger">
+                Stripe n'a pas pu être joint. Réessaie dans un instant.
               </p>
             )}
-          </div>
-          {stripeError && (
-            <p className="border-b border-line-soft bg-danger-bg px-5 py-3 text-sm font-semibold text-danger">
-              Stripe n'a pas pu être joint. Réessaie dans un instant.
-            </p>
-          )}
-          <dl className="grid sm:grid-cols-3">
-            {[
-              ["Solde disponible", balance ? formatMoney(balance.availableCents) : "—"],
-              [
-                "Prochain virement",
-                balance?.nextPayoutAt
-                  ? dayMonth.format(balance.nextPayoutAt).replace(/^./, (c) => c.toUpperCase())
-                  : "—",
-              ],
-              [`Encaissé en ${MONTHS[today.month - 1]}`, formatMoney(collected)],
-            ].map(([label, value], index) => (
-              <div
-                key={label}
-                className={`flex flex-col gap-2 px-5 py-4 ${index > 0 ? "border-t border-line-soft sm:border-t-0 sm:border-l" : ""}`}
-              >
-                <dt className="font-mono text-label font-semibold uppercase tracking-[0.055em] text-neutral">
-                  {label}
-                </dt>
-                <dd className="font-headline text-[36px] leading-9 text-ink">{value}</dd>
-              </div>
-            ))}
-          </dl>
-        </section>
+            <dl className="grid sm:grid-cols-3">
+              {[
+                ["Solde disponible", balance ? formatMoney(balance.availableCents) : "—"],
+                [
+                  "Prochain virement",
+                  balance?.nextPayoutAt
+                    ? dayMonth.format(balance.nextPayoutAt).replace(/^./, (c) => c.toUpperCase())
+                    : "—",
+                ],
+                [`Encaissé en ${MONTHS[today.month - 1]}`, formatMoney(collected)],
+              ].map(([label, value], index) => (
+                <div
+                  key={label}
+                  className={`flex flex-col gap-2 px-5 py-4 ${index > 0 ? "border-t border-line-soft sm:border-t-0 sm:border-l" : ""}`}
+                >
+                  <dt className="font-mono text-label font-semibold uppercase tracking-[0.055em] text-neutral">
+                    {label}
+                  </dt>
+                  <dd className="font-headline text-[36px] leading-9 text-ink">{value}</dd>
+                </div>
+              ))}
+            </dl>
+          </section>
+        ) : (
+          <section
+            aria-label="Paiement par lien"
+            className="flex flex-col border-2 border-ink bg-surface"
+          >
+            <div className="flex flex-col gap-1 border-b border-line-soft px-5 py-4">
+              <p className="text-base font-extrabold text-ink">Paiement en ligne par lien</p>
+              <p className="text-sm font-medium leading-5 text-ink-muted">
+                Colle ci-dessous le lien de ton outil de paiement (lien de paiement Stripe, SumUp,
+                PayPal, HelloAsso…) : après une réservation payante, le client le reçoit avec un
+                bouton « Payer ». Quand l'argent arrive, note-le sur la réservation avec « Marquer
+                comme payé ». Un événement peut avoir son propre lien.
+              </p>
+            </div>
+            <dl className="grid sm:grid-cols-2">
+              {[
+                [
+                  `Encaissé en ${MONTHS[today.month - 1]}`,
+                  formatMoney(collected),
+                  "noté dans Horaya",
+                ],
+                [
+                  "À encaisser",
+                  formatMoney(awaiting.cents),
+                  `${awaiting.count} réservation${awaiting.count > 1 ? "s" : ""} à payer`,
+                ],
+              ].map(([label, value, caption], index) => (
+                <div
+                  key={label}
+                  className={`flex flex-col gap-2 px-5 py-4 ${index > 0 ? "border-t border-line-soft sm:border-t-0 sm:border-l" : ""}`}
+                >
+                  <dt className="font-mono text-label font-semibold uppercase tracking-[0.055em] text-neutral">
+                    {label}
+                  </dt>
+                  <dd className="font-headline text-[36px] leading-9 text-ink">{value}</dd>
+                  <dd className="text-[13px] font-medium text-ink-muted">{caption}</dd>
+                </div>
+              ))}
+            </dl>
+          </section>
+        )}
 
         <PaymentsForm
           editable={editable}
@@ -197,7 +252,9 @@ export default async function PaymentsSettingsPage({
             defaultDepositPercent: String(settings.defaultDepositPercent),
             freeCancellationHours: settings.freeCancellationHours,
             lateCancellationRefundPercent: settings.lateCancellationRefundPercent,
+            paymentLinkUrl: settings.paymentLinkUrl ?? "",
           }}
+          showPaymentLink={!paymentGateway}
           preferences={withDefaultPreferences(saved)}
         />
       </div>

@@ -34,6 +34,7 @@ export * from "./payments/use-cases";
 export * from "./shared/actor";
 export * from "./shared/clock";
 export * from "./shared/errors";
+export * from "./shared/links";
 export * from "./shared/time";
 export * from "./shared/tokens";
 export * from "./shared/unit-of-work";

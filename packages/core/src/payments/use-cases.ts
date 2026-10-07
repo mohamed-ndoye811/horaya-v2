@@ -1,6 +1,6 @@
 import { cancelBookingBySystem } from "../bookings/use-cases";
 import { type Actor, actorRef, assertMemberCan } from "../shared/actor";
-import { ConflictError, NotFoundError } from "../shared/errors";
+import { ConflictError, NotFoundError, ValidationError } from "../shared/errors";
 import type { Deps } from "../shared/unit-of-work";
 import type { StripeAccountStatus } from "../tenants/types";
 import type { PaymentGateway } from "./ports";
@@ -270,4 +270,110 @@ export async function refundAfterCancellation(
   });
   if (amount <= 0) return 0;
   return refundBooking(deps, { type: "system", organizationId }, bookingId, amount);
+}
+
+/**
+ * « Marquer comme payé » : paiement reçu hors Horaya (lien de paiement externe, espèces,
+ * virement…). Noté par l'équipe, il déclenche le même reçu qu'un paiement en ligne.
+ */
+export async function recordManualPayment(
+  deps: Deps,
+  actor: Actor,
+  bookingId: string,
+  amountCents: number,
+): Promise<void> {
+  assertMemberCan(actor, "booking", "update");
+  if (!Number.isInteger(amountCents) || amountCents <= 0) {
+    throw new ValidationError("Montant invalide", [
+      { path: "amount", message: "Montant invalide" },
+    ]);
+  }
+  await deps.uow.run(async (repositories) => {
+    const booking = await repositories.bookings.find(actor.organizationId, bookingId);
+    if (!booking) throw new NotFoundError("Réservation", bookingId);
+    if (booking.status === "cancelled" || booking.status === "refused") {
+      throw new ConflictError("Cette réservation n'est plus active");
+    }
+    const already = paidCents(await repositories.payments.listForBooking(bookingId));
+    if (already + amountCents > booking.amountCents) {
+      const left = ((booking.amountCents - already) / 100).toFixed(2).replace(".", ",");
+      throw new ConflictError(`Il reste ${left} € à payer au plus`);
+    }
+    await repositories.payments.insert({
+      organizationId: actor.organizationId,
+      bookingId,
+      kind:
+        booking.paymentMode === "deposit" && already + amountCents < booking.amountCents
+          ? "deposit"
+          : "charge",
+      status: "succeeded",
+      amountCents,
+      currency: booking.currency,
+      provider: "manual",
+      providerReference: null,
+      checkoutReference: null,
+    });
+    await repositories.bookings.updatePaymentStatus(actor.organizationId, bookingId, "paid");
+    await repositories.activity.record({
+      organizationId: actor.organizationId,
+      entityType: "booking",
+      entityId: bookingId,
+      action: "booking.paid",
+      ...actorRef(actor),
+      data: {
+        amountCents,
+        kind:
+          booking.paymentMode === "deposit" && already + amountCents < booking.amountCents
+            ? "deposit"
+            : "charge",
+        manual: true,
+      },
+    });
+  });
+}
+
+/** « Noter un remboursement » : argent rendu hors Horaya, plafonné à ce qui a été encaissé. */
+export async function recordManualRefund(
+  deps: Deps,
+  actor: Actor,
+  bookingId: string,
+  amountCents: number,
+): Promise<void> {
+  assertMemberCan(actor, "booking", "refund");
+  if (!Number.isInteger(amountCents) || amountCents <= 0) {
+    throw new ValidationError("Montant invalide", [
+      { path: "amount", message: "Montant invalide" },
+    ]);
+  }
+  await deps.uow.run(async (repositories) => {
+    const booking = await repositories.bookings.find(actor.organizationId, bookingId);
+    if (!booking) throw new NotFoundError("Réservation", bookingId);
+    const paid = paidCents(await repositories.payments.listForBooking(bookingId));
+    if (amountCents > paid)
+      throw new ConflictError("On ne peut pas rembourser plus que ce qui a été payé");
+    await repositories.payments.insert({
+      organizationId: actor.organizationId,
+      bookingId,
+      kind: "refund",
+      status: "succeeded",
+      amountCents,
+      currency: booking.currency,
+      provider: "manual",
+      providerReference: null,
+      checkoutReference: null,
+    });
+    await repositories.bookings.updatePaymentStatus(
+      actor.organizationId,
+      bookingId,
+      paid - amountCents > 0 ? "partially_refunded" : "refunded",
+    );
+    await repositories.activity.record({
+      organizationId: actor.organizationId,
+      entityType: "booking",
+      entityId: bookingId,
+      action: "booking.refunded",
+      ...actorRef(actor),
+      data: { amountCents, manual: true },
+    });
+  });
 }

@@ -4,6 +4,8 @@ import {
   cancelBooking,
   confirmBooking,
   createEventBooking,
+  recordManualPayment,
+  recordManualRefund,
   refundBooking,
   refuseBooking,
 } from "@horaya/core";
@@ -78,5 +80,27 @@ export async function refundBookingAction(bookingId: string, amount: string): Pr
   const { actor } = await getWorkspaceContext();
   const cents = parseEuroToCents(amount);
   if (!Number.isInteger(cents) || cents <= 0) return { error: "Montant invalide." };
-  return run(() => refundBooking(paymentDeps, actor, bookingId, cents), "Remboursement envoyé.");
+  const deps = paymentDeps;
+  if (!deps)
+    return { error: "Le paiement en ligne n'est pas activé : note le remboursement à la place." };
+  return run(() => refundBooking(deps, actor, bookingId, cents), "Remboursement envoyé.");
+}
+
+/** « Marquer comme payé » : paiement reçu hors Horaya (lien externe, espèces, virement…). */
+export async function markPaidAction(bookingId: string, amount: string): Promise<FormState> {
+  const { actor } = await getWorkspaceContext();
+  const cents = parseEuroToCents(amount);
+  if (!Number.isInteger(cents) || cents <= 0) return { error: "Montant invalide." };
+  return run(
+    () => recordManualPayment(deps, actor, bookingId, cents),
+    "Paiement noté, reçu envoyé au client.",
+  );
+}
+
+/** « Noter un remboursement » : argent rendu hors Horaya. */
+export async function recordRefundAction(bookingId: string, amount: string): Promise<FormState> {
+  const { actor } = await getWorkspaceContext();
+  const cents = parseEuroToCents(amount);
+  if (!Number.isInteger(cents) || cents <= 0) return { error: "Montant invalide." };
+  return run(() => recordManualRefund(deps, actor, bookingId, cents), "Remboursement noté.");
 }

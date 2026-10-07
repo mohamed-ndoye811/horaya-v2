@@ -43,6 +43,8 @@ export interface EventFormValues {
   price: string;
   paymentMode: string;
   depositPercent: string;
+  /** Lien de paiement propre à l'événement (sinon celui des paramètres). */
+  paymentLinkUrl: string;
   requiresApproval: boolean;
   visibility: string;
   /** Points forts séparés par des virgules (« Déjeuner inclus, Accessible PMR »). */
@@ -51,7 +53,7 @@ export interface EventFormValues {
 
 const PAYMENT_OPTIONS = [
   { value: "free", label: "Gratuit", description: "Inscription seule" },
-  { value: "online", label: "Paiement en ligne", description: "Carte via Stripe" },
+  { value: "online", label: "Paiement en ligne", description: "Lien de paiement" },
   { value: "deposit", label: "Acompte", description: "Le reste sur place" },
   { value: "on_site", label: "Sur place", description: "Espèces ou carte" },
 ];
@@ -461,6 +463,30 @@ export function EventForm({
               </Field>
             )}
           </div>
+          {(values.paymentMode === "online" || values.paymentMode === "deposit") && (
+            <Field
+              label="Lien de paiement"
+              error={errors.paymentLinkUrl}
+              hint={
+                <p className="text-[13px] font-medium text-ink-muted">
+                  Facultatif : sans lien ici, celui de Paramètres › Paiements est proposé au client.
+                </p>
+              }
+            >
+              {(field) => (
+                <input
+                  {...field}
+                  type="url"
+                  name="paymentLinkUrl"
+                  maxLength={500}
+                  value={values.paymentLinkUrl}
+                  onChange={(event) => set({ paymentLinkUrl: event.target.value })}
+                  placeholder="https://buy.stripe.com/…"
+                  className={inputClasses()}
+                />
+              )}
+            </Field>
+          )}
           <Checkbox
             name="requiresApproval"
             checked={values.requiresApproval}

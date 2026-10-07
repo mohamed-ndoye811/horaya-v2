@@ -93,7 +93,7 @@ export function formatShortDateTime(date: Date, timeZone = DEFAULT_TIME_ZONE): s
 
 export const PAYMENT_MODE_LABELS: Record<string, string> = {
   free: "Gratuit",
-  online: "Carte",
+  online: "En ligne",
   deposit: "Acompte",
   on_site: "Sur place",
 };

@@ -57,6 +57,8 @@ export interface Event {
   depositPercent: number | null;
   requiresApproval: boolean;
   highlights: string[];
+  /** Lien de paiement externe propre à l'événement (sinon celui de l'espace). */
+  paymentLinkUrl: string | null;
   coverImageUrl: string | null;
   publishedAt: Date | null;
   cancelledAt: Date | null;
@@ -82,4 +84,5 @@ export type EventDetails = Pick<
   | "depositPercent"
   | "requiresApproval"
   | "highlights"
+  | "paymentLinkUrl"
 >;

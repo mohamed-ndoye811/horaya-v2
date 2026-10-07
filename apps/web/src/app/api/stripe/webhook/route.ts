@@ -10,8 +10,10 @@ import { paymentDeps, paymentGateway } from "@/server/payments";
  * jour. Signature vérifiée ; chaque traitement est idempotent (Stripe peut renvoyer un événement).
  */
 export async function POST(request: Request) {
+  const deps = paymentDeps;
   if (
-    paymentGateway.provider !== "stripe" ||
+    paymentGateway?.provider !== "stripe" ||
+    !deps ||
     !env.STRIPE_SECRET_KEY ||
     !env.STRIPE_WEBHOOK_SECRET
   ) {
@@ -35,17 +37,17 @@ export async function POST(request: Request) {
       case "checkout.session.async_payment_succeeded": {
         const session = event.data.object;
         if (session.payment_status === "paid" && typeof session.payment_intent === "string") {
-          await completeCheckout(paymentDeps, "stripe", session.id, session.payment_intent);
+          await completeCheckout(deps, "stripe", session.id, session.payment_intent);
         }
         break;
       }
       case "checkout.session.expired":
       case "checkout.session.async_payment_failed":
-        await expireCheckout(paymentDeps, "stripe", event.data.object.id);
+        await expireCheckout(deps, "stripe", event.data.object.id);
         break;
       case "account.updated": {
         const organizationId = await findOrganizationByPaymentAccount(db, event.data.object.id);
-        if (organizationId) await refreshPaymentAccount(paymentDeps, organizationId);
+        if (organizationId) await refreshPaymentAccount(deps, organizationId);
         break;
       }
     }

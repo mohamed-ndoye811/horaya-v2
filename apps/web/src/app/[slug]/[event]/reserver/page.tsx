@@ -11,7 +11,7 @@ import { formatEventRange, formatMoney } from "@/lib/format";
 import { bookingState, cancellationPolicy, paymentNote } from "@/lib/public-booking";
 import { param } from "@/lib/search-params";
 import { db } from "@/server/db";
-import { getWorkspaceBySlug } from "@/server/public";
+import { getWorkspaceBySlug, workspacePaymentChannel } from "@/server/public";
 import { BookingForm } from "./booking-form";
 
 export const metadata: Metadata = { title: "Réserver tes places", robots: { index: false } };
@@ -48,13 +48,11 @@ export default async function BookEventPage({
     event.paymentMode === "deposit" && event.depositPercent !== null
       ? Math.round((total * event.depositPercent) / 100)
       : null;
-  // Paiement en ligne tout de suite : réservation confirmée d'office (ni validation ni liste d'attente).
-  const payNow =
-    workspace.onlinePayments &&
-    (event.paymentMode === "online" || event.paymentMode === "deposit") &&
-    state.kind === "open" &&
-    !event.requiresApproval &&
-    total > 0;
+  const channel = workspacePaymentChannel(workspace, event.paymentMode, event.paymentLinkUrl);
+  // Paiement en ligne juste après : réservation confirmée d'office (ni validation ni liste d'attente).
+  const paysOnline =
+    channel !== null && state.kind === "open" && !event.requiresApproval && total > 0;
+  const payNow = paysOnline && channel?.kind === "stripe";
   const dueNow = event.paymentMode === "deposit" ? (depositCents ?? total) : total;
   const submitLabel =
     state.kind === "waitlist"
@@ -122,8 +120,10 @@ export default async function BookEventPage({
         workspaceName={workspace.name}
         submitLabel={submitLabel}
         payment={
-          payNow
+          paysOnline && channel
             ? {
+                kind: channel.kind,
+                organization: workspace.name,
                 due: formatMoney(dueNow),
                 deposit: event.paymentMode === "deposit",
                 rest: formatMoney(total - dueNow),
@@ -163,9 +163,7 @@ export default async function BookEventPage({
               </p>
               <p className="flex justify-between gap-4 text-sm font-medium text-ink-muted">
                 <span>Paiement</span>
-                <span>
-                  {paymentNote(event.paymentMode, workspace.onlinePayments, event.depositPercent)}
-                </span>
+                <span>{paymentNote(event.paymentMode, channel, event.depositPercent)}</span>
               </p>
             </div>
             <div className="flex items-baseline justify-between px-6 pt-5 pb-1">

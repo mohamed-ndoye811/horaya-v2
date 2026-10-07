@@ -9,9 +9,11 @@ import { getWorkspaceContext } from "@/server/workspace";
 /** « Connecter Stripe » : vers l'activation du compte de l'organisateur chez Stripe. */
 export async function connectStripeAction() {
   const { actor, user, workspace } = await getWorkspaceContext();
+  const deps = paymentDeps;
+  if (!deps) redirect("/app/parametres/paiements");
   let url: string;
   try {
-    ({ url } = await connectPaymentAccount(paymentDeps, actor, {
+    ({ url } = await connectPaymentAccount(deps, actor, {
       email: user.email,
       businessName: workspace.name,
       returnUrl: absoluteUrl("/app/parametres/paiements/stripe"),

@@ -53,13 +53,15 @@ export function describeBookingActivity(
     case "booking.paid": {
       const amount = Number(entry.data?.amountCents ?? 0);
       return {
-        title: `${entry.data?.kind === "deposit" ? "Acompte payé" : "Payé en ligne"} · ${formatMoney(amount)}`,
+        title: entry.data?.manual
+          ? `${entry.data?.kind === "deposit" ? "Acompte noté" : "Paiement noté"}${by(entry)} · ${formatMoney(amount)}`
+          : `${entry.data?.kind === "deposit" ? "Acompte payé" : "Payé en ligne"} · ${formatMoney(amount)}`,
         tone: "success",
       };
     }
     case "booking.refunded":
       return {
-        title: `Remboursé${by(entry)} · ${formatMoney(Number(entry.data?.amountCents ?? 0))}`,
+        title: `${entry.data?.manual ? "Remboursement noté" : "Remboursé"}${by(entry)} · ${formatMoney(Number(entry.data?.amountCents ?? 0))}`,
         tone: "warning",
       };
     default:

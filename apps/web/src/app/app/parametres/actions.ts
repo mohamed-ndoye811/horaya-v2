@@ -97,6 +97,7 @@ export async function savePaymentsAction(_previous: FormState, form: FormData): 
         defaultDepositPercent: integer(text(form, "defaultDepositPercent")),
         freeCancellationHours: integer(text(form, "freeCancellationHours")),
         lateCancellationRefundPercent: integer(text(form, "lateCancellationRefundPercent")),
+        ...(form.has("paymentLinkUrl") ? { paymentLinkUrl: text(form, "paymentLinkUrl") } : {}),
       });
     }
     await saveNotificationPreferences(

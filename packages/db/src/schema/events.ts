@@ -76,6 +76,8 @@ export const event = pgTable(
     requiresApproval: boolean().notNull().default(false),
     /** Mentions affichées sur la page publique (« Déjeuner inclus »…). */
     highlights: text().array().notNull().default(sql`'{}'::text[]`),
+    /** Lien de paiement externe propre à l'événement (sinon celui de l'espace). */
+    paymentLinkUrl: text(),
     coverImageUrl: text(),
     publishedAt: timestamp({ withTimezone: true }),
     cancelledAt: timestamp({ withTimezone: true }),

@@ -18,7 +18,7 @@ import {
   paymentNote,
 } from "@/lib/public-booking";
 import { db } from "@/server/db";
-import { getWorkspaceBySlug } from "@/server/public";
+import { getWorkspaceBySlug, workspacePaymentChannel } from "@/server/public";
 
 async function load(params: PageProps<"/[slug]/[event]">["params"]) {
   const { slug, event: eventSlug } = await params;
@@ -65,7 +65,11 @@ export default async function PublicEventPage({ params }: PageProps<"/[slug]/[ev
     .map((text) => text.trim())
     .filter(Boolean);
   const notes = [
-    paymentNote(event.paymentMode, workspace.onlinePayments, event.depositPercent),
+    paymentNote(
+      event.paymentMode,
+      workspacePaymentChannel(workspace, event.paymentMode, event.paymentLinkUrl),
+      event.depositPercent,
+    ),
     event.requiresApproval ? "Sur validation de l'organisateur" : null,
     event.paymentMode !== "free"
       ? cancellationPolicy(event.startsAt, workspace, tz).split(".")[0]

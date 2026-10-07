@@ -35,6 +35,7 @@ export function emptyEventValues(
     price: "",
     paymentMode: "free",
     depositPercent: "",
+    paymentLinkUrl: "",
     requiresApproval: false,
     visibility: "public",
     highlights: "",
@@ -54,6 +55,7 @@ export function eventToValues(
     priceCents: number;
     paymentMode: string;
     depositPercent: number | null;
+    paymentLinkUrl: string | null;
     requiresApproval: boolean;
     visibility: string;
     highlights: string[];
@@ -76,6 +78,7 @@ export function eventToValues(
     price: event.priceCents > 0 ? centsToInput(event.priceCents) : "",
     paymentMode: event.paymentMode,
     depositPercent: event.depositPercent === null ? "" : String(event.depositPercent),
+    paymentLinkUrl: event.paymentLinkUrl ?? "",
     requiresApproval: event.requiresApproval,
     visibility: event.visibility,
     highlights: event.highlights.join(", "),
