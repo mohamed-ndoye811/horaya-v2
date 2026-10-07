@@ -45,6 +45,8 @@ export interface EventFormValues {
   depositPercent: string;
   requiresApproval: boolean;
   visibility: string;
+  /** Points forts séparés par des virgules (« Déjeuner inclus, Accessible PMR »). */
+  highlights: string;
 }
 
 const PAYMENT_OPTIONS = [
@@ -231,6 +233,28 @@ export function EventForm({
                 value={values.description}
                 onChange={(event) => set({ description: event.target.value })}
                 className={textareaClasses()}
+              />
+            )}
+          </Field>
+          <Field
+            label="Points forts"
+            error={errors.highlights}
+            hint={
+              <p className="text-[13px] font-medium text-ink-muted">
+                Séparés par des virgules, 6 au maximum : ils s'affichent en étiquettes sur la page
+                publique.
+              </p>
+            }
+          >
+            {(field) => (
+              <input
+                {...field}
+                name="highlights"
+                maxLength={500}
+                value={values.highlights}
+                onChange={(event) => set({ highlights: event.target.value })}
+                placeholder="Déjeuner inclus, Accessible PMR, Aucun matériel à apporter"
+                className={inputClasses()}
               />
             )}
           </Field>

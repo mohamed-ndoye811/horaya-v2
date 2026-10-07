@@ -8,7 +8,11 @@ import { decideBookingStatus, SEAT_HOLDING_STATUSES } from "./capacity";
 import type { Booking } from "./model";
 import { priceBooking } from "./pricing";
 import { formatBookingReference, referencePeriod } from "./reference";
-import { type CreateEventBookingInput, createEventBookingSchema } from "./schemas";
+import {
+  type CreateEventBookingInput,
+  createEventBookingSchema,
+  customerContactSchema,
+} from "./schemas";
 import type { BookingSource } from "./types";
 import { promoteWaitlist } from "./waitlist";
 
@@ -284,5 +288,36 @@ export async function cancelBookingWithToken(
       );
     }
     return cancelLocked(repositories, actor, booking, event, now, "customer_request");
+  });
+}
+
+/**
+ * « Mes réservations » sur la page publique : renvoie un lien neuf pour chaque réservation
+ * à venir de cet e-mail. Les jetons n'étant stockés que hachés, on en génère de nouveaux ;
+ * les anciens liens cessent de marcher. Liste vide si l'e-mail n'a rien à venir.
+ */
+export async function reissueManageLinks(
+  deps: Deps,
+  organizationId: string,
+  email: string,
+): Promise<Array<{ booking: Booking; manageToken: string }>> {
+  const address = validate(customerContactSchema.shape.email, email);
+  return deps.uow.run(async (repositories) => {
+    const bookings = await repositories.bookings.listUpcomingForCustomerEmail(
+      organizationId,
+      address,
+      deps.clock.now(),
+    );
+    const links: Array<{ booking: Booking; manageToken: string }> = [];
+    for (const booking of bookings) {
+      const manageToken = generateToken();
+      await repositories.bookings.setManageTokenHash(
+        organizationId,
+        booking.id,
+        await hashToken(manageToken),
+      );
+      links.push({ booking, manageToken });
+    }
+    return links;
   });
 }

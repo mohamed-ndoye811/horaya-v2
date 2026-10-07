@@ -3,6 +3,7 @@
 import { cancelBooking, confirmBooking, createEventBooking, refuseBooking } from "@horaya/core";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { sendBookingCreatedEmail } from "@/server/booking-emails";
 import { type FormState, toFormState } from "@/server/form-state";
 import { deps } from "@/server/services";
 import { getWorkspaceContext } from "@/server/workspace";
@@ -42,7 +43,7 @@ export async function createBookingAction(
   const { actor } = await getWorkspaceContext();
   let bookingId: string;
   try {
-    const { booking } = await createEventBooking(deps, actor, {
+    const { booking, manageToken } = await createEventBooking(deps, actor, {
       eventId: text(form, "eventId"),
       seats: Number(text(form, "seats") || 1),
       customer: {
@@ -55,6 +56,8 @@ export async function createBookingAction(
       customerMessage: text(form, "customerMessage") || null,
     });
     bookingId = booking.id;
+    // Le client reçoit sa confirmation et son lien « Gérer ma réservation ».
+    await sendBookingCreatedEmail(actor.organizationId, booking.id, manageToken);
   } catch (error) {
     return toFormState(error);
   }

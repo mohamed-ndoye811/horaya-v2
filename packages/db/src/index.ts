@@ -5,4 +5,9 @@ export { tenantSettingsReader } from "./repositories/support";
 export { tenantSettingsRepository } from "./repositories/tenant-settings";
 export { workspaceDirectory } from "./repositories/workspace-directory";
 export * as schema from "./schema";
-export { createDeps, createUnitOfWork, repositoriesFor } from "./unit-of-work";
+export {
+  createDeps,
+  createUnitOfWork,
+  repositoriesFor,
+  type UnitOfWorkHooks,
+} from "./unit-of-work";

@@ -146,6 +146,15 @@ const types = Object.fromEntries(
         defaultPriceCents: 12000,
         requiresApproval: true,
         bookingRules: { waitlistEnabled: true },
+        customFields: [
+          {
+            key: "regime",
+            label: "Régime alimentaire",
+            type: "select" as const,
+            required: false,
+            options: ["Aucun", "Végétarien", "Végan", "Sans gluten", "Autre"],
+          },
+        ],
       },
       {
         key: "atelier",
@@ -185,6 +194,10 @@ type Plan = {
   paymentMode?: "free" | "online" | "deposit" | "on_site";
   depositPercent?: number;
   publish?: boolean;
+  /** Réunions internes : publiées pour l'équipe, absentes de la page publique. */
+  internal?: boolean;
+  description?: string;
+  highlights?: string[];
   bookings?: Array<[string, string, number, ("pending" | "cancel")?, string?]>;
 };
 
@@ -196,6 +209,9 @@ const plans: Plan[] = [
     end: [2, 16, 30],
     location: "445 rue de la Thèse, Puget-Ville",
     capacity: 50,
+    description:
+      "Une journée complète dédiée à la stratégie et à la cohésion d'équipe. Au programme : ateliers en petits groupes, présentations plénières et temps d'échange dans un cadre lumineux et accessible.\n\nLe déjeuner est inclus. Le lieu est accessible PMR et desservi par les transports en commun.",
+    highlights: ["Déjeuner inclus", "Accessible PMR", "Aucun matériel à apporter"],
     priceCents: 12000,
     paymentMode: "on_site",
     bookings: [
@@ -210,6 +226,7 @@ const plans: Plan[] = [
   {
     type: "meetup",
     title: "Daily standup",
+    internal: true,
     start: [1, 9, 30],
     end: [1, 10],
     location: "Visio",
@@ -218,6 +235,7 @@ const plans: Plan[] = [
   {
     type: "reunion",
     title: "Point client Vidal",
+    internal: true,
     start: [1, 11],
     end: [1, 12],
     location: "Salle Horizon, 2e étage",
@@ -251,6 +269,9 @@ const plans: Plan[] = [
     end: [5, 12],
     location: "Studio Créa",
     capacity: 12,
+    description:
+      "Trois heures pour apprendre à résoudre un problème en équipe : observer, imaginer, prototyper, tester. Matériel fourni, aucune connaissance préalable.",
+    highlights: ["Matériel fourni"],
     priceCents: 4500,
     paymentMode: "on_site",
     bookings: [
@@ -305,6 +326,9 @@ const plans: Plan[] = [
     end: [17, 17],
     location: "Hôtel Lutetia",
     capacity: 30,
+    description:
+      "Une journée pour les managers : posture, feedback et animation d'équipe, avec des mises en situation.",
+    highlights: ["Déjeuner inclus"],
     priceCents: 24000,
     paymentMode: "on_site",
     bookings: [
@@ -352,6 +376,9 @@ const plans: Plan[] = [
     end: [40, 17],
     location: "Forêt de Fontainebleau",
     capacity: 12,
+    description:
+      "Une journée au grand air : course d'orientation, cuisine au feu de bois et défis en équipe.",
+    highlights: ["Navette depuis Paris", "Repas inclus"],
     bookings: [
       ["Sophie", "Martin", 6],
       ["Antoine", "Leroy", 6],
@@ -373,6 +400,9 @@ for (const plan of plans) {
     priceCents: plan.priceCents ?? 0,
     paymentMode: plan.paymentMode ?? "free",
     depositPercent: plan.depositPercent ?? null,
+    description: plan.description ?? "",
+    highlights: plan.highlights ?? [],
+    visibility: plan.internal ? "invite_only" : "public",
   });
   if (!created) continue;
   eventIds.set(plan.title, created.id);

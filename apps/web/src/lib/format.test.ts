@@ -5,6 +5,7 @@ import {
   formatHour,
   formatMoney,
   formatMonthShort,
+  formatPublicSchedule,
   formatTimeRange,
   formatWeekdayShort,
   initials,
@@ -63,5 +64,33 @@ describe("compactUnitLabels", () => {
 
   it("laisse tels quels les libellés non numériques", () => {
     expect(compactUnitLabels("A, B")).toBe("A, B");
+  });
+});
+
+describe("formatPublicSchedule", () => {
+  it("décrit un événement sur deux jours comme la maquette", () => {
+    const schedule = formatPublicSchedule(
+      new Date("2026-06-15T12:00:00Z"),
+      new Date("2026-06-16T14:30:00Z"),
+      "Europe/Paris",
+    );
+    expect(schedule).toEqual({
+      hours: "14h → mar. 16h30",
+      date: "Lun. 15 → mar. 16 juin 2026",
+      schedule: "14h → 16h30 le lendemain",
+    });
+  });
+
+  it("garde une seule date pour un événement d'une journée", () => {
+    const schedule = formatPublicSchedule(
+      new Date("2026-06-20T07:00:00Z"),
+      new Date("2026-06-20T10:00:00Z"),
+      "Europe/Paris",
+    );
+    expect(schedule).toEqual({
+      hours: "9h – 12h",
+      date: "Sam. 20 juin 2026",
+      schedule: "9h – 12h",
+    });
   });
 });

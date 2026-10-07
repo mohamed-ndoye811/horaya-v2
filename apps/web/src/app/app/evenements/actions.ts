@@ -55,6 +55,10 @@ function eventFields(form: FormData, timeZone: string) {
     paymentMode,
     depositPercent: paymentMode === "deposit" && deposit !== "" ? Number(deposit) : null,
     requiresApproval: form.get("requiresApproval") === "on",
+    highlights: text(form, "highlights")
+      .split(",")
+      .map((entry) => entry.trim())
+      .filter(Boolean),
   };
 }
 

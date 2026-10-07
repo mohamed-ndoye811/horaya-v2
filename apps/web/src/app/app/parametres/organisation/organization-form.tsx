@@ -319,10 +319,16 @@ export function OrganizationForm({
             </ul>
           )}
         </div>
-        <p className="text-sm font-bold text-ink-muted">La page publique arrive bientôt.</p>
+        <a
+          href={`/${initial.slug}`}
+          target="_blank"
+          rel="noreferrer"
+          className="text-sm font-bold text-ink underline decoration-1 underline-offset-[3px] hover:text-link"
+        >
+          Ouvrir la page publique →
+        </a>
         <p className="text-[13px] font-medium leading-[18px] text-ink-muted">
-          Les changements s'appliqueront à ta page publique, à tes e-mails de confirmation et à tes
-          factures.
+          Les changements s'appliquent à ta page publique et à tes e-mails de confirmation.
         </p>
       </aside>
     </div>

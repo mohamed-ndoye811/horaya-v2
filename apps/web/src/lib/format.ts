@@ -120,3 +120,38 @@ export function compactUnitLabels(labels: string): string {
   }
   return ranges.join(", ");
 }
+
+/**
+ * Dates d'un événement pour les pages publiques (écrans 27 et 10) :
+ * `hours` « 9h – 12h » ou « 14h → mar. 16h30 », `date` « Lun. 15 juin 2026 » ou
+ * « Lun. 15 → mar. 16 juin 2026 », `schedule` « 14h → 16h30 le lendemain ».
+ */
+export function formatPublicSchedule(start: Date, end: Date, timeZone = DEFAULT_TIME_ZONE) {
+  // Un événement qui finit à minuit pile se termine la veille.
+  const last = new Date(Math.max(start.getTime(), end.getTime() - 1));
+  const key = (date: Date) =>
+    part(date, timeZone, { year: "numeric", month: "2-digit", day: "2-digit" });
+  const sameDay = key(start) === key(last);
+  const month = (date: Date) => part(date, timeZone, { month: "long" });
+  const year = (date: Date) => part(date, timeZone, { year: "numeric" });
+  const day = (date: Date) =>
+    `${formatWeekdayShort(date, timeZone)} ${formatDayNumber(date, timeZone)}`;
+  const dayAfter = key(new Date(start.getTime() + 86_400_000)) === key(last);
+
+  if (sameDay) {
+    return {
+      hours: formatTimeRange(start, end, timeZone),
+      date: `${day(start)} ${month(start)} ${year(start)}`,
+      schedule: formatTimeRange(start, end, timeZone),
+    };
+  }
+  const endDay = `${formatWeekdayShort(end, timeZone).toLowerCase()} ${formatDayNumber(end, timeZone)}`;
+  return {
+    hours: `${formatHour(start, timeZone)} → ${formatWeekdayShort(end, timeZone).toLowerCase()} ${formatHour(end, timeZone)}`,
+    date:
+      month(start) === month(end) && year(start) === year(end)
+        ? `${day(start)} → ${endDay} ${month(end)} ${year(end)}`
+        : `${day(start)} ${month(start)} → ${endDay} ${month(end)} ${year(end)}`,
+    schedule: `${formatHour(start, timeZone)} → ${formatHour(end, timeZone)} ${dayAfter ? "le lendemain" : `le ${endDay}`}`,
+  };
+}

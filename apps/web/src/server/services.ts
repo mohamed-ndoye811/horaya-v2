@@ -4,10 +4,14 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { cache } from "react";
 import { auth, requireSession } from "./auth";
+import { notifyFromActivity } from "./booking-emails";
 import { db } from "./db";
 
-/** Dépendances des cas d'usage du core : l'app web les appelle directement, sans passer par l'API. */
-export const deps: Deps = createDeps(db);
+/**
+ * Dépendances des cas d'usage du core : l'app web les appelle directement, sans passer par l'API.
+ * Après chaque transaction validée, les changements de réservation partent par e-mail.
+ */
+export const deps: Deps = createDeps(db, { afterCommit: notifyFromActivity });
 
 export type MemberActor = Extract<Actor, { type: "member" }>;
 

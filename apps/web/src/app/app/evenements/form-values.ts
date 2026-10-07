@@ -37,6 +37,7 @@ export function emptyEventValues(
     depositPercent: "",
     requiresApproval: false,
     visibility: "public",
+    highlights: "",
   };
 }
 
@@ -55,6 +56,7 @@ export function eventToValues(
     depositPercent: number | null;
     requiresApproval: boolean;
     visibility: string;
+    highlights: string[];
   },
   timeZone: string,
 ): EventFormValues {
@@ -76,5 +78,6 @@ export function eventToValues(
     depositPercent: event.depositPercent === null ? "" : String(event.depositPercent),
     requiresApproval: event.requiresApproval,
     visibility: event.visibility,
+    highlights: event.highlights.join(", "),
   };
 }

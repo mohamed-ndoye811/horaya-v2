@@ -53,6 +53,10 @@ Mailpit : http://localhost:8025. La connexion Google s'active dès que `GOOGLE_C
 | `/mot-de-passe-oublie` | 13 · Mot de passe oublié, puis 13b · Lien envoyé |
 | `/nouveau-mot-de-passe` | 14 · Nouveau mot de passe (lien valable 30 min) |
 | `/app` | Admin (protégé par `src/proxy.ts`) |
+| `/<espace>` | 27 · Page publique de l'espace (événements à venir, filtres par type) |
+| `/<espace>/<événement>` | 10 · Page publique d'un événement, puis `/reserver` : 18 · Coordonnées |
+| `/<espace>/reservation/<jeton>` | 19 · Confirmation (`?nouvelle=1`) et « Gérer ma réservation » (annulation, `.ics`) |
+| `/<espace>/mes-reservations` | Renvoi des liens de réservation par e-mail (pas de compte client) |
 | `/invitation/[id]` | Rejoindre un espace depuis l'e-mail d'invitation (création de compte ou connexion avec `?invitation=`) |
 
 Connexion, inscription et réinitialisation passent par `/api/auth` (client Better Auth) afin
@@ -105,6 +109,10 @@ Fonctions pures de dépendances : `cas(deps, acteur, entrée)`. `deps` vient de
 | Clients | `createCustomer`, `updateCustomer`, `addCustomerNote` |
 | Paramètres | `updateTenantSettings` (marque, TVA, acompte, annulation), `saveNotificationPreferences` (par membre) |
 | Matériel | `createItem`, `updateItem`, `setItemQuantity`, `setEventItemQuantity`, `removeEventItem`, `scheduleMaintenance`, `cancelMaintenance`, `createRentalBooking` |
+
+E-mails : `createDeps(db, { afterCommit })` reçoit, après chaque transaction validée, les
+entrées du journal d'activité ; l'app web s'en sert pour écrire aux participants (validation,
+refus, annulation, place libérée) et prévenir l'équipe selon ses préférences.
 
 Règles notables : liste d'attente qui monte automatiquement (première demande qui tient),
 réservation en ligne fermée sur invitation et après le délai minimum, saisie par l'équipe

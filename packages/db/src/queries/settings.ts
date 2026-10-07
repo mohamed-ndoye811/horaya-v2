@@ -1,4 +1,9 @@
-import { MEMBER_ROLES, type MemberRole } from "@horaya/core";
+import {
+  MEMBER_ROLES,
+  type MemberRole,
+  NOTIFICATION_TYPES,
+  type NotificationType,
+} from "@horaya/core";
 import { and, asc, eq, gt, gte, sql } from "drizzle-orm";
 import type { Executor } from "../client";
 import {
@@ -159,4 +164,26 @@ export async function getNotificationPreferences(db: Executor, memberId: string)
     })
     .from(notificationPreference)
     .where(eq(notificationPreference.memberId, memberId));
+}
+
+/** E-mails des membres qui veulent être prévenus par e-mail de ce type de notification. */
+export async function listNotificationRecipients(
+  db: Executor,
+  organizationId: string,
+  type: NotificationType,
+): Promise<string[]> {
+  const byDefault = NOTIFICATION_TYPES.find((entry) => entry.value === type)?.email ?? false;
+  const rows = await db
+    .select({ email: user.email, wants: notificationPreference.email })
+    .from(member)
+    .innerJoin(user, eq(user.id, member.userId))
+    .leftJoin(
+      notificationPreference,
+      and(
+        eq(notificationPreference.memberId, member.id),
+        eq(notificationPreference.notificationType, type),
+      ),
+    )
+    .where(eq(member.organizationId, organizationId));
+  return rows.filter((row) => row.wants ?? byDefault).map((row) => row.email);
 }

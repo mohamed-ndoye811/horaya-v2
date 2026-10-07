@@ -1,10 +1,10 @@
 import { type Auth, createAuth } from "@horaya/auth";
-import { createConsoleMailer, createSmtpMailer } from "@horaya/mail";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { cache } from "react";
 import { db } from "./db";
 import { env, googleEnabled } from "./env";
+import { mailer } from "./mailer";
 
 const globalForAuth = globalThis as unknown as { horayaAuth?: Auth };
 
@@ -13,9 +13,7 @@ export const auth =
   createAuth(db, {
     baseURL: env.BETTER_AUTH_URL,
     secret: env.BETTER_AUTH_SECRET,
-    mailer: env.SMTP_URL
-      ? createSmtpMailer({ url: env.SMTP_URL, from: env.MAIL_FROM })
-      : createConsoleMailer(),
+    mailer,
     google:
       googleEnabled && env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET
         ? { clientId: env.GOOGLE_CLIENT_ID, clientSecret: env.GOOGLE_CLIENT_SECRET }

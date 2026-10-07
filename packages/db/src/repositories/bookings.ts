@@ -2,7 +2,7 @@ import type { Booking, BookingRepository } from "@horaya/core";
 import { SEAT_HOLDING_STATUSES } from "@horaya/core";
 import { and, asc, eq, getTableColumns, inArray, sql } from "drizzle-orm";
 import type { Executor } from "../client";
-import { booking, bookingParticipant } from "../schema";
+import { booking, bookingParticipant, customer, event } from "../schema";
 
 const ACTIVE_STATUSES = ["pending", "confirmed", "waitlisted"] as const;
 
@@ -70,6 +70,29 @@ export function bookingRepository(db: Executor): BookingRepository {
         .where(and(eq(booking.eventId, eventId), inArray(booking.status, [...ACTIVE_STATUSES])))
         .orderBy(asc(booking.createdAt));
       return rows as Booking[];
+    },
+
+    async listUpcomingForCustomerEmail(organizationId, email, now) {
+      const rows = await select()
+        .innerJoin(customer, eq(customer.id, booking.customerId))
+        .leftJoin(event, eq(event.id, booking.eventId))
+        .where(
+          and(
+            eq(booking.organizationId, organizationId),
+            sql`lower(${customer.email}) = ${email.toLowerCase()}`,
+            inArray(booking.status, [...ACTIVE_STATUSES]),
+            sql`coalesce(${event.endsAt}, ${booking.rentalEndsAt}) > ${now.toISOString()}::timestamptz`,
+          ),
+        )
+        .orderBy(asc(sql`coalesce(${event.startsAt}, ${booking.rentalStartsAt})`));
+      return rows as Booking[];
+    },
+
+    async setManageTokenHash(organizationId, bookingId, tokenHash) {
+      await db
+        .update(booking)
+        .set({ manageTokenHash: tokenHash, updatedAt: new Date() })
+        .where(and(eq(booking.organizationId, organizationId), eq(booking.id, bookingId)));
     },
   };
 }

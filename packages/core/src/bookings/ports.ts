@@ -37,6 +37,14 @@ export interface BookingRepository {
   listWaitlisted(eventId: string): Promise<Booking[]>;
   /** Réservations encore actives (en attente, confirmées, en liste d'attente). */
   listActive(eventId: string): Promise<Booking[]>;
+  /** Réservations actives et pas encore terminées d'un client, retrouvé par son e-mail. */
+  listUpcomingForCustomerEmail(
+    organizationId: string,
+    email: string,
+    now: Date,
+  ): Promise<Booking[]>;
+  /** Remplace le jeton du lien « Gérer ma réservation » (l'ancien lien cesse de marcher). */
+  setManageTokenHash(organizationId: string, bookingId: string, tokenHash: string): Promise<void>;
 }
 
 export interface CustomerRepository {
