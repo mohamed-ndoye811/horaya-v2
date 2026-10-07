@@ -1,4 +1,4 @@
-import { can, withDefaultPreferences } from "@horaya/core";
+import { can, refreshPaymentAccount, withDefaultPreferences } from "@horaya/core";
 import { getNotificationPreferences, getWorkspaceSettings, sumCollectedSince } from "@horaya/db";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
@@ -9,7 +9,7 @@ import { startOfDay, todayIn } from "@/lib/dates";
 import { formatMoney } from "@/lib/format";
 import { param } from "@/lib/search-params";
 import { db } from "@/server/db";
-import { paymentGateway, testPayments } from "@/server/payments";
+import { paymentDeps, paymentGateway, testPayments } from "@/server/payments";
 import { getWorkspaceContext } from "@/server/workspace";
 import { connectStripeAction } from "./actions";
 import { PaymentsForm } from "./payments-form";
@@ -67,6 +67,15 @@ export default async function PaymentsSettingsPage({
     sumCollectedSince(db, workspace.id, startOfDay({ ...today, day: 1 }, timeZone)),
   ]);
   if (!settings) notFound();
+  // Activation en cours chez Stripe : on relit l'état du compte à chaque visite.
+  if (
+    settings.stripeAccountId &&
+    (settings.stripeAccountStatus === "pending" || settings.stripeAccountStatus === "restricted")
+  ) {
+    settings.stripeAccountStatus = await refreshPaymentAccount(paymentDeps, workspace.id).catch(
+      () => settings.stripeAccountStatus,
+    );
+  }
   const editable = can(actor.role, "settings", "update");
   const canConnect = can(actor.role, "billing", "manage");
   const connected = settings.stripeAccountStatus === "active";

@@ -2,9 +2,13 @@ import type { PaymentGateway, StripeAccountStatus } from "@horaya/core";
 import Stripe from "stripe";
 
 /**
- * Stripe Connect : l'organisateur a son propre compte (tableau de bord Stripe complet, frais
- * et litiges à sa charge) et vend en direct ; Horaya crée les paiements pour son compte.
+ * Stripe Connect, modèle « SaaS » : l'organisateur a son propre compte (Accounts v2, tableau de
+ * bord Stripe complet, frais et pertes chez Stripe) et vend en direct (« direct charges ») ;
+ * Horaya crée les paiements pour son compte.
  */
+/** Étiquette des sessions Checkout dans le tableau de bord Stripe (suffixe de 8 lettres). */
+const INTEGRATION_SUFFIX = "hrybkngx";
+
 export function createStripeGateway(secretKey: string): PaymentGateway & { client: Stripe } {
   const stripe = new Stripe(secretKey);
   const onAccount = (accountId: string) => ({ stripeAccount: accountId });
@@ -14,41 +18,46 @@ export function createStripeGateway(secretKey: string): PaymentGateway & { clien
     client: stripe,
 
     async createAccount({ email, businessName }) {
-      const account = await stripe.accounts.create({
-        country: "FR",
-        email,
-        business_profile: { name: businessName },
-        controller: {
-          stripe_dashboard: { type: "full" },
-          fees: { payer: "account" },
-          losses: { payments: "stripe" },
+      const account = await stripe.v2.core.accounts.create({
+        contact_email: email,
+        display_name: businessName,
+        dashboard: "full",
+        identity: { country: "fr" },
+        defaults: {
+          currency: "eur",
+          locales: ["fr-FR"],
+          responsibilities: { fees_collector: "stripe", losses_collector: "stripe" },
         },
+        configuration: { merchant: { capabilities: { card_payments: { requested: true } } } },
+        include: ["configuration.merchant", "identity"],
       });
       return { accountId: account.id };
     },
 
     async createOnboardingLink({ accountId, returnUrl, refreshUrl }) {
-      const link = await stripe.accountLinks.create({
+      const link = await stripe.v2.core.accountLinks.create({
         account: accountId,
-        return_url: returnUrl,
-        refresh_url: refreshUrl,
-        type: "account_onboarding",
+        use_case: {
+          type: "account_onboarding",
+          account_onboarding: { refresh_url: refreshUrl, return_url: returnUrl },
+        },
       });
       return { url: link.url };
     },
 
     async getAccount(accountId) {
-      const account = await stripe.accounts.retrieve(accountId);
-      const status: StripeAccountStatus = account.charges_enabled
-        ? "active"
-        : account.requirements?.disabled_reason && account.details_submitted
-          ? "restricted"
-          : "pending";
-      return {
-        status,
-        displayName:
-          account.settings?.dashboard?.display_name ?? account.business_profile?.name ?? null,
-      };
+      const account = await stripe.v2.core.accounts.retrieve(accountId, {
+        include: ["configuration.merchant"],
+      });
+      // Prêt à encaisser : capacité « paiements par carte » active (et non les champs v1 charges_enabled).
+      const card = account.configuration?.merchant?.capabilities?.card_payments?.status;
+      const status: StripeAccountStatus =
+        card === "active"
+          ? "active"
+          : card === "restricted" || card === "rejected"
+            ? "restricted"
+            : "pending";
+      return { status, displayName: account.display_name ?? null };
     },
 
     async createCheckout(input) {
@@ -56,6 +65,7 @@ export function createStripeGateway(secretKey: string): PaymentGateway & { clien
         {
           mode: "payment",
           locale: "fr",
+          integration_identifier: `horaya_reservation_${INTEGRATION_SUFFIX}`,
           customer_email: input.customerEmail || undefined,
           client_reference_id: input.bookingId,
           line_items: [
