@@ -83,8 +83,26 @@ core) est appliquée côté interface et dans un hook Better Auth.
     (contrainte d'exclusion `item_allocation_no_overlap`, migration `0001`) ;
   - une réservation d'événement pointe toujours vers un événement, une location a une période valide ;
   - un client est unique par e-mail (insensible à la casse) dans un tenant.
-- La surréservation est empêchée par une règle du core (`decideBookingStatus`), à appliquer
-  sous verrou de ligne sur l'événement (`SELECT … FOR UPDATE`) dans le dépôt des réservations.
+- La surréservation est impossible : toute écriture qui touche aux places d'un événement
+  (réservation, annulation, changement de jauge) passe par `lockForBooking`
+  (`SELECT … FOR UPDATE`). Un test lance 12 réservations simultanées sur 5 places.
+
+## Cas d'usage (core)
+
+Fonctions pures de dépendances : `cas(deps, acteur, entrée)`. `deps` vient de
+`createDeps(db)` (`packages/db`) ; l'acteur est un membre (rôle vérifié via
+`ROLE_PERMISSIONS`), un client (page publique, lien « Gérer ma réservation ») ou le système.
+
+| Module | Cas d'usage |
+|---|---|
+| Événements | `createEventType`, `createEvent` (simple ou série), `updateEvent`, `publishEvent`, `cancelEvent` |
+| Réservations | `createEventBooking`, `confirmBooking`, `refuseBooking`, `cancelBooking`, `cancelBookingWithToken` |
+
+Règles notables : liste d'attente qui monte automatiquement (première demande qui tient),
+réservation en ligne fermée sur invitation et après le délai minimum, saisie par l'équipe
+confirmée d'office, séries qui gardent l'heure locale au changement d'heure, références
+`PREFIXE-AAMM-NNNN` par tenant. Côté web : `deps` et `requireMember()` dans
+`apps/web/src/server/services.ts`.
 
 ## Design
 

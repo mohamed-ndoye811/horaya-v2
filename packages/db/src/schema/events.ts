@@ -1,3 +1,4 @@
+import type { BookingRules, CustomFieldDefinition } from "@horaya/core";
 import { sql } from "drizzle-orm";
 import {
   boolean,
@@ -13,22 +14,6 @@ import {
 } from "drizzle-orm/pg-core";
 import { cents, createdAt, currency, id, organizationId, updatedAt } from "./_columns";
 import { eventStatus, eventVisibility, paymentMode } from "./enums";
-
-/** Champ personnalisé demandé à la réservation (ex. régime alimentaire). */
-export type CustomFieldDefinition = {
-  key: string;
-  label: string;
-  type: "text" | "select" | "checkbox";
-  required: boolean;
-  options?: string[];
-};
-
-export type BookingRules = {
-  /** Délai minimum avant le début pour réserver, en heures. */
-  minAdvanceHours?: number;
-  maxSeatsPerBooking?: number;
-  waitlistEnabled?: boolean;
-};
 
 export const eventType = pgTable(
   "event_type",

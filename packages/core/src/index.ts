@@ -1,15 +1,33 @@
 // Métier pur d'Horaya : aucune dépendance à Next.js, Hono ou Postgres.
-// Organisation par module ; chaque module expose ses types, ses règles
-// et (à partir du lot 3) ses ports et cas d'usage.
+// Chaque module expose ses types, ses règles, ses ports (interfaces de dépôt)
+// et ses cas d'usage ; packages/db implémente les ports.
 export * from "./accounts/password";
 export * from "./bookings/capacity";
+export * from "./bookings/model";
+export * from "./bookings/ports";
+export * from "./bookings/pricing";
 export * from "./bookings/reference";
+export * from "./bookings/schemas";
 export * from "./bookings/types";
+export * from "./bookings/use-cases";
+export * from "./events/model";
+export * from "./events/ports";
+export * from "./events/recurrence";
+export * from "./events/rules";
+export * from "./events/schemas";
 export * from "./events/types";
+export * from "./events/use-cases";
 export * from "./inventory/availability";
 export * from "./inventory/types";
+export * from "./shared/actor";
+export * from "./shared/clock";
 export * from "./shared/errors";
+export * from "./shared/time";
+export * from "./shared/tokens";
+export * from "./shared/unit-of-work";
 export * from "./shared/validate";
+export * from "./tenants/permissions";
 export * from "./tenants/ports";
+export * from "./tenants/settings";
 export * from "./tenants/types";
 export * from "./tenants/workspace";

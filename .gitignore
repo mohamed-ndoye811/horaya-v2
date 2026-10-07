@@ -24,3 +24,6 @@ coverage/
 .idea/
 .vscode/*
 !.vscode/extensions.json
+
+# Rapports JSON écrits par rtk autour de vitest
+.vitest/

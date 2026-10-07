@@ -1,4 +1,9 @@
 {
   "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    // Le core tourne dans Node comme dans le navigateur : seules les API web standard
+    // (Web Crypto, TextEncoder, btoa) sont autorisées, sans dépendance à Node.
+    "lib": ["ES2023", "DOM"]
+  },
   "include": ["src"]
 }
