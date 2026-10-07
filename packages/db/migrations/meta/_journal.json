@@ -15,6 +15,13 @@
       "when": 1791294306207,
       "tag": "0001_item_allocation_no_overlap",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1791381575927,
+      "tag": "0002_account_profile_and_sector",
+      "breakpoints": true
     }
   ]
 }

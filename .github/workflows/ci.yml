@@ -27,8 +27,11 @@ jobs:
           --health-timeout 5s
           --health-retries 10
     env:
-      # Les tests d'intégration créent et migrent leur propre base `horaya_test`.
+      # Les tests d'intégration créent et migrent leurs bases `horaya_test_<package>`.
       DATABASE_URL: postgres://horaya:horaya@localhost:5432/horaya
+      # Valeurs factices : nécessaires pour valider l'environnement au build.
+      BETTER_AUTH_SECRET: ci-only-secret-ci-only-secret-ci-only
+      BETTER_AUTH_URL: http://localhost:3000
     steps:
       - uses: actions/checkout@v4
 

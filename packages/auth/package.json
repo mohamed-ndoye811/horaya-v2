@@ -8,15 +8,19 @@
   },
   "scripts": {
     "typecheck": "tsc -p tsconfig.json",
-    "generate-schema": "pnpm dlx auth@latest generate --config src/cli-config.ts --output ../db/src/schema/auth.ts --yes"
+    "generate-schema": "pnpm dlx auth@latest generate --config src/cli-config.ts --output ../db/src/schema/auth.ts --yes",
+    "test": "vitest run"
   },
   "dependencies": {
     "@better-auth/drizzle-adapter": "^1.7.7",
+    "@horaya/core": "workspace:^",
     "@horaya/db": "workspace:^",
+    "@horaya/mail": "workspace:^",
     "better-auth": "^1.7.7",
     "drizzle-orm": "^0.45.3"
   },
   "devDependencies": {
-    "@types/node": "^20"
+    "@types/node": "^20",
+    "vitest": "^5.0.3"
   }
 }

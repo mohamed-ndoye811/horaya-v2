@@ -17,6 +17,15 @@ services:
       timeout: 5s
       retries: 10
 
+  # Boîte mail de développement : tous les e-mails envoyés en local arrivent sur http://localhost:8025
+  mailpit:
+    image: axllent/mailpit:latest
+    container_name: horaya-mailpit
+    restart: unless-stopped
+    ports:
+      - "1025:1025"
+      - "8025:8025"
+
 volumes:
   # Nouveau volume : l'ancien (postgres_data, identifiants user/pass) reste intact sur ta machine.
   horaya_pg16:

@@ -73,3 +73,10 @@ body {
   color: var(--color-ink);
   font-family: var(--font-ui);
 }
+
+/* Points du mot de passe lisibles (la puce d'Urbanist est minuscule). */
+input[type="password"] {
+  font-family: var(--font-mono);
+  font-size: 20px;
+  letter-spacing: 0.05em;
+}

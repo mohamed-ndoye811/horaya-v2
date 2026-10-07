@@ -1,1 +1,2 @@
-export { type Auth, createAuth } from "./auth";
+export { type Auth, type AuthOptions, createAuth } from "./auth";
+export { ac, roles, statements } from "./permissions";

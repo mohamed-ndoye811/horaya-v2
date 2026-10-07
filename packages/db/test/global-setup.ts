@@ -1,11 +1,13 @@
+import { basename } from "node:path";
 import { loadEnvFile } from "node:process";
 import { drizzle } from "drizzle-orm/postgres-js";
 import { migrate } from "drizzle-orm/postgres-js/migrator";
 import postgres from "postgres";
 
 /**
- * Prépare une base dédiée aux tests (`<base>_test`), repartie de zéro à chaque lancement,
- * puis applique toutes les migrations. La base de dev n'est jamais touchée.
+ * Prépare une base dédiée aux tests (`<base>_test_<package>`), repartie de zéro à chaque
+ * lancement, puis applique toutes les migrations. La base de dev n'est jamais touchée ;
+ * une base par package évite que deux suites lancées en parallèle se marchent dessus.
  */
 export default async function setup() {
   try {
@@ -17,7 +19,7 @@ export default async function setup() {
   if (!devUrl) throw new Error("DATABASE_URL manquant pour les tests d'intégration");
 
   const testUrl = new URL(devUrl);
-  const testDatabase = `${testUrl.pathname.slice(1)}_test`;
+  const testDatabase = `${testUrl.pathname.slice(1)}_test_${basename(process.cwd()).replace(/\W/g, "_")}`;
   testUrl.pathname = `/${testDatabase}`;
 
   const admin = postgres(devUrl, { max: 1, onnotice: () => {} });

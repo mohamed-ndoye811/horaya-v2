@@ -1,6 +1,13 @@
 export const MEMBER_ROLES = ["owner", "admin", "editor", "viewer"] as const;
 export type MemberRole = (typeof MEMBER_ROLES)[number];
 
+export const MEMBER_ROLE_LABELS: Record<MemberRole, string> = {
+  owner: "propriétaire",
+  admin: "administrateur",
+  editor: "éditeur",
+  viewer: "lecteur",
+};
+
 export const STRIPE_ACCOUNT_STATUSES = [
   "not_connected",
   "pending",

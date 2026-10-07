@@ -9,7 +9,9 @@ packages/
   core/   Métier pur : entités, règles, cas d'usage, ports (interfaces de dépôt).
           Aucune dépendance à Next.js, Hono ou Postgres. Validation avec Zod.
   db/     Postgres + Drizzle : schéma, migrations, implémentation des ports du core.
-  auth/   Better Auth (e-mail/mot de passe, organisations = tenants, rôles).
+  auth/   Better Auth : e-mail/mot de passe, Google, organisations = tenants,
+          rôles owner / admin / editor / viewer (permissions.ts).
+  mail/   E-mails transactionnels (gabarits + envoi SMTP).
 apps/
   web/    Next.js (App Router) : admin + pages publiques des organisateurs.
           Appelle directement les cas d'usage du core côté serveur, jamais l'API HTTP.
@@ -30,11 +32,31 @@ Prérequis : Node 22+, pnpm 9, Docker.
 
 ```bash
 pnpm install
-cp .env.example .env
-pnpm db:up          # Postgres 16 en local
-pnpm db:migrate     # applique les migrations
-pnpm dev            # http://localhost:3000
+cp .env.example .env   # puis renseigner BETTER_AUTH_SECRET (openssl rand -base64 32)
+pnpm db:up             # Postgres 16 + Mailpit en local
+pnpm db:migrate        # applique les migrations
+pnpm dev               # http://localhost:3000
 ```
+
+Les e-mails envoyés en local (confirmation, mot de passe oublié, invitations) arrivent dans
+Mailpit : http://localhost:8025. La connexion Google s'active dès que `GOOGLE_CLIENT_ID` et
+`GOOGLE_CLIENT_SECRET` sont renseignés (le bouton est masqué sinon).
+
+## Parcours compte
+
+| Route | Écran Paper |
+|---|---|
+| `/connexion` | 01 · Connexion — E-mail, puis 02 · Mot de passe |
+| `/inscription` | 11 · Inscription |
+| `/inscription/espace` | 12 · Création de l'espace (aperçu de la page publique en direct) |
+| `/inscription/paiements` | Étape 3 : Stripe arrive avec les pages publiques, on peut passer |
+| `/mot-de-passe-oublie` | 13 · Mot de passe oublié, puis 13b · Lien envoyé |
+| `/nouveau-mot-de-passe` | 14 · Nouveau mot de passe (lien valable 30 min) |
+| `/app` | Accueil provisoire de l'admin (protégé par `src/proxy.ts`) |
+
+Connexion, inscription et réinitialisation passent par `/api/auth` (client Better Auth) afin
+de profiter de la limitation de tentatives. La politique de mot de passe (`checkPassword` du
+core) est appliquée côté interface et dans un hook Better Auth.
 
 ## Scripts
 
@@ -43,7 +65,7 @@ pnpm dev            # http://localhost:3000
 | `pnpm dev` | App web en développement |
 | `pnpm build` | Build de tous les packages |
 | `pnpm typecheck` | Vérification TypeScript |
-| `pnpm test` | Tests (Vitest). Ceux de `db` créent une base `<base>_test` jetable |
+| `pnpm test` | Tests (Vitest). Ceux de `db` et `auth` créent une base `<base>_test_<package>` jetable |
 | `pnpm lint` / `pnpm format` | Biome |
 | `pnpm db:generate` | Génère une migration depuis le schéma Drizzle |
 | `pnpm db:migrate` | Applique les migrations |

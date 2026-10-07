@@ -23,6 +23,8 @@ export const tenantSettings = pgTable("tenant_settings", {
     .primaryKey()
     .references(() => organization.id, { onDelete: "cascade" }),
   brandColor: text().notNull().default("#264489"),
+  /** Secteur d'activité (valeurs : TENANT_SECTORS du core). */
+  sector: text(),
   description: text(),
   address: text(),
   timezone: text().notNull().default("Europe/Paris"),
