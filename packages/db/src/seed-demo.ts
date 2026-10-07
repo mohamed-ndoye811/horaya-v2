@@ -23,8 +23,9 @@ import {
   systemClock,
   toZonedParts,
   updateCustomer,
+  updateTenantSettings,
 } from "@horaya/core";
-import { and, eq, inArray } from "drizzle-orm";
+import { and, eq, inArray, ne } from "drizzle-orm";
 import { createDb } from "./client";
 import {
   activityLog,
@@ -35,14 +36,17 @@ import {
   event,
   eventSeries,
   eventType,
+  invitation,
   item,
   itemAllocation,
   itemType,
   itemUnit,
   member,
+  notificationPreference,
   organization,
   payment,
   referenceCounter,
+  user,
 } from "./schema";
 import { createUnitOfWork } from "./unit-of-work";
 
@@ -71,7 +75,11 @@ if (reset) {
       .from(booking)
       .where(eq(booking.organizationId, org.id));
     await tx.delete(bookingParticipant).where(inArray(bookingParticipant.bookingId, bookingIds));
+    // Équipe : on garde le propriétaire, on retire les autres membres et les invitations.
+    await tx.delete(invitation).where(eq(invitation.organizationId, org.id));
+    await tx.delete(member).where(and(eq(member.organizationId, org.id), ne(member.role, "owner")));
     for (const table of [
+      notificationPreference,
       itemAllocation,
       itemUnit,
       item,
@@ -110,6 +118,17 @@ const actor: Actor = {
   memberId: owner.id,
   role: "owner",
 };
+
+// Marque et réglages des maquettes (écrans 24 et 26).
+await updateTenantSettings(deps, actor, {
+  brandColor: "#528D74",
+  displayFont: "display",
+  description: "Séminaires et ateliers pour les équipes, à Puget-Ville.",
+  vatRateBps: 2000,
+  defaultDepositPercent: 30,
+  freeCancellationHours: 72,
+  lateCancellationRefundPercent: 50,
+});
 
 const today = toZonedParts(new Date(), TZ);
 /** Date dans `days` jours à `hour` h `minute` (heure de Paris). */
@@ -605,7 +624,50 @@ for (const entry of maintenances) {
   });
 }
 
+// Équipe (écran 25) : comptes de démonstration sans mot de passe, et une invitation en attente.
+const teammates: Array<[string, string, "editor" | "viewer"]> = [
+  ["Camille", "Roux", "editor"],
+  ["Thomas", "Bernard", "editor"],
+  ["Pauline", "Vidal", "viewer"],
+];
+for (const [firstName, lastName, role] of teammates) {
+  const email = `${firstName}.${lastName}@cabinet-vidal.fr`.toLowerCase();
+  const [existingUser] = await db.select({ id: user.id }).from(user).where(eq(user.email, email));
+  const userId =
+    existingUser?.id ??
+    (
+      await db
+        .insert(user)
+        .values({
+          name: `${firstName} ${lastName}`,
+          firstName,
+          lastName,
+          email,
+          emailVerified: true,
+        })
+        .returning({ id: user.id })
+    )[0]?.id;
+  if (!userId) continue;
+  const [already] = await db
+    .select({ id: member.id })
+    .from(member)
+    .where(and(eq(member.organizationId, org.id), eq(member.userId, userId)));
+  if (!already) {
+    await db.insert(member).values({ organizationId: org.id, userId, role, createdAt: new Date() });
+  }
+}
+const now = Date.now();
+await db.insert(invitation).values({
+  organizationId: org.id,
+  email: "julie.moreau@cabinet-vidal.fr",
+  role: "viewer",
+  status: "pending",
+  createdAt: new Date(now - 2 * 86_400_000),
+  expiresAt: new Date(now + 5 * 86_400_000),
+  inviterId: owner.userId,
+});
+
 console.info(
-  `Espace « ${org.name} » : ${Object.keys(types).length} types, ${plans.length} événements, ${bookingCount} réservations, ${Object.keys(items).length} articles, ${rentals.length} locations.`,
+  `Espace « ${org.name} » : ${Object.keys(types).length} types, ${plans.length} événements, ${bookingCount} réservations, ${Object.keys(items).length} articles, ${rentals.length} locations, ${teammates.length} coéquipiers.`,
 );
 await db.$client.end();

@@ -6,6 +6,7 @@ import { inventoryRepository } from "./repositories/inventory";
 import {
   activityLogRepository,
   customerRepository,
+  notificationPreferenceRepository,
   referenceCounterRepository,
   tenantSettingsReader,
 } from "./repositories/support";
@@ -20,6 +21,7 @@ export function repositoriesFor(db: Executor): Repositories {
     activity: activityLogRepository(db),
     settings: tenantSettingsReader(db),
     inventory: inventoryRepository(db),
+    notifications: notificationPreferenceRepository(db),
   };
 }
 

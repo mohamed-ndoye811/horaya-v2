@@ -52,7 +52,8 @@ Mailpit : http://localhost:8025. La connexion Google s'active dès que `GOOGLE_C
 | `/inscription/paiements` | Étape 3 : Stripe arrive avec les pages publiques, on peut passer |
 | `/mot-de-passe-oublie` | 13 · Mot de passe oublié, puis 13b · Lien envoyé |
 | `/nouveau-mot-de-passe` | 14 · Nouveau mot de passe (lien valable 30 min) |
-| `/app` | Accueil provisoire de l'admin (protégé par `src/proxy.ts`) |
+| `/app` | Admin (protégé par `src/proxy.ts`) |
+| `/invitation/[id]` | Rejoindre un espace depuis l'e-mail d'invitation (création de compte ou connexion avec `?invitation=`) |
 
 Connexion, inscription et réinitialisation passent par `/api/auth` (client Better Auth) afin
 de profiter de la limitation de tentatives. La politique de mot de passe (`checkPassword` du
@@ -102,6 +103,7 @@ Fonctions pures de dépendances : `cas(deps, acteur, entrée)`. `deps` vient de
 | Événements | `createEventType`, `updateEventType`, `archiveEventType`, `createEvent` (simple ou série), `updateEvent`, `publishEvent`, `cancelEvent` |
 | Réservations | `createEventBooking`, `confirmBooking`, `refuseBooking`, `cancelBooking`, `cancelBookingWithToken` |
 | Clients | `createCustomer`, `updateCustomer`, `addCustomerNote` |
+| Paramètres | `updateTenantSettings` (marque, TVA, acompte, annulation), `saveNotificationPreferences` (par membre) |
 | Matériel | `createItem`, `updateItem`, `setItemQuantity`, `setEventItemQuantity`, `removeEventItem`, `scheduleMaintenance`, `cancelMaintenance`, `createRentalBooking` |
 
 Règles notables : liste d'attente qui monte automatiquement (première demande qui tient),

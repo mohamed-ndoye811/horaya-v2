@@ -24,6 +24,7 @@ export function DataTable<T>({
   rowKey,
   minWidth = 880,
   dense = false,
+  flush = false,
   empty,
 }: {
   label: string;
@@ -33,10 +34,14 @@ export function DataTable<T>({
   minWidth?: number;
   /** Lignes plus serrées (participants d'un événement). */
   dense?: boolean;
+  /** Sans marge aux extrémités : tableau posé dans une colonne déjà espacée (paramètres). */
+  flush?: boolean;
   /** Contenu affiché quand il n'y a aucune ligne. */
   empty?: ReactNode;
 }) {
-  const edge = "px-3 first:pl-4 last:pr-4 sm:first:pl-10 sm:last:pr-10";
+  const edge = flush
+    ? "px-2.5 first:pl-0 last:pr-0"
+    : "px-3 first:pl-4 last:pr-4 sm:first:pl-10 sm:last:pr-10";
   return (
     <div className="overflow-x-auto">
       <table aria-label={label} className="w-full table-fixed border-collapse" style={{ minWidth }}>

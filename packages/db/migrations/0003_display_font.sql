@@ -1,0 +1,1 @@
+ALTER TABLE "tenant_settings" ADD COLUMN "display_font" text DEFAULT 'display' NOT NULL;

@@ -68,7 +68,7 @@ export interface ReferenceCounter {
 
 export interface ActivityEntry {
   organizationId: string;
-  entityType: "booking" | "event" | "event_type" | "customer" | "item";
+  entityType: "booking" | "event" | "event_type" | "customer" | "item" | "settings";
   entityId: string;
   action: string;
   actorType: ActorType;

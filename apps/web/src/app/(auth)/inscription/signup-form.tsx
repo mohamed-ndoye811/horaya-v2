@@ -14,7 +14,14 @@ import { authClient } from "@/lib/auth-client";
 import { authErrorMessage } from "@/lib/auth-errors";
 
 /** Écran 11 : création du compte (étape 1 sur 3). */
-export function SignupForm({ googleEnabled }: { googleEnabled: boolean }) {
+export function SignupForm({
+  googleEnabled,
+  invitation,
+}: {
+  googleEnabled: boolean;
+  /** Arrivée depuis une invitation : pas de création d'espace, on rejoint celui qui invite. */
+  invitation?: { id: string; email: string; organizationName: string };
+}) {
   const router = useRouter();
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -46,20 +53,24 @@ export function SignupForm({ googleEnabled }: { googleEnabled: boolean }) {
       lastName,
       email,
       password,
-      callbackURL: "/app",
+      callbackURL: invitation ? `/invitation/${invitation.id}` : "/app",
     });
     if (error) {
       setError(authErrorMessage(error));
       setPending(false);
       return;
     }
-    router.push("/inscription/espace");
+    router.push(invitation ? `/invitation/${invitation.id}` : "/inscription/espace");
   }
 
   return (
     <form onSubmit={submit} className="flex flex-col gap-[22px]">
       <div className="flex flex-col gap-3">
-        <Eyebrow>Étape 1 sur 3 · Ton compte</Eyebrow>
+        <Eyebrow>
+          {invitation
+            ? `Invitation · ${invitation.organizationName}`
+            : "Étape 1 sur 3 · Ton compte"}
+        </Eyebrow>
         <AuthTitle>Créer ton compte</AuthTitle>
       </div>
 
@@ -104,6 +115,7 @@ export function SignupForm({ googleEnabled }: { googleEnabled: boolean }) {
             type="email"
             autoComplete="email"
             required
+            defaultValue={invitation?.email}
             placeholder="toi@entreprise.fr"
             className={inputClasses()}
           />

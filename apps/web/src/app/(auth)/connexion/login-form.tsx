@@ -13,10 +13,17 @@ import { authClient } from "@/lib/auth-client";
 import { authErrorMessage } from "@/lib/auth-errors";
 
 /** Écrans 01 et 02 : e-mail, puis mot de passe. */
-export function LoginForm({ googleEnabled }: { googleEnabled: boolean }) {
+export function LoginForm({
+  googleEnabled,
+  invitation,
+}: {
+  googleEnabled: boolean;
+  /** Arrivée depuis une invitation : e-mail prérempli, retour à l'invitation après connexion. */
+  invitation?: { id: string; email: string; organizationName: string };
+}) {
   const router = useRouter();
   const [step, setStep] = useState<"email" | "password">("email");
-  const [email, setEmail] = useState("");
+  const [email, setEmail] = useState(invitation?.email ?? "");
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
 
@@ -41,7 +48,7 @@ export function LoginForm({ googleEnabled }: { googleEnabled: boolean }) {
       setPending(false);
       return;
     }
-    router.replace("/app");
+    router.replace(invitation ? `/invitation/${invitation.id}` : "/app");
     router.refresh();
   }
 
@@ -49,7 +56,9 @@ export function LoginForm({ googleEnabled }: { googleEnabled: boolean }) {
     return (
       <form onSubmit={submitEmail} className="flex flex-col gap-7">
         <div className="flex flex-col gap-3">
-          <Eyebrow>Étape 1 sur 2</Eyebrow>
+          <Eyebrow>
+            {invitation ? `Invitation · ${invitation.organizationName}` : "Étape 1 sur 2"}
+          </Eyebrow>
           <AuthTitle>Connexion</AuthTitle>
         </div>
         <Field label="Adresse e-mail">

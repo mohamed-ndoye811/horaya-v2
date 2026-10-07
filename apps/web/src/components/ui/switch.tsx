@@ -7,9 +7,15 @@ import { cn } from "@/lib/cn";
 export function Switch({
   label,
   description,
+  hideLabel = false,
   className,
   ...props
-}: Omit<ComponentProps<"input">, "type"> & { label: ReactNode; description?: ReactNode }) {
+}: Omit<ComponentProps<"input">, "type"> & {
+  label: ReactNode;
+  description?: ReactNode;
+  /** Libellé lu par les lecteurs d'écran seulement (interrupteurs d'un tableau). */
+  hideLabel?: boolean;
+}) {
   return (
     <label className={cn("flex items-center gap-3", className)}>
       <span className="relative flex h-[22px] w-10 shrink-0">
@@ -23,7 +29,7 @@ export function Switch({
           className="pointer-events-none absolute top-[3px] left-[3px] size-4 bg-ink-subtle transition-transform peer-checked:translate-x-[18px] peer-checked:bg-on-ink"
         />
       </span>
-      <span className="flex flex-col gap-0.5">
+      <span className={hideLabel ? "sr-only" : "flex flex-col gap-0.5"}>
         <span className="text-[15px] font-bold leading-5 text-ink">{label}</span>
         {description && (
           <span className="text-[13px] font-medium leading-[18px] text-ink-muted">

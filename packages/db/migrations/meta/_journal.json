@@ -22,6 +22,13 @@
       "when": 1791381575927,
       "tag": "0002_account_profile_and_sector",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1791393569158,
+      "tag": "0003_display_font",
+      "breakpoints": true
     }
   ]
 }

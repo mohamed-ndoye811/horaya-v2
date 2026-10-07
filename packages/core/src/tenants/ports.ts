@@ -1,3 +1,4 @@
+import type { NotificationPreference } from "./notifications";
 import type { TenantSector } from "./workspace";
 
 export interface TenantBranding {
@@ -15,4 +16,13 @@ export interface TenantSettingsRepository {
 /** Annuaire des espaces (adresses publiques). */
 export interface WorkspaceDirectory {
   isSlugTaken(slug: string): Promise<boolean>;
+}
+
+/** Préférences de notification d'un membre (une ligne par type). */
+export interface NotificationPreferenceRepository {
+  save(
+    organizationId: string,
+    memberId: string,
+    preferences: NotificationPreference[],
+  ): Promise<void>;
 }

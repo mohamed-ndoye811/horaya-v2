@@ -23,6 +23,8 @@ export const tenantSettings = pgTable("tenant_settings", {
     .primaryKey()
     .references(() => organization.id, { onDelete: "cascade" }),
   brandColor: text().notNull().default("#264489"),
+  /** Police des titres de la page publique (valeurs : DISPLAY_FONTS du core). */
+  displayFont: text().notNull().default("display"),
   /** Secteur d'activité (valeurs : TENANT_SECTORS du core). */
   sector: text(),
   description: text(),

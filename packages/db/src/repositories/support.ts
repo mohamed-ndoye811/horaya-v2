@@ -4,13 +4,21 @@ import {
   type Customer,
   type CustomerNote,
   type CustomerRepository,
+  type NotificationPreferenceRepository,
   type ReferenceCounter,
-  type TenantSettingsReader,
+  type TenantSettingsStore,
 } from "@horaya/core";
 import { and, eq, sql } from "drizzle-orm";
 import { v7 as uuidv7 } from "uuid";
 import type { Executor } from "../client";
-import { activityLog, customer, customerNote, referenceCounter, tenantSettings } from "../schema";
+import {
+  activityLog,
+  customer,
+  customerNote,
+  notificationPreference,
+  referenceCounter,
+  tenantSettings,
+} from "../schema";
 
 /** E-mail déjà utilisé par un autre client de l'espace (index unique sur lower(email)). */
 function duplicateEmail(error: unknown): never {
@@ -104,7 +112,7 @@ export function activityLogRepository(db: Executor): ActivityLog {
   };
 }
 
-export function tenantSettingsReader(db: Executor): TenantSettingsReader {
+export function tenantSettingsReader(db: Executor): TenantSettingsStore {
   return {
     async get(organizationId) {
       const [row] = await db
@@ -117,6 +125,39 @@ export function tenantSettingsReader(db: Executor): TenantSettingsReader {
         .where(eq(tenantSettings.organizationId, organizationId));
       // Espace sans ligne de réglages (créé hors parcours) : valeurs par défaut.
       return row ?? { timezone: "Europe/Paris", currency: "EUR", bookingReferencePrefix: "HRY" };
+    },
+
+    async update(organizationId, patch) {
+      await db
+        .insert(tenantSettings)
+        .values({ organizationId, ...patch })
+        .onConflictDoUpdate({
+          target: tenantSettings.organizationId,
+          set: { ...patch, updatedAt: new Date() },
+        });
+    },
+  };
+}
+
+export function notificationPreferenceRepository(db: Executor): NotificationPreferenceRepository {
+  return {
+    async save(organizationId, memberId, preferences) {
+      if (preferences.length === 0) return;
+      await db
+        .insert(notificationPreference)
+        .values(
+          preferences.map(({ type, email, inApp }) => ({
+            organizationId,
+            memberId,
+            notificationType: type,
+            email,
+            inApp,
+          })),
+        )
+        .onConflictDoUpdate({
+          target: [notificationPreference.memberId, notificationPreference.notificationType],
+          set: { email: sql`excluded.email`, inApp: sql`excluded.in_app` },
+        });
     },
   };
 }
