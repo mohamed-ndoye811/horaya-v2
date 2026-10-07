@@ -112,3 +112,13 @@ export const activityLog = pgTable(
     index("activity_log_entity_idx").on(t.organizationId, t.entityType, t.entityId, t.createdAt),
   ],
 );
+
+/**
+ * Limitation de débit des actions publiques (demande de liens, réservations, renvoi d'e-mails) :
+ * une fenêtre par clé, partagée entre toutes les instances de l'app.
+ */
+export const rateLimit = pgTable("rate_limit", {
+  key: text().primaryKey(),
+  windowStartedAt: timestamp({ withTimezone: true }).notNull(),
+  count: integer().notNull(),
+});

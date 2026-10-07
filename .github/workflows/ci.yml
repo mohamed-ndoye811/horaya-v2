@@ -4,6 +4,8 @@ on:
   push:
     branches: [main, develop]
   pull_request:
+  # Appelé par « Build and deploy » avant de construire les images.
+  workflow_call:
 
 concurrency:
   group: ci-${{ github.ref }}

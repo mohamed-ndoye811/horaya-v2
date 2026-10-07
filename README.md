@@ -158,3 +158,14 @@ Polices, toutes Google Fonts (libres de droits), chargées via `next/font` :
   Utilitaires : `font-headline` (gros titres) et `font-section` (en-têtes de section).
 - **Urbanist** pour l'interface.
 - **Geist Mono** pour les labels et les données.
+
+## Production
+
+- Images Docker (`Dockerfile`, multi-étapes) : `--target web` (serveur Next.js standalone, port
+  3000, sonde `/api/health`) et `--target migrate` (migrations Drizzle, initContainer).
+- `.github/workflows/deploy.yml` : à chaque push sur `feature/refonte-v2`, tests puis images
+  `ghcr.io/mohamed-ndoye811/horaya-v2-{web,migrate}:<sha>`, puis SHA épinglé dans
+  `diamondinfra_cloud/apps/horaya-v2` (Argo CD déploie sur staging.horaya.app). Procédure et
+  secrets : `apps/horaya-v2/README.md` du dépôt d'infra.
+- Actions publiques limitées en débit (table `rate_limit`, partagée entre instances) : demandes
+  de liens, réservations, renvois d'e-mails.

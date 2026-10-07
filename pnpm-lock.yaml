@@ -122,6 +122,9 @@ importers:
       postgres:
         specifier: ^3.4.9
         version: 3.4.9
+      tsx:
+        specifier: ^4.23.15
+        version: 4.23.15
       uuid:
         specifier: ^14.0.2
         version: 14.0.2
@@ -132,9 +135,6 @@ importers:
       drizzle-kit:
         specifier: ^0.31.11
         version: 0.31.11
-      tsx:
-        specifier: ^4.23.15
-        version: 4.23.15
       vitest:
         specifier: ^5.0.3
         version: 5.0.3(@types/node@20.19.43)(vite@8.3.3(@types/node@20.19.43)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.15))
@@ -2735,7 +2735,7 @@ snapshots:
     dependencies:
       csstype: 3.2.3
 
-  '@vitest/mocker@5.0.3(vite@8.3.3(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.15))':
+  '@vitest/mocker@5.0.3(vite@8.3.3(@types/node@20.19.43)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.15))':
     dependencies:
       '@jridgewell/trace-mapping': 0.3.31
       '@vitest/spy': 5.0.3
@@ -3457,7 +3457,7 @@ snapshots:
   vitest@5.0.3(@types/node@20.19.43)(vite@8.3.3(@types/node@20.19.43)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.15)):
     dependencies:
       '@types/chai': 5.2.3
-      '@vitest/mocker': 5.0.3(vite@8.3.3(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.15))
+      '@vitest/mocker': 5.0.3(vite@8.3.3(@types/node@20.19.43)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.15))
       chai: 6.3.0
       es-module-lexer: 2.3.2
       expect-type: 1.4.0

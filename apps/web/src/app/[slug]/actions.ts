@@ -17,6 +17,7 @@ import { type FormState, toFormState } from "@/server/form-state";
 import { absoluteUrl } from "@/server/mailer";
 import { paymentDeps } from "@/server/payments";
 import { getWorkspaceBySlug, workspacePaymentChannel } from "@/server/public";
+import { clientIp, rateLimited } from "@/server/rate-limit";
 import { deps } from "@/server/services";
 
 const text = (form: FormData, key: string) => String(form.get(key) ?? "").trim();
@@ -32,6 +33,8 @@ export async function createPublicBookingAction(
   const workspace = await getWorkspaceBySlug(slug);
   const event = workspace ? await getPublicEvent(db, workspace.id, eventSlug) : null;
   if (!workspace || !event) return { error: "Cet événement n'est plus disponible." };
+  const blocked = await rateLimited(`booking:ip:${await clientIp()}`, 20, 3600);
+  if (blocked) return { error: blocked };
 
   const fieldErrors: Record<string, string> = {};
   const answers = (index: number) =>
@@ -180,6 +183,8 @@ export async function resendBookingEmailAction(slug: string, token: string): Pro
     ? await getManagedBooking(db, workspace.id, await hashToken(token))
     : null;
   if (!workspace || !booking) return { error: "Lien invalide." };
+  const blocked = await rateLimited(`resend:${booking.id}`, 3, 3600);
+  if (blocked) return { error: blocked };
   await sendBookingCreatedEmail(workspace.id, booking.id, token);
   return { success: "E-mail renvoyé." };
 }
@@ -193,6 +198,10 @@ export async function requestBookingLinksAction(
   const workspace = await getWorkspaceBySlug(slug);
   if (!workspace) return { error: "Espace introuvable." };
   const email = text(form, "email");
+  const blocked =
+    (await rateLimited(`links:ip:${await clientIp()}`, 10, 3600)) ??
+    (await rateLimited(`links:email:${email.toLowerCase()}`, 3, 3600));
+  if (blocked) return { error: blocked };
   try {
     const links = await reissueManageLinks(deps, workspace.id, email);
     await Promise.all(

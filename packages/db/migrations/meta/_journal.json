@@ -43,6 +43,13 @@
       "when": 1791399883854,
       "tag": "0005_payment_links",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1791401856614,
+      "tag": "0006_rate_limit",
+      "breakpoints": true
     }
   ]
 }

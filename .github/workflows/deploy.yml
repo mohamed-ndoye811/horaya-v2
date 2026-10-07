@@ -1,0 +1,78 @@
+# Construit les images (serveur web + migrations), les pousse sur GHCR, puis épingle le SHA
+# dans diamondinfra_cloud (apps/horaya-v2/overlays/prod). Argo CD ne regarde que ce dépôt :
+# pousser une image ne déploie rien tant que le tag n'a pas bougé là-bas ; un rollback est
+# un `git revert` du commit « deploy(horaya-v2) ».
+name: Build and deploy
+
+on:
+  push:
+    branches: [feature/refonte-v2]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+concurrency:
+  group: deploy-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  checks:
+    uses: ./.github/workflows/ci.yml
+
+  build:
+    needs: checks
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: true
+      matrix:
+        target: [web, migrate]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker/setup-buildx-action@v3
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          target: ${{ matrix.target }}
+          platforms: linux/amd64
+          push: true
+          tags: |
+            ghcr.io/mohamed-ndoye811/horaya-v2-${{ matrix.target }}:${{ github.sha }}
+            ghcr.io/mohamed-ndoye811/horaya-v2-${{ matrix.target }}:staging
+          cache-from: type=gha,scope=${{ matrix.target }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.target }}
+
+  pin:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: mohamed-ndoye811/diamondinfra_cloud
+          # PAT à grain fin : Contents en lecture/écriture sur diamondinfra_cloud uniquement.
+          token: ${{ secrets.INFRA_REPO_TOKEN }}
+
+      - name: Épingler le SHA des deux images
+        run: |
+          file=apps/horaya-v2/overlays/prod/kustomization.yaml
+          # Premier déploiement : le dossier n'existe pas encore sur main (on l'y ajoute à la main
+          # avec ce SHA). Rien à épingler dans ce cas.
+          if [ ! -f "$file" ]; then
+            echo "::notice::$file absent de diamondinfra_cloud : SHA ${GITHUB_SHA} à épingler à la main."
+            exit 0
+          fi
+          sed -i -E "s|(newTag: ).*|\1${GITHUB_SHA}|" "$file"
+          git diff --quiet && { echo "Déjà à jour"; exit 0; }
+          git config user.name "horaya-v2 CI"
+          git config user.email "ci@horaya.app"
+          git commit -am "deploy(horaya-v2): ${GITHUB_SHA}"
+          git push

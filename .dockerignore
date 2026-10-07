@@ -1,0 +1,12 @@
+**/node_modules
+**/.next
+**/.turbo
+**/.vitest
+.git
+.github
+.idea
+.env
+.env.*
+!.env.example
+designs
+**/*.log
