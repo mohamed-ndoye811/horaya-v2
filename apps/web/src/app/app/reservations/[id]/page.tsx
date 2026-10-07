@@ -1,8 +1,10 @@
+import { rentalDays } from "@horaya/core";
 import { getBookingDetail } from "@horaya/db";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { BookingHeaderActions } from "@/components/app/booking-actions";
+import { ItemTile } from "@/components/app/item-tile";
 import { PageHeader } from "@/components/app/page-header";
 import { Avatar, CategorySwatch } from "@/components/ui/avatar";
 import { StatusBadge } from "@/components/ui/badge";
@@ -12,6 +14,7 @@ import { BOOKING_STATUS_BADGE } from "@/components/ui/status";
 import { Timeline } from "@/components/ui/timeline";
 import { describeBookingActivity } from "@/lib/activity";
 import {
+  compactUnitLabels,
   formatEventRange,
   formatMoney,
   formatShortDateTime,
@@ -35,7 +38,7 @@ export default async function BookingDetailPage({ params }: PageProps<"/app/rese
   const detail = await getBookingDetail(db, workspace.id, id);
   if (!detail) notFound();
 
-  const { booking, participants, activity, customerStats, eventSeatsHeld } = detail;
+  const { booking, participants, activity, customerStats, eventSeatsHeld, rentalItems } = detail;
   const name = `${booking.customer.firstName} ${booking.customer.lastName}`;
   const badge = BOOKING_STATUS_BADGE[booking.status];
   const now = new Date();
@@ -118,6 +121,79 @@ export default async function BookingDetailPage({ params }: PageProps<"/app/rese
                       : booking.paymentMode === "on_site"
                         ? "À régler sur place"
                         : "Paiement en ligne bientôt disponible"}
+                  </dd>
+                </div>
+              </dl>
+            </section>
+          )}
+
+          {booking.kind === "rental" && booking.rentalStartsAt && booking.rentalEndsAt && (
+            <section className="border-2 border-ink bg-surface">
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-1 border-b border-line-soft px-5 py-4">
+                <span className="text-lg font-extrabold text-ink">Location de matériel</span>
+                <span className="text-sm font-medium text-ink-muted">
+                  · {formatEventRange(booking.rentalStartsAt, booking.rentalEndsAt, timeZone)}
+                </span>
+              </div>
+              <ul className="border-b border-line-soft">
+                {rentalItems.map((entry) => (
+                  <li key={entry.itemId} className="flex items-center gap-3.5 px-5 py-3">
+                    <ItemTile name={entry.name} reference={entry.reference} />
+                    <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+                      <Link
+                        href={`/app/materiel/${entry.itemId}`}
+                        className="truncate text-base font-bold text-ink hover:underline"
+                      >
+                        {entry.name}
+                      </Link>
+                      <span className="font-mono text-label text-ink-muted">
+                        Réf. {entry.reference} · ex. {compactUnitLabels(entry.units)}
+                      </span>
+                    </div>
+                    <span className="font-mono text-sm font-semibold text-ink">
+                      × {entry.quantity}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+              <dl className="grid sm:grid-cols-3">
+                <div className="flex flex-col gap-1.5 border-line-soft px-5 py-4 sm:border-r">
+                  <dt className="font-mono text-label font-semibold uppercase tracking-[0.055em] text-neutral">
+                    Durée
+                  </dt>
+                  <dd className="text-2xl font-extrabold text-ink">
+                    {rentalDays(booking.rentalStartsAt, booking.rentalEndsAt)} j
+                  </dd>
+                  <dd className="text-[13px] font-medium text-ink-muted">
+                    Toute journée entamée est due
+                  </dd>
+                </div>
+                <div className="flex flex-col gap-1.5 border-line-soft px-5 py-4 sm:border-r">
+                  <dt className="font-mono text-label font-semibold uppercase tracking-[0.055em] text-neutral">
+                    Montant
+                  </dt>
+                  <dd className="text-2xl font-extrabold text-ink">
+                    {formatMoney(booking.amountCents)}
+                  </dd>
+                  <dd className="text-[13px] font-medium text-ink-muted">
+                    {(() => {
+                      const deposit = rentalItems.reduce(
+                        (total, entry) => total + (entry.depositCents ?? 0) * entry.quantity,
+                        0,
+                      );
+                      return deposit > 0 ? `Caution ${formatMoney(deposit)}` : "TTC";
+                    })()}
+                  </dd>
+                </div>
+                <div className="flex flex-col gap-1.5 px-5 py-4">
+                  <dt className="font-mono text-label font-semibold uppercase tracking-[0.055em] text-neutral">
+                    Paiement
+                  </dt>
+                  <dd className="text-lg font-extrabold text-ink">
+                    {PAYMENT_MODE_LABELS[booking.paymentMode]}
+                  </dd>
+                  <dd className="text-[13px] font-medium text-warning">
+                    {booking.paymentMode === "free" ? "Rien à régler" : "À régler au retrait"}
                   </dd>
                 </div>
               </dl>

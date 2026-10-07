@@ -18,6 +18,9 @@ export interface Booking {
   customerMessage: string | null;
   refusalReason: string | null;
   source: BookingSource;
+  /** Location de matériel seule : période louée. */
+  rentalStartsAt: Date | null;
+  rentalEndsAt: Date | null;
   confirmedAt: Date | null;
   cancelledAt: Date | null;
   createdAt: Date;

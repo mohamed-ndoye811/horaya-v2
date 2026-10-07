@@ -1,5 +1,5 @@
 import type { BookingPaymentStatus, BookingSource, BookingStatus, PaymentMode } from "@horaya/core";
-import { and, asc, count, desc, eq, gte, ilike, inArray, ne, or, type SQL, sql } from "drizzle-orm";
+import { and, asc, count, desc, eq, gte, ilike, inArray, or, type SQL, sql } from "drizzle-orm";
 import type { Executor } from "../client";
 import {
   activityLog,
@@ -8,8 +8,26 @@ import {
   customer,
   event,
   eventType,
+  item,
+  itemAllocation,
+  itemUnit,
   user,
 } from "../schema";
+
+const toDate = (value: unknown): Date | null =>
+  value === null || value === undefined ? null : new Date(String(value));
+
+/** Articles loués par une réservation de location (« Vidéoprojecteur, Micro HF »). */
+export const rentalItemNames = sql<string | null>`(select string_agg(distinct i.name, ', ')
+  from item_allocation a join item_unit u on u.id = a.item_unit_id join item i on i.id = u.item_id
+  where a.booking_id = ${booking.id})`;
+/** Titre affiché d'une réservation : l'événement, ou « Location · articles ». */
+export const bookingTitle = sql<
+  string | null
+>`coalesce(${event.title}, 'Location · ' || ${rentalItemNames})`;
+/** Début affiché : celui de l'événement, ou de la location. */
+export const bookingStartsAt =
+  sql<Date | null>`coalesce(${event.startsAt}, ${booking.rentalStartsAt})`.mapWith(toDate);
 
 /**
  * Lectures pour l'affichage (listes, compteurs) : pas de règle métier ici,
@@ -68,7 +86,7 @@ export async function listBookings(
       ? or(
           ilike(customerName, `%${search}%`),
           ilike(customer.email, `%${search}%`),
-          ilike(event.title, `%${search}%`),
+          ilike(bookingTitle, `%${search}%`),
           ilike(booking.reference, `%${search}%`),
         )
       : undefined,
@@ -87,8 +105,8 @@ export async function listBookings(
       customerName,
       customerEmail: customer.email,
       eventId: event.id,
-      eventTitle: event.title,
-      eventStartsAt: event.startsAt,
+      eventTitle: bookingTitle,
+      eventStartsAt: bookingStartsAt,
       typeColor: eventType.color,
     })
     .from(booking)
@@ -188,6 +206,8 @@ export async function getBookingDetail(db: Executor, organizationId: string, boo
       createdAt: booking.createdAt,
       confirmedAt: booking.confirmedAt,
       cancelledAt: booking.cancelledAt,
+      rentalStartsAt: booking.rentalStartsAt,
+      rentalEndsAt: booking.rentalEndsAt,
       customer: {
         id: customer.id,
         firstName: customer.firstName,
@@ -214,7 +234,7 @@ export async function getBookingDetail(db: Executor, organizationId: string, boo
     .where(and(eq(booking.organizationId, organizationId), eq(booking.id, bookingId)));
   if (!row) return null;
 
-  const [participants, activity, [stats], [held]] = await Promise.all([
+  const [participants, activity, [stats], [held], rentalItems] = await Promise.all([
     db
       .select()
       .from(bookingParticipant)
@@ -253,6 +273,24 @@ export async function getBookingDetail(db: Executor, organizationId: string, boo
             ),
           )
       : Promise.resolve([{ value: 0 }]),
+    row.kind === "rental"
+      ? db
+          .select({
+            itemId: item.id,
+            name: item.name,
+            reference: item.reference,
+            dailyRateCents: item.dailyRateCents,
+            depositCents: item.depositCents,
+            quantity: sql<number>`count(*)::int`,
+            units: sql<string>`string_agg(${itemUnit.label}, ', ' order by ${itemUnit.label})`,
+          })
+          .from(itemAllocation)
+          .innerJoin(itemUnit, eq(itemUnit.id, itemAllocation.itemUnitId))
+          .innerJoin(item, eq(item.id, itemUnit.itemId))
+          .where(eq(itemAllocation.bookingId, bookingId))
+          .groupBy(item.id)
+          .orderBy(asc(item.name))
+      : Promise.resolve([]),
   ]);
 
   return {
@@ -268,6 +306,7 @@ export async function getBookingDetail(db: Executor, organizationId: string, boo
     }>,
     customerStats: stats ?? { bookings: 0, spentCents: 0, cancellations: 0 },
     eventSeatsHeld: held?.value ?? 0,
+    rentalItems,
   };
 }
 
@@ -288,19 +327,15 @@ export async function listCustomerBookings(
       paymentMode: booking.paymentMode,
       createdAt: booking.createdAt,
       eventId: event.id,
-      eventTitle: event.title,
-      eventStartsAt: event.startsAt,
+      eventTitle: bookingTitle,
+      eventStartsAt: bookingStartsAt,
       typeColor: eventType.color,
     })
     .from(booking)
     .leftJoin(event, eq(event.id, booking.eventId))
     .leftJoin(eventType, eq(eventType.id, event.eventTypeId))
-    .where(
-      and(
-        eq(booking.organizationId, organizationId),
-        eq(booking.customerId, customerId),
-        ne(booking.kind, "rental"),
-      ),
-    )
-    .orderBy(desc(sql`coalesce(${event.startsAt}, ${booking.createdAt})`));
+    .where(and(eq(booking.organizationId, organizationId), eq(booking.customerId, customerId)))
+    .orderBy(
+      desc(sql`coalesce(${event.startsAt}, ${booking.rentalStartsAt}, ${booking.createdAt})`),
+    );
 }

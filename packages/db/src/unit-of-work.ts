@@ -2,6 +2,7 @@ import { type Deps, type Repositories, systemClock, type UnitOfWork } from "@hor
 import type { Db, Executor } from "./client";
 import { bookingRepository } from "./repositories/bookings";
 import { eventRepository, eventTypeRepository } from "./repositories/events";
+import { inventoryRepository } from "./repositories/inventory";
 import {
   activityLogRepository,
   customerRepository,
@@ -18,6 +19,7 @@ export function repositoriesFor(db: Executor): Repositories {
     references: referenceCounterRepository(db),
     activity: activityLogRepository(db),
     settings: tenantSettingsReader(db),
+    inventory: inventoryRepository(db),
   };
 }
 

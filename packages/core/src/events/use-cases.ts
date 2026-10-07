@@ -218,6 +218,13 @@ export async function updateEvent(
     }
 
     const updated = await repositories.events.update(actor.organizationId, eventId, patch);
+    // Le matériel réservé suit l'événement sur ses nouvelles dates (refus si indisponible).
+    if (patch.startsAt || patch.endsAt) {
+      await repositories.inventory.moveEventAllocations(actor.organizationId, eventId, {
+        startsAt: updated.startsAt,
+        endsAt: updated.endsAt,
+      });
+    }
     await repositories.activity.record({
       organizationId: actor.organizationId,
       entityType: "event",
@@ -277,6 +284,7 @@ export async function cancelEvent(
       status: "cancelled",
       cancelledAt: now,
     });
+    await repositories.inventory.cancelAllocations(actor.organizationId, { eventId }, now);
     const active = await repositories.bookings.listActive(eventId);
     for (const booking of active) {
       await repositories.bookings.updateStatus(actor.organizationId, booking.id, {

@@ -127,12 +127,14 @@ export async function createEventBooking(
 }
 
 /**
- * Charge une réservation d'événement puis verrouille son événement, dans cet ordre
- * (toujours l'événement d'abord pour les écritures : pas d'interblocage), et la relit.
+ * Charge une réservation puis verrouille son événement, dans cet ordre (toujours
+ * l'événement d'abord pour les écritures : pas d'interblocage), et la relit.
+ * Une location de matériel n'a pas d'événement : `event` vaut alors null.
  */
 async function lockBooking(repositories: Repositories, organizationId: string, bookingId: string) {
   const found = await repositories.bookings.find(organizationId, bookingId);
-  if (!found?.eventId) throw new NotFoundError("Réservation", bookingId);
+  if (!found) throw new NotFoundError("Réservation", bookingId);
+  if (!found.eventId) return { booking: found, event: null };
   const locked = await repositories.events.lockForBooking(organizationId, found.eventId);
   const booking = await repositories.bookings.find(organizationId, bookingId);
   if (!locked || !booking) throw new NotFoundError("Réservation", bookingId);
@@ -193,7 +195,7 @@ export async function refuseBooking(
       ...actorRef(actor),
       data: { reason: reason ?? null },
     });
-    if (SEAT_HOLDING_STATUSES.has(booking.status)) {
+    if (event && SEAT_HOLDING_STATUSES.has(booking.status)) {
       await promoteWaitlist(repositories, event, actor, deps.clock.now());
     }
     return refused;
@@ -204,7 +206,7 @@ async function cancelLocked(
   repositories: Repositories,
   actor: Actor,
   booking: Booking,
-  event: Event,
+  event: Event | null,
   now: Date,
   reason: string | null,
 ): Promise<Booking> {
@@ -223,7 +225,15 @@ async function cancelLocked(
     ...actorRef(actor),
     data: { reason },
   });
-  if (SEAT_HOLDING_STATUSES.has(booking.status)) {
+  // Location : les exemplaires bloqués redeviennent libres.
+  if (booking.kind === "rental") {
+    await repositories.inventory.cancelAllocations(
+      booking.organizationId,
+      { bookingId: booking.id },
+      now,
+    );
+  }
+  if (event && SEAT_HOLDING_STATUSES.has(booking.status)) {
     await promoteWaitlist(repositories, event, actor, now);
   }
   return cancelled;
@@ -265,8 +275,13 @@ export async function cancelBookingWithToken(
     if (!found) throw new NotFoundError("Réservation", "lien");
     const { booking, event } = await lockBooking(repositories, organizationId, found.id);
     const now = deps.clock.now();
-    if (event.startsAt <= now) {
-      throw new ConflictError("L'événement a commencé : contacte l'organisateur pour annuler");
+    const startsAt = event?.startsAt ?? booking.rentalStartsAt;
+    if (startsAt && startsAt <= now) {
+      throw new ConflictError(
+        event
+          ? "L'événement a commencé : contacte l'organisateur pour annuler"
+          : "La location a commencé : contacte l'organisateur pour annuler",
+      );
     }
     return cancelLocked(repositories, actor, booking, event, now, "customer_request");
   });

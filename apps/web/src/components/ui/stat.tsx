@@ -21,8 +21,8 @@ interface StatProps {
   /** Ligne du bas : tendance, lien, explication, jauge… */
   footer?: ReactNode;
   footerTone?: "success" | "danger" | "muted";
-  /** Mise en avant (« À valider ») : fond rouge pâle. */
-  highlight?: boolean;
+  /** Mise en avant : fond rouge pâle (« À valider ») ou ambre (« À réviser »). */
+  highlight?: boolean | "warning";
 }
 
 export function Stat({ label, value, suffix, footer, footerTone = "muted", highlight }: StatProps) {
@@ -30,13 +30,13 @@ export function Stat({ label, value, suffix, footer, footerTone = "muted", highl
     <div
       className={cn(
         "flex min-w-0 flex-col gap-2.5 px-4 py-5 sm:px-10 sm:py-6",
-        highlight ? "bg-danger-bg" : "bg-bg",
+        highlight === "warning" ? "bg-warning-bg" : highlight ? "bg-danger-bg" : "bg-bg",
       )}
     >
       <p
         className={cn(
           "font-mono text-label font-semibold uppercase leading-4 tracking-[0.055em]",
-          highlight ? "text-danger" : "text-neutral",
+          highlight === "warning" ? "text-warning" : highlight ? "text-danger" : "text-neutral",
         )}
       >
         {label}
@@ -45,7 +45,7 @@ export function Stat({ label, value, suffix, footer, footerTone = "muted", highl
         <span
           className={cn(
             "font-headline text-[36px] leading-9 normal-case sm:text-kpi sm:leading-[44px]",
-            highlight ? "text-danger" : "text-ink",
+            highlight === "warning" ? "text-warning" : highlight ? "text-danger" : "text-ink",
           )}
         >
           {value}
@@ -58,13 +58,15 @@ export function Stat({ label, value, suffix, footer, footerTone = "muted", highl
         <div
           className={cn(
             "text-sm font-semibold leading-[18px]",
-            highlight
-              ? "text-danger"
-              : footerTone === "success"
-                ? "text-success"
-                : footerTone === "danger"
-                  ? "text-danger"
-                  : "text-ink-muted",
+            highlight === "warning"
+              ? "text-warning"
+              : highlight
+                ? "text-danger"
+                : footerTone === "success"
+                  ? "text-success"
+                  : footerTone === "danger"
+                    ? "text-danger"
+                    : "text-ink-muted",
           )}
         >
           {footer}

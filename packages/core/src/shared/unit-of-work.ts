@@ -5,6 +5,7 @@ import type {
   ReferenceCounter,
 } from "../bookings/ports";
 import type { EventRepository, EventTypeRepository } from "../events/ports";
+import type { InventoryRepository } from "../inventory/ports";
 import type { TenantSettingsReader } from "../tenants/settings";
 import type { Clock } from "./clock";
 
@@ -17,6 +18,7 @@ export interface Repositories {
   references: ReferenceCounter;
   activity: ActivityLog;
   settings: TenantSettingsReader;
+  inventory: InventoryRepository;
 }
 
 /** Exécute un travail dans une transaction : tout est validé, ou rien. */

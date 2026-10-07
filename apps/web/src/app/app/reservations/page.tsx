@@ -193,7 +193,12 @@ export default async function BookingsPage({ searchParams }: PageProps<"/app/res
                         {row.eventTitle}
                       </Link>
                     ) : (
-                      <span className="text-sm font-semibold text-ink">Location</span>
+                      <Link
+                        href={`/app/reservations/${row.id}`}
+                        className="truncate text-sm font-semibold text-ink hover:underline"
+                      >
+                        {row.eventTitle ?? "Location"}
+                      </Link>
                     )}
                     {row.eventStartsAt && (
                       <MonoCaption>{formatDateTimeShort(row.eventStartsAt, timeZone)}</MonoCaption>

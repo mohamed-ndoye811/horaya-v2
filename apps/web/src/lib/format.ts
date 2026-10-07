@@ -97,3 +97,26 @@ export const PAYMENT_MODE_LABELS: Record<string, string> = {
   deposit: "Acompte",
   on_site: "Sur place",
 };
+
+/** Exemplaires « #3, #1, #2, #5 » → « #1–#3, #5 » (tri numérique, plages compactées). */
+export function compactUnitLabels(labels: string): string {
+  const parts = labels
+    .split(",")
+    .map((label) => label.trim())
+    .filter(Boolean);
+  const numbers = parts.map((label) => Number(label.replace(/^#/, "")));
+  if (numbers.some((value) => !Number.isInteger(value))) return parts.join(", ");
+  const sorted = [...new Set(numbers)].sort((a, b) => a - b);
+  const ranges: string[] = [];
+  for (let index = 0; index < sorted.length; ) {
+    let end = index;
+    while (end + 1 < sorted.length && sorted[end + 1] === (sorted[end] ?? 0) + 1) end++;
+    const first = sorted[index];
+    const last = sorted[end];
+    ranges.push(
+      end - index >= 2 ? `#${first}–#${last}` : end > index ? `#${first}, #${last}` : `#${first}`,
+    );
+    index = end + 1;
+  }
+  return ranges.join(", ");
+}

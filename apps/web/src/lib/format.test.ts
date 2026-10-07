@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  compactUnitLabels,
   formatDateTimeShort,
   formatHour,
   formatMoney,
@@ -48,5 +49,19 @@ describe("formatEventRange", () => {
       formatEventRange(new Date("2026-06-15T12:00:00Z"), new Date("2026-06-16T14:30:00Z")),
     ).toBe("Lun. 15 juin, 14h → mar. 16 juin, 16h30");
     expect(formatShortDateTime(new Date("2026-06-12T14:45:00Z"))).toBe("12/06 · 16:45");
+  });
+});
+
+describe("compactUnitLabels", () => {
+  it("trie numériquement et regroupe les plages", () => {
+    expect(compactUnitLabels("#1, #10, #11, #2, #3, #5")).toBe("#1–#3, #5, #10, #11");
+    expect(compactUnitLabels(Array.from({ length: 50 }, (_, i) => `#${i + 1}`).join(", "))).toBe(
+      "#1–#50",
+    );
+    expect(compactUnitLabels("#2")).toBe("#2");
+  });
+
+  it("laisse tels quels les libellés non numériques", () => {
+    expect(compactUnitLabels("A, B")).toBe("A, B");
   });
 });

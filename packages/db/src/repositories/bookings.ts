@@ -7,12 +7,7 @@ import { booking, bookingParticipant } from "../schema";
 const ACTIVE_STATUSES = ["pending", "confirmed", "waitlisted"] as const;
 
 /** Colonnes exposées au core (le hash du jeton reste en base). */
-const {
-  manageTokenHash: _hidden,
-  rentalStartsAt: _start,
-  rentalEndsAt: _end,
-  ...columns
-} = getTableColumns(booking);
+const { manageTokenHash: _hidden, ...columns } = getTableColumns(booking);
 
 export function bookingRepository(db: Executor): BookingRepository {
   const select = () => db.select(columns).from(booking);

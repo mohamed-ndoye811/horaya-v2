@@ -1,8 +1,9 @@
 "use client";
 
 import { useState } from "react";
+import { type CustomerDefaults, CustomerFields } from "@/components/app/customer-fields";
 import { Button } from "@/components/ui/button";
-import { AffixInput, Field, inputClasses, textareaClasses } from "@/components/ui/field";
+import { AffixInput, Field } from "@/components/ui/field";
 import { FormAlert } from "@/components/ui/form-alert";
 import { FormSection } from "@/components/ui/section";
 import { Select } from "@/components/ui/select";
@@ -27,13 +28,7 @@ export function NewBookingForm({
 }: {
   events: BookableEvent[];
   initialEventId?: string;
-  customer?: {
-    firstName: string;
-    lastName: string;
-    email: string;
-    phone: string | null;
-    company: string | null;
-  };
+  customer?: CustomerDefaults;
 }) {
   const { state, onSubmit, pending } = useFormAction<FormState>(createBookingAction, {});
   const [eventId, setEventId] = useState(initialEventId ?? "");
@@ -99,79 +94,7 @@ export function NewBookingForm({
       </FormSection>
 
       <FormSection number={2} title="Client">
-        {customer && (
-          <p className="text-sm font-medium text-ink-muted">
-            Client existant : ses coordonnées sont reprises de sa fiche.
-          </p>
-        )}
-        <div className="grid gap-4 sm:grid-cols-2">
-          <Field label="Prénom" required error={errors["customer.firstName"]}>
-            {(field) => (
-              <input
-                {...field}
-                name="firstName"
-                required
-                defaultValue={customer?.firstName}
-                className={inputClasses()}
-              />
-            )}
-          </Field>
-          <Field label="Nom" required error={errors["customer.lastName"]}>
-            {(field) => (
-              <input
-                {...field}
-                name="lastName"
-                required
-                defaultValue={customer?.lastName}
-                className={inputClasses()}
-              />
-            )}
-          </Field>
-          <Field label="E-mail" required error={errors["customer.email"]}>
-            {(field) => (
-              <input
-                {...field}
-                type="email"
-                name="email"
-                required
-                defaultValue={customer?.email}
-                className={inputClasses()}
-              />
-            )}
-          </Field>
-          <Field label="Téléphone">
-            {(field) => (
-              <input
-                {...field}
-                type="tel"
-                name="phone"
-                defaultValue={customer?.phone ?? ""}
-                className={inputClasses()}
-              />
-            )}
-          </Field>
-          <Field label="Entreprise">
-            {(field) => (
-              <input
-                {...field}
-                name="company"
-                defaultValue={customer?.company ?? ""}
-                className={inputClasses()}
-              />
-            )}
-          </Field>
-        </div>
-        <Field label="Note (visible dans la réservation)">
-          {(field) => (
-            <textarea
-              {...field}
-              name="customerMessage"
-              rows={3}
-              maxLength={1000}
-              className={textareaClasses()}
-            />
-          )}
-        </Field>
+        <CustomerFields customer={customer} errors={errors} />
         <p className="text-[13px] font-medium text-ink-muted">
           Une réservation saisie par l'équipe est confirmée d'office. Si l'e-mail existe déjà, elle
           est rattachée au même client.

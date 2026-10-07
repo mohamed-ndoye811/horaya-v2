@@ -9,6 +9,8 @@ import {
   createEventType,
   fromZonedParts,
   publishEvent,
+  removeEventItem,
+  setEventItemQuantity,
   type UpdateEventInput,
   type UpdateEventTypeInput,
   updateEvent,
@@ -193,4 +195,31 @@ export async function archiveEventTypeAction(typeId: string): Promise<FormState>
   }
   revalidatePath("/app", "layout");
   redirect("/app/evenements/types");
+}
+
+/** Onglet « Matériel » de la fiche événement : fixe la quantité d'un article. */
+export async function setEventItemAction(
+  eventId: string,
+  itemId: string,
+  quantity: number,
+): Promise<FormState> {
+  const { actor } = await getWorkspaceContext();
+  try {
+    await setEventItemQuantity(deps, actor, { eventId, itemId, quantity });
+  } catch (error) {
+    return toFormState(error);
+  }
+  revalidatePath("/app", "layout");
+  return { success: "Matériel réservé." };
+}
+
+export async function removeEventItemAction(eventId: string, itemId: string): Promise<FormState> {
+  const { actor } = await getWorkspaceContext();
+  try {
+    await removeEventItem(deps, actor, eventId, itemId);
+  } catch (error) {
+    return toFormState(error);
+  }
+  revalidatePath("/app", "layout");
+  return { success: "Matériel libéré." };
 }

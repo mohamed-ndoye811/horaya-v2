@@ -5,8 +5,15 @@ import type { BookingStatus } from "./types";
 
 export type NewBooking = Omit<
   Booking,
-  "id" | "createdAt" | "updatedAt" | "cancelledAt" | "refusalReason" | "paymentStatus"
-> & { manageTokenHash: string };
+  | "id"
+  | "createdAt"
+  | "updatedAt"
+  | "cancelledAt"
+  | "refusalReason"
+  | "paymentStatus"
+  | "rentalStartsAt"
+  | "rentalEndsAt"
+> & { manageTokenHash: string; rentalStartsAt?: Date | null; rentalEndsAt?: Date | null };
 
 export interface BookingStatusChange {
   status: BookingStatus;
@@ -61,7 +68,7 @@ export interface ReferenceCounter {
 
 export interface ActivityEntry {
   organizationId: string;
-  entityType: "booking" | "event" | "event_type" | "customer";
+  entityType: "booking" | "event" | "event_type" | "customer" | "item";
   entityId: string;
   action: string;
   actorType: ActorType;

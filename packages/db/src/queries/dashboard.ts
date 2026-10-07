@@ -2,6 +2,7 @@ import type { BookingStatus, PaymentMode } from "@horaya/core";
 import { and, desc, eq, gte, inArray, lt, sql } from "drizzle-orm";
 import type { Executor } from "../client";
 import { booking, customer, event } from "../schema";
+import { bookingTitle } from "./bookings";
 
 const iso = (date: Date) => sql`${date.toISOString()}::timestamptz`;
 
@@ -106,7 +107,7 @@ export async function listLatestBookings(
       createdAt: booking.createdAt,
       customerName: sql<string>`${customer.firstName} || ' ' || ${customer.lastName}`,
       eventId: booking.eventId,
-      eventTitle: event.title,
+      eventTitle: bookingTitle,
     })
     .from(booking)
     .innerJoin(customer, eq(customer.id, booking.customerId))

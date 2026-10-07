@@ -4,7 +4,7 @@
  *
  *   pnpm db:seed-demo <adresse-de-l-espace> [--reset]
  *
- * --reset vide d'abord l'espace (événements, réservations, clients, historique).
+ * --reset vide d'abord l'espace (matériel, événements, réservations, clients, historique).
  */
 import {
   type Actor,
@@ -14,8 +14,12 @@ import {
   createEvent,
   createEventBooking,
   createEventType,
+  createItem,
+  createRentalBooking,
   fromZonedParts,
   publishEvent,
+  scheduleMaintenance,
+  setEventItemQuantity,
   systemClock,
   toZonedParts,
   updateCustomer,
@@ -31,6 +35,10 @@ import {
   event,
   eventSeries,
   eventType,
+  item,
+  itemAllocation,
+  itemType,
+  itemUnit,
   member,
   organization,
   payment,
@@ -64,6 +72,10 @@ if (reset) {
       .where(eq(booking.organizationId, org.id));
     await tx.delete(bookingParticipant).where(inArray(bookingParticipant.bookingId, bookingIds));
     for (const table of [
+      itemAllocation,
+      itemUnit,
+      item,
+      itemType,
       payment,
       booking,
       event,
@@ -329,6 +341,7 @@ const plans: Plan[] = [
 ];
 
 let bookingCount = 0;
+const eventIds = new Map<string, string>();
 for (const plan of plans) {
   const [created] = await createEvent(deps, actor, {
     eventTypeId: types[plan.type]?.id ?? "",
@@ -343,6 +356,7 @@ for (const plan of plans) {
     depositPercent: plan.depositPercent ?? null,
   });
   if (!created) continue;
+  eventIds.set(plan.title, created.id);
   if (plan.publish === false) continue;
   // Un événement déjà commencé ne peut plus être publié : on décale la publication d'office.
   if (new Date(created.startsAt) > new Date()) await publishEvent(deps, actor, created.id);
@@ -400,7 +414,198 @@ for (const [email, profile] of Object.entries(profiles)) {
   for (const body of notes ?? []) await addCustomerNote(deps, actor, found.id, { body });
 }
 
+// Matériel (écrans 20-21) : articles, matériel des événements, locations, maintenances.
+const items = Object.fromEntries(
+  await Promise.all(
+    [
+      {
+        key: "vp",
+        name: "Vidéoprojecteur Epson 4K",
+        reference: "VP-014",
+        typeName: "Vidéo",
+        quantity: 3,
+        dailyRateCents: 4500,
+        depositCents: 30000,
+        storageLocation: "Local A · étagère 3",
+        purchasedOn: "2025-03-12",
+        purchasePriceCents: 189000,
+      },
+      {
+        key: "sono",
+        name: "Sono Bose L1 Pro",
+        reference: "SN-003",
+        typeName: "Sono",
+        quantity: 2,
+        dailyRateCents: 8000,
+        depositCents: 50000,
+        storageLocation: "Local A · étagère 1",
+      },
+      {
+        key: "micro",
+        name: "Micro sans fil Shure SM58",
+        reference: "MC-021",
+        typeName: "Sono",
+        quantity: 6,
+        dailyRateCents: 1500,
+        storageLocation: "Local A · bac micros",
+      },
+      {
+        key: "chaises",
+        name: "Chaises pliantes noires",
+        reference: "MB-100",
+        typeName: "Mobilier",
+        quantity: 150,
+        dailyRateCents: 200,
+        storageLocation: "Réserve B",
+      },
+      {
+        key: "van",
+        name: "Van Renault Trafic 9 places",
+        reference: "VH-001",
+        typeName: "Véhicule",
+        quantity: 1,
+        dailyRateCents: 12000,
+        depositCents: 100000,
+        storageLocation: "Parking -1",
+      },
+      {
+        key: "drone",
+        name: "Drone DJI Mini 4 Pro",
+        reference: "DR-002",
+        typeName: "Vidéo",
+        quantity: 1,
+        dailyRateCents: 6000,
+        depositCents: 40000,
+        storageLocation: "Local A · armoire",
+      },
+      {
+        key: "tente",
+        name: "Tente pliante 3 × 3 m",
+        reference: "EX-008",
+        typeName: "Extérieur",
+        quantity: 4,
+        dailyRateCents: 3500,
+        storageLocation: "Réserve B",
+      },
+      {
+        key: "ecran",
+        name: "Écran LED 55 pouces sur pied",
+        reference: "VD-007",
+        typeName: "Vidéo",
+        quantity: 2,
+        dailyRateCents: 5000,
+        depositCents: 30000,
+        storageLocation: "Local A · étagère 2",
+      },
+    ].map(
+      async ({ key, ...input }) =>
+        [key, await createItem(deps, actor, { ...input, rentable: true })] as const,
+    ),
+  ),
+);
+const itemId = (key: string) => items[key]?.id ?? "";
+
+const eventItems: Array<[string, string, number]> = [
+  ["Point client Vidal", "vp", 1],
+  ["Séminaire annuel", "vp", 1],
+  ["Séminaire annuel", "micro", 3],
+  ["Séminaire annuel", "chaises", 50],
+  ["Atelier poterie", "ecran", 1],
+  ["Formation Excel avancé", "vp", 1],
+  ["Réunion stratégique Q3", "vp", 1],
+  ["Hackathon IA & design", "vp", 1],
+  ["Hackathon IA & design", "sono", 1],
+  ["Hackathon IA & design", "ecran", 2],
+  ["Hackathon IA & design", "chaises", 25],
+  ["Team building nature", "tente", 4],
+  ["Team building nature", "van", 1],
+];
+for (const [title, key, quantity] of eventItems) {
+  const eventId = eventIds.get(title);
+  if (eventId) await setEventItemQuantity(deps, actor, { eventId, itemId: itemId(key), quantity });
+}
+
+const rentals: Array<{
+  key: string;
+  quantity: number;
+  from: [number, number];
+  to: [number, number];
+  who: [string, string];
+}> = [
+  { key: "sono", quantity: 1, from: [-1, 9], to: [3, 18], who: ["Marc", "Dupont"] },
+  { key: "van", quantity: 1, from: [0, 8], to: [2, 20], who: ["Antoine", "Leroy"] },
+  { key: "vp", quantity: 1, from: [5, 9], to: [7, 18], who: ["Isabelle", "Chen"] },
+  { key: "micro", quantity: 2, from: [3, 14], to: [4, 12], who: ["Julie", "Moreau"] },
+];
+for (const rental of rentals) {
+  const [firstName, lastName] = rental.who;
+  const email = `${firstName}.${lastName}@mail.com`.toLowerCase();
+  await createRentalBooking(deps, actor, {
+    itemId: itemId(rental.key),
+    quantity: rental.quantity,
+    startsAt: at(...rental.from),
+    endsAt: at(...rental.to),
+    customer: { firstName, lastName, email },
+  });
+}
+
+const unitIds = async (key: string, labels?: string[]) => {
+  const rows = await db
+    .select({ id: itemUnit.id, label: itemUnit.label })
+    .from(itemUnit)
+    .where(eq(itemUnit.itemId, itemId(key)));
+  return rows.filter((row) => !labels || labels.includes(row.label)).map((row) => row.id);
+};
+const maintenances: Array<{
+  key: string;
+  labels?: string[];
+  from: number;
+  to: number;
+  title: string;
+  provider?: string;
+  costCents?: number;
+}> = [
+  { key: "drone", from: -2, to: 3, title: "Hélice cassée · en réparation", provider: "DJI Care" },
+  {
+    key: "vp",
+    labels: ["#3"],
+    from: 9,
+    to: 11,
+    title: "Révision lampe",
+    provider: "Atelier ProVidéo Toulon",
+  },
+  { key: "vp", from: -190, to: -189, title: "Nettoyage filtres", provider: "En interne" },
+  {
+    key: "vp",
+    labels: ["#1"],
+    from: -320,
+    to: -318,
+    title: "Remplacement télécommande",
+    provider: "Pièce commandée",
+    costCents: 2400,
+  },
+  {
+    key: "micro",
+    labels: ["#6"],
+    from: 1,
+    to: 6,
+    title: "Capsule à remplacer",
+    provider: "Shure SAV",
+  },
+];
+for (const entry of maintenances) {
+  await scheduleMaintenance(deps, actor, {
+    itemId: itemId(entry.key),
+    unitIds: await unitIds(entry.key, entry.labels),
+    startsAt: at(entry.from, 0),
+    endsAt: at(entry.to, 0),
+    title: entry.title,
+    provider: entry.provider ?? null,
+    costCents: entry.costCents ?? null,
+  });
+}
+
 console.info(
-  `Espace « ${org.name} » : ${Object.keys(types).length} types, ${plans.length} événements, ${bookingCount} réservations.`,
+  `Espace « ${org.name} » : ${Object.keys(types).length} types, ${plans.length} événements, ${bookingCount} réservations, ${Object.keys(items).length} articles, ${rentals.length} locations.`,
 );
 await db.$client.end();

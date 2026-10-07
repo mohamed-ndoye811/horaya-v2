@@ -1,4 +1,4 @@
-import { getEventDetail } from "@horaya/db";
+import { getEventDetail, listEventItems, listItemsAvailableBetween } from "@horaya/db";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { BookingRowActions } from "@/components/app/booking-actions";
@@ -23,6 +23,7 @@ import { param } from "@/lib/search-params";
 import { db } from "@/server/db";
 import { getWorkspaceContext } from "@/server/workspace";
 import { EventActions } from "./event-actions";
+import { EventItems } from "./event-items";
 
 export const metadata: Metadata = { title: "Événement · Horaya" };
 
@@ -32,9 +33,13 @@ export default async function EventDetailPage({
   searchParams,
 }: PageProps<"/app/evenements/[id]">) {
   const { id } = await params;
-  const tab = param((await searchParams).onglet) === "infos" ? "infos" : "participants";
+  const requested = param((await searchParams).onglet);
+  const tab = requested === "infos" || requested === "materiel" ? requested : "participants";
   const { workspace, timeZone } = await getWorkspaceContext();
-  const detail = await getEventDetail(db, workspace.id, id);
+  const [detail, items] = await Promise.all([
+    getEventDetail(db, workspace.id, id),
+    listEventItems(db, workspace.id, id),
+  ]);
   if (!detail) notFound();
 
   const { event, bookings, waitlisted, bookedAmountCents } = detail;
@@ -131,6 +136,12 @@ export default async function EventDetailPage({
               href: `/app/evenements/${event.id}`,
               count: active.length,
             },
+            {
+              value: "materiel",
+              label: "Matériel",
+              href: `/app/evenements/${event.id}?onglet=materiel`,
+              count: items.reduce((total, entry) => total + entry.quantity, 0),
+            },
             { value: "infos", label: "Infos", href: `/app/evenements/${event.id}?onglet=infos` },
           ]}
         />
@@ -223,6 +234,13 @@ export default async function EventDetailPage({
             ]}
           />
         </div>
+      ) : tab === "materiel" ? (
+        <EventItems
+          eventId={event.id}
+          reserved={items}
+          editable={event.status !== "cancelled" && event.endsAt > new Date()}
+          candidates={await listItemsAvailableBetween(db, workspace.id, event, event.id)}
+        />
       ) : (
         <div className="grid gap-10 px-4 py-8 sm:px-10 lg:grid-cols-[minmax(0,1fr)_340px]">
           <div className="flex flex-col gap-4">

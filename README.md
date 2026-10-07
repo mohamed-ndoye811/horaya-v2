@@ -87,6 +87,9 @@ core) est appliquée côté interface et dans un hook Better Auth.
 - La surréservation est impossible : toute écriture qui touche aux places d'un événement
   (réservation, annulation, changement de jauge) passe par `lockForBooking`
   (`SELECT … FOR UPDATE`). Un test lance 12 réservations simultanées sur 5 places.
+- Le matériel ne peut pas être prêté deux fois : chaque attribution verrouille l'article
+  (`lockItem`, `FOR UPDATE`) et la contrainte d'exclusion refuse tout chevauchement restant
+  (traduit en « exemplaire déjà pris »). Un test lance des attributions simultanées.
 
 ## Cas d'usage (core)
 
@@ -96,12 +99,15 @@ Fonctions pures de dépendances : `cas(deps, acteur, entrée)`. `deps` vient de
 
 | Module | Cas d'usage |
 |---|---|
-| Événements | `createEventType`, `createEvent` (simple ou série), `updateEvent`, `publishEvent`, `cancelEvent` |
+| Événements | `createEventType`, `updateEventType`, `archiveEventType`, `createEvent` (simple ou série), `updateEvent`, `publishEvent`, `cancelEvent` |
 | Réservations | `createEventBooking`, `confirmBooking`, `refuseBooking`, `cancelBooking`, `cancelBookingWithToken` |
+| Clients | `createCustomer`, `updateCustomer`, `addCustomerNote` |
+| Matériel | `createItem`, `updateItem`, `setItemQuantity`, `setEventItemQuantity`, `removeEventItem`, `scheduleMaintenance`, `cancelMaintenance`, `createRentalBooking` |
 
 Règles notables : liste d'attente qui monte automatiquement (première demande qui tient),
 réservation en ligne fermée sur invitation et après le délai minimum, saisie par l'équipe
-confirmée d'office, séries qui gardent l'heure locale au changement d'heure, références
+confirmée d'office, matériel d'un événement qui suit ses changements de date et se libère
+à l'annulation, location facturée à la journée entamée, séries qui gardent l'heure locale au changement d'heure, références
 `PREFIXE-AAMM-NNNN` par tenant. Côté web : `deps` et `requireMember()` dans
 `apps/web/src/server/services.ts`.
 
