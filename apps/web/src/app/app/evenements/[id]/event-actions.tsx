@@ -42,6 +42,7 @@ export function EventActions({
     <>
       <ActionMenu
         label="Plus d'actions"
+        variant="outline"
         items={[
           ...(status === "draft"
             ? [

@@ -162,6 +162,7 @@ export default async function EventsPage({ searchParams }: PageProps<"/app/evene
                   title={row.title}
                   color={row.typeColor}
                   href={`/app/evenements/${row.id}`}
+                  stretched
                   detail={[
                     formatTimeRange(row.startsAt, row.endsAt, timeZone),
                     row.typeName,

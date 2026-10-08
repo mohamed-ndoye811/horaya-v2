@@ -165,6 +165,7 @@ export default async function CustomersPage({ searchParams }: PageProps<"/app/cl
                   <PersonCell
                     name={`${row.firstName} ${row.lastName}`}
                     href={`/app/clients/${row.id}`}
+                    stretched
                     detail={[
                       row.company,
                       `${row.bookings} résa.`,

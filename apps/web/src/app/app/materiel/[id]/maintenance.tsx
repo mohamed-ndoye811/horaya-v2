@@ -1,12 +1,13 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState, useTransition } from "react";
+import { useRef, useState, useTransition } from "react";
 import { Button, monoLinkClasses, textLinkClasses } from "@/components/ui/button";
 import { Dialog } from "@/components/ui/dialog";
 import { AffixInput, Checkbox, Field, inputClasses, textareaClasses } from "@/components/ui/field";
 import { FormAlert } from "@/components/ui/form-alert";
 import { PlusIcon } from "@/components/ui/icons";
+import { cn } from "@/lib/cn";
 import { useFormAction } from "@/lib/use-form-action";
 import type { FormState } from "@/server/form-state";
 import { cancelMaintenanceAction, scheduleMaintenanceAction } from "../actions";
@@ -65,6 +66,14 @@ function MaintenanceDialog({
     return result;
   }, {});
   const errors = state.fieldErrors ?? {};
+  const unitsBox = useRef<HTMLFieldSetElement>(null);
+  const checkAll = (checked: boolean) => {
+    for (const box of unitsBox.current?.querySelectorAll<HTMLInputElement>(
+      'input[name="unitIds"]',
+    ) ?? []) {
+      box.checked = checked;
+    }
+  };
   return (
     <Dialog
       open
@@ -96,11 +105,27 @@ function MaintenanceDialog({
             />
           )}
         </Field>
-        <fieldset className="flex flex-col gap-2.5">
+        <fieldset ref={unitsBox} className="flex flex-col gap-2.5">
           <legend className="mb-2.5 text-sm font-bold text-ink">
             Exemplaires <span className="text-danger">*</span>
           </legend>
-          <div className="flex flex-wrap gap-x-5 gap-y-2.5">
+          {/* Beaucoup d'exemplaires (150 chaises) : tout cocher d'un coup, liste qui défile. */}
+          {units.length > 8 && (
+            <div className="flex gap-4 text-sm">
+              <button type="button" onClick={() => checkAll(true)} className={textLinkClasses}>
+                Tout cocher
+              </button>
+              <button type="button" onClick={() => checkAll(false)} className={textLinkClasses}>
+                Tout décocher
+              </button>
+            </div>
+          )}
+          <div
+            className={cn(
+              "flex flex-wrap gap-x-5 gap-y-2.5",
+              units.length > 8 && "max-h-52 overflow-y-auto border-[1.5px] border-line-soft p-3",
+            )}
+          >
             {units.map((unit) => (
               <Checkbox
                 key={unit.id}

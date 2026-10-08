@@ -131,6 +131,39 @@ export function CalendarLinksTable({
         rows={links}
         rowKey={(row) => row.id}
         minWidth={820}
+        cardRule={false}
+        card={(row) => (
+          <div className="flex flex-col gap-3">
+            <div className="flex items-start gap-3">
+              <div className="flex min-w-0 flex-1 flex-col gap-1">
+                <button
+                  type="button"
+                  onClick={() => setEditing(row)}
+                  className="truncate text-left text-base font-bold leading-5 text-ink hover:underline"
+                >
+                  {row.name}
+                </button>
+                <span className="truncate font-mono text-[13px] font-medium text-ink-muted">
+                  {row.url.replace(/^https?:\/\//, "")}
+                </span>
+                <span className="text-sm font-semibold leading-5 text-ink">
+                  {row.summary} · {row.upcomingEvents} à venir
+                </span>
+              </div>
+              <ActionMenu label={`Actions pour ${row.name}`} items={menu(row)} />
+            </div>
+            <ActiveSwitch
+              row={row}
+              disabled={pending}
+              onToggle={(isActive, setOptimistic) =>
+                run(async () => {
+                  setOptimistic(isActive);
+                  return setCalendarLinkActiveAction(row.id, isActive);
+                })
+              }
+            />
+          </div>
+        )}
         columns={[
           {
             key: "name",

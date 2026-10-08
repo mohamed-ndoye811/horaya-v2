@@ -373,7 +373,7 @@ export function BookingHeaderActions({
           open
           onClose={() => setDialog(null)}
           title="Refuser la demande ?"
-          description={`${customerName} verra le motif choisi quand les e-mails aux participants seront branchés.`}
+          description={`${customerName} reçoit le motif choisi par e-mail.`}
           reasons={REFUSAL_REASONS}
           confirmLabel="Refuser"
           pending={pending}

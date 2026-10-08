@@ -78,7 +78,7 @@ export default async function CalendarLinksPage() {
           description="Crée un lien pour partager seulement certains événements : les ateliers d'un client, le programme d'un groupe, des sessions privées sur invitation."
         />
       ) : editable ? (
-        <div className="pt-2">
+        <div className="lg:pt-2">
           <CalendarLinksTable links={rows} choices={choices} canDelete={canDelete} />
         </div>
       ) : (

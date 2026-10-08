@@ -172,7 +172,7 @@ export default async function DashboardPage() {
                   return (
                     <li
                       key={event.id}
-                      className="flex items-center gap-5 border-b border-line-soft px-4 py-3.5 sm:pr-8 sm:pl-10"
+                      className="relative flex items-center gap-5 border-b border-line-soft px-4 py-3.5 hover:bg-surface sm:pr-8 sm:pl-10"
                     >
                       <DateBlock date={event.startsAt} timeZone={timeZone} />
                       <div className="flex min-w-0 flex-1 flex-col gap-2 sm:flex-row sm:items-center sm:gap-5">
@@ -180,6 +180,7 @@ export default async function DashboardPage() {
                           title={event.title}
                           color={event.typeColor}
                           href={`/app/evenements/${event.id}`}
+                          stretched
                           detail={[
                             `${formatWeekdayShort(event.startsAt, timeZone)} ${formatTimeRange(event.startsAt, event.endsAt, timeZone)}`,
                             event.locationName,
@@ -214,11 +215,13 @@ export default async function DashboardPage() {
                 {latest.map((entry) => (
                   <li
                     key={entry.id}
-                    className="flex items-center gap-4 border-b border-line-soft px-4 py-3.5 sm:pr-10 sm:pl-8"
+                    className="relative flex items-center gap-4 border-b border-line-soft px-4 py-3.5 hover:bg-surface sm:pr-10 sm:pl-8"
                   >
                     <div className="min-w-0 flex-1">
                       <PersonCell
                         name={entry.customerName}
+                        href={`/app/reservations/${entry.id}`}
+                        stretched
                         detail={`${entry.eventTitle ?? "Location"} · ${plural(entry.seats, "place")}`}
                       />
                     </div>

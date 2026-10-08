@@ -192,6 +192,7 @@ export default async function EventDetailPage({
                       name={row.customerName}
                       href={`/app/reservations/${row.id}`}
                       avatarSize="lg"
+                      stretched
                       detail={[
                         `${row.seats} place${row.seats > 1 ? "s" : ""}`,
                         row.customerMessage ? `« ${row.customerMessage} »` : null,
@@ -201,12 +202,14 @@ export default async function EventDetailPage({
                     />
                   </div>
                   {checkIn && row.status === "confirmed" ? (
-                    <CheckInToggle
-                      bookingId={row.id}
-                      customerName={row.customerName}
-                      arrivedAt={row.checkedInAt ? clock.format(row.checkedInAt) : null}
-                      size="lg"
-                    />
+                    <div className="relative z-10">
+                      <CheckInToggle
+                        bookingId={row.id}
+                        customerName={row.customerName}
+                        arrivedAt={row.checkedInAt ? clock.format(row.checkedInAt) : null}
+                        size="lg"
+                      />
+                    </div>
                   ) : (
                     <MoneyCell
                       cents={row.amountCents}
@@ -219,15 +222,17 @@ export default async function EventDetailPage({
                     {BOOKING_STATUS_BADGE[row.status].label}
                   </StatusBadge>
                   {row.status !== "pending" && (
-                    <BookingRowActions
-                      bookingId={row.id}
-                      customerName={row.customerName}
-                      status={row.status}
-                    />
+                    <div className="relative z-10">
+                      <BookingRowActions
+                        bookingId={row.id}
+                        customerName={row.customerName}
+                        status={row.status}
+                      />
+                    </div>
                   )}
                 </div>
                 {row.status === "pending" && (
-                  <div className="pl-[54px]">
+                  <div className="relative z-10 pl-[54px]">
                     <BookingRowActions
                       bookingId={row.id}
                       customerName={row.customerName}

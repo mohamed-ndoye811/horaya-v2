@@ -10,12 +10,18 @@ export function TitleBlock({
   subtitle,
   href,
   leading,
+  stretched = false,
 }: {
   title: ReactNode;
   subtitle?: ReactNode;
   href?: string;
   /** Élément avant le titre, sur la même ligne (carré de catégorie). */
   leading?: ReactNode;
+  /**
+   * Le lien couvre tout le premier parent positionné (carte mobile, ligne de liste) :
+   * toute la carte se touche. Les autres contrôles de la carte passent en `relative z-10`.
+   */
+  stretched?: boolean;
 }) {
   return (
     <div className="flex min-w-0 flex-1 flex-col gap-1">
@@ -24,7 +30,10 @@ export function TitleBlock({
         {href ? (
           <Link
             href={href}
-            className="truncate text-base font-bold leading-5 text-ink hover:underline hover:decoration-1 hover:underline-offset-[3px]"
+            className={cn(
+              "truncate text-base font-bold leading-5 text-ink hover:underline hover:decoration-1 hover:underline-offset-[3px]",
+              stretched && "after:absolute after:inset-0",
+            )}
           >
             {title}
           </Link>
@@ -46,17 +55,20 @@ export function PersonCell({
   href,
   avatarSize = "lg",
   pending,
+  stretched,
 }: {
   name: string;
   detail?: ReactNode;
   href?: string;
   avatarSize?: "sm" | "md" | "lg";
   pending?: boolean;
+  /** Voir `TitleBlock`. */
+  stretched?: boolean;
 }) {
   return (
     <div className="flex min-w-0 items-center gap-3.5">
       <Avatar name={name} size={avatarSize} pending={pending} />
-      <TitleBlock title={name} subtitle={detail} href={href} />
+      <TitleBlock title={name} subtitle={detail} href={href} stretched={stretched} />
     </div>
   );
 }
@@ -67,17 +79,21 @@ export function EventCell({
   color,
   detail,
   href,
+  stretched,
 }: {
   title: string;
   color: string;
   detail?: ReactNode;
   href?: string;
+  /** Voir `TitleBlock`. */
+  stretched?: boolean;
 }) {
   return (
     <TitleBlock
       title={title}
       subtitle={detail}
       href={href}
+      stretched={stretched}
       leading={<CategorySwatch color={color} />}
     />
   );

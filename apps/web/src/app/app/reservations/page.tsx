@@ -187,6 +187,7 @@ export default async function BookingsPage({ searchParams }: PageProps<"/app/res
                       name={row.customerName}
                       href={`/app/reservations/${row.id}`}
                       detail={`${row.eventTitle ?? "Location"} · ${row.seats} place${row.seats > 1 ? "s" : ""}`}
+                      stretched
                     />
                   </div>
                   <div className="flex shrink-0 flex-col items-end gap-1.5">
@@ -204,7 +205,7 @@ export default async function BookingsPage({ searchParams }: PageProps<"/app/res
                   </div>
                 )}
                 {row.status === "pending" && (
-                  <div className="pl-[54px]">
+                  <div className="relative z-10 pl-[54px]">
                     <BookingRowActions
                       bookingId={row.id}
                       customerName={row.customerName}

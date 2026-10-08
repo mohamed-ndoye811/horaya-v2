@@ -202,7 +202,7 @@ export default async function InventoryPage({ searchParams }: PageProps<"/app/ma
                     <div className="flex min-w-0 flex-col gap-1">
                       <Link
                         href={`/app/materiel/${row.id}`}
-                        className="text-base font-bold leading-5 text-ink hover:underline"
+                        className="text-base font-bold leading-5 text-ink after:absolute after:inset-0 hover:underline"
                       >
                         {row.name}
                       </Link>

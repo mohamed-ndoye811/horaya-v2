@@ -122,7 +122,7 @@ export function EventItems({
                     type="button"
                     disabled={pending}
                     onClick={() => run(() => removeEventItemAction(eventId, entry.itemId))}
-                    className={`${textLinkClasses} ml-3 text-sm disabled:cursor-not-allowed disabled:opacity-50`}
+                    className={`${textLinkClasses} ml-1 px-2 py-2.5 text-sm disabled:cursor-not-allowed disabled:opacity-50`}
                   >
                     Retirer
                   </button>

@@ -28,6 +28,7 @@ export function DataTable<T>({
   flush = false,
   empty,
   card,
+  cardRule = true,
 }: {
   label: string;
   columns: Array<Column<T>>;
@@ -42,6 +43,8 @@ export function DataTable<T>({
   empty?: ReactNode;
   /** Version mobile d'une ligne : remplace le tableau sous `lg`. */
   card?: (row: T) => ReactNode;
+  /** Filet encre au-dessus des cartes (sous une barre de filtres) ; sans, juste sous l'en-tête. */
+  cardRule?: boolean;
 }) {
   const edge = flush
     ? "px-2.5 first:pl-0 last:pr-0"
@@ -49,12 +52,15 @@ export function DataTable<T>({
   return (
     <>
       {card && (
-        <ul aria-label={label} className="flex flex-col border-t-2 border-ink lg:hidden">
+        <ul
+          aria-label={label}
+          className={cn("flex flex-col lg:hidden", cardRule && !flush && "border-t-2 border-ink")}
+        >
           {rows.length === 0 && empty && <li>{empty}</li>}
           {rows.map((row) => (
             <li
               key={rowKey(row)}
-              className={cn("border-b border-line-soft py-4", !flush && "px-4 sm:px-10")}
+              className={cn("relative border-b border-line-soft py-4", !flush && "px-4 sm:px-10")}
             >
               {card(row)}
             </li>
