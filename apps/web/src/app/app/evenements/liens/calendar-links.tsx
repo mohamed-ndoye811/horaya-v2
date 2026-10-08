@@ -4,7 +4,6 @@ import type { CalendarLinkFilter } from "@horaya/core";
 import { useRouter } from "next/navigation";
 import { useOptimistic, useState, useTransition } from "react";
 import { CategorySwatch } from "@/components/ui/avatar";
-import { StatusBadge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ChoiceCards } from "@/components/ui/choice-cards";
 import { DataTable } from "@/components/ui/data-table";
@@ -154,6 +153,7 @@ export function CalendarLinksTable({
             </div>
             <ActiveSwitch
               row={row}
+              labelled
               disabled={pending}
               onToggle={(isActive, setOptimistic) =>
                 run(async () => {
@@ -201,8 +201,8 @@ export function CalendarLinksTable({
           },
           {
             key: "active",
-            header: "Statut",
-            width: 170,
+            header: "Actif",
+            width: 100,
             cell: (row) => (
               <ActiveSwitch
                 row={row}
@@ -258,30 +258,33 @@ export function CalendarLinksTable({
   );
 }
 
-/** Interrupteur « actif » : il bascule tout de suite, le serveur suit. */
+/**
+ * Interrupteur « actif » : il bascule tout de suite, le serveur suit. Il dit seul l'état
+ * du lien (plus d'étiquette « Actif / Désactivé » à côté, redondante).
+ */
 function ActiveSwitch({
   row,
+  labelled = false,
   disabled,
   onToggle,
 }: {
   row: LinkRow;
+  /** Libellé « Actif » visible (carte mobile) ; dans le tableau, l'en-tête suffit. */
+  labelled?: boolean;
   disabled: boolean;
   onToggle: (isActive: boolean, setOptimistic: (value: boolean) => void) => void;
 }) {
   const [active, setActive] = useOptimistic(row.isActive);
   return (
-    <div className="flex items-center gap-3">
-      <Switch
-        label={`Lien « ${row.name} » actif`}
-        hideLabel
-        checked={active}
-        disabled={disabled}
-        onChange={(event) => onToggle(event.target.checked, setActive)}
-      />
-      <StatusBadge tone={active ? "success" : "draft"}>
-        {active ? "Actif" : "Désactivé"}
-      </StatusBadge>
-    </div>
+    <Switch
+      label="Actif"
+      hideLabel={!labelled}
+      className="w-fit"
+      aria-label={`Lien « ${row.name} » actif`}
+      checked={active}
+      disabled={disabled}
+      onChange={(event) => onToggle(event.target.checked, setActive)}
+    />
   );
 }
 

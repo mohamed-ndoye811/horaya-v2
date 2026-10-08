@@ -75,6 +75,7 @@ export default async function PublicEventPage({
     .split(/\n\s*\n/)
     .map((text) => text.trim())
     .filter(Boolean);
+  const hasProgram = paragraphs.length > 0 || event.highlights.length > 0;
   const notes = [
     paymentNote(
       event.paymentMode,
@@ -148,8 +149,15 @@ export default async function PublicEventPage({
       </BrandBand>
 
       <div className="flex flex-col gap-10 px-5 pt-8 pb-28 sm:px-16 sm:pt-14 lg:flex-row lg:items-start lg:gap-14 lg:pb-[72px]">
-        <div className="flex min-w-0 flex-1 flex-col gap-5 [&>*]:max-w-[680px]">
-          {event.capacity !== null && (
+        {/* Sans programme, la colonne est vide : sur mobile, la carte remonte. */}
+        <div
+          className={cn(
+            "min-w-0 flex-1 flex-col gap-5 [&>*]:max-w-[680px]",
+            hasProgram ? "flex" : "hidden lg:flex",
+          )}
+        >
+          {/* Sans programme, la carte de réservation suit aussitôt : sa jauge suffit. */}
+          {event.capacity !== null && hasProgram && (
             <div className="lg:hidden">
               <AvailabilityMeter
                 label={seats.label}
@@ -159,21 +167,18 @@ export default async function PublicEventPage({
               />
             </div>
           )}
-          <h2 className="font-section text-[28px] leading-8 text-ink">Au programme</h2>
-          {paragraphs.length > 0 ? (
-            paragraphs.map((text) => (
-              <p
-                key={text.slice(0, 40)}
-                className="whitespace-pre-line text-base font-medium leading-7 text-ink sm:text-lg sm:leading-[29px]"
-              >
-                {text}
-              </p>
-            ))
-          ) : (
-            <p className="text-lg font-medium text-ink-muted">
-              Le programme détaillé arrive bientôt.
-            </p>
+          {/* Sans description ni points forts, pas de section vide « bientôt ». */}
+          {hasProgram && (
+            <h2 className="font-section text-[28px] leading-8 text-ink">Au programme</h2>
           )}
+          {paragraphs.map((text) => (
+            <p
+              key={text.slice(0, 40)}
+              className="whitespace-pre-line text-base font-medium leading-7 text-ink sm:text-lg sm:leading-[29px]"
+            >
+              {text}
+            </p>
+          ))}
           {event.highlights.length > 0 && (
             <ul className="flex flex-wrap gap-2.5 pt-1">
               {event.highlights.map((highlight) => (

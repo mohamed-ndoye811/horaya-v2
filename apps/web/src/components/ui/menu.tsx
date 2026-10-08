@@ -28,8 +28,10 @@ const TAB_BAR = 80;
  * Menu « … » des lignes de liste et des en-têtes. Rendu dans un portail, en position
  * fixe calculée depuis le bouton : il n'est jamais coupé par un tableau qui défile, il
  * s'ouvre vers le haut s'il manque de place en bas et reste dans l'écran (au-dessus de
- * la barre d'onglets sur mobile). Se ferme au clic extérieur, avec Échap, au défilement
- * et au redimensionnement ; flèches, Début et Fin pour passer d'une entrée à l'autre.
+ * la barre d'onglets sur mobile). Il suit son bouton quand la page défile (un défilement
+ * qui finit juste après le toucher ne le ferme pas) et se ferme quand le bouton sort de
+ * l'écran, au clic extérieur ou avec Échap ; flèches, Début et Fin pour passer d'une
+ * entrée à l'autre.
  */
 export function ActionMenu({
   label,
@@ -54,8 +56,8 @@ export function ActionMenu({
   }, []);
 
   // Placement : mesuré avant l'affichage, puis recalé dans l'écran.
-  useLayoutEffect(() => {
-    if (!open || !trigger.current || !menu.current) return;
+  const place = useCallback(() => {
+    if (!trigger.current || !menu.current) return;
     const anchor = trigger.current.getBoundingClientRect();
     const { width, height } = menu.current.getBoundingClientRect();
     const viewportWidth = window.innerWidth;
@@ -69,7 +71,11 @@ export function ActionMenu({
       top = anchor.top - 4 - height;
     top = Math.max(EDGE, Math.min(top, bottomLimit - height));
     setPosition({ top, left });
-  }, [open]);
+  }, []);
+
+  useLayoutEffect(() => {
+    if (open) place();
+  }, [open, place]);
 
   useEffect(() => {
     if (!open) return;
@@ -81,9 +87,10 @@ export function ActionMenu({
       if (event.key === "Escape") close(true);
     };
     const onMove = (event: Event) => {
-      // Le défilement à l'intérieur du menu ne le ferme pas.
       if (event.type === "scroll" && menu.current?.contains(event.target as Node)) return;
-      close();
+      const anchor = trigger.current?.getBoundingClientRect();
+      if (!anchor || anchor.bottom < 0 || anchor.top > window.innerHeight) close();
+      else place();
     };
     document.addEventListener("pointerdown", onPointer);
     document.addEventListener("keydown", onKey);
@@ -95,7 +102,7 @@ export function ActionMenu({
       window.removeEventListener("scroll", onMove, true);
       window.removeEventListener("resize", onMove);
     };
-  }, [open, close]);
+  }, [open, close, place]);
 
   // Focus sur la première entrée dès que le menu est placé.
   useEffect(() => {

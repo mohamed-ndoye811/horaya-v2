@@ -141,6 +141,18 @@ export default async function CalendarPage({ searchParams }: PageProps<"/app/cal
           ? `${first.day} – ${last.day} ${SHORT_MONTHS[last.month - 1]}`
           : `${first.day} ${SHORT_MONTHS[first.month - 1]} – ${last.day} ${SHORT_MONTHS[last.month - 1]}`
         : `${WEEKDAYS[(new Date(Date.UTC(date.year, date.month - 1, date.day)).getUTCDay() + 6) % 7]} ${date.day} ${MONTHS[date.month - 1]}`;
+  // Sur mobile, le titre tient sur une ligne avec les flèches (250 px au plus) : sans
+  // l'année pour le mois (elle passe dans le sur-titre), en abrégé pour la semaine et le jour.
+  const mobileEyebrow =
+    view === "mois" ? `${date.year} · ${plural(inMonth.length, "événement")}` : eyebrow;
+  const mobileTitle =
+    view === "mois"
+      ? MONTHS[date.month - 1]
+      : view === "semaine"
+        ? first.month === last.month
+          ? title
+          : `${first.day}/${first.month} – ${last.day}/${last.month}`
+        : `${WEEKDAYS[(new Date(Date.UTC(date.year, date.month - 1, date.day)).getUTCDay() + 6) % 7]?.slice(0, 3)}. ${date.day} ${SHORT_MONTHS[date.month - 1]}`;
 
   // Plage horaire : 8 h – 20 h, élargie si des événements débordent.
   const hours = rows
@@ -167,11 +179,27 @@ export default async function CalendarPage({ searchParams }: PageProps<"/app/cal
     ),
   });
 
+  const views = [
+    { value: "mois", label: "Mois", href: href({ vue: "mois" }) },
+    { value: "semaine", label: "Semaine", href: href({ vue: "semaine" }) },
+    { value: "jour", label: "Jour", href: href({ vue: "jour" }) },
+  ];
+
   return (
     <>
       <PageHeader
-        eyebrow={eyebrow}
-        title={title}
+        eyebrow={
+          <>
+            <span className="lg:hidden">{mobileEyebrow}</span>
+            <span className="hidden lg:inline">{eyebrow}</span>
+          </>
+        }
+        title={
+          <>
+            <span className="lg:hidden">{mobileTitle}</span>
+            <span className="hidden lg:inline">{title}</span>
+          </>
+        }
         titleAside={
           <div className="flex gap-2">
             <IconLink label="Période précédente" href={href({ date: previous })}>
@@ -183,16 +211,14 @@ export default async function CalendarPage({ searchParams }: PageProps<"/app/cal
           </div>
         }
         actions={
-          <>
-            <SegmentedLinks
-              label="Vue du calendrier"
-              value={view}
-              segments={[
-                { value: "mois", label: "Mois", href: href({ vue: "mois" }) },
-                { value: "semaine", label: "Semaine", href: href({ vue: "semaine" }) },
-                { value: "jour", label: "Jour", href: href({ vue: "jour" }) },
-              ]}
-            />
+          // Sur mobile, vues et « Aujourd'hui » sur une seule ligne, vues en pleine largeur.
+          <div className="flex w-full gap-2 sm:w-auto sm:gap-3">
+            <div className="min-w-0 flex-1 sm:hidden">
+              <SegmentedLinks label="Vue du calendrier" value={view} segments={views} fill />
+            </div>
+            <div className="hidden sm:block">
+              <SegmentedLinks label="Vue du calendrier" value={view} segments={views} />
+            </div>
             <ButtonLink href={href({ date: today })} variant="secondary">
               Aujourd'hui
             </ButtonLink>
@@ -201,7 +227,7 @@ export default async function CalendarPage({ searchParams }: PageProps<"/app/cal
                 Nouvel événement
               </ButtonLink>
             </div>
-          </>
+          </div>
         }
       />
       <CalendarLegend categories={types.map((type) => ({ name: type.name, color: type.color }))} />

@@ -9,7 +9,11 @@ import { FormAlert } from "@/components/ui/form-alert";
 import { ActionMenu } from "@/components/ui/menu";
 import { cancelEventAction, publishEventAction } from "../actions";
 
-/** Menu « … » de la fiche : publier un brouillon, annuler l'événement (avec confirmation). */
+/**
+ * Actions de la fiche : annuler l'événement (avec confirmation), et publier un brouillon.
+ * Un brouillon a deux actions, réunies dans un menu « … » ; un événement publié n'en a
+ * qu'une, d'où un bouton direct.
+ */
 export function EventActions({
   eventId,
   status,
@@ -40,25 +44,27 @@ export function EventActions({
 
   return (
     <>
-      <ActionMenu
-        label="Plus d'actions"
-        variant="outline"
-        items={[
-          ...(status === "draft"
-            ? [
-                {
-                  label: "Publier l'événement",
-                  onSelect: () => run(() => publishEventAction(eventId)),
-                },
-              ]
-            : []),
-          {
-            label: "Annuler l'événement",
-            tone: "danger" as const,
-            onSelect: () => setConfirmOpen(true),
-          },
-        ]}
-      />
+      {status === "draft" ? (
+        <ActionMenu
+          label="Plus d'actions"
+          variant="outline"
+          items={[
+            {
+              label: "Publier l'événement",
+              onSelect: () => run(() => publishEventAction(eventId)),
+            },
+            {
+              label: "Annuler l'événement",
+              tone: "danger",
+              onSelect: () => setConfirmOpen(true),
+            },
+          ]}
+        />
+      ) : (
+        <Button variant="danger" onClick={() => setConfirmOpen(true)}>
+          Annuler l'événement
+        </Button>
+      )}
       {message && !confirmOpen && (
         <div
           className="fixed right-4 bottom-[calc(88px+env(safe-area-inset-bottom))] left-4 z-50 sm:left-auto sm:max-w-sm lg:right-6 lg:bottom-6"

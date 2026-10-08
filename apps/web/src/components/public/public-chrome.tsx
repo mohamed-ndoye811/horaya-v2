@@ -38,7 +38,7 @@ export function PublicNav({
 }) {
   const link = (current: boolean) =>
     cn(
-      "text-[15px] leading-5 text-[var(--on-brand)] underline-offset-[3px] hover:underline",
+      "tap-area text-[15px] leading-5 text-[var(--on-brand)] underline-offset-[3px] hover:underline",
       current ? "font-extrabold underline decoration-1" : "font-semibold",
     );
   return (
@@ -98,7 +98,7 @@ export function PublicFooter({
     : workspace.contactPhone
       ? `tel:${workspace.contactPhone.replace(/[^+\d]/g, "")}`
       : null;
-  const link = "hover:text-ink hover:underline underline-offset-[3px]";
+  const link = "tap-area hover:text-ink hover:underline underline-offset-[3px]";
   return (
     <footer className="flex flex-col-reverse gap-3 border-t-2 border-ink px-5 py-6 sm:flex-row sm:items-center sm:justify-between sm:px-16">
       <p className="text-sm font-semibold text-ink-muted">
@@ -115,7 +115,7 @@ export function PublicFooter({
           </>
         )}
       </p>
-      <Link href="/" className="flex items-center gap-2 text-ink">
+      <Link href="/" className="tap-area flex items-center gap-2 text-ink">
         <span className="font-mono text-[11px] font-semibold uppercase tracking-[0.5px] text-ink-muted">
           Propulsé par
         </span>

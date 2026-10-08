@@ -130,7 +130,7 @@ export default async function DashboardPage() {
             stats.pendingBookings > 0 ? (
               <Link
                 href="/app/reservations?statut=pending"
-                className="font-bold underline decoration-1 underline-offset-[3px]"
+                className="tap-area font-bold underline decoration-1 underline-offset-[3px]"
               >
                 Traiter maintenant →
               </Link>

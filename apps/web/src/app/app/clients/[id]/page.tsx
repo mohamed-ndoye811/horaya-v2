@@ -107,7 +107,7 @@ export default async function CustomerDetailPage({ params }: PageProps<"/app/cli
               <h2 className="font-section text-section leading-7 text-ink">Coordonnées</h2>
               <Link
                 href={`/app/clients/${customer.id}/modifier`}
-                className="font-mono text-label font-semibold uppercase tracking-[0.055em] text-ink hover:text-link"
+                className="tap-area font-mono text-label font-semibold uppercase tracking-[0.055em] text-ink hover:text-link"
               >
                 Modifier
               </Link>

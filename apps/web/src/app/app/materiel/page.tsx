@@ -166,7 +166,7 @@ export default async function InventoryPage({ searchParams }: PageProps<"/app/ma
                 label="Rechercher un article"
                 name="q"
                 defaultValue={search}
-                placeholder="Rechercher un article, une référence…"
+                placeholder="Article, référence…"
               />
             </form>
             <SegmentedLinks

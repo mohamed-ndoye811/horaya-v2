@@ -182,10 +182,10 @@ export function IconLink({
 
 /** Lien texte souligné, comme dans les maquettes (« Mot de passe oublié ? »). */
 export const textLinkClasses =
-  "font-bold text-ink underline decoration-1 underline-offset-[3px] hover:text-link " +
+  "tap-area font-bold text-ink underline decoration-1 underline-offset-[3px] hover:text-link " +
   "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink";
 
 /** Lien en capitales mono des en-têtes de section (« TOUS LES ÉVÉNEMENTS → »). */
 export const monoLinkClasses =
-  "font-mono text-label font-semibold uppercase tracking-[0.055em] text-ink hover:text-link " +
+  "tap-area font-mono text-label font-semibold uppercase tracking-[0.055em] text-ink hover:text-link " +
   "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink";

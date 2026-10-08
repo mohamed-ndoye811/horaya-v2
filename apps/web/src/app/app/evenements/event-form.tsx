@@ -16,6 +16,7 @@ import { parseCivilDate } from "@/lib/dates";
 import { formatHour, formatWeekdayShort } from "@/lib/format";
 import { parseEuroToCents } from "@/lib/money";
 import { useFormAction } from "@/lib/use-form-action";
+import { useInvalidMessage } from "@/lib/use-invalid-message";
 import type { FormState } from "@/server/form-state";
 import { saveEvent } from "./actions";
 
@@ -99,6 +100,7 @@ export function EventForm({
   const [recurring, setRecurring] = useState(false);
   const [frequency, setFrequency] = useState("weekly:1");
   const [count, setCount] = useState("6");
+  const countInvalid = useInvalidMessage();
   const errors = state.fieldErrors ?? {};
   const type = types.find((entry) => entry.id === values.eventTypeId);
   const set = (patch: Partial<EventFormValues>) =>
@@ -350,7 +352,10 @@ export function EventForm({
                       </option>
                     ))}
                   </Select>
-                  <label className="flex items-center gap-2 text-sm font-semibold text-ink">
+                  <label
+                    className="flex items-center gap-2 text-sm font-semibold text-ink"
+                    {...countInvalid.handlers}
+                  >
                     <input
                       type="number"
                       name="count"
@@ -366,8 +371,10 @@ export function EventForm({
               )}
             </div>
           )}
-          {errors.recurrence && (
-            <p className="text-[13px] font-semibold text-danger">{errors.recurrence}</p>
+          {(countInvalid.message ?? errors.recurrence) && (
+            <p className="text-[13px] font-semibold text-danger">
+              {countInvalid.message ?? errors.recurrence}
+            </p>
           )}
 
           <div className="grid gap-4 sm:grid-cols-2">

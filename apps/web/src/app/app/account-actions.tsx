@@ -29,7 +29,7 @@ export function VerifyEmailBanner({ email }: { email: string }) {
           type="button"
           onClick={resend}
           disabled={status === "pending"}
-          className="font-bold underline decoration-1 underline-offset-[3px] disabled:opacity-60"
+          className="tap-area font-bold underline decoration-1 underline-offset-[3px] disabled:opacity-60"
         >
           {status === "pending" ? "Envoi…" : "Renvoyer le lien"}
         </button>

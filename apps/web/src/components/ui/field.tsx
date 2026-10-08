@@ -2,6 +2,7 @@
 
 import { type ComponentProps, type ReactNode, useId, useState } from "react";
 import { cn } from "@/lib/cn";
+import { useInvalidMessage } from "@/lib/use-invalid-message";
 
 const inputBase =
   "w-full min-w-0 border-[1.5px] border-ink-subtle bg-surface font-medium text-ink outline-none " +
@@ -48,12 +49,25 @@ interface FieldProps {
   }) => ReactNode;
 }
 
-/** Libellé + champ + message d'erreur, reliés pour les lecteurs d'écran. */
-export function Field({ label, required, aside, group, error, hint, children }: FieldProps) {
+/**
+ * Libellé + champ + message d'erreur, reliés pour les lecteurs d'écran. Un champ refusé
+ * par le navigateur (obligatoire, e-mail…) affiche son message ici, sans bulle.
+ */
+export function Field({
+  label,
+  required,
+  aside,
+  group,
+  error: serverError,
+  hint,
+  children,
+}: FieldProps) {
   const id = useId();
   const messageId = `${id}-message`;
+  const invalid = useInvalidMessage();
+  const error = invalid.message ?? serverError;
   return (
-    <div className="flex flex-col gap-2">
+    <div className="flex flex-col gap-2" {...invalid.handlers}>
       <div className="flex items-baseline justify-between gap-3">
         {(() => {
           const content = (
@@ -165,12 +179,15 @@ interface CheckboxProps extends Omit<ComponentProps<"input">, "type"> {
 
 /** Case à cocher carrée (pas d'arrondis dans le système Horaya). */
 export function Checkbox({ label, className, ...props }: CheckboxProps) {
-  return (
+  const invalid = useInvalidMessage();
+  const messageId = useId();
+  const box = (
     <label className={cn("flex items-start gap-2.5", className)}>
       <span className="relative mt-px flex size-5 shrink-0">
         <input
           type="checkbox"
-          className="peer size-5 appearance-none border-2 border-ink-subtle bg-surface checked:border-ink checked:bg-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
+          className="peer size-5 appearance-none border-2 border-ink-subtle bg-surface checked:border-ink checked:bg-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink aria-invalid:border-danger"
+          {...(invalid.message ? { "aria-invalid": true, "aria-describedby": messageId } : {})}
           {...props}
         />
         <svg
@@ -185,5 +202,17 @@ export function Checkbox({ label, className, ...props }: CheckboxProps) {
       </span>
       <span className="text-sm font-semibold leading-5 text-ink">{label}</span>
     </label>
+  );
+  // Seule une case obligatoire (conditions) peut être refusée par le navigateur.
+  if (!props.required) return box;
+  return (
+    <div className="flex flex-col gap-2" {...invalid.handlers}>
+      {box}
+      {invalid.message && (
+        <p id={messageId} className="text-[13px] font-semibold leading-4 text-danger">
+          {invalid.message}
+        </p>
+      )}
+    </div>
   );
 }

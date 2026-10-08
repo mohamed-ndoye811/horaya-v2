@@ -118,28 +118,31 @@ export default async function EventsPage({ searchParams }: PageProps<"/app/evene
             label="Rechercher un événement"
             name="q"
             defaultValue={search}
-            placeholder="Rechercher un événement, un lieu, un type…"
+            placeholder="Événement, lieu, type…"
           />
         </form>
-        <SegmentedLinks
-          collapse
-          label="Filtrer les événements"
-          value={tab}
-          segments={TABS.map((entry) => ({
-            ...entry,
-            count: counts[entry.value],
-            href: href({ onglet: entry.value === "all" ? undefined : entry.value }),
-          }))}
-        />
-        <FilterSelect
-          param="type"
-          label="Type d'événement"
-          className="xl:w-[200px]"
-          options={[
-            { value: "", label: "Tous les types" },
-            ...types.map((type) => ({ value: type.id, label: type.name })),
-          ]}
-        />
+        {/* Sur mobile, les deux listes déroulantes côte à côte. */}
+        <div className="grid grid-cols-2 gap-3 md:flex md:flex-col md:gap-4 xl:flex-row xl:items-center">
+          <SegmentedLinks
+            collapse
+            label="Filtrer les événements"
+            value={tab}
+            segments={TABS.map((entry) => ({
+              ...entry,
+              count: counts[entry.value],
+              href: href({ onglet: entry.value === "all" ? undefined : entry.value }),
+            }))}
+          />
+          <FilterSelect
+            param="type"
+            label="Type d'événement"
+            className="xl:w-[200px]"
+            options={[
+              { value: "", label: "Tous les types" },
+              ...types.map((type) => ({ value: type.id, label: type.name })),
+            ]}
+          />
+        </div>
       </div>
 
       <DataTable

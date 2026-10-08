@@ -400,7 +400,7 @@ export function OrganizationForm({
           href={`/${initial.slug}`}
           target="_blank"
           rel="noreferrer"
-          className="text-sm font-bold text-ink underline decoration-1 underline-offset-[3px] hover:text-link"
+          className="tap-area text-sm font-bold text-ink underline decoration-1 underline-offset-[3px] hover:text-link"
         >
           Ouvrir la page publique →
         </a>

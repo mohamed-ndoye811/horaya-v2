@@ -115,7 +115,7 @@ export default async function BookingsPage({ searchParams }: PageProps<"/app/res
           action={
             <Link
               href={href({ statut: "pending" })}
-              className="underline decoration-1 underline-offset-[3px]"
+              className="tap-area underline decoration-1 underline-offset-[3px]"
             >
               Afficher uniquement celles-ci
             </Link>
@@ -146,28 +146,31 @@ export default async function BookingsPage({ searchParams }: PageProps<"/app/res
                 label="Rechercher une réservation"
                 name="q"
                 defaultValue={search}
-                placeholder="Client, e-mail, événement, référence…"
+                placeholder="Client, e-mail, référence…"
               />
             </form>
-            <SegmentedLinks
-              collapse
-              label="Filtrer par statut"
-              value={tab}
-              segments={TABS.map((entry) => ({
-                ...entry,
-                count: counts[entry.value],
-                href: href({ statut: entry.value === "all" ? undefined : entry.value }),
-              }))}
-            />
-            <FilterSelect
-              param="evenement"
-              label="Événement"
-              className="xl:w-[220px]"
-              options={[
-                { value: "", label: "Tous les événements" },
-                ...events.map((event) => ({ value: event.id, label: event.title })),
-              ]}
-            />
+            {/* Sur mobile, les deux listes déroulantes côte à côte. */}
+            <div className="grid grid-cols-2 gap-3 md:flex md:flex-col md:gap-4 xl:flex-row xl:items-center">
+              <SegmentedLinks
+                collapse
+                label="Filtrer par statut"
+                value={tab}
+                segments={TABS.map((entry) => ({
+                  ...entry,
+                  count: counts[entry.value],
+                  href: href({ statut: entry.value === "all" ? undefined : entry.value }),
+                }))}
+              />
+              <FilterSelect
+                param="evenement"
+                label="Événement"
+                className="xl:w-[220px]"
+                options={[
+                  { value: "", label: "Événements" },
+                  ...events.map((event) => ({ value: event.id, label: event.title })),
+                ]}
+              />
+            </div>
           </div>
           <DataTable
             label="Réservations"

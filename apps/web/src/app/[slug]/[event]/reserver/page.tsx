@@ -78,7 +78,7 @@ export default async function BookEventPage({
           <div className="flex flex-col gap-2.5">
             <Link
               href={eventHref}
-              className="font-mono text-label font-semibold uppercase tracking-[0.055em] opacity-85 hover:underline"
+              className="tap-area font-mono text-label font-semibold uppercase tracking-[0.055em] opacity-85 hover:underline"
             >
               ← Retour à l'événement
             </Link>

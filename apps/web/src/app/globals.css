@@ -53,6 +53,19 @@
   --font-mono: var(--font-geist-mono), ui-monospace, monospace;
 }
 
+/*
+ * Lien texte : zone tactile agrandie (au moins 32 px de haut) sans changer son aspect.
+ * Pas sur un lien « étiré » sur toute une carte, qui a déjà son propre ::after.
+ */
+@utility tap-area {
+  position: relative;
+  &::after {
+    content: "";
+    position: absolute;
+    inset: -8px -4px;
+  }
+}
+
 /* Gros titres (équivalent Sztos Bold des maquettes). */
 @utility font-headline {
   font-family: var(--font-display);

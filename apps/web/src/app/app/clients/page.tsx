@@ -44,6 +44,13 @@ function visitLabel(date: Date, timeZone: string) {
     .replace(/^./, (letter) => letter.toUpperCase());
 }
 
+/** « 12 oct. » : la carte mobile n'a pas la place du jour de la semaine. */
+function shortDate(date: Date, timeZone: string) {
+  return new Intl.DateTimeFormat("fr-FR", { day: "numeric", month: "short", timeZone }).format(
+    date,
+  );
+}
+
 /** Écran 22 : clients de l'espace. */
 export default async function CustomersPage({ searchParams }: PageProps<"/app/clients">) {
   const { workspace, timeZone } = await getWorkspaceContext();
@@ -135,7 +142,7 @@ export default async function CustomersPage({ searchParams }: PageProps<"/app/cl
                 label="Rechercher un client"
                 name="q"
                 defaultValue={search}
-                placeholder="Rechercher un nom, un e-mail, une entreprise…"
+                placeholder="Nom, e-mail, entreprise…"
               />
             </form>
             <SegmentedLinks
@@ -169,7 +176,11 @@ export default async function CustomersPage({ searchParams }: PageProps<"/app/cl
                     detail={[
                       row.company,
                       `${row.bookings} résa.`,
-                      row.lastVisit ? visitLabel(row.lastVisit, timeZone).toLowerCase() : null,
+                      row.lastVisit
+                        ? visitLabel(row.lastVisit, timeZone).toLowerCase()
+                        : row.nextVisit
+                          ? `à venir : ${shortDate(row.nextVisit, timeZone)}`
+                          : null,
                     ]
                       .filter(Boolean)
                       .join(" · ")}
@@ -236,7 +247,7 @@ export default async function CustomersPage({ searchParams }: PageProps<"/app/cl
                     {row.lastVisit
                       ? visitLabel(row.lastVisit, timeZone)
                       : row.nextVisit
-                        ? `Première le ${visitLabel(row.nextVisit, timeZone).toLowerCase()}`
+                        ? `Prochaine venue le ${visitLabel(row.nextVisit, timeZone).toLowerCase()}`
                         : "—"}
                   </span>
                 ),
