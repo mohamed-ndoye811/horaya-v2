@@ -169,17 +169,16 @@ export default async function InventoryPage({ searchParams }: PageProps<"/app/ma
                 placeholder="Rechercher un article, une référence…"
               />
             </form>
-            <div className="-mx-4 overflow-x-auto px-4 sm:mx-0 sm:px-0">
-              <SegmentedLinks
-                label="Filtrer le matériel"
-                value={tab}
-                segments={TABS.map((entry) => ({
-                  ...entry,
-                  count: counts[entry.value],
-                  href: href({ filtre: entry.value === "all" ? undefined : entry.value }),
-                }))}
-              />
-            </div>
+            <SegmentedLinks
+              collapse
+              label="Filtrer le matériel"
+              value={tab}
+              segments={TABS.map((entry) => ({
+                ...entry,
+                count: counts[entry.value],
+                href: href({ filtre: entry.value === "all" ? undefined : entry.value }),
+              }))}
+            />
           </div>
           <DataTable
             label="Matériel"

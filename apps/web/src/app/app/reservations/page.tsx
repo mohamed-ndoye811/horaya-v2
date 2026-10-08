@@ -149,17 +149,16 @@ export default async function BookingsPage({ searchParams }: PageProps<"/app/res
                 placeholder="Client, e-mail, événement, référence…"
               />
             </form>
-            <div className="-mx-4 overflow-x-auto px-4 sm:mx-0 sm:px-0">
-              <SegmentedLinks
-                label="Filtrer par statut"
-                value={tab}
-                segments={TABS.map((entry) => ({
-                  ...entry,
-                  count: counts[entry.value],
-                  href: href({ statut: entry.value === "all" ? undefined : entry.value }),
-                }))}
-              />
-            </div>
+            <SegmentedLinks
+              collapse
+              label="Filtrer par statut"
+              value={tab}
+              segments={TABS.map((entry) => ({
+                ...entry,
+                count: counts[entry.value],
+                href: href({ statut: entry.value === "all" ? undefined : entry.value }),
+              }))}
+            />
             <FilterSelect
               param="evenement"
               label="Événement"

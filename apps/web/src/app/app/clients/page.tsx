@@ -138,17 +138,16 @@ export default async function CustomersPage({ searchParams }: PageProps<"/app/cl
                 placeholder="Rechercher un nom, un e-mail, une entreprise…"
               />
             </form>
-            <div className="-mx-4 overflow-x-auto px-4 sm:mx-0 sm:px-0">
-              <SegmentedLinks
-                label="Filtrer les clients"
-                value={segment}
-                segments={SEGMENTS.map((entry) => ({
-                  ...entry,
-                  count: counts[entry.value],
-                  href: href({ segment: entry.value === "all" ? undefined : entry.value }),
-                }))}
-              />
-            </div>
+            <SegmentedLinks
+              collapse
+              label="Filtrer les clients"
+              value={segment}
+              segments={SEGMENTS.map((entry) => ({
+                ...entry,
+                count: counts[entry.value],
+                href: href({ segment: entry.value === "all" ? undefined : entry.value }),
+              }))}
+            />
           </div>
           <DataTable
             label="Clients"

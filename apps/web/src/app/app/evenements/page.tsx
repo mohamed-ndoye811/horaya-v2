@@ -121,17 +121,16 @@ export default async function EventsPage({ searchParams }: PageProps<"/app/evene
             placeholder="Rechercher un événement, un lieu, un type…"
           />
         </form>
-        <div className="-mx-4 overflow-x-auto px-4 sm:mx-0 sm:px-0">
-          <SegmentedLinks
-            label="Filtrer les événements"
-            value={tab}
-            segments={TABS.map((entry) => ({
-              ...entry,
-              count: counts[entry.value],
-              href: href({ onglet: entry.value === "all" ? undefined : entry.value }),
-            }))}
-          />
-        </div>
+        <SegmentedLinks
+          collapse
+          label="Filtrer les événements"
+          value={tab}
+          segments={TABS.map((entry) => ({
+            ...entry,
+            count: counts[entry.value],
+            href: href({ onglet: entry.value === "all" ? undefined : entry.value }),
+          }))}
+        />
         <FilterSelect
           param="type"
           label="Type d'événement"

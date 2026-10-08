@@ -1,8 +1,10 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { type ReactNode, useId } from "react";
 import { cn } from "@/lib/cn";
+import { Select } from "./select";
 
 interface Segment {
   value: string;
@@ -40,13 +42,18 @@ function SegmentContent({ segment, active }: { segment: Segment; active: boolean
   );
 }
 
-/** Filtres ou vues sous forme de liens (« Toutes / En attente / Confirmées »). */
+/**
+ * Filtres ou vues sous forme de liens (« Toutes / En attente / Confirmées »).
+ * `collapse` : sous 768 px, liste déroulante native à la place des segments, qui
+ * débordaient de l'écran (filtres de listes à 4 ou 5 entrées).
+ */
 export function SegmentedLinks({
   segments,
   value,
   label,
   size = "md",
   fill = false,
+  collapse = false,
 }: {
   segments: Array<Segment & { href: string }>;
   value: string;
@@ -54,8 +61,10 @@ export function SegmentedLinks({
   label: string;
   size?: "sm" | "md";
   fill?: boolean;
+  collapse?: boolean;
 }) {
-  return (
+  const router = useRouter();
+  const links = (
     <nav aria-label={label} className={groupClasses(size, fill)}>
       {segments.map((segment) => {
         const active = segment.value === value;
@@ -71,6 +80,30 @@ export function SegmentedLinks({
         );
       })}
     </nav>
+  );
+  if (!collapse) return links;
+  return (
+    <>
+      <div className="md:hidden">
+        <Select
+          variant="filter"
+          aria-label={label}
+          value={value}
+          onChange={(event) => {
+            const target = segments.find((segment) => segment.value === event.target.value);
+            if (target) router.push(target.href);
+          }}
+        >
+          {segments.map((segment) => (
+            <option key={segment.value} value={segment.value}>
+              {typeof segment.label === "string" ? segment.label : segment.value}
+              {segment.count !== undefined ? ` · ${segment.count}` : ""}
+            </option>
+          ))}
+        </Select>
+      </div>
+      <div className="hidden md:block">{links}</div>
+    </>
   );
 }
 
