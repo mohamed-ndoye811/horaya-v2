@@ -16,6 +16,7 @@ const alignment = { left: "text-left", right: "text-right", center: "text-center
  * Tableau des listes de l'admin : en-têtes mono soulignés d'encre, lignes séparées
  * d'un filet clair. `table-fixed` : chaque colonne garde la même largeur d'une ligne
  * à l'autre ; défilement horizontal sur petit écran plutôt qu'un tableau écrasé.
+ * Avec `card`, le tableau devient une liste de cartes sous `lg` (maquettes mobiles).
  */
 export function DataTable<T>({
   label,
@@ -26,6 +27,7 @@ export function DataTable<T>({
   dense = false,
   flush = false,
   empty,
+  card,
 }: {
   label: string;
   columns: Array<Column<T>>;
@@ -38,71 +40,92 @@ export function DataTable<T>({
   flush?: boolean;
   /** Contenu affiché quand il n'y a aucune ligne. */
   empty?: ReactNode;
+  /** Version mobile d'une ligne : remplace le tableau sous `lg`. */
+  card?: (row: T) => ReactNode;
 }) {
   const edge = flush
     ? "px-2.5 first:pl-0 last:pr-0"
     : "px-3 first:pl-4 last:pr-4 sm:first:pl-10 sm:last:pr-10";
   return (
-    <div className="overflow-x-auto">
-      <table aria-label={label} className="w-full table-fixed border-collapse" style={{ minWidth }}>
-        <colgroup>
-          {columns.map((column) => (
-            <col key={column.key} style={column.width ? { width: column.width } : undefined} />
-          ))}
-        </colgroup>
-        <thead>
-          <tr className="border-b-2 border-ink">
-            {columns.map((column) => (
-              <th
-                key={column.key}
-                scope="col"
-                className={cn(
-                  "pb-3 font-mono text-label font-semibold uppercase leading-4 tracking-[0.055em] text-ink",
-                  edge,
-                  alignment[column.align ?? "left"],
-                )}
-              >
-                {column.header}
-              </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {rows.length === 0 && empty && (
-            <tr>
-              <td colSpan={columns.length}>{empty}</td>
-            </tr>
-          )}
+    <>
+      {card && (
+        <ul aria-label={label} className="flex flex-col border-t-2 border-ink lg:hidden">
+          {rows.length === 0 && empty && <li>{empty}</li>}
           {rows.map((row) => (
-            <tr
+            <li
               key={rowKey(row)}
-              className="border-b border-line-soft transition-colors hover:bg-surface/60"
+              className={cn("border-b border-line-soft py-4", !flush && "px-4 sm:px-10")}
             >
+              {card(row)}
+            </li>
+          ))}
+        </ul>
+      )}
+      <div className={card ? "hidden overflow-x-auto lg:block" : "overflow-x-auto"}>
+        <table
+          aria-label={label}
+          className="w-full table-fixed border-collapse"
+          style={{ minWidth }}
+        >
+          <colgroup>
+            {columns.map((column) => (
+              <col key={column.key} style={column.width ? { width: column.width } : undefined} />
+            ))}
+          </colgroup>
+          <thead>
+            <tr className="border-b-2 border-ink">
               {columns.map((column) => (
-                <td
+                <th
                   key={column.key}
+                  scope="col"
                   className={cn(
-                    "min-w-0 align-middle",
-                    dense ? "py-3" : "py-3.5",
+                    "pb-3 font-mono text-label font-semibold uppercase leading-4 tracking-[0.055em] text-ink",
                     edge,
                     alignment[column.align ?? "left"],
                   )}
                 >
-                  <div
-                    className={cn(
-                      "flex min-w-0 items-center",
-                      column.align === "right" && "justify-end",
-                      column.align === "center" && "justify-center",
-                    )}
-                  >
-                    {column.cell(row)}
-                  </div>
-                </td>
+                  {column.header}
+                </th>
               ))}
             </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
+          </thead>
+          <tbody>
+            {rows.length === 0 && empty && (
+              <tr>
+                <td colSpan={columns.length}>{empty}</td>
+              </tr>
+            )}
+            {rows.map((row) => (
+              <tr
+                key={rowKey(row)}
+                className="border-b border-line-soft transition-colors hover:bg-surface/60"
+              >
+                {columns.map((column) => (
+                  <td
+                    key={column.key}
+                    className={cn(
+                      "min-w-0 align-middle",
+                      dense ? "py-3" : "py-3.5",
+                      edge,
+                      alignment[column.align ?? "left"],
+                    )}
+                  >
+                    <div
+                      className={cn(
+                        "flex min-w-0 items-center",
+                        column.align === "right" && "justify-end",
+                        column.align === "center" && "justify-center",
+                      )}
+                    >
+                      {column.cell(row)}
+                    </div>
+                  </td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </>
   );
 }

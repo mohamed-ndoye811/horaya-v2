@@ -1,9 +1,13 @@
 import { countPendingBookings } from "@horaya/db";
+import { MobileTabBar, MobileTopBar } from "@/components/app/mobile-nav";
 import { Sidebar } from "@/components/app/sidebar";
 import { requireWorkspace } from "@/server/auth";
 import { db } from "@/server/db";
 
-/** Coque de l'admin : navigation à gauche, contenu qui défile à droite. */
+/**
+ * Coque de l'admin : navigation à gauche et contenu qui défile à droite ; sur mobile,
+ * barre du haut et barre d'onglets en bas.
+ */
 export default async function AppLayout({ children }: LayoutProps<"/app">) {
   const { user, workspace } = await requireWorkspace();
   const pendingBookings = await countPendingBookings(db, workspace.id);
@@ -17,7 +21,11 @@ export default async function AppLayout({ children }: LayoutProps<"/app">) {
         workspace={{ name: workspace.name }}
         pendingBookings={pendingBookings}
       />
-      <main className="flex min-w-0 flex-1 flex-col">{children}</main>
+      <div className="flex min-w-0 flex-1 flex-col">
+        <MobileTopBar user={{ name: user.name }} />
+        <main className="flex min-w-0 flex-1 flex-col">{children}</main>
+        <MobileTabBar pendingBookings={pendingBookings} />
+      </div>
     </div>
   );
 }

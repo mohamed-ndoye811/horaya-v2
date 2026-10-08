@@ -155,6 +155,13 @@ export const SettingsIcon = (props: IconProps) => (
   </Svg>
 );
 
+/** Onglet « Plus » de la barre mobile : trois traits. */
+export const MoreIcon = (props: IconProps) => (
+  <Svg {...props}>
+    <path d="M2 4.5H16M2 9H16M2 13.5H16" />
+  </Svg>
+);
+
 export const SearchIcon = (props: IconProps) => (
   <Svg {...props} className={props.className}>
     <circle cx="8" cy="8" r="5.5" strokeWidth="1.8" />

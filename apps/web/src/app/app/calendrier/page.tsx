@@ -2,8 +2,10 @@ import { addDays } from "@horaya/core";
 import { type EventRow, getEventDetail, listEventsInRange, listEventTypes } from "@horaya/db";
 import type { Metadata } from "next";
 import Link from "next/link";
+import { FabLink } from "@/components/app/fab";
 import { PageHeader } from "@/components/app/page-header";
 import { CalendarLegend } from "@/components/calendar/legend";
+import { DayAgenda, MonthCompact, WeekAgenda, WeekStrip } from "@/components/calendar/mobile";
 import { MonthCalendar } from "@/components/calendar/month-calendar";
 import { TimeGridCalendar } from "@/components/calendar/time-grid";
 import type { CalendarEvent } from "@/components/calendar/types";
@@ -159,6 +161,12 @@ export default async function CalendarPage({ searchParams }: PageProps<"/app/cal
   const startHour = Math.min(8, ...hours.filter((hour) => hour >= 0));
   const endHour = Math.min(24, Math.max(20, ...hours));
 
+  const newEventHref = withParams("/app/evenements/nouveau", {
+    date: civilKey(
+      view === "mois" && civilKey(date) !== civilKey(today) ? { ...date, day: 1 } : date,
+    ),
+  });
+
   return (
     <>
       <PageHeader
@@ -188,43 +196,62 @@ export default async function CalendarPage({ searchParams }: PageProps<"/app/cal
             <ButtonLink href={href({ date: today })} variant="secondary">
               Aujourd'hui
             </ButtonLink>
-            <ButtonLink
-              href={withParams("/app/evenements/nouveau", {
-                date: civilKey(
-                  view === "mois" && civilKey(date) !== civilKey(today)
-                    ? { ...date, day: 1 }
-                    : date,
-                ),
-              })}
-              icon={<PlusIcon />}
-            >
-              Nouvel événement
-            </ButtonLink>
+            <div className="hidden lg:flex">
+              <ButtonLink href={newEventHref} icon={<PlusIcon />}>
+                Nouvel événement
+              </ButtonLink>
+            </div>
           </>
         }
       />
       <CalendarLegend categories={types.map((type) => ({ name: type.name, color: type.color }))} />
 
       {view === "mois" && (
-        <MonthCalendar
-          year={date.year}
-          month={date.month}
-          events={events}
-          timeZone={timeZone}
-          today={today}
-          moreHref={(day) => href({ vue: "jour", date: day })}
-        />
+        <>
+          <MonthCompact
+            year={date.year}
+            month={date.month}
+            events={events}
+            timeZone={timeZone}
+            today={today}
+            selected={date}
+            dayHref={(day) => href({ date: day })}
+          />
+          <DayAgenda day={date} events={events} timeZone={timeZone} />
+          <div className="hidden lg:block">
+            <MonthCalendar
+              year={date.year}
+              month={date.month}
+              events={events}
+              timeZone={timeZone}
+              today={today}
+              moreHref={(day) => href({ vue: "jour", date: day })}
+            />
+          </div>
+        </>
       )}
       {view === "semaine" && (
-        <TimeGridCalendar
-          days={days}
-          events={events}
-          timeZone={timeZone}
-          today={today}
-          now={new Date()}
-          startHour={startHour}
-          endHour={endHour}
-        />
+        <>
+          <WeekStrip
+            days={days}
+            events={events}
+            timeZone={timeZone}
+            today={today}
+            dayHref={(day) => href({ vue: "jour", date: day })}
+          />
+          <WeekAgenda days={days} events={events} timeZone={timeZone} today={today} />
+          <div className="hidden lg:block">
+            <TimeGridCalendar
+              days={days}
+              events={events}
+              timeZone={timeZone}
+              today={today}
+              now={new Date()}
+              startHour={startHour}
+              endHour={endHour}
+            />
+          </div>
+        </>
       )}
       {view === "jour" && (
         <div className="flex flex-col lg:flex-row">
@@ -240,7 +267,17 @@ export default async function CalendarPage({ searchParams }: PageProps<"/app/cal
             />
           </div>
           {selected && (
-            <aside className="flex flex-col border-t-2 border-ink bg-surface lg:w-[380px] lg:shrink-0 lg:border-t-0 lg:border-l-2">
+            <Link
+              href={href({})}
+              aria-label="Fermer le détail"
+              className="fixed inset-0 z-40 bg-ink/45 lg:hidden"
+            />
+          )}
+          {selected && (
+            <aside className="fixed inset-x-0 bottom-0 z-50 flex max-h-[85dvh] flex-col overflow-y-auto border-t-2 border-ink bg-surface pb-[env(safe-area-inset-bottom)] lg:static lg:z-auto lg:max-h-none lg:w-[380px] lg:shrink-0 lg:overflow-visible lg:border-t-0 lg:border-l-2 lg:pb-0">
+              <div aria-hidden="true" className="flex justify-center pt-2.5 lg:hidden">
+                <span className="h-1 w-10 bg-ink-subtle" />
+              </div>
               <div className="flex items-start justify-between gap-4 border-b border-line-soft px-7 py-6">
                 <div className="flex min-w-0 flex-col gap-3">
                   <p className="flex items-center gap-2 font-mono text-label font-semibold uppercase tracking-[0.055em] text-neutral">
@@ -314,6 +351,7 @@ export default async function CalendarPage({ searchParams }: PageProps<"/app/cal
           )}
         </div>
       )}
+      <FabLink href={newEventHref}>Nouvel événement</FabLink>
     </>
   );
 }

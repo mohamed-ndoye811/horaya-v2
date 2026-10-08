@@ -1,10 +1,11 @@
 import { listEventTypes } from "@horaya/db";
 import type { Metadata } from "next";
 import Link from "next/link";
+import { FabLink } from "@/components/app/fab";
 import { PageHeader } from "@/components/app/page-header";
 import { ButtonLink } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
-import { PlusIcon } from "@/components/ui/icons";
+import { ChevronRight, PlusIcon } from "@/components/ui/icons";
 import { cn } from "@/lib/cn";
 import { formatMoney } from "@/lib/format";
 import { param } from "@/lib/search-params";
@@ -70,13 +71,16 @@ export default async function EventTypesPage({ searchParams }: PageProps<"/app/e
         title="Types d'événements"
         subtitle="Un type définit la couleur, les réglages par défaut et les infos demandées à la réservation."
         actions={
-          <ButtonLink href="/app/evenements/types?type=nouveau" icon={<PlusIcon />}>
-            Nouveau type
-          </ButtonLink>
+          <div className="hidden lg:flex">
+            <ButtonLink href="/app/evenements/types?type=nouveau" icon={<PlusIcon />}>
+              Nouveau type
+            </ButtonLink>
+          </div>
         }
       />
       <div className="flex flex-1 flex-col lg:flex-row">
-        <div className="min-w-0 flex-1">
+        {/* Sur mobile (M10), le formulaire d'un type remplace la liste. */}
+        <div className={cn("min-w-0 flex-1", panelValues && "hidden lg:block")}>
           {types.length === 0 && !panelValues ? (
             <EmptyState
               title="Aucun type pour l'instant."
@@ -88,76 +92,113 @@ export default async function EventTypesPage({ searchParams }: PageProps<"/app/e
               }
             />
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full min-w-[640px] table-fixed border-collapse">
-                <colgroup>
-                  <col />
-                  <col style={{ width: 120 }} />
-                  <col style={{ width: 110 }} />
-                  <col style={{ width: 130 }} />
-                </colgroup>
-                <thead>
-                  <tr className="border-b-2 border-ink">
-                    {["Type", "Durée", "Prix", "Événements"].map((label, index) => (
-                      <th
-                        key={label}
-                        scope="col"
-                        className={cn(
-                          "px-3 py-4 font-mono text-label font-semibold uppercase tracking-[0.055em] text-ink first:pl-4 last:pr-4 sm:first:pl-10 sm:last:pr-8",
-                          index >= 2 ? "text-right" : "text-left",
-                        )}
-                      >
-                        {label}
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {types.map((type) => {
-                    const active = type.id === selected;
-                    return (
-                      <tr
-                        key={type.id}
-                        className={cn(
-                          "border-b border-line-soft",
-                          active && "bg-surface shadow-[inset_4px_0_0_var(--color-ink)]",
-                        )}
-                      >
-                        <td className="px-3 py-4 pl-4 sm:pl-10">
-                          <div className="flex items-center gap-3.5">
-                            <span
-                              className="size-7 shrink-0"
-                              style={{ backgroundColor: type.color }}
-                              aria-hidden="true"
-                            />
-                            <div className="flex min-w-0 flex-col gap-1">
-                              <Link
-                                href={`/app/evenements/types?type=${type.id}`}
-                                className="truncate text-base font-bold text-ink hover:underline"
-                              >
-                                {type.name}
-                              </Link>
-                              <span className="truncate text-sm font-medium text-ink-muted">
-                                {summary(type)}
-                              </span>
-                            </div>
-                          </div>
-                        </td>
-                        <td className="px-3 font-mono text-sm font-semibold text-ink">
-                          {formatDuration(type.defaultDurationMinutes)}
-                        </td>
-                        <td className="px-3 text-right text-[15px] font-extrabold text-ink">
+            <>
+              <ul aria-label="Types d'événements" className="flex flex-col lg:hidden">
+                {types.map((type) => (
+                  <li key={type.id} className="border-b border-line-soft">
+                    <Link
+                      href={`/app/evenements/types?type=${type.id}`}
+                      className="flex items-center gap-3.5 px-4 py-4 text-ink hover:bg-surface sm:px-10"
+                    >
+                      <span
+                        className="size-7 shrink-0"
+                        style={{ backgroundColor: type.color }}
+                        aria-hidden="true"
+                      />
+                      <span className="flex min-w-0 flex-1 flex-col gap-1">
+                        <span className="truncate text-base font-bold leading-5">{type.name}</span>
+                        <span className="truncate text-[13px] font-medium leading-[17px] text-ink-muted">
+                          {[formatDuration(type.defaultDurationMinutes), summary(type)]
+                            .filter((part) => part && part !== "—")
+                            .join(" · ")}
+                        </span>
+                      </span>
+                      <span className="flex shrink-0 flex-col items-end gap-1">
+                        <span className="text-base font-extrabold leading-5">
                           {type.defaultPriceCents ? formatMoney(type.defaultPriceCents) : "Gratuit"}
-                        </td>
-                        <td className="px-3 pr-4 text-right font-mono text-sm font-semibold text-ink sm:pr-8">
-                          {type.eventCount}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
+                        </span>
+                        <span className="font-mono text-[11px] font-semibold uppercase leading-[14px] tracking-[0.045em] text-ink-muted">
+                          {type.eventCount} évén.
+                        </span>
+                      </span>
+                      <ChevronRight />
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+              <div className="hidden overflow-x-auto lg:block">
+                <table className="w-full min-w-[640px] table-fixed border-collapse">
+                  <colgroup>
+                    <col />
+                    <col style={{ width: 120 }} />
+                    <col style={{ width: 110 }} />
+                    <col style={{ width: 130 }} />
+                  </colgroup>
+                  <thead>
+                    <tr className="border-b-2 border-ink">
+                      {["Type", "Durée", "Prix", "Événements"].map((label, index) => (
+                        <th
+                          key={label}
+                          scope="col"
+                          className={cn(
+                            "px-3 py-4 font-mono text-label font-semibold uppercase tracking-[0.055em] text-ink first:pl-4 last:pr-4 sm:first:pl-10 sm:last:pr-8",
+                            index >= 2 ? "text-right" : "text-left",
+                          )}
+                        >
+                          {label}
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {types.map((type) => {
+                      const active = type.id === selected;
+                      return (
+                        <tr
+                          key={type.id}
+                          className={cn(
+                            "border-b border-line-soft",
+                            active && "bg-surface shadow-[inset_4px_0_0_var(--color-ink)]",
+                          )}
+                        >
+                          <td className="px-3 py-4 pl-4 sm:pl-10">
+                            <div className="flex items-center gap-3.5">
+                              <span
+                                className="size-7 shrink-0"
+                                style={{ backgroundColor: type.color }}
+                                aria-hidden="true"
+                              />
+                              <div className="flex min-w-0 flex-col gap-1">
+                                <Link
+                                  href={`/app/evenements/types?type=${type.id}`}
+                                  className="truncate text-base font-bold text-ink hover:underline"
+                                >
+                                  {type.name}
+                                </Link>
+                                <span className="truncate text-sm font-medium text-ink-muted">
+                                  {summary(type)}
+                                </span>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="px-3 font-mono text-sm font-semibold text-ink">
+                            {formatDuration(type.defaultDurationMinutes)}
+                          </td>
+                          <td className="px-3 text-right text-[15px] font-extrabold text-ink">
+                            {type.defaultPriceCents
+                              ? formatMoney(type.defaultPriceCents)
+                              : "Gratuit"}
+                          </td>
+                          <td className="px-3 pr-4 text-right font-mono text-sm font-semibold text-ink sm:pr-8">
+                            {type.eventCount}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </>
           )}
         </div>
         {panelValues && (
@@ -166,6 +207,9 @@ export default async function EventTypesPage({ searchParams }: PageProps<"/app/e
           </aside>
         )}
       </div>
+      {!panelValues && types.length > 0 && (
+        <FabLink href="/app/evenements/types?type=nouveau">Nouveau type</FabLink>
+      )}
     </div>
   );
 }

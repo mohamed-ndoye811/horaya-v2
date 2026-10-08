@@ -16,7 +16,7 @@ const groupClasses = (size: "sm" | "md", fill: boolean) =>
 
 const segmentClasses = (active: boolean, fill: boolean) =>
   cn(
-    "flex items-center justify-center gap-2 px-[18px] text-sm font-bold leading-[18px] transition-colors",
+    "flex items-center justify-center gap-2 whitespace-nowrap px-[18px] text-sm font-bold leading-[18px] transition-colors",
     "[&:not(:first-child)]:border-l-2 [&:not(:first-child)]:border-ink",
     fill && "flex-1 basis-0",
     active ? "bg-ink text-on-ink" : "text-ink hover:bg-surface",

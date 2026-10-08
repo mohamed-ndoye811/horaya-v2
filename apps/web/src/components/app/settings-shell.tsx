@@ -19,7 +19,10 @@ const SECTIONS: Array<{ value: SettingsSection | "notifications"; label: string;
   { value: "integrations", label: "Intégrations", href: "/app/parametres/integrations" },
 ];
 
-/** Écrans 24 à 26 : en-tête « Paramètres », sous-navigation à gauche, contenu. */
+/**
+ * Écrans 24 à 26 : en-tête « Paramètres », sous-navigation à gauche, contenu. Sur mobile
+ * (M23 à M25), le titre est celui de la section et la sous-navigation passe par « Plus ».
+ */
 export function SettingsShell({
   section,
   breadcrumb,
@@ -37,14 +40,20 @@ export function SettingsShell({
     <div className="flex min-h-dvh min-w-0 flex-col">
       <PageHeader
         eyebrow={`Paramètres / ${breadcrumb}`}
-        title="Paramètres"
+        title={
+          <>
+            <span className="lg:hidden">{breadcrumb}</span>
+            <span className="hidden lg:inline">Paramètres</span>
+          </>
+        }
         subtitle={subtitle}
         actions={actions}
+        stickyActions="above-tabs"
       />
       <div className="flex min-w-0 flex-1 flex-col lg:flex-row">
         <nav
           aria-label="Sections des paramètres"
-          className="flex shrink-0 overflow-x-auto border-b border-line-soft lg:w-[232px] lg:flex-col lg:overflow-visible lg:border-r lg:border-b-0 lg:py-6"
+          className="hidden shrink-0 lg:flex lg:w-[232px] lg:flex-col lg:border-r lg:border-line-soft lg:py-6"
         >
           {SECTIONS.map((entry) => {
             const active = entry.value === section;
@@ -66,7 +75,11 @@ export function SettingsShell({
             );
           })}
         </nav>
-        <div className="min-w-0 flex-1 px-4 py-8 sm:px-10">{children}</div>
+        <div className="min-w-0 flex-1 px-4 py-8 sm:px-10">
+          {children}
+          {/* Place de la barre d'actions collée en bas sur mobile. */}
+          {actions && <div aria-hidden="true" className="h-20 lg:hidden" />}
+        </div>
       </div>
     </div>
   );

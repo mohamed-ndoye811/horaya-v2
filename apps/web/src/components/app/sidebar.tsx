@@ -2,15 +2,13 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { type ComponentType, useEffect, useState } from "react";
+import { type ComponentType, useState } from "react";
 import { Avatar } from "@/components/ui/avatar";
 import { CountBadge } from "@/components/ui/badge";
 import {
   BoxIcon,
   CalendarIcon,
-  CloseIcon,
   DashboardIcon,
-  MenuIcon,
   ReceiptIcon,
   SettingsIcon,
   TicketIcon,
@@ -153,60 +151,12 @@ function AccountMenu({ user, workspace }: Pick<SidebarProps, "user" | "workspace
   );
 }
 
-/**
- * Navigation de l'admin : colonne fixe de 232 px sur grand écran, barre + tiroir
- * sur mobile et tablette.
- */
+/** Navigation de l'admin sur grand écran : colonne fixe de 232 px (mobile : `mobile-nav`). */
 export function Sidebar(props: SidebarProps) {
   const pathname = usePathname();
-  const [open, setOpen] = useState(false);
-
-  // Ferme le tiroir à chaque changement de page.
-  // biome-ignore lint/correctness/useExhaustiveDependencies: on réagit au changement de chemin.
-  useEffect(() => setOpen(false), [pathname]);
-
   return (
-    <>
-      <aside className="sticky top-0 hidden h-dvh w-[232px] shrink-0 border-r-2 border-ink lg:block">
-        <SidebarContent {...props} pathname={pathname} />
-      </aside>
-
-      <div className="sticky top-0 z-30 flex items-center justify-between border-b-2 border-ink bg-bg px-4 py-3 lg:hidden">
-        <Link href="/app" className="font-headline text-[28px] leading-7 text-ink">
-          Horaya
-        </Link>
-        <button
-          type="button"
-          onClick={() => setOpen(true)}
-          aria-label="Ouvrir le menu"
-          aria-expanded={open}
-          className="flex size-10 items-center justify-center border-2 border-ink text-ink"
-        >
-          <MenuIcon />
-        </button>
-      </div>
-
-      {open && (
-        <div className="fixed inset-0 z-40 lg:hidden">
-          <button
-            type="button"
-            aria-label="Fermer le menu"
-            className="absolute inset-0 bg-ink/45"
-            onClick={() => setOpen(false)}
-          />
-          <aside className="absolute inset-y-0 left-0 w-[264px] max-w-[85vw] border-r-2 border-ink bg-bg">
-            <button
-              type="button"
-              onClick={() => setOpen(false)}
-              aria-label="Fermer le menu"
-              className="absolute top-6 right-4 flex size-9 items-center justify-center text-ink"
-            >
-              <CloseIcon />
-            </button>
-            <SidebarContent {...props} pathname={pathname} />
-          </aside>
-        </div>
-      )}
-    </>
+    <aside className="sticky top-0 hidden h-dvh w-[232px] shrink-0 border-r-2 border-ink lg:block">
+      <SidebarContent {...props} pathname={pathname} />
+    </aside>
   );
 }

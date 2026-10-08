@@ -59,7 +59,10 @@ export function EventActions({
         ]}
       />
       {message && !confirmOpen && (
-        <div className="fixed right-6 bottom-6 z-50 max-w-sm" role="status">
+        <div
+          className="fixed right-4 bottom-[calc(88px+env(safe-area-inset-bottom))] left-4 z-50 sm:left-auto sm:max-w-sm lg:right-6 lg:bottom-6"
+          role="status"
+        >
           <FormAlert tone={message.tone}>{message.text}</FormAlert>
         </div>
       )}

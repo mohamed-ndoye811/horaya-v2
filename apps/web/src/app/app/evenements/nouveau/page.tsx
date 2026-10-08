@@ -42,13 +42,17 @@ export default async function NewEventPage({ searchParams }: PageProps<"/app/eve
         eyebrow="Événements / Nouveau"
         title="Nouvel événement"
         subtitle="Les champs marqués d'un astérisque sont obligatoires. Un brouillon n'est visible que par ton équipe."
+        stickyActions="bottom"
         actions={
           <>
             <Button type="submit" form="event-form" name="intent" value="draft" variant="secondary">
-              Enregistrer en brouillon
+              <span className="lg:hidden">Brouillon</span>
+              <span className="hidden lg:inline">Enregistrer en brouillon</span>
             </Button>
             <Button type="submit" form="event-form" name="intent" value="publish">
-              Publier l'événement
+              <span>
+                Publier<span className="hidden sm:inline"> l'événement</span>
+              </span>
             </Button>
           </>
         }

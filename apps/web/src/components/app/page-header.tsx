@@ -11,6 +11,7 @@ export function PageHeader({
   titleAside,
   subtitle,
   actions,
+  stickyActions,
   className,
 }: {
   /** Fil d'Ariane ou contexte (« TABLEAU DE BORD / RÉSERVATIONS »). */
@@ -20,6 +21,11 @@ export function PageHeader({
   titleAside?: ReactNode;
   subtitle?: ReactNode;
   actions?: ReactNode;
+  /**
+   * Sur mobile, les actions passent dans une barre collée en bas de l'écran : tout en bas
+   * sur les formulaires (`bottom`, sans barre d'onglets), au-dessus des onglets sinon.
+   */
+  stickyActions?: "bottom" | "above-tabs";
   className?: string;
 }) {
   return (
@@ -43,7 +49,22 @@ export function PageHeader({
           <div className="text-base font-medium leading-[22px] text-ink-muted">{subtitle}</div>
         )}
       </div>
-      {actions && <div className="flex shrink-0 flex-wrap gap-3">{actions}</div>}
+      {actions &&
+        (stickyActions ? (
+          <div
+            className={cn(
+              "fixed inset-x-0 z-30 flex gap-2.5 border-t-2 border-ink bg-bg px-5 py-3 *:flex-1",
+              "lg:static lg:z-auto lg:shrink-0 lg:flex-wrap lg:gap-3 lg:border-0 lg:bg-transparent lg:p-0 lg:*:flex-none",
+              stickyActions === "bottom"
+                ? "bottom-0 pb-[calc(12px+env(safe-area-inset-bottom))]"
+                : "bottom-[calc(64px+env(safe-area-inset-bottom))]",
+            )}
+          >
+            {actions}
+          </div>
+        ) : (
+          <div className="flex shrink-0 flex-wrap gap-3">{actions}</div>
+        ))}
     </header>
   );
 }

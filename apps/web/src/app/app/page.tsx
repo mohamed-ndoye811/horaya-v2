@@ -7,6 +7,7 @@ import {
 } from "@horaya/db";
 import type { Metadata } from "next";
 import Link from "next/link";
+import { FabLink } from "@/components/app/fab";
 import { PageHeader } from "@/components/app/page-header";
 import { StatusBadge } from "@/components/ui/badge";
 import { ButtonLink } from "@/components/ui/button";
@@ -85,9 +86,11 @@ export default async function DashboardPage() {
             <ButtonLink href="/app/calendrier" variant="secondary">
               Voir le calendrier
             </ButtonLink>
-            <ButtonLink href="/app/evenements/nouveau" icon={<PlusIcon />}>
-              Nouvel événement
-            </ButtonLink>
+            <div className="hidden lg:flex">
+              <ButtonLink href="/app/evenements/nouveau" icon={<PlusIcon />}>
+                Nouvel événement
+              </ButtonLink>
+            </div>
           </>
         }
       />
@@ -150,7 +153,7 @@ export default async function DashboardPage() {
           steps={["Crée un événement", "Partage ta page publique", "Reçois tes réservations"]}
         />
       ) : (
-        <div className="grid flex-1 xl:grid-cols-2">
+        <div className="grid flex-1 grid-cols-[minmax(0,1fr)] xl:grid-cols-2">
           <section className="border-ink xl:border-r-2">
             <SectionHeading
               title="À venir"
@@ -172,22 +175,24 @@ export default async function DashboardPage() {
                       className="flex items-center gap-5 border-b border-line-soft px-4 py-3.5 sm:pr-8 sm:pl-10"
                     >
                       <DateBlock date={event.startsAt} timeZone={timeZone} />
-                      <EventCell
-                        title={event.title}
-                        color={event.typeColor}
-                        href={`/app/evenements/${event.id}`}
-                        detail={[
-                          `${formatWeekdayShort(event.startsAt, timeZone)} ${formatTimeRange(event.startsAt, event.endsAt, timeZone)}`,
-                          event.locationName,
-                          remaining === null
-                            ? null
-                            : `${plural(remaining, "place restante", "places restantes")}`,
-                        ]
-                          .filter(Boolean)
-                          .join(" · ")}
-                      />
-                      <div className="flex shrink-0 justify-end sm:w-[140px]">
-                        <StatusBadge tone={badge.tone}>{badge.label}</StatusBadge>
+                      <div className="flex min-w-0 flex-1 flex-col gap-2 sm:flex-row sm:items-center sm:gap-5">
+                        <EventCell
+                          title={event.title}
+                          color={event.typeColor}
+                          href={`/app/evenements/${event.id}`}
+                          detail={[
+                            `${formatWeekdayShort(event.startsAt, timeZone)} ${formatTimeRange(event.startsAt, event.endsAt, timeZone)}`,
+                            event.locationName,
+                            remaining === null
+                              ? null
+                              : `${plural(remaining, "place restante", "places restantes")}`,
+                          ]
+                            .filter(Boolean)
+                            .join(" · ")}
+                        />
+                        <div className="flex shrink-0 sm:w-[140px] sm:justify-end">
+                          <StatusBadge tone={badge.tone}>{badge.label}</StatusBadge>
+                        </div>
                       </div>
                     </li>
                   );
@@ -211,16 +216,23 @@ export default async function DashboardPage() {
                     key={entry.id}
                     className="flex items-center gap-4 border-b border-line-soft px-4 py-3.5 sm:pr-10 sm:pl-8"
                   >
-                    <PersonCell
-                      name={entry.customerName}
-                      detail={`${entry.eventTitle ?? "Location"} · ${plural(entry.seats, "place")}`}
-                    />
-                    <div className="w-[84px] shrink-0">
+                    <div className="min-w-0 flex-1">
+                      <PersonCell
+                        name={entry.customerName}
+                        detail={`${entry.eventTitle ?? "Location"} · ${plural(entry.seats, "place")}`}
+                      />
+                    </div>
+                    <div className="flex shrink-0 flex-col items-end gap-1.5 sm:w-[84px]">
                       <MoneyCell
                         cents={entry.amountCents}
                         caption={PAYMENT_MODE_LABELS[entry.paymentMode]}
                         size="lg"
                       />
+                      <div className="sm:hidden">
+                        <StatusBadge tone={BOOKING_STATUS_BADGE[entry.status].tone}>
+                          {BOOKING_STATUS_BADGE[entry.status].label}
+                        </StatusBadge>
+                      </div>
                     </div>
                     <div className="hidden w-[130px] shrink-0 justify-end sm:flex">
                       <StatusBadge tone={BOOKING_STATUS_BADGE[entry.status].tone}>
@@ -234,6 +246,7 @@ export default async function DashboardPage() {
           </section>
         </div>
       )}
+      <FabLink href="/app/evenements/nouveau">Nouvel événement</FabLink>
     </>
   );
 }

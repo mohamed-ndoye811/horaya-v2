@@ -5,6 +5,7 @@ import {
   listCustomers,
 } from "@horaya/db";
 import type { Metadata } from "next";
+import { FabLink } from "@/components/app/fab";
 import { PageHeader } from "@/components/app/page-header";
 import { ButtonLink } from "@/components/ui/button";
 import { PersonCell } from "@/components/ui/cells";
@@ -83,9 +84,11 @@ export default async function CustomersPage({ searchParams }: PageProps<"/app/cl
             >
               Exporter
             </ButtonLink>
-            <ButtonLink href="/app/clients/nouveau" icon={<PlusIcon />}>
-              Ajouter un client
-            </ButtonLink>
+            <div className="hidden lg:flex">
+              <ButtonLink href="/app/clients/nouveau" icon={<PlusIcon />}>
+                Ajouter un client
+              </ButtonLink>
+            </div>
           </>
         }
       />
@@ -135,15 +138,17 @@ export default async function CustomersPage({ searchParams }: PageProps<"/app/cl
                 placeholder="Rechercher un nom, un e-mail, une entreprise…"
               />
             </form>
-            <SegmentedLinks
-              label="Filtrer les clients"
-              value={segment}
-              segments={SEGMENTS.map((entry) => ({
-                ...entry,
-                count: counts[entry.value],
-                href: href({ segment: entry.value === "all" ? undefined : entry.value }),
-              }))}
-            />
+            <div className="-mx-4 overflow-x-auto px-4 sm:mx-0 sm:px-0">
+              <SegmentedLinks
+                label="Filtrer les clients"
+                value={segment}
+                segments={SEGMENTS.map((entry) => ({
+                  ...entry,
+                  count: counts[entry.value],
+                  href: href({ segment: entry.value === "all" ? undefined : entry.value }),
+                }))}
+              />
+            </div>
           </div>
           <DataTable
             label="Clients"
@@ -155,6 +160,35 @@ export default async function CustomersPage({ searchParams }: PageProps<"/app/cl
                 Aucun client ne correspond.
               </p>
             }
+            card={(row) => (
+              <div className="flex items-center gap-3.5">
+                <div className="min-w-0 flex-1">
+                  <PersonCell
+                    name={`${row.firstName} ${row.lastName}`}
+                    href={`/app/clients/${row.id}`}
+                    detail={[
+                      row.company,
+                      `${row.bookings} résa.`,
+                      row.lastVisit ? visitLabel(row.lastVisit, timeZone).toLowerCase() : null,
+                    ]
+                      .filter(Boolean)
+                      .join(" · ")}
+                  />
+                </div>
+                <div className="flex shrink-0 flex-col items-end gap-1.5">
+                  <span className="text-base font-extrabold leading-5 text-ink">
+                    {formatMoney(row.spentCents)}
+                  </span>
+                  {customerTags(row, now)
+                    .slice(0, 1)
+                    .map((tag) => (
+                      <Tag key={tag.label} tone={tag.tone}>
+                        {tag.label}
+                      </Tag>
+                    ))}
+                </div>
+              </div>
+            )}
             columns={[
               {
                 key: "client",
@@ -242,6 +276,7 @@ export default async function CustomersPage({ searchParams }: PageProps<"/app/cl
               },
             ]}
           />
+          <FabLink href="/app/clients/nouveau">Ajouter un client</FabLink>
         </>
       )}
     </>

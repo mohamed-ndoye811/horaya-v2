@@ -120,6 +120,7 @@ export default async function BookingDetailPage({ params }: PageProps<"/app/rese
         title={name}
         titleAside={<StatusBadge tone={badge.tone}>{badge.label}</StatusBadge>}
         subtitle={subtitle}
+        stickyActions={booking.status === "pending" ? "above-tabs" : undefined}
         actions={
           <BookingHeaderActions
             bookingId={booking.id}
@@ -429,6 +430,8 @@ export default async function BookingDetailPage({ params }: PageProps<"/app/rese
           </section>
         </aside>
       </div>
+      {/* Place de la barre « Refuser / Valider » collée en bas sur mobile. */}
+      {booking.status === "pending" && <div aria-hidden="true" className="h-20 lg:hidden" />}
     </div>
   );
 }

@@ -2,6 +2,7 @@ import { addDays } from "@horaya/core";
 import { getInventoryStats, type ItemTab, listItems } from "@horaya/db";
 import type { Metadata } from "next";
 import Link from "next/link";
+import { FabLink } from "@/components/app/fab";
 import { ItemTile } from "@/components/app/item-tile";
 import { PageHeader } from "@/components/app/page-header";
 import { StatusBadge, type Tone } from "@/components/ui/badge";
@@ -94,9 +95,11 @@ export default async function InventoryPage({ searchParams }: PageProps<"/app/ma
         actions={
           <>
             <ImportItemsButton />
-            <ButtonLink href="/app/materiel/nouveau" icon={<PlusIcon />}>
-              Ajouter un article
-            </ButtonLink>
+            <div className="hidden lg:flex">
+              <ButtonLink href="/app/materiel/nouveau" icon={<PlusIcon />}>
+                Ajouter un article
+              </ButtonLink>
+            </div>
           </>
         }
       />
@@ -166,15 +169,17 @@ export default async function InventoryPage({ searchParams }: PageProps<"/app/ma
                 placeholder="Rechercher un article, une référence…"
               />
             </form>
-            <SegmentedLinks
-              label="Filtrer le matériel"
-              value={tab}
-              segments={TABS.map((entry) => ({
-                ...entry,
-                count: counts[entry.value],
-                href: href({ filtre: entry.value === "all" ? undefined : entry.value }),
-              }))}
-            />
+            <div className="-mx-4 overflow-x-auto px-4 sm:mx-0 sm:px-0">
+              <SegmentedLinks
+                label="Filtrer le matériel"
+                value={tab}
+                segments={TABS.map((entry) => ({
+                  ...entry,
+                  count: counts[entry.value],
+                  href: href({ filtre: entry.value === "all" ? undefined : entry.value }),
+                }))}
+              />
+            </div>
           </div>
           <DataTable
             label="Matériel"
@@ -186,6 +191,44 @@ export default async function InventoryPage({ searchParams }: PageProps<"/app/ma
                 Aucun article ne correspond.
               </p>
             }
+            card={(row) => (
+              <div className="flex gap-3.5">
+                <ItemTile
+                  name={row.name}
+                  reference={row.reference}
+                  maintenance={row.inMaintenanceNow > 0 && row.availableNow === 0}
+                />
+                <div className="flex min-w-0 flex-1 flex-col gap-2.5">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex min-w-0 flex-col gap-1">
+                      <Link
+                        href={`/app/materiel/${row.id}`}
+                        className="text-base font-bold leading-5 text-ink hover:underline"
+                      >
+                        {row.name}
+                      </Link>
+                      <MonoCaption>
+                        Réf. {row.reference}
+                        {row.typeName ? ` · ${row.typeName}` : ""}
+                      </MonoCaption>
+                    </div>
+                    {row.dailyRateCents !== null && (
+                      <span className="shrink-0 text-[15px] font-extrabold leading-5 text-ink">
+                        {formatMoney(row.dailyRateCents)}
+                        <span className="text-xs font-medium text-ink-muted"> /j</span>
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <div className="min-w-0 flex-1">
+                      <Availability row={row} />
+                    </div>
+                    <ItemStatus row={row} />
+                  </div>
+                  <NextOuting row={row} now={now} timeZone={timeZone} />
+                </div>
+              </div>
+            )}
             columns={[
               {
                 key: "item",
@@ -223,25 +266,7 @@ export default async function InventoryPage({ searchParams }: PageProps<"/app/ma
                 key: "available",
                 header: "Disponible",
                 width: 150,
-                cell: (row) => (
-                  <div className="flex w-full flex-col gap-1.5">
-                    <span className="font-mono text-sm font-semibold text-ink">
-                      {row.availableNow} / {row.units}
-                    </span>
-                    <ProgressBar
-                      value={row.availableNow}
-                      max={row.units}
-                      tone={
-                        row.availableNow === 0
-                          ? "draft"
-                          : row.availableNow / row.units < 0.5
-                            ? "warning"
-                            : "success"
-                      }
-                      label={`${row.availableNow} exemplaires disponibles sur ${row.units}`}
-                    />
-                  </div>
-                ),
+                cell: (row) => <Availability row={row} />,
               },
               {
                 key: "rate",
@@ -258,49 +283,78 @@ export default async function InventoryPage({ searchParams }: PageProps<"/app/ma
                 key: "next",
                 header: "Prochaine sortie",
                 width: 230,
-                cell: (row) => {
-                  if (!row.nextStartsAt || !row.nextEndsAt)
-                    return <span className="text-sm font-medium text-ink-muted">—</span>;
-                  const current = row.nextStartsAt <= now;
-                  return (
-                    <div className="flex min-w-0 flex-col gap-1">
-                      <span
-                        className={cn(
-                          "truncate text-sm font-semibold",
-                          row.nextKind === "maintenance" ? "text-warning" : "text-ink",
-                        )}
-                      >
-                        {row.nextTitle ??
-                          (row.nextKind === "maintenance" ? "Maintenance" : "Réservé")}
-                      </span>
-                      <MonoCaption>
-                        {current
-                          ? `Retour ${formatDateTimeShort(row.nextEndsAt, timeZone)}`
-                          : formatDateTimeShort(row.nextStartsAt, timeZone)}
-                      </MonoCaption>
-                    </div>
-                  );
-                },
+                cell: (row) => <NextOuting row={row} now={now} timeZone={timeZone} />,
               },
               {
                 key: "status",
                 header: "Statut",
                 width: 150,
                 align: "right",
-                cell: (row) => {
-                  const badge: { label: string; tone: Tone } =
-                    row.units > 0 && row.inMaintenanceNow >= row.units
-                      ? { label: "Maintenance", tone: "warning" }
-                      : row.availableNow === 0
-                        ? { label: "En location", tone: "info" }
-                        : { label: "Disponible", tone: "success" };
-                  return <StatusBadge tone={badge.tone}>{badge.label}</StatusBadge>;
-                },
+                cell: (row) => <ItemStatus row={row} />,
               },
             ]}
           />
+          <FabLink href="/app/materiel/nouveau">Ajouter un article</FabLink>
         </>
       )}
     </>
+  );
+}
+
+type ItemListRow = Awaited<ReturnType<typeof listItems>>[number];
+
+function Availability({ row }: { row: ItemListRow }) {
+  return (
+    <div className="flex w-full flex-col gap-1.5">
+      <span className="font-mono text-sm font-semibold text-ink">
+        {row.availableNow} / {row.units}
+      </span>
+      <ProgressBar
+        value={row.availableNow}
+        max={row.units}
+        tone={
+          row.availableNow === 0
+            ? "draft"
+            : row.availableNow / row.units < 0.5
+              ? "warning"
+              : "success"
+        }
+        label={`${row.availableNow} exemplaires disponibles sur ${row.units}`}
+      />
+    </div>
+  );
+}
+
+function ItemStatus({ row }: { row: ItemListRow }) {
+  const badge: { label: string; tone: Tone } =
+    row.units > 0 && row.inMaintenanceNow >= row.units
+      ? { label: "Maintenance", tone: "warning" }
+      : row.availableNow === 0
+        ? { label: "En location", tone: "info" }
+        : { label: "Disponible", tone: "success" };
+  return <StatusBadge tone={badge.tone}>{badge.label}</StatusBadge>;
+}
+
+/** Prochaine sortie, ou retour attendu si l'article est dehors. */
+function NextOuting({ row, now, timeZone }: { row: ItemListRow; now: Date; timeZone: string }) {
+  if (!row.nextStartsAt || !row.nextEndsAt)
+    return <span className="text-sm font-medium text-ink-muted">—</span>;
+  const current = row.nextStartsAt <= now;
+  return (
+    <div className="flex min-w-0 flex-col gap-1">
+      <span
+        className={cn(
+          "truncate text-sm font-semibold",
+          row.nextKind === "maintenance" ? "text-warning" : "text-ink",
+        )}
+      >
+        {row.nextTitle ?? (row.nextKind === "maintenance" ? "Maintenance" : "Réservé")}
+      </span>
+      <MonoCaption>
+        {current
+          ? `Retour ${formatDateTimeShort(row.nextEndsAt, timeZone)}`
+          : formatDateTimeShort(row.nextStartsAt, timeZone)}
+      </MonoCaption>
+    </div>
   );
 }

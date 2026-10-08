@@ -8,6 +8,7 @@ import {
 import type { Metadata } from "next";
 import Link from "next/link";
 import { BookingRowActions } from "@/components/app/booking-actions";
+import { FabLink } from "@/components/app/fab";
 import { FilterSelect } from "@/components/app/filter-select";
 import { PageHeader } from "@/components/app/page-header";
 import { StatusBadge } from "@/components/ui/badge";
@@ -66,6 +67,14 @@ export default async function BookingsPage({ searchParams }: PageProps<"/app/res
     sumConfirmedBookingsSince(db, workspace.id, startOfDay({ ...today, day: 1 }, timeZone)),
   ]);
 
+  const amountCaption = (row: (typeof bookings)[number]) =>
+    row.status === "confirmed" &&
+    (row.paymentMode === "online" || row.paymentMode === "deposit") &&
+    (row.paymentStatus === "none" || row.paymentStatus === "failed") &&
+    row.amountCents > 0
+      ? "à payer"
+      : PAYMENT_MODE_LABELS[row.paymentMode];
+
   const href = (overrides: Record<string, string | undefined>) =>
     withParams("/app/reservations", {
       statut: tab === "all" ? undefined : tab,
@@ -93,9 +102,11 @@ export default async function BookingsPage({ searchParams }: PageProps<"/app/res
             >
               Exporter CSV
             </ButtonLink>
-            <ButtonLink href="/app/reservations/nouvelle" icon={<PlusIcon />}>
-              Ajouter une réservation
-            </ButtonLink>
+            <div className="hidden lg:flex">
+              <ButtonLink href="/app/reservations/nouvelle" icon={<PlusIcon />}>
+                Ajouter une réservation
+              </ButtonLink>
+            </div>
           </>
         }
       />
@@ -138,15 +149,17 @@ export default async function BookingsPage({ searchParams }: PageProps<"/app/res
                 placeholder="Client, e-mail, événement, référence…"
               />
             </form>
-            <SegmentedLinks
-              label="Filtrer par statut"
-              value={tab}
-              segments={TABS.map((entry) => ({
-                ...entry,
-                count: counts[entry.value],
-                href: href({ statut: entry.value === "all" ? undefined : entry.value }),
-              }))}
-            />
+            <div className="-mx-4 overflow-x-auto px-4 sm:mx-0 sm:px-0">
+              <SegmentedLinks
+                label="Filtrer par statut"
+                value={tab}
+                segments={TABS.map((entry) => ({
+                  ...entry,
+                  count: counts[entry.value],
+                  href: href({ statut: entry.value === "all" ? undefined : entry.value }),
+                }))}
+              />
+            </div>
             <FilterSelect
               param="evenement"
               label="Événement"
@@ -167,6 +180,42 @@ export default async function BookingsPage({ searchParams }: PageProps<"/app/res
                 Aucune réservation ne correspond à ces filtres.
               </p>
             }
+            card={(row) => (
+              <div className="flex flex-col gap-3">
+                <div className="flex items-center gap-3.5">
+                  <div className="min-w-0 flex-1">
+                    <PersonCell
+                      name={row.customerName}
+                      href={`/app/reservations/${row.id}`}
+                      detail={`${row.eventTitle ?? "Location"} · ${row.seats} place${row.seats > 1 ? "s" : ""}`}
+                    />
+                  </div>
+                  <div className="flex shrink-0 flex-col items-end gap-1.5">
+                    <MoneyCell cents={row.amountCents} caption={amountCaption(row)} />
+                    {row.status !== "pending" && (
+                      <StatusBadge tone={BOOKING_STATUS_BADGE[row.status].tone}>
+                        {BOOKING_STATUS_BADGE[row.status].label}
+                      </StatusBadge>
+                    )}
+                  </div>
+                </div>
+                {row.eventStartsAt && (
+                  <div className="pl-[54px]">
+                    <MonoCaption>{formatDateTimeShort(row.eventStartsAt, timeZone)}</MonoCaption>
+                  </div>
+                )}
+                {row.status === "pending" && (
+                  <div className="pl-[54px]">
+                    <BookingRowActions
+                      bookingId={row.id}
+                      customerName={row.customerName}
+                      status={row.status}
+                      layout="buttons"
+                    />
+                  </div>
+                )}
+              </div>
+            )}
             columns={[
               {
                 key: "client",
@@ -217,19 +266,7 @@ export default async function BookingsPage({ searchParams }: PageProps<"/app/res
                 header: "Montant",
                 width: 110,
                 align: "right",
-                cell: (row) => (
-                  <MoneyCell
-                    cents={row.amountCents}
-                    caption={
-                      row.status === "confirmed" &&
-                      (row.paymentMode === "online" || row.paymentMode === "deposit") &&
-                      (row.paymentStatus === "none" || row.paymentStatus === "failed") &&
-                      row.amountCents > 0
-                        ? "à payer"
-                        : PAYMENT_MODE_LABELS[row.paymentMode]
-                    }
-                  />
-                ),
+                cell: (row) => <MoneyCell cents={row.amountCents} caption={amountCaption(row)} />,
               },
               {
                 key: "status",
@@ -256,6 +293,7 @@ export default async function BookingsPage({ searchParams }: PageProps<"/app/res
               },
             ]}
           />
+          <FabLink href="/app/reservations/nouvelle">Ajouter</FabLink>
         </>
       )}
     </>

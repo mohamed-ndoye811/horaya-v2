@@ -184,6 +184,60 @@ export default async function EventDetailPage({
             rows={bookings}
             rowKey={(row) => row.id}
             dense
+            card={(row) => (
+              <div className="flex flex-col gap-3">
+                <div className="flex items-center gap-3.5">
+                  <div className="min-w-0 flex-1">
+                    <PersonCell
+                      name={row.customerName}
+                      href={`/app/reservations/${row.id}`}
+                      avatarSize="lg"
+                      detail={[
+                        `${row.seats} place${row.seats > 1 ? "s" : ""}`,
+                        row.customerMessage ? `« ${row.customerMessage} »` : null,
+                      ]
+                        .filter(Boolean)
+                        .join(" · ")}
+                    />
+                  </div>
+                  {checkIn && row.status === "confirmed" ? (
+                    <CheckInToggle
+                      bookingId={row.id}
+                      customerName={row.customerName}
+                      arrivedAt={row.checkedInAt ? clock.format(row.checkedInAt) : null}
+                      size="lg"
+                    />
+                  ) : (
+                    <MoneyCell
+                      cents={row.amountCents}
+                      caption={PAYMENT_MODE_LABELS[row.paymentMode]}
+                    />
+                  )}
+                </div>
+                <div className="flex items-center justify-between gap-3 pl-[54px]">
+                  <StatusBadge tone={BOOKING_STATUS_BADGE[row.status].tone}>
+                    {BOOKING_STATUS_BADGE[row.status].label}
+                  </StatusBadge>
+                  {row.status !== "pending" && (
+                    <BookingRowActions
+                      bookingId={row.id}
+                      customerName={row.customerName}
+                      status={row.status}
+                    />
+                  )}
+                </div>
+                {row.status === "pending" && (
+                  <div className="pl-[54px]">
+                    <BookingRowActions
+                      bookingId={row.id}
+                      customerName={row.customerName}
+                      status={row.status}
+                      layout="buttons"
+                    />
+                  </div>
+                )}
+              </div>
+            )}
             empty={
               <p className="px-4 py-10 text-center text-base font-medium text-ink-muted sm:px-10">
                 {event.status === "draft"

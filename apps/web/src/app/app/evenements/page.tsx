@@ -1,5 +1,6 @@
 import { countEventsByTab, type EventTab, listEvents, listEventTypes } from "@horaya/db";
 import type { Metadata } from "next";
+import { FabLink } from "@/components/app/fab";
 import { FilterSelect } from "@/components/app/filter-select";
 import { PageHeader } from "@/components/app/page-header";
 import { StatusBadge } from "@/components/ui/badge";
@@ -77,6 +78,11 @@ export default async function EventsPage({ searchParams }: PageProps<"/app/evene
     );
   }
 
+  const statusBadge = (row: (typeof events)[number]) =>
+    row.endsAt < now && row.status === "published"
+      ? { label: "Passé", tone: "draft" as const }
+      : eventStatusBadge(row.status, row);
+
   const href = (overrides: Record<string, string | undefined>) =>
     withParams("/app/evenements", {
       onglet: tab === "all" ? undefined : tab,
@@ -99,7 +105,7 @@ export default async function EventsPage({ searchParams }: PageProps<"/app/evene
             <ButtonLink href="/app/evenements/types" variant="secondary">
               Types d'événements
             </ButtonLink>
-            {newEventButton}
+            <div className="hidden lg:flex">{newEventButton}</div>
           </>
         }
       />
@@ -115,15 +121,17 @@ export default async function EventsPage({ searchParams }: PageProps<"/app/evene
             placeholder="Rechercher un événement, un lieu, un type…"
           />
         </form>
-        <SegmentedLinks
-          label="Filtrer les événements"
-          value={tab}
-          segments={TABS.map((entry) => ({
-            ...entry,
-            count: counts[entry.value],
-            href: href({ onglet: entry.value === "all" ? undefined : entry.value }),
-          }))}
-        />
+        <div className="-mx-4 overflow-x-auto px-4 sm:mx-0 sm:px-0">
+          <SegmentedLinks
+            label="Filtrer les événements"
+            value={tab}
+            segments={TABS.map((entry) => ({
+              ...entry,
+              count: counts[entry.value],
+              href: href({ onglet: entry.value === "all" ? undefined : entry.value }),
+            }))}
+          />
+        </div>
         <FilterSelect
           param="type"
           label="Type d'événement"
@@ -145,6 +153,44 @@ export default async function EventsPage({ searchParams }: PageProps<"/app/evene
             Aucun événement ne correspond à ces filtres.
           </p>
         }
+        card={(row) => {
+          const badge = statusBadge(row);
+          return (
+            <div className="flex gap-3.5">
+              <DateBlock date={row.startsAt} timeZone={timeZone} layout="day-first" />
+              <div className="flex min-w-0 flex-1 flex-col gap-2">
+                <EventCell
+                  title={row.title}
+                  color={row.typeColor}
+                  href={`/app/evenements/${row.id}`}
+                  detail={[
+                    formatTimeRange(row.startsAt, row.endsAt, timeZone),
+                    row.typeName,
+                    row.locationName ?? (row.onlineUrl ? "En ligne" : null),
+                  ]
+                    .filter(Boolean)
+                    .join(" · ")}
+                />
+                <div className="flex items-center gap-3">
+                  <div className="flex min-w-0 flex-1 flex-col gap-1.5">
+                    <span className="font-mono text-xs font-semibold leading-[14px] text-ink">
+                      {row.seatsHeld} / {row.capacity ?? "∞"}
+                    </span>
+                    {row.capacity !== null && (
+                      <ProgressBar
+                        value={row.seatsHeld}
+                        max={row.capacity}
+                        tone={fillTone(row.seatsHeld, row.capacity)}
+                        label={`${row.seatsHeld} places réservées sur ${row.capacity}`}
+                      />
+                    )}
+                  </div>
+                  <StatusBadge tone={badge.tone}>{badge.label}</StatusBadge>
+                </div>
+              </div>
+            </div>
+          );
+        }}
         columns={[
           {
             key: "date",
@@ -208,10 +254,7 @@ export default async function EventsPage({ searchParams }: PageProps<"/app/evene
             width: 160,
             align: "right",
             cell: (row) => {
-              const badge =
-                row.endsAt < now && row.status === "published"
-                  ? { label: "Passé", tone: "draft" as const }
-                  : eventStatusBadge(row.status, row);
+              const badge = statusBadge(row);
               return <StatusBadge tone={badge.tone}>{badge.label}</StatusBadge>;
             },
           },
@@ -234,6 +277,7 @@ export default async function EventsPage({ searchParams }: PageProps<"/app/evene
           },
         ]}
       />
+      <FabLink href="/app/evenements/nouveau">Nouvel événement</FabLink>
     </>
   );
 }

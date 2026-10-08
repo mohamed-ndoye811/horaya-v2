@@ -44,6 +44,7 @@ export default async function EditEventPage({
         eyebrow={`Événements / ${event.title} / Modifier`}
         title="Modifier"
         subtitle="Les changements de date et de lieu s'appliquent aussitôt sur la page publique."
+        stickyActions="bottom"
         actions={
           <>
             <Button
@@ -57,7 +58,8 @@ export default async function EditEventPage({
             </Button>
             {event.status === "draft" && (
               <Button type="submit" form="event-form" name="intent" value="publish">
-                Enregistrer et publier
+                <span className="lg:hidden">Publier</span>
+                <span className="hidden lg:inline">Enregistrer et publier</span>
               </Button>
             )}
           </>

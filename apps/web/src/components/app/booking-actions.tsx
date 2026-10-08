@@ -54,7 +54,10 @@ function useBookingAction() {
 function Toast({ message }: { message: { tone: "success" | "danger"; text: string } | null }) {
   if (!message) return null;
   return (
-    <div className="fixed right-6 bottom-6 z-50 max-w-sm" role="status">
+    <div
+      className="fixed right-4 bottom-[calc(88px+env(safe-area-inset-bottom))] left-4 z-50 sm:left-auto sm:max-w-sm lg:right-6 lg:bottom-6"
+      role="status"
+    >
       <FormAlert tone={message.tone}>{message.text}</FormAlert>
     </div>
   );
@@ -139,10 +142,13 @@ export function BookingRowActions({
   bookingId,
   customerName,
   status,
+  layout = "icons",
 }: {
   bookingId: string;
   customerName: string;
   status: BookingStatus;
+  /** `buttons` : boutons « Valider » / « Refuser » en toutes lettres (cartes mobiles). */
+  layout?: "icons" | "buttons";
 }) {
   const { pending, message, run } = useBookingAction();
   const [dialog, setDialog] = useState<"refuse" | "cancel" | null>(null);
@@ -150,7 +156,27 @@ export function BookingRowActions({
 
   return (
     <>
-      {status === "pending" ? (
+      {status === "pending" && layout === "buttons" ? (
+        <div className="flex gap-2">
+          <Button
+            variant="success"
+            icon={<Check size={14} />}
+            pending={pending}
+            className="flex-1"
+            onClick={() => run(() => confirmBookingAction(bookingId))}
+          >
+            Valider
+          </Button>
+          <Button
+            variant="danger"
+            icon={<CloseIcon size={12} />}
+            className="flex-1"
+            onClick={() => setDialog("refuse")}
+          >
+            Refuser
+          </Button>
+        </div>
+      ) : status === "pending" ? (
         <div className="flex gap-2">
           <IconButton
             label={`Valider la réservation de ${customerName}`}
@@ -243,11 +269,14 @@ export function CheckInToggle({
   bookingId,
   customerName,
   arrivedAt,
+  size = "md",
 }: {
   bookingId: string;
   customerName: string;
   /** Heure d'arrivée déjà formatée (« 13:52 »), ou null. */
   arrivedAt: string | null;
+  /** `lg` : grande case au-dessus de l'heure, facile à toucher (cartes mobiles, M7). */
+  size?: "md" | "lg";
 }) {
   const { pending, message, run } = useBookingAction();
   const [present, setPresent] = useOptimistic(arrivedAt !== null);
@@ -258,7 +287,12 @@ export function CheckInToggle({
     });
   return (
     <>
-      <label className="flex items-center gap-2 text-[13px] leading-4">
+      <label
+        className={cn(
+          "flex items-center text-[13px] leading-4",
+          size === "lg" ? "w-16 shrink-0 flex-col gap-1" : "gap-2",
+        )}
+      >
         <input
           type="checkbox"
           checked={present}
@@ -270,11 +304,23 @@ export function CheckInToggle({
         <span
           aria-hidden
           className={cn(
-            "size-5 shrink-0 border-2 peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-ink",
+            "flex shrink-0 items-center justify-center border-2 text-white peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-ink",
+            size === "lg" ? "size-9" : "size-5",
             present ? "border-success bg-success" : "border-ink bg-transparent",
           )}
-        />
-        {present ? (
+        >
+          {present && size === "lg" && <Check size={16} />}
+        </span>
+        {size === "lg" ? (
+          <span
+            className={cn(
+              "text-center font-mono text-[11px] font-semibold leading-[14px]",
+              present ? "text-success" : "text-ink-muted",
+            )}
+          >
+            {present ? (arrivedAt ?? "Arrivé·e") : "Pas arrivé·e"}
+          </span>
+        ) : present ? (
           <span className="font-bold text-success">
             {arrivedAt ? `Arrivé·e ${arrivedAt}` : "Arrivé·e"}
           </span>

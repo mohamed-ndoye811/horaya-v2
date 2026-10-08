@@ -61,7 +61,10 @@ function useTeamAction() {
 function Toast({ message }: { message: Message }) {
   if (!message) return null;
   return (
-    <div className="fixed right-6 bottom-6 z-50 max-w-sm" role="status">
+    <div
+      className="fixed right-4 bottom-[calc(88px+env(safe-area-inset-bottom))] left-4 z-50 sm:left-auto sm:max-w-sm lg:right-6 lg:bottom-6"
+      role="status"
+    >
       <FormAlert tone={message.tone}>{message.text}</FormAlert>
     </div>
   );
@@ -98,6 +101,58 @@ export function TeamTable({ rows, manageable }: { rows: TeamRow[]; manageable: b
     return [{ label: "Retirer de l'espace", tone: "danger", onSelect: () => setRemoving(row) }];
   };
 
+  const memberCell = (row: TeamRow) => (
+    <div className="flex min-w-0 items-center gap-3.5">
+      <Avatar name={row.name} pending={row.kind === "invitation"} />
+      <div className="flex min-w-0 flex-col gap-1">
+        <span className="truncate text-base font-bold text-ink">
+          {row.name}
+          {row.isMe && " (toi)"}
+        </span>
+        <span className="truncate text-sm font-medium text-ink-muted">
+          {[row.email, row.detail].filter(Boolean).join(" · ")}
+        </span>
+      </div>
+    </div>
+  );
+
+  const roleCell = (row: TeamRow) =>
+    !manageable || row.isMe || row.role === "owner" ? (
+      <Select variant="compact" disabled aria-label={`Rôle de ${row.name}`} value={row.role}>
+        <option value={row.role}>{ROLE_LABELS[row.role]}</option>
+      </Select>
+    ) : row.kind === "invitation" ? (
+      <Select
+        variant="compact"
+        disabled
+        aria-label={`Rôle proposé à ${row.email}`}
+        value={row.role}
+      >
+        <option value={row.role}>{ROLE_LABELS[row.role]}</option>
+      </Select>
+    ) : (
+      <Select
+        variant="compact"
+        aria-label={`Rôle de ${row.name}`}
+        value={row.role}
+        disabled={pending}
+        onChange={(event) =>
+          run(() => updateMemberRoleAction(row.id, event.target.value as AssignableRole))
+        }
+      >
+        {ASSIGNABLE_ROLES.map((role) => (
+          <option key={role} value={role}>
+            {ROLE_LABELS[role]}
+          </option>
+        ))}
+      </Select>
+    );
+
+  const actionsCell = (row: TeamRow) =>
+    manageable && !row.isMe && row.role !== "owner" ? (
+      <ActionMenu label={`Actions pour ${row.name}`} items={menuItems(row)} />
+    ) : null;
+
   return (
     <>
       <DataTable
@@ -106,65 +161,24 @@ export function TeamTable({ rows, manageable }: { rows: TeamRow[]; manageable: b
         rowKey={(row) => row.id}
         minWidth={720}
         flush
+        card={(row) => (
+          <div className="flex items-center gap-3">
+            <div className="min-w-0 flex-1">{memberCell(row)}</div>
+            <div className="w-[132px] shrink-0">{roleCell(row)}</div>
+            {actionsCell(row)}
+          </div>
+        )}
         columns={[
           {
             key: "member",
             header: "Membre",
-            cell: (row) => (
-              <div className="flex min-w-0 items-center gap-3.5">
-                <Avatar name={row.name} pending={row.kind === "invitation"} />
-                <div className="flex min-w-0 flex-col gap-1">
-                  <span className="truncate text-base font-bold text-ink">
-                    {row.name}
-                    {row.isMe && " (toi)"}
-                  </span>
-                  <span className="truncate text-sm font-medium text-ink-muted">
-                    {[row.email, row.detail].filter(Boolean).join(" · ")}
-                  </span>
-                </div>
-              </div>
-            ),
+            cell: memberCell,
           },
           {
             key: "role",
             header: "Rôle",
             width: 190,
-            cell: (row) =>
-              !manageable || row.isMe || row.role === "owner" ? (
-                <Select
-                  variant="compact"
-                  disabled
-                  aria-label={`Rôle de ${row.name}`}
-                  value={row.role}
-                >
-                  <option value={row.role}>{ROLE_LABELS[row.role]}</option>
-                </Select>
-              ) : row.kind === "invitation" ? (
-                <Select
-                  variant="compact"
-                  disabled
-                  aria-label={`Rôle proposé à ${row.email}`}
-                  value={row.role}
-                >
-                  <option value={row.role}>{ROLE_LABELS[row.role]}</option>
-                </Select>
-              ) : (
-                <Select
-                  variant="compact"
-                  aria-label={`Rôle de ${row.name}`}
-                  value={row.role}
-                  disabled={pending}
-                  onChange={(event) =>
-                    run(() => updateMemberRoleAction(row.id, event.target.value as AssignableRole))
-                  }
-                >
-                  {ASSIGNABLE_ROLES.map((role) => (
-                    <option key={role} value={role}>
-                      {ROLE_LABELS[role]}
-                    </option>
-                  ))}
-                </Select>
-              ),
+            cell: roleCell,
           },
           {
             key: "status",
@@ -182,10 +196,7 @@ export function TeamTable({ rows, manageable }: { rows: TeamRow[]; manageable: b
             header: <span className="sr-only">Actions</span>,
             width: 48,
             align: "right",
-            cell: (row) =>
-              manageable && !row.isMe && row.role !== "owner" ? (
-                <ActionMenu label={`Actions pour ${row.name}`} items={menuItems(row)} />
-              ) : null,
+            cell: actionsCell,
           },
         ]}
       />
@@ -237,7 +248,9 @@ export function JoinLinkButton({ link }: { link: JoinLinkView | null }) {
   return (
     <>
       <Button variant="secondary" onClick={() => setOpen(true)}>
-        Copier le lien d'invitation
+        <span>
+          Copier le lien<span className="hidden lg:inline"> d'invitation</span>
+        </span>
       </Button>
       {open && <JoinLinkDialog link={link} onClose={() => setOpen(false)} />}
     </>
@@ -340,7 +353,11 @@ export function InviteMemberButton() {
   const [open, setOpen] = useState(false);
   return (
     <>
-      <Button onClick={() => setOpen(true)}>Inviter un membre</Button>
+      <Button onClick={() => setOpen(true)}>
+        <span>
+          Inviter<span className="hidden lg:inline"> un membre</span>
+        </span>
+      </Button>
       {open && <InviteDialog onClose={() => setOpen(false)} />}
     </>
   );
