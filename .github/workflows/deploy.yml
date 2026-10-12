@@ -6,7 +6,7 @@ name: Build and deploy
 
 on:
   push:
-    branches: [feature/refonte-v2]
+    branches: [develop]
   workflow_dispatch:
 
 permissions:

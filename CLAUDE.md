@@ -19,7 +19,7 @@ Le vault Obsidian de Moh : `/Volumes/moh-drive/hub/notes/hub` (synchronisé avec
 3. **Vérifier** : `pnpm typecheck`, `pnpm test`, `rtk proxy pnpm lint` (sans `rtk proxy`, le hook
    remplace Biome par ESLint), `pnpm build`, puis le rendu dans Chrome avec `playwright-core`
    installé dans le scratchpad (jamais dans le repo).
-4. **Commit** sur `feature/refonte-v2` (le lint doit sortir en 0 : vérifier le code de retour).
+4. **Commit** sur `develop` (le lint doit sortir en 0 : vérifier le code de retour).
 5. **Documenter dans le vault** (section suivante).
 6. **Faire le point avec Moh** : ce qui est fait, ce qui reste, et toujours le nombre d'appels
    Paper du lot et le total de la session.

@@ -2,9 +2,9 @@ name: CI
 
 on:
   push:
-    branches: [main, develop]
+    branches: [main]
   pull_request:
-  # Appelé par « Build and deploy » avant de construire les images.
+  # Appelé par « Build and deploy » (push sur develop) avant de construire les images.
   workflow_call:
 
 concurrency:
