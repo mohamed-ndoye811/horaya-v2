@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { POSTES } from "./poste";
 
 const optional = z
   .string()
@@ -18,6 +19,8 @@ const schema = z.object({
   STRIPE_WEBHOOK_SECRET: optional,
   /** « 1 » : passerelle de test (/paiement-test) sans clés Stripe, pour le développement. */
   PAYMENTS_TEST_GATEWAY: optional,
+  /** Poste de travail local (worktree) : voir « Postes de travail » dans CLAUDE.md. */
+  POSTE: z.enum(POSTES).optional(),
 });
 
 /** Variables d'environnement serveur, validées au démarrage. Ne jamais importer côté client. */

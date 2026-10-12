@@ -19,8 +19,10 @@ Le vault Obsidian de Moh : `/Volumes/moh-drive/hub/notes/hub` (synchronisé avec
 3. **Vérifier** : `pnpm typecheck`, `pnpm test`, `rtk proxy pnpm lint` (sans `rtk proxy`, le hook
    remplace Biome par ESLint), `pnpm build`, puis le rendu dans Chrome avec `playwright-core`
    installé dans le scratchpad (jamais dans le repo).
-4. **Commit** sur `develop` (le lint doit sortir en 0 : vérifier le code de retour).
-5. **Documenter dans le vault** (section suivante).
+4. **Commit** sur une branche `lot/…` ou `fix/…` partie de `origin/develop` (le lint doit sortir
+   en 0 : vérifier le code de retour), puis PR vers `develop` avec `gh pr create`. Moh la fusionne
+   en squash ; la fusion déploie sur staging.
+5. **Documenter dans le vault** (section suivante), depuis le poste integration, après la fusion.
 6. **Faire le point avec Moh** : ce qui est fait, ce qui reste, et toujours le nombre d'appels
    Paper du lot et le total de la session.
 
@@ -66,7 +68,44 @@ Moh (on ajoute), en-tête YAML valide, heure de Paris (`TZ=Europe/Paris date`), 
 ## Environnement local
 
 - `pnpm db:up` : Postgres 16 et Mailpit (e-mails sur http://localhost:8025).
-- Variables dans le `.env` à la racine (chargé par `next.config.ts`).
-- Le port 3000 est souvent pris par un autre projet de Moh : lancer l'app sur 3100 avec
-  `BETTER_AUTH_URL=http://localhost:3100 pnpm exec next dev -p 3100` (depuis `apps/web`).
+- Variables dans le `.env` à la racine du poste (chargé par `next.config.ts` et les scripts).
+- `pnpm dev` écoute sur le `PORT` du `.env` (3100, 3101 ou 3102 selon le poste). Le port 3000 est
+  souvent pris par un autre projet de Moh.
 - Ne jamais arrêter un processus qui n'appartient pas à Horaya.
+
+## Postes de travail
+
+Trois worktrees git permanents, chacun avec son port, sa base et ses cookies. Le poste courant
+est la variable `POSTE` du `.env` : la lire avant de commencer, et appliquer ses règles.
+
+| Dossier | POSTE | Port | Base | Rôle |
+|---|---|---|---|---|
+| `horaya-v2/` | integration | 3100 | horaya | suit `develop`, recette, documentation du vault |
+| `../horaya-lot/` | lot | 3101 | horaya_lot | lot en cours, seul poste autorisé à générer des migrations |
+| `../horaya-fix/` | fix | 3102 | horaya_fix | retouches courtes, pas de modification de schéma |
+
+- `develop` ne reçoit que des PR fusionnées en squash (chaque push dessus déploie sur staging ;
+  la CI tourne sur les PR). Les branches de travail (`lot/…`, `fix/…`) partent toujours de
+  `origin/develop`.
+- Postgres et Mailpit restent uniques dans Docker : un conteneur, une base par poste. Les bases
+  de test en dérivent (`horaya_lot_test_db`…), les postes ne se gênent donc pas.
+- `pnpm poste:init <lot|fix>` (depuis integration) crée un poste : worktree, `.env`, dépendances,
+  base de démo. `pnpm poste:reset` (lot et fix seulement) repart d'une base neuve avec le compte
+  `demo@horaya.local` / `Demo-Horaya-2026` et l'espace `demo`.
+- `pnpm db:generate` refuse de tourner hors du poste lot, ou si la branche n'est pas à jour de
+  `origin/develop`.
+
+Règles selon `POSTE` :
+- **fix** : pas de migration ni de refactor du code partagé (`packages/*`, `components/ui`). Si une
+  retouche exige un changement de schéma, s'arrêter et le dire à Moh.
+- **lot** : `git rebase origin/develop` avant toute génération de migration, puis `pnpm db:migrate`
+  après chaque rebase.
+- **integration** : pas de développement ; `git pull`, recette, mise à jour du vault après la
+  fusion d'un lot. C'est le seul poste qui écrit dans le vault.
+- **Partout** : ne jamais pousser sur `develop`, passer par `gh pr create` ; ne jamais modifier
+  une migration déjà fusionnée.
+- **Conflit de numérotation de migration** : supprimer sa migration (fichier SQL, entrée de
+  `packages/db/migrations/meta/_journal.json`, snapshot), `git rebase origin/develop`,
+  `pnpm db:generate`, puis `pnpm poste:reset`.
+
+Journée type : `WORKFLOW.md`.

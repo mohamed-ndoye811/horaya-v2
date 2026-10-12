@@ -9,7 +9,8 @@
   "scripts": {
     "typecheck": "tsc -p tsconfig.json",
     "generate-schema": "pnpm dlx auth@latest generate --config src/cli-config.ts --output ../db/src/schema/auth.ts --yes",
-    "test": "vitest run"
+    "test": "vitest run",
+    "poste-reset": "tsx --env-file=../../.env scripts/poste-reset.ts"
   },
   "dependencies": {
     "@better-auth/drizzle-adapter": "^1.7.7",
@@ -21,6 +22,7 @@
   },
   "devDependencies": {
     "@types/node": "^20",
-    "vitest": "^5.0.3"
+    "vitest": "^5.0.3",
+    "tsx": "^4.23.15"
   }
 }

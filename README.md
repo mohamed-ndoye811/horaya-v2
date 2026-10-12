@@ -72,10 +72,12 @@ core) est appliquée côté interface et dans un hook Better Auth.
 | `pnpm typecheck` | Vérification TypeScript |
 | `pnpm test` | Tests (Vitest). Ceux de `db` et `auth` créent une base `<base>_test_<package>` jetable |
 | `pnpm lint` / `pnpm format` | Biome |
-| `pnpm db:generate` | Génère une migration depuis le schéma Drizzle |
+| `pnpm db:generate` | Génère une migration depuis le schéma Drizzle (poste lot uniquement, branche à jour de `origin/develop`) |
 | `pnpm db:migrate` | Applique les migrations |
 | `pnpm db:studio` | Drizzle Studio |
 | `pnpm db:seed-demo <adresse> [--reset]` | Remplit un espace avec les données des maquettes ; `--reset` le vide d'abord |
+| `pnpm poste:init <lot\|fix>` | Crée un poste de travail (worktree, `.env`, dépendances, base de démo) ; voir `CLAUDE.md` |
+| `pnpm poste:reset` | Postes lot et fix : base neuve, migrations, compte `demo@horaya.local` et espace `demo` |
 | `pnpm db:auth-schema` | Régénère `packages/db/src/schema/auth.ts` depuis la config Better Auth |
 
 ## Données
