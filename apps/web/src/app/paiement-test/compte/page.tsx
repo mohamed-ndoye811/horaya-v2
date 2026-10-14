@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { buttonClasses } from "@/components/ui/button";
 import { param } from "@/lib/search-params";
+import { env } from "@/server/env";
 import { testPayments } from "@/server/payments";
 
 export const metadata: Metadata = { title: "Activation de test", robots: { index: false } };
@@ -14,11 +15,9 @@ export default async function TestOnboardingPage({
   if (!testPayments) notFound();
   const query = await searchParams;
   const back = param(query.retour) ?? "/app/parametres/paiements";
-  const target = new URL(back, process.env.BETTER_AUTH_URL);
+  const target = new URL(back, env.BETTER_AUTH_URL);
   const safeBack =
-    target.origin === new URL(process.env.BETTER_AUTH_URL ?? "http://localhost").origin
-      ? target.toString()
-      : "/app";
+    target.origin === new URL(env.BETTER_AUTH_URL).origin ? target.toString() : "/app";
   return (
     <main className="flex min-h-dvh items-center justify-center bg-draft-bg px-4 py-12">
       <div className="flex w-full max-w-[440px] flex-col gap-6 border-2 border-ink bg-surface px-6 py-8">

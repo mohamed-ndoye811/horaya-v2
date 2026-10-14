@@ -15,11 +15,13 @@
     "format": "biome check --write .",
     "db:up": "docker compose up -d postgres mailpit",
     "db:down": "docker compose down",
-    "db:generate": "pnpm --filter @horaya/db generate",
+    "db:generate": "node scripts/generer-migration.mjs",
     "db:migrate": "pnpm --filter @horaya/db migrate",
     "db:studio": "pnpm --filter @horaya/db studio",
     "db:auth-schema": "pnpm --filter @horaya/auth generate-schema",
-    "db:seed-demo": "pnpm --filter @horaya/db seed-demo"
+    "db:seed-demo": "pnpm --filter @horaya/db seed-demo",
+    "poste:init": "node scripts/poste-init.mjs",
+    "poste:reset": "pnpm --filter @horaya/auth poste-reset"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.5.15",

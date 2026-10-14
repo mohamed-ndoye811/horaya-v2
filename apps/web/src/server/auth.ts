@@ -5,6 +5,7 @@ import { cache } from "react";
 import { db } from "./db";
 import { env, googleEnabled } from "./env";
 import { mailer } from "./mailer";
+import { authCookiePrefix } from "./poste";
 
 const globalForAuth = globalThis as unknown as { horayaAuth?: Auth };
 
@@ -18,6 +19,7 @@ export const auth =
       googleEnabled && env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET
         ? { clientId: env.GOOGLE_CLIENT_ID, clientSecret: env.GOOGLE_CLIENT_SECRET }
         : undefined,
+    cookiePrefix: authCookiePrefix(env.POSTE),
   });
 if (process.env.NODE_ENV !== "production") globalForAuth.horayaAuth = auth;
 

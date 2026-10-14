@@ -2,11 +2,12 @@
 
 import { completeCheckout, expireCheckout } from "@horaya/core";
 import { notFound, redirect } from "next/navigation";
+import { env } from "@/server/env";
 import { paymentDeps, testPayments } from "@/server/payments";
 
 /** Seuls les retours vers l'app sont suivis (pas de redirection ouverte). */
 function safe(url: string): string {
-  const base = new URL(process.env.BETTER_AUTH_URL ?? "http://localhost:3000");
+  const base = new URL(env.BETTER_AUTH_URL);
   const target = new URL(url, base);
   return target.origin === base.origin ? target.toString() : "/";
 }

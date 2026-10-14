@@ -28,6 +28,8 @@ export interface AuthOptions {
   mailer: Mailer;
   /** Connexion Google : activée seulement si les identifiants sont fournis. */
   google?: { clientId: string; clientSecret: string } | undefined;
+  /** Préfixe des cookies (défaut Better Auth) : isole les sessions de plusieurs apps sur localhost. */
+  cookiePrefix?: string | undefined;
 }
 
 /** Les champs additionnels ne sont pas typés dans les callbacks d'e-mail. */
@@ -160,6 +162,7 @@ export function createAuth(db: Db, options: AuthOptions) {
       nextCookies(),
     ],
     advanced: {
+      ...(options.cookiePrefix ? { cookiePrefix: options.cookiePrefix } : {}),
       database: { generateId: "uuid" },
     },
   });
