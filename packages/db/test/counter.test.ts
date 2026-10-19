@@ -8,12 +8,13 @@ import {
   type Deps,
   publishEvent,
   removeEventItem,
+  scheduleMaintenance,
   setEventItemQuantity,
 } from "@horaya/core";
 import { and, eq, isNull } from "drizzle-orm";
 import { afterAll, beforeEach, describe, expect, it } from "vitest";
 import { getBookingDetail, listCounterItems, listCustomers } from "../src/queries";
-import { booking, customer, itemAllocation, payment } from "../src/schema";
+import { booking, customer, itemAllocation, itemUnit, payment } from "../src/schema";
 import { createMember, createOrganization, db, fixedClock, testDeps } from "./helpers";
 
 afterAll(() => db.$client.end());
@@ -112,6 +113,22 @@ describe("comptoir", () => {
     expect(
       await db.select().from(customer).where(eq(customer.organizationId, organizationId)),
     ).toHaveLength(0);
+  });
+
+  it("ne compte pas comme libre un exemplaire en maintenance", async () => {
+    const event = await paddle();
+    const item = await boards(1);
+    const [unit] = await db.select().from(itemUnit).where(eq(itemUnit.itemId, item.id));
+    await scheduleMaintenance(deps, owner, {
+      itemId: item.id,
+      unitIds: [unit?.id ?? ""],
+      startsAt: "2026-11-09T00:00:00Z",
+      endsAt: "2026-11-11T00:00:00Z",
+      title: "Réparation dérive",
+    });
+    expect(await listCounterItems(db, organizationId, event.id)).toMatchObject([
+      { id: item.id, free: 0 },
+    ]);
   });
 
   it("rend le matériel à la séance quand la réservation est annulée", async () => {

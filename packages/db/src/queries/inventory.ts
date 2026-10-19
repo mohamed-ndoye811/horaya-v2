@@ -343,7 +343,8 @@ export async function listCounterItems(db: Executor, organizationId: string, eve
       free: sql<number>`(select count(*) from item_unit u where u.item_id = "item"."id" and u.status = 'available'
         and not exists (select 1 from item_allocation a where a.item_unit_id = u.id and a.cancelled_at is null
           and a.starts_at < ${iso(event.endsAt)} and a.ends_at > ${iso(event.startsAt)}
-          and not (a.event_id = ${event.id} and a.booking_id is null)))::int`,
+          -- « is distinct from » : une maintenance (event_id nul) doit compter comme occupée.
+          and (a.event_id is distinct from ${event.id} or a.booking_id is not null)))::int`,
       onEvent: sql<number>`(select count(*) from item_allocation a join item_unit u on u.id = a.item_unit_id
         where u.item_id = "item"."id" and a.event_id = ${event.id} and a.cancelled_at is null)::int`,
     })
