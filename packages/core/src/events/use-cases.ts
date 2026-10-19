@@ -226,6 +226,16 @@ export async function updateEvent(
       assertCapacityFits(merged.capacity, await repositories.bookings.seatsHeld(event.id));
     }
 
+    // Brouillon renommé : l'adresse publique suit le titre (personne n'a encore le lien).
+    if (event.status === "draft" && patch.title && patch.title !== event.title) {
+      const base = slugify(patch.title);
+      const wanted = event.seriesId
+        ? `${base}-${localDate(merged.startsAt, merged.timezone)}`
+        : base;
+      if (wanted !== event.slug) {
+        patch.slug = await uniqueSlug(repositories, actor.organizationId, wanted);
+      }
+    }
     const updated = await repositories.events.update(actor.organizationId, eventId, patch);
     // Le matériel réservé suit l'événement sur ses nouvelles dates (refus si indisponible).
     if (patch.startsAt || patch.endsAt) {
