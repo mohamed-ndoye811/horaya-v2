@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
+import { stagger, WordsReveal } from "@/components/motion/words";
 import { textLinkClasses } from "@/components/ui/button";
 import { cn } from "@/lib/cn";
 
@@ -20,7 +21,7 @@ export function Wordmark({ className }: { className?: string }) {
 
 export function CategorySquares() {
   return (
-    <div className="flex gap-2.5" aria-hidden="true">
+    <div className="reveal-group flex gap-2.5" aria-hidden="true">
       {CATEGORY_SQUARES.map((color) => (
         <span key={color} className={cn("size-3.5", color)} />
       ))}
@@ -33,9 +34,12 @@ export function BrandAside() {
   return (
     <div className="flex flex-col gap-7">
       <p className="font-headline text-[clamp(56px,6.1vw,88px)] leading-[0.93]">
-        Planifie avec style.
+        <WordsReveal>Planifie avec style.</WordsReveal>
       </p>
-      <p className="max-w-[440px] text-[19px] font-medium leading-7 opacity-85">
+      <p
+        className="reveal max-w-[440px] text-[19px] font-medium leading-7 opacity-85"
+        style={stagger(3)}
+      >
         Tes réservations, tes événements, ton matériel — dans un seul agenda, sous ta marque.
       </p>
     </div>
@@ -82,7 +86,7 @@ export function AuthShell({
           )}
         </div>
 
-        <div className={cn("w-full", width === "md" ? "max-w-[440px]" : "max-w-[480px]")}>
+        <div className={cn("reveal w-full", width === "md" ? "max-w-[440px]" : "max-w-[480px]")}>
           {children}
         </div>
 
@@ -97,7 +101,7 @@ export function AuthShell({
 /** Sur-titre en capitales mono (« Étape 1 sur 2 »). */
 export function Eyebrow({ children }: { children: ReactNode }) {
   return (
-    <p className="font-mono text-label font-semibold uppercase leading-4 tracking-[0.055em] text-neutral">
+    <p className="reveal font-mono text-label font-semibold uppercase leading-4 tracking-[0.055em] text-neutral">
       {children}
     </p>
   );
@@ -113,7 +117,7 @@ export function AuthTitle({ children, size = "lg" }: { children: ReactNode; size
           : "text-[40px] leading-[40px] sm:text-[48px] sm:leading-[46px]",
       )}
     >
-      {children}
+      <WordsReveal delay={1}>{children}</WordsReveal>
     </h1>
   );
 }

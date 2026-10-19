@@ -10,6 +10,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { ReactNode } from "react";
+import { stagger, WordsReveal } from "@/components/motion/words";
 import { BrandBand, PublicNav } from "@/components/public/public-chrome";
 import { NotFoundScreen } from "@/components/public/public-not-found";
 import { StatusBadge } from "@/components/ui/badge";
@@ -140,7 +141,7 @@ export default async function ManagedBookingPage({
                 aria-hidden="true"
                 className="flex size-[72px] items-center justify-center bg-[var(--on-brand)] text-[var(--brand)]"
               >
-                <Check size={36} />
+                <Check size={36} draw />
               </span>
             )}
             <h1
@@ -149,9 +150,14 @@ export default async function ManagedBookingPage({
                 displayFontClass(workspace.displayFont),
               )}
             >
-              {heading.title}
+              <WordsReveal>{heading.title}</WordsReveal>
             </h1>
-            <p className="max-w-[640px] text-lg font-medium leading-7 sm:text-xl">{heading.text}</p>
+            <p
+              className="reveal max-w-[640px] text-lg font-medium leading-7 sm:text-xl"
+              style={stagger(3)}
+            >
+              {heading.text}
+            </p>
           </div>
           <div className="flex shrink-0 flex-col gap-2 sm:items-end">
             <p className="font-mono text-label font-semibold uppercase tracking-[0.055em] opacity-85">

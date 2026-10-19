@@ -32,7 +32,10 @@ export function AvailabilityMeter({
       </div>
       {ratio !== null && (
         <span aria-hidden="true" className={cn("flex bg-line-soft", thick ? "h-1.5" : "h-1")}>
-          <span className={tones[tone].bar} style={{ width: `${Math.round(ratio * 100)}%` }} />
+          <span
+            className={cn("origin-left animate-grow-x", tones[tone].bar)}
+            style={{ width: `${Math.round(ratio * 100)}%` }}
+          />
         </span>
       )}
     </div>

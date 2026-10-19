@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { CountUp } from "@/components/motion/count-up";
 import { cn } from "@/lib/cn";
 
 /**
@@ -29,7 +30,7 @@ export function Stat({ label, value, suffix, footer, footerTone = "muted", highl
   return (
     <div
       className={cn(
-        "flex min-w-0 flex-col gap-2.5 px-4 py-5 sm:px-10 sm:py-6",
+        "reveal-group flex min-w-0 flex-col gap-2.5 px-4 py-5 sm:px-10 sm:py-6",
         highlight === "warning" ? "bg-warning-bg" : highlight ? "bg-danger-bg" : "bg-bg",
       )}
     >
@@ -48,7 +49,11 @@ export function Stat({ label, value, suffix, footer, footerTone = "muted", highl
             highlight === "warning" ? "text-warning" : highlight ? "text-danger" : "text-ink",
           )}
         >
-          {value}
+          {typeof value === "string" || typeof value === "number" ? (
+            <CountUp value={String(value)} />
+          ) : (
+            value
+          )}
         </span>
         {suffix && (
           <span className="text-lg font-bold leading-[22px] text-ink-muted">{suffix}</span>

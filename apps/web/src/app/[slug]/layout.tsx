@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import { RouteTransition } from "@/components/motion/route-transition";
 import { brandStyle, PublicFooter } from "@/components/public/public-chrome";
 import { getWorkspaceBySlug } from "@/server/public";
 
@@ -8,7 +9,9 @@ export default async function PublicLayout({ children, params }: LayoutProps<"/[
   if (!workspace) notFound();
   return (
     <div style={brandStyle(workspace.brandColor)} className="flex min-h-dvh flex-col bg-bg">
-      <div className="flex flex-1 flex-col">{children}</div>
+      <div className="flex flex-1 flex-col">
+        <RouteTransition>{children}</RouteTransition>
+      </div>
       <PublicFooter workspace={workspace} />
     </div>
   );

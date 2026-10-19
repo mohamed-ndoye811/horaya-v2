@@ -54,7 +54,10 @@ export function DataTable<T>({
       {card && (
         <ul
           aria-label={label}
-          className={cn("flex flex-col lg:hidden", cardRule && !flush && "border-t-2 border-ink")}
+          className={cn(
+            "reveal-group flex flex-col lg:hidden",
+            cardRule && !flush && "border-t-2 border-ink",
+          )}
         >
           {rows.length === 0 && empty && <li>{empty}</li>}
           {rows.map((row) => (
@@ -95,7 +98,8 @@ export function DataTable<T>({
               ))}
             </tr>
           </thead>
-          <tbody>
+          {/* Les lignes arrivent l'une après l'autre au premier affichage. */}
+          <tbody className="reveal-group">
             {rows.length === 0 && empty && (
               <tr>
                 <td colSpan={columns.length}>{empty}</td>

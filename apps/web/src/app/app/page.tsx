@@ -165,7 +165,7 @@ export default async function DashboardPage() {
                 Aucun événement à venir.
               </p>
             ) : (
-              <ul>
+              <ul className="reveal-group">
                 {upcoming.map((event) => {
                   const badge = eventStatusBadge(event.status, event);
                   const remaining =
@@ -212,7 +212,7 @@ export default async function DashboardPage() {
                 Aucune réservation pour l'instant.
               </p>
             ) : (
-              <ul>
+              <ul className="reveal-group">
                 {latest.map((entry) => (
                   <li
                     key={entry.id}

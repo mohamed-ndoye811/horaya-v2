@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { WordsReveal } from "@/components/motion/words";
 
 /**
  * État vide : rangée de cases (pleines, la case « + », puis en pointillés), grand titre,
@@ -16,8 +17,8 @@ export function EmptyState({
   steps?: [string, string, string];
 }) {
   return (
-    <div className="mx-auto flex w-full max-w-[720px] flex-col gap-6 px-4 py-16 sm:py-24">
-      <div className="flex gap-1.5" aria-hidden="true">
+    <div className="reveal-group mx-auto flex w-full max-w-[720px] flex-col gap-6 px-4 py-16 sm:py-24">
+      <div className="reveal-group flex gap-1.5" aria-hidden="true">
         {[0, 1, 2].map((index) => (
           <span key={`plein-${index}`} className="size-10 border-2 border-ink sm:size-14" />
         ))}
@@ -32,7 +33,7 @@ export function EmptyState({
         ))}
       </div>
       <h2 className="font-headline text-[44px] leading-[42px] text-ink sm:text-display sm:leading-[60px]">
-        {title}
+        <WordsReveal>{title}</WordsReveal>
       </h2>
       <p className="max-w-[560px] text-lg font-medium leading-7 text-ink-muted">{description}</p>
       {actions && <div className="flex flex-wrap gap-3">{actions}</div>}

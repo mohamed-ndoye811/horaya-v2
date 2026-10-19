@@ -1,6 +1,8 @@
 import { listPublicEvents } from "@horaya/db";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import { CountUp } from "@/components/motion/count-up";
+import { stagger, WordsReveal } from "@/components/motion/words";
 import { BrandBand, PublicNav } from "@/components/public/public-chrome";
 import { PublicEvents } from "@/components/public/public-events";
 import { cn } from "@/lib/cn";
@@ -31,7 +33,7 @@ export default async function PublicWorkspacePage({ params, searchParams }: Page
         <PublicNav workspace={workspace} active="events" />
         <div className="flex flex-col gap-6 px-5 pt-8 pb-8 sm:flex-row sm:items-end sm:justify-between sm:gap-16 sm:px-16 sm:py-14">
           <div className="flex min-w-0 flex-col gap-5">
-            <p className="font-mono text-label font-semibold uppercase tracking-[0.055em] opacity-85">
+            <p className="reveal font-mono text-label font-semibold uppercase tracking-[0.055em] opacity-85">
               {workspace.name}
             </p>
             <h1
@@ -40,17 +42,20 @@ export default async function PublicWorkspacePage({ params, searchParams }: Page
                 displayFontClass(workspace.displayFont),
               )}
             >
-              Nos événements
+              <WordsReveal delay={1}>Nos événements</WordsReveal>
             </h1>
             {workspace.description && (
-              <p className="max-w-[620px] text-base font-medium leading-6 opacity-90 sm:text-[19px] sm:leading-7">
+              <p
+                className="reveal max-w-[620px] text-base font-medium leading-6 opacity-90 sm:text-[19px] sm:leading-7"
+                style={stagger(3)}
+              >
                 {workspace.description}
               </p>
             )}
           </div>
           <div className="flex shrink-0 items-baseline gap-3 sm:flex-col sm:items-end sm:gap-1">
             <span className="font-headline text-[32px] leading-8 sm:text-display sm:leading-[60px]">
-              {events.length}
+              <CountUp value={String(events.length)} />
             </span>
             <span className="font-mono text-label font-semibold uppercase tracking-[0.055em] opacity-85">
               Événement{events.length > 1 ? "s" : ""} à venir

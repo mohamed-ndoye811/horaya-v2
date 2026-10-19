@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { type ComponentType, useState } from "react";
+import { ActiveIndicator } from "@/components/motion/indicator";
 import { Avatar } from "@/components/ui/avatar";
 import { CountBadge } from "@/components/ui/badge";
 import {
@@ -50,11 +51,12 @@ function NavLink({ item, pathname }: { item: NavItem; pathname: string }) {
       href={item.href}
       aria-current={active ? "page" : undefined}
       className={cn(
-        "flex items-center gap-3 px-6 py-3 text-[15px] leading-5 transition-colors",
+        "relative isolate flex items-center gap-3 px-6 py-3 text-[15px] leading-5 transition-colors",
         "focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ink",
-        active ? "bg-ink font-bold text-on-ink" : "font-semibold text-ink hover:bg-draft-bg",
+        active ? "font-bold text-on-ink" : "font-semibold text-ink hover:bg-draft-bg",
       )}
     >
+      {active && <ActiveIndicator id="sidebar" className="inset-0 -z-10 bg-ink" />}
       <Icon className="shrink-0" />
       <span className="grow">{item.label}</span>
       {item.badge ? (
@@ -120,7 +122,7 @@ function AccountMenu({ user, workspace }: Pick<SidebarProps, "user" | "workspace
   return (
     <div className="relative">
       {open && (
-        <div className="absolute right-0 bottom-full left-0 mb-2 border-2 border-ink bg-surface py-1 shadow-[4px_4px_0_var(--color-ink)]">
+        <div className="absolute right-0 bottom-full left-0 mb-2 origin-bottom animate-pop border-2 border-ink bg-surface py-1 shadow-[4px_4px_0_var(--color-ink)]">
           <button
             type="button"
             onClick={signOut}

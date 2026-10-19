@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { stagger, WordsReveal } from "@/components/motion/words";
 import { cn } from "@/lib/cn";
 
 /**
@@ -36,17 +37,22 @@ export function PageHeader({
       )}
     >
       <div className="flex min-w-0 flex-col gap-3.5">
-        <p className="font-mono text-label font-semibold uppercase leading-4 tracking-[0.055em] text-neutral">
+        <p className="reveal font-mono text-label font-semibold uppercase leading-4 tracking-[0.055em] text-neutral">
           {eyebrow}
         </p>
         <div className="flex flex-wrap items-center gap-x-5 gap-y-3">
           <h1 className="font-headline text-[44px] leading-[42px] text-ink sm:text-display sm:leading-[60px]">
-            {title}
+            <WordsReveal delay={1}>{title}</WordsReveal>
           </h1>
           {titleAside}
         </div>
         {subtitle && (
-          <div className="text-base font-medium leading-[22px] text-ink-muted">{subtitle}</div>
+          <div
+            className="reveal text-base font-medium leading-[22px] text-ink-muted"
+            style={stagger(3)}
+          >
+            {subtitle}
+          </div>
         )}
       </div>
       {actions &&
@@ -63,7 +69,9 @@ export function PageHeader({
             {actions}
           </div>
         ) : (
-          <div className="flex shrink-0 flex-wrap gap-3">{actions}</div>
+          <div className="reveal flex shrink-0 flex-wrap gap-3" style={stagger(4)}>
+            {actions}
+          </div>
         ))}
     </header>
   );

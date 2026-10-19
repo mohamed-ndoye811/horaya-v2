@@ -9,9 +9,13 @@ type Variant = "primary" | "secondary" | "success" | "danger" | "inverse" | "inv
 /** `md` : boutons de l'admin (48 px). `lg` : formulaires des écrans de compte (54 px). */
 type Size = "md" | "lg";
 
+// Appui : léger enfoncement (120 ms) ; survol : la flèche avance de 3 px (`group`).
 const base =
-  "inline-flex shrink-0 items-center justify-center gap-2.5 whitespace-nowrap transition-colors " +
+  "group inline-flex shrink-0 items-center justify-center gap-2.5 whitespace-nowrap " +
+  "transition-[color,background-color,border-color,scale] active:scale-[0.97] active:duration-[120ms] " +
   "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink";
+
+const arrowClasses = "transition-transform group-hover:translate-x-[3px]";
 
 const sizes: Record<Size, string> = {
   md: "h-12 px-5 text-[15px] leading-5",
@@ -82,7 +86,7 @@ export function Button({
     >
       {icon}
       {children}
-      {arrow && !pending && <ArrowRight />}
+      {arrow && !pending && <ArrowRight className={arrowClasses} />}
     </button>
   );
 }
@@ -107,7 +111,7 @@ export function ButtonLink({
     <Link className={buttonClasses({ variant, size, className })} {...props}>
       {icon}
       {children}
-      {arrow && <ArrowRight />}
+      {arrow && <ArrowRight className={arrowClasses} />}
     </Link>
   );
 }
@@ -144,7 +148,7 @@ export function IconButton({
       aria-label={label}
       title={label}
       className={cn(
-        "inline-flex shrink-0 items-center justify-center transition-colors disabled:opacity-50",
+        "inline-flex shrink-0 items-center justify-center transition-[color,background-color,border-color,scale] active:scale-[0.94] disabled:opacity-50",
         "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink",
         size === "sm" ? "size-6" : size === "md" ? "size-9" : "size-10",
         iconButtonVariants[variant],
@@ -169,7 +173,7 @@ export function IconLink({
       aria-label={label}
       title={label}
       className={cn(
-        "inline-flex size-10 shrink-0 items-center justify-center border-2 border-ink text-ink transition-colors hover:bg-surface",
+        "inline-flex size-10 shrink-0 items-center justify-center border-2 border-ink text-ink transition-[background-color,scale] hover:bg-surface active:scale-[0.94]",
         "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink",
         className,
       )}
@@ -181,11 +185,13 @@ export function IconLink({
 }
 
 /** Lien texte souligné, comme dans les maquettes (« Mot de passe oublié ? »). */
+// Survol : le soulignement s'écarte un peu du texte (200 ms), en plus du changement de couleur.
 export const textLinkClasses =
   "tap-area font-bold text-ink underline decoration-1 underline-offset-[3px] hover:text-link " +
+  "transition-[color,text-underline-offset] hover:underline-offset-[5px] " +
   "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink";
 
 /** Lien en capitales mono des en-têtes de section (« TOUS LES ÉVÉNEMENTS → »). */
 export const monoLinkClasses =
-  "tap-area font-mono text-label font-semibold uppercase tracking-[0.055em] text-ink hover:text-link " +
+  "transition-colors tap-area font-mono text-label font-semibold uppercase tracking-[0.055em] text-ink hover:text-link " +
   "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink";

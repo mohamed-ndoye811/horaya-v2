@@ -2,6 +2,7 @@ import { addDays } from "@horaya/core";
 import { type EventRow, getEventDetail, listEventsInRange, listEventTypes } from "@horaya/db";
 import type { Metadata } from "next";
 import Link from "next/link";
+import { ViewTransition } from "react";
 import { FabLink } from "@/components/app/fab";
 import { PageHeader } from "@/components/app/page-header";
 import { CalendarLegend } from "@/components/calendar/legend";
@@ -232,151 +233,160 @@ export default async function CalendarPage({ searchParams }: PageProps<"/app/cal
       />
       <CalendarLegend categories={types.map((type) => ({ name: type.name, color: type.color }))} />
 
-      {view === "mois" && (
-        <>
-          <MonthCompact
-            year={date.year}
-            month={date.month}
-            events={events}
-            timeZone={timeZone}
-            today={today}
-            selected={date}
-            dayHref={(day) => href({ date: day })}
-          />
-          <DayAgenda day={date} events={events} timeZone={timeZone} />
-          <div className="hidden lg:block">
-            <MonthCalendar
-              year={date.year}
-              month={date.month}
-              events={events}
-              timeZone={timeZone}
-              today={today}
-              moreHref={(day) => href({ vue: "jour", date: day })}
-            />
-          </div>
-        </>
-      )}
-      {view === "semaine" && (
-        <>
-          <WeekStrip
-            days={days}
-            events={events}
-            timeZone={timeZone}
-            today={today}
-            dayHref={(day) => href({ vue: "jour", date: day })}
-          />
-          <WeekAgenda days={days} events={events} timeZone={timeZone} today={today} />
-          <div className="hidden lg:block">
-            <TimeGridCalendar
-              days={days}
-              events={events}
-              timeZone={timeZone}
-              today={today}
-              now={new Date()}
-              startHour={startHour}
-              endHour={endHour}
-            />
-          </div>
-        </>
-      )}
-      {view === "jour" && (
-        <div className="flex flex-col lg:flex-row">
-          <div className="min-w-0 flex-1">
-            <TimeGridCalendar
-              days={days}
-              events={events}
-              timeZone={timeZone}
-              today={today}
-              now={new Date()}
-              startHour={startHour}
-              endHour={endHour}
-            />
-          </div>
-          {selected && (
-            <Link
-              href={href({})}
-              aria-label="Fermer le détail"
-              className="fixed inset-0 z-40 bg-ink/45 lg:hidden"
-            />
-          )}
-          {selected && (
-            <aside className="fixed inset-x-0 bottom-0 z-50 flex max-h-[85dvh] flex-col overflow-y-auto border-t-2 border-ink bg-surface pb-[env(safe-area-inset-bottom)] lg:static lg:z-auto lg:max-h-none lg:w-[380px] lg:shrink-0 lg:overflow-visible lg:border-t-0 lg:border-l-2 lg:pb-0">
-              <div aria-hidden="true" className="flex justify-center pt-2.5 lg:hidden">
-                <span className="h-1 w-10 bg-ink-subtle" />
+      {/* Changement de vue ou de date : le calendrier se fond dans le suivant. */}
+      <ViewTransition key={`${view}-${civilKey(date)}`} enter="page" exit="page" default="none">
+        <div className="flex flex-col">
+          {view === "mois" && (
+            <>
+              <MonthCompact
+                year={date.year}
+                month={date.month}
+                events={events}
+                timeZone={timeZone}
+                today={today}
+                selected={date}
+                dayHref={(day) => href({ date: day })}
+              />
+              <DayAgenda day={date} events={events} timeZone={timeZone} />
+              <div className="hidden lg:block">
+                <MonthCalendar
+                  year={date.year}
+                  month={date.month}
+                  events={events}
+                  timeZone={timeZone}
+                  today={today}
+                  moreHref={(day) => href({ vue: "jour", date: day })}
+                />
               </div>
-              <div className="flex items-start justify-between gap-4 border-b border-line-soft px-7 py-6">
-                <div className="flex min-w-0 flex-col gap-3">
-                  <p className="flex items-center gap-2 font-mono text-label font-semibold uppercase tracking-[0.055em] text-neutral">
-                    <CategorySwatch color={selected.event.typeColor} size={10} />
-                    {selected.event.typeName} · {workspace.name}
-                  </p>
-                  <h2 className="font-headline text-[36px] leading-9 text-ink">
-                    {selected.event.title}
-                  </h2>
-                  <p className="text-[15px] font-medium text-ink-muted">
-                    {formatEventRange(selected.event.startsAt, selected.event.endsAt, timeZone)}
-                  </p>
-                </div>
+            </>
+          )}
+          {view === "semaine" && (
+            <>
+              <WeekStrip
+                days={days}
+                events={events}
+                timeZone={timeZone}
+                today={today}
+                dayHref={(day) => href({ vue: "jour", date: day })}
+              />
+              <WeekAgenda days={days} events={events} timeZone={timeZone} today={today} />
+              <div className="hidden lg:block">
+                <TimeGridCalendar
+                  days={days}
+                  events={events}
+                  timeZone={timeZone}
+                  today={today}
+                  now={new Date()}
+                  startHour={startHour}
+                  endHour={endHour}
+                />
+              </div>
+            </>
+          )}
+          {view === "jour" && (
+            <div className="flex flex-col lg:flex-row">
+              <div className="min-w-0 flex-1">
+                <TimeGridCalendar
+                  days={days}
+                  events={events}
+                  timeZone={timeZone}
+                  today={today}
+                  now={new Date()}
+                  startHour={startHour}
+                  endHour={endHour}
+                />
+              </div>
+              {selected && (
                 <Link
                   href={href({})}
-                  aria-label="Fermer"
-                  className="flex size-9 shrink-0 items-center justify-center text-ink hover:bg-draft-bg"
-                >
-                  <CloseIcon />
-                </Link>
-              </div>
-              {selected.event.locationName && (
-                <div className="flex flex-col gap-2 border-b border-line-soft px-7 py-5">
-                  <Eyebrow>Lieu</Eyebrow>
-                  <p className="text-base font-semibold text-ink">{selected.event.locationName}</p>
-                </div>
+                  aria-label="Fermer le détail"
+                  className="fixed inset-0 z-40 bg-ink/45 lg:hidden"
+                />
               )}
-              <div className="flex flex-col gap-3 border-b border-line-soft px-7 py-5">
-                <Eyebrow>
-                  Participants · {selected.event.seatsHeld}
-                  {selected.event.capacity !== null ? ` / ${selected.event.capacity}` : ""}
-                </Eyebrow>
-                <div className="flex flex-wrap gap-1.5">
-                  {selected.bookings
-                    .filter((entry) => entry.status === "confirmed" || entry.status === "pending")
-                    .slice(0, 12)
-                    .map((entry) => (
-                      <span key={entry.id} title={entry.customerName}>
-                        <Avatar name={entry.customerName} size="md" />
-                      </span>
-                    ))}
-                  {selected.bookings.length === 0 && (
-                    <p className="text-sm font-medium text-ink-muted">Aucune réservation.</p>
+              {selected && (
+                <aside className="fixed inset-x-0 bottom-0 z-50 flex max-h-[85dvh] animate-[rise_380ms_cubic-bezier(0.2,0,0,1)_both] lg:animate-none flex-col overflow-y-auto border-t-2 border-ink bg-surface pb-[env(safe-area-inset-bottom)] lg:static lg:z-auto lg:max-h-none lg:w-[380px] lg:shrink-0 lg:overflow-visible lg:border-t-0 lg:border-l-2 lg:pb-0">
+                  <div aria-hidden="true" className="flex justify-center pt-2.5 lg:hidden">
+                    <span className="h-1 w-10 bg-ink-subtle" />
+                  </div>
+                  <div className="flex items-start justify-between gap-4 border-b border-line-soft px-7 py-6">
+                    <div className="flex min-w-0 flex-col gap-3">
+                      <p className="flex items-center gap-2 font-mono text-label font-semibold uppercase tracking-[0.055em] text-neutral">
+                        <CategorySwatch color={selected.event.typeColor} size={10} />
+                        {selected.event.typeName} · {workspace.name}
+                      </p>
+                      <h2 className="font-headline text-[36px] leading-9 text-ink">
+                        {selected.event.title}
+                      </h2>
+                      <p className="text-[15px] font-medium text-ink-muted">
+                        {formatEventRange(selected.event.startsAt, selected.event.endsAt, timeZone)}
+                      </p>
+                    </div>
+                    <Link
+                      href={href({})}
+                      aria-label="Fermer"
+                      className="flex size-9 shrink-0 items-center justify-center text-ink hover:bg-draft-bg"
+                    >
+                      <CloseIcon />
+                    </Link>
+                  </div>
+                  {selected.event.locationName && (
+                    <div className="flex flex-col gap-2 border-b border-line-soft px-7 py-5">
+                      <Eyebrow>Lieu</Eyebrow>
+                      <p className="text-base font-semibold text-ink">
+                        {selected.event.locationName}
+                      </p>
+                    </div>
                   )}
-                </div>
-              </div>
-              {selected.event.description && (
-                <div className="flex flex-col gap-2 border-b border-line-soft px-7 py-5">
-                  <Eyebrow>Description</Eyebrow>
-                  <p className="line-clamp-6 text-sm font-medium leading-6 text-ink">
-                    {selected.event.description}
-                  </p>
-                </div>
+                  <div className="flex flex-col gap-3 border-b border-line-soft px-7 py-5">
+                    <Eyebrow>
+                      Participants · {selected.event.seatsHeld}
+                      {selected.event.capacity !== null ? ` / ${selected.event.capacity}` : ""}
+                    </Eyebrow>
+                    <div className="flex flex-wrap gap-1.5">
+                      {selected.bookings
+                        .filter(
+                          (entry) => entry.status === "confirmed" || entry.status === "pending",
+                        )
+                        .slice(0, 12)
+                        .map((entry) => (
+                          <span key={entry.id} title={entry.customerName}>
+                            <Avatar name={entry.customerName} size="md" />
+                          </span>
+                        ))}
+                      {selected.bookings.length === 0 && (
+                        <p className="text-sm font-medium text-ink-muted">Aucune réservation.</p>
+                      )}
+                    </div>
+                  </div>
+                  {selected.event.description && (
+                    <div className="flex flex-col gap-2 border-b border-line-soft px-7 py-5">
+                      <Eyebrow>Description</Eyebrow>
+                      <p className="line-clamp-6 text-sm font-medium leading-6 text-ink">
+                        {selected.event.description}
+                      </p>
+                    </div>
+                  )}
+                  <div className="mt-auto flex gap-3 px-7 py-6">
+                    <ButtonLink
+                      href={`/app/evenements/${selected.event.id}/modifier`}
+                      className="flex-1"
+                    >
+                      Modifier
+                    </ButtonLink>
+                    <ButtonLink
+                      href={`/app/evenements/${selected.event.id}`}
+                      variant="secondary"
+                      className="flex-1"
+                    >
+                      Voir la fiche
+                    </ButtonLink>
+                  </div>
+                </aside>
               )}
-              <div className="mt-auto flex gap-3 px-7 py-6">
-                <ButtonLink
-                  href={`/app/evenements/${selected.event.id}/modifier`}
-                  className="flex-1"
-                >
-                  Modifier
-                </ButtonLink>
-                <ButtonLink
-                  href={`/app/evenements/${selected.event.id}`}
-                  variant="secondary"
-                  className="flex-1"
-                >
-                  Voir la fiche
-                </ButtonLink>
-              </div>
-            </aside>
+            </div>
           )}
         </div>
-      )}
+      </ViewTransition>
       <FabLink href={newEventHref}>Nouvel événement</FabLink>
     </>
   );

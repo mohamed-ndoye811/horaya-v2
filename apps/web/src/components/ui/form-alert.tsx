@@ -21,7 +21,7 @@ export function FormAlert({
     <div
       role={tone === "danger" ? "alert" : "status"}
       className={cn(
-        "flex items-center gap-3 border-[1.5px] px-3.5 py-3 text-sm font-semibold leading-[18px]",
+        "flex animate-drop items-center gap-3 border-[1.5px] px-3.5 py-3 text-sm font-semibold leading-[18px]",
         tones[tone],
       )}
     >

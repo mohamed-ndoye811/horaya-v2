@@ -143,7 +143,7 @@ export function PublicEvents({
           return (
             <li
               key={entry.id}
-              className="flex flex-col gap-4 border-b border-line-soft py-6 last:border-b-0 lg:flex-row lg:items-center lg:gap-8 lg:py-[22px]"
+              className="reveal-scroll flex flex-col gap-4 border-b border-line-soft py-6 last:border-b-0 lg:flex-row lg:items-center lg:gap-8 lg:py-[22px]"
             >
               <div className="hidden w-[88px] shrink-0 flex-col gap-1 lg:flex">
                 <span className="font-mono text-label font-semibold uppercase tracking-[0.055em] text-ink-muted">
