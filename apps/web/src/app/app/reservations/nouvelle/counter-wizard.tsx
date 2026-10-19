@@ -113,6 +113,8 @@ export function CounterWizard({
   const newName = `${contact.firstName} ${contact.lastName}`.trim();
   const customerName = customer?.name ?? (newName || null);
   const chosenItems = Object.entries(quantities).filter(([, quantity]) => quantity > 0);
+  // Sans e-mail, ni reçu ni lien de paiement ne peuvent partir.
+  const hasEmail = customer ? Boolean(customer.email) : contact.email.trim() !== "";
 
   // Recherche du client, sans attendre la touche Entrée.
   useEffect(() => {
@@ -443,9 +445,13 @@ export function CounterWizard({
                     {
                       value: "now",
                       label: "Payé maintenant",
-                      description: "Reçu envoyé au client",
+                      description: hasEmail ? "Reçu envoyé au client" : "Noté sur la réservation",
                     },
-                    { value: "later", label: "À payer", description: "Lien envoyé par e-mail" },
+                    {
+                      value: "later",
+                      label: "À payer",
+                      description: hasEmail ? "Lien envoyé par e-mail" : "À régler plus tard",
+                    },
                   ]}
                 />
                 {paid && (
