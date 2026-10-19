@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { ComponentType } from "react";
+import { ActiveIndicator } from "@/components/motion/indicator";
 import { Avatar } from "@/components/ui/avatar";
 import { CountBadge } from "@/components/ui/badge";
 import {
@@ -116,12 +117,13 @@ export function MobileTabBar({ pendingBookings }: { pendingBookings: number }) {
                   href={tab.href}
                   aria-current={active ? "page" : undefined}
                   className={cn(
-                    "relative flex h-16 flex-col items-center justify-center gap-1 border-t-[3px]",
-                    active
-                      ? "border-ink font-extrabold text-ink"
-                      : "border-transparent font-semibold text-ink-muted",
+                    "relative flex h-16 flex-col items-center justify-center gap-1 transition-colors active:bg-surface",
+                    active ? "font-extrabold text-ink" : "font-semibold text-ink-muted",
                   )}
                 >
+                  {active && (
+                    <ActiveIndicator id="mobile-tab" className="inset-x-0 top-0 h-[3px] bg-ink" />
+                  )}
                   <Icon size={22} />
                   <span className="text-[11px] leading-[14px]">{tab.label}</span>
                   {badge > 0 && (

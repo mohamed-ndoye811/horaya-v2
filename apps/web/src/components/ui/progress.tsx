@@ -35,7 +35,11 @@ export function ProgressBar({
       aria-valuenow={value}
       className={cn("flex h-1 bg-line-soft", className)}
     >
-      <div className={cn("h-1", fills[tone])} style={{ width: `${percent}%` }} />
+      {/* La jauge se remplit depuis la gauche à l'affichage. */}
+      <div
+        className={cn("h-1 origin-left animate-grow-x", fills[tone])}
+        style={{ width: `${percent}%` }}
+      />
     </div>
   );
 }

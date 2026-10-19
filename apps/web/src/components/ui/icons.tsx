@@ -16,7 +16,16 @@ export function ArrowLeft({ className }: { className?: string }) {
   );
 }
 
-export function Check({ className, size = 12 }: { className?: string; size?: number }) {
+/** `draw` : la coche se dessine à l'affichage (confirmations). */
+export function Check({
+  className,
+  size = 12,
+  draw = false,
+}: {
+  className?: string;
+  size?: number;
+  draw?: boolean;
+}) {
   return (
     <svg
       width={size}
@@ -25,7 +34,14 @@ export function Check({ className, size = 12 }: { className?: string; size?: num
       aria-hidden="true"
       className={className}
     >
-      <path d="M1 5L4.5 8.5L11 1.5" fill="none" stroke="currentColor" strokeWidth="2" />
+      <path
+        d="M1 5L4.5 8.5L11 1.5"
+        pathLength={1}
+        className={draw ? "draw" : undefined}
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+      />
     </svg>
   );
 }

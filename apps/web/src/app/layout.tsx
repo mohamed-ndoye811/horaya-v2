@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Archivo, Geist_Mono, Urbanist } from "next/font/google";
+import { MotionProvider } from "@/components/motion/indicator";
 import "./globals.css";
 
 // Archivo (variable, axe de largeur) remplace Sztos : rendu quasi identique, sans licence.
@@ -30,7 +31,9 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       lang="fr"
       className={`${archivo.variable} ${urbanist.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="flex min-h-full flex-col">{children}</body>
+      <body className="flex min-h-full flex-col">
+        <MotionProvider>{children}</MotionProvider>
+      </body>
     </html>
   );
 }

@@ -1,4 +1,7 @@
+"use client";
+
 import Link from "next/link";
+import { ActiveIndicator } from "@/components/motion/indicator";
 import { cn } from "@/lib/cn";
 import { CountBadge } from "./badge";
 
@@ -22,12 +25,13 @@ export function Tabs({
             href={tab.href}
             aria-current={active ? "page" : undefined}
             className={cn(
-              "flex shrink-0 items-center gap-2 border-b-4 pt-[18px] pb-3.5 text-[15px] leading-5 transition-colors",
-              active
-                ? "border-ink font-extrabold text-ink"
-                : "border-transparent font-semibold text-ink-muted hover:text-ink",
+              "relative flex shrink-0 items-center gap-2 pt-[18px] pb-[18px] text-[15px] leading-5 transition-colors",
+              active ? "font-extrabold text-ink" : "font-semibold text-ink-muted hover:text-ink",
             )}
           >
+            {active && (
+              <ActiveIndicator id={`tabs-${label}`} className="inset-x-0 bottom-0 h-1 bg-ink" />
+            )}
             {tab.label}
             {tab.count !== undefined &&
               (active ? (

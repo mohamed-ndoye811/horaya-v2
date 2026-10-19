@@ -2,6 +2,7 @@ import { getPublicEvent } from "@horaya/db";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { WordsReveal } from "@/components/motion/words";
 import { AvailabilityMeter } from "@/components/public/availability-meter";
 import { BrandBand, brandRule, PublicNav } from "@/components/public/public-chrome";
 import { NotFoundScreen } from "@/components/public/public-not-found";
@@ -116,7 +117,7 @@ export default async function PublicEventPage({
               displayFontClass(workspace.displayFont),
             )}
           >
-            {event.title}
+            <WordsReveal>{event.title}</WordsReveal>
           </h1>
           <p className="text-base font-medium leading-6 opacity-90 sm:text-lg sm:leading-[26px]">
             Organisé par {workspace.name}
@@ -180,7 +181,7 @@ export default async function PublicEventPage({
             </p>
           ))}
           {event.highlights.length > 0 && (
-            <ul className="flex flex-wrap gap-2.5 pt-1">
+            <ul className="reveal-group flex flex-wrap gap-2.5 pt-1">
               {event.highlights.map((highlight) => (
                 <li
                   key={highlight}

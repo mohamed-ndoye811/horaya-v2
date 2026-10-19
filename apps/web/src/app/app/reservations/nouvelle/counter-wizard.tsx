@@ -1,7 +1,10 @@
 "use client";
 
 import type { CounterBookingInput, PaymentMethod } from "@horaya/core";
-import { type FormEvent, type ReactNode, useEffect, useState, useTransition } from "react";
+import { motion } from "motion/react";
+import { type FormEvent, type ReactNode, useEffect, useRef, useState, useTransition } from "react";
+import { ActiveIndicator } from "@/components/motion/indicator";
+import { WordsReveal } from "@/components/motion/words";
 import { Avatar } from "@/components/ui/avatar";
 import { Button, ButtonLink } from "@/components/ui/button";
 import { ChoiceCards } from "@/components/ui/choice-cards";
@@ -90,7 +93,13 @@ export function CounterWizard({
   initialCustomer?: CustomerHit;
 }) {
   const initialEvent = events.find((event) => event.id === initialEventId);
-  const [step, setStep] = useState<Step>(1);
+  const [step, setStepState] = useState<Step>(1);
+  // Sens du dernier changement d'étape : le contenu glisse dans le sens du parcours.
+  const [direction, setDirection] = useState(1);
+  const setStep = (target: Step) => {
+    setDirection(target >= step ? 1 : -1);
+    setStepState(target);
+  };
   const [day, setDay] = useState(initialEvent?.day ?? events[0]?.day ?? "today");
   const [eventId, setEventId] = useState(initialEvent?.id ?? "");
   const [seats, setSeats] = useState(1);
@@ -219,7 +228,7 @@ export function CounterWizard({
         {error && <FormAlert>{error}</FormAlert>}
 
         {step === 1 && (
-          <StepBlock title="Quelle séance ?">
+          <StepBlock title="Quelle séance ?" direction={direction}>
             <SegmentedControl
               name="jour"
               label="Jour"
@@ -231,7 +240,7 @@ export function CounterWizard({
               }))}
               size="md"
             />
-            <div className="flex flex-col gap-2">
+            <div key={day} className="reveal-group flex flex-col gap-2">
               {events
                 .filter((entry) => entry.day === day)
                 .map((entry) => (
@@ -269,7 +278,7 @@ export function CounterWizard({
         )}
 
         {step === 2 && (
-          <StepBlock title="Pour qui ?">
+          <StepBlock title="Pour qui ?" direction={direction}>
             <SearchInput
               label="Rechercher un client"
               placeholder="Nom, téléphone ou e-mail"
@@ -369,7 +378,7 @@ export function CounterWizard({
         )}
 
         {step === 3 && event && (
-          <StepBlock title="Matériel & paiement">
+          <StepBlock title="Matériel & paiement" direction={direction}>
             <section className="flex flex-col gap-2.5">
               <div className="flex items-baseline justify-between gap-3">
                 <h3 className="font-mono text-label font-semibold uppercase leading-4 tracking-[0.055em] text-neutral">
@@ -555,12 +564,26 @@ export function CounterWizard({
   );
 }
 
-function StepBlock({ title, children }: { title: string; children: ReactNode }) {
+function StepBlock({
+  title,
+  direction,
+  children,
+}: {
+  title: string;
+  direction: number;
+  children: ReactNode;
+}) {
   return (
-    <div className="flex flex-col gap-4">
-      <h2 className="font-headline text-[44px] leading-[42px] text-ink">{title}</h2>
+    <motion.div
+      initial={{ opacity: 0, x: 32 * direction }}
+      animate={{ opacity: 1, x: 0 }}
+      className="flex flex-col gap-4"
+    >
+      <h2 className="font-headline text-[44px] leading-[42px] text-ink">
+        <WordsReveal>{title}</WordsReveal>
+      </h2>
       {children}
-    </div>
+    </motion.div>
   );
 }
 
@@ -581,6 +604,7 @@ function Stepper({
         const current = entry.step === step;
         const content = (
           <>
+            {current && <ActiveIndicator id="counter-step" className="inset-0 -z-10 bg-ink" />}
             <span
               className={cn(
                 "flex size-7 shrink-0 items-center justify-center font-mono text-[13px] font-semibold",
@@ -610,10 +634,9 @@ function Stepper({
           </>
         );
         const className = cn(
-          "flex min-w-0 flex-1 items-center gap-2 px-2.5 py-3 sm:gap-3 sm:px-[18px] sm:py-3.5",
+          "relative isolate flex min-w-0 flex-1 items-center gap-2 px-2.5 py-3 transition-colors sm:gap-3 sm:px-[18px] sm:py-3.5",
           entry.step > 1 && "border-l-2 border-ink",
           isDone && "bg-success-bg",
-          current && "bg-ink",
         );
         return (
           <li
@@ -657,7 +680,7 @@ function SessionTile({
       disabled={blocked}
       aria-pressed={selected}
       className={cn(
-        "flex items-center gap-3.5 p-3.5 text-left",
+        "flex items-center gap-3.5 p-3.5 text-left transition-[background-color,scale] active:scale-[0.99]",
         selected
           ? "border-[1.5px] border-ink bg-ink"
           : full
@@ -750,7 +773,15 @@ function QuantityStepper({
   label?: string;
   size?: "md" | "lg";
 }) {
-  const box = size === "lg" ? "h-[52px] w-[52px] text-2xl" : "size-10 text-xl";
+  const box =
+    (size === "lg" ? "h-[52px] w-[52px] text-2xl" : "size-10 text-xl") +
+    " transition-[color,background-color,scale] active:scale-90";
+  // Le chiffre roule : il arrive par le bas quand on ajoute, par le haut quand on retire.
+  const previous = useRef(value);
+  const rise = value >= previous.current ? 1 : -1;
+  useEffect(() => {
+    previous.current = value;
+  }, [value]);
   return (
     <div
       className={cn(
@@ -773,14 +804,21 @@ function QuantityStepper({
       <output
         aria-label={label}
         className={cn(
-          "flex items-center justify-center border-ink font-mono font-semibold",
+          "flex items-center justify-center overflow-hidden border-ink font-mono font-semibold",
           size === "lg"
             ? "h-[52px] w-14 border-x-2 text-[22px]"
             : "size-10 border-x-[1.5px] text-[17px]",
           value === 0 ? "text-ink-subtle" : "text-ink",
         )}
       >
-        {value}
+        <motion.span
+          key={value}
+          initial={{ y: `${60 * rise}%`, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ duration: 0.2, ease: [0.2, 0, 0, 1] }}
+        >
+          {value}
+        </motion.span>
       </output>
       <button
         type="button"
@@ -851,7 +889,10 @@ function RecapLine({
   return (
     <div className="flex items-baseline justify-between gap-4">
       <dt className="text-sm font-medium leading-5 text-ink-muted">{label}</dt>
-      <dd
+      <motion.dd
+        key={value ?? "vide"}
+        initial={{ opacity: 0, y: 4 }}
+        animate={{ opacity: 1, y: 0 }}
         className={cn(
           "text-right",
           value
@@ -862,7 +903,7 @@ function RecapLine({
         )}
       >
         {value ?? placeholder}
-      </dd>
+      </motion.dd>
     </div>
   );
 }
@@ -893,14 +934,29 @@ function CounterDone({
   return (
     <div className="flex max-w-[640px] flex-col gap-6 px-4 pt-6 pb-10 sm:px-10 sm:pt-7">
       <div className="flex flex-col gap-3">
-        <p className="font-mono text-label font-semibold uppercase leading-4 tracking-[0.055em] text-success">
+        <span className="flex size-14 items-center justify-center bg-success text-on-ink">
+          {/* La coche se dessine (classe `draw`). */}
+          <svg width="30" height="30" viewBox="0 0 24 24" aria-hidden="true">
+            <path
+              d="M4 12.5L9.5 18L20 6.5"
+              pathLength={1}
+              className="draw"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.6"
+            />
+          </svg>
+        </span>
+        <p className="reveal font-mono text-label font-semibold uppercase leading-4 tracking-[0.055em] text-success">
           Réf. {done.reference}
         </p>
         <h2 className="font-headline text-[44px] leading-[42px] text-ink">
-          {done.status === "waitlisted" ? "En liste d'attente." : "C'est noté."}
+          <WordsReveal delay={1}>
+            {done.status === "waitlisted" ? "En liste d'attente." : "C'est noté."}
+          </WordsReveal>
         </h2>
       </div>
-      <dl className="flex flex-col border-[1.5px] border-ink bg-surface">
+      <dl className="reveal-group flex flex-col border-[1.5px] border-ink bg-surface">
         <DoneRow label="Séance">
           <span className="text-[15px] font-bold leading-5 text-ink">{event.title}</span>
           <span className="text-[13px] font-medium leading-[18px] text-ink-muted">

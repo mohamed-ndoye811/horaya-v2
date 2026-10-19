@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { type ReactNode, useId } from "react";
+import { type ReactNode, useId, useState } from "react";
+import { ActiveIndicator } from "@/components/motion/indicator";
 import { cn } from "@/lib/cn";
 import { Select } from "./select";
 
@@ -16,14 +17,17 @@ interface Segment {
 const groupClasses = (size: "sm" | "md", fill: boolean) =>
   cn("flex border-2 border-ink", size === "md" ? "h-12" : "h-10", fill ? "w-full" : "w-fit");
 
+// Le fond du segment actif est un repère qui glisse d'un segment à l'autre (ActiveIndicator).
 const segmentClasses = (active: boolean, fill: boolean) =>
   cn(
-    "flex items-center justify-center gap-2 whitespace-nowrap text-sm font-bold leading-[18px] transition-colors",
+    "relative isolate flex items-center justify-center gap-2 whitespace-nowrap text-sm font-bold leading-[18px] transition-colors",
     "[&:not(:first-child)]:border-l-2 [&:not(:first-child)]:border-ink",
     // Pleine largeur : segments égaux, marge réduite pour tenir sur un petit écran.
     fill ? "flex-1 basis-0 px-2" : "px-[18px]",
-    active ? "bg-ink text-on-ink" : "text-ink hover:bg-surface",
+    active ? "text-on-ink" : "text-ink hover:bg-surface",
   );
+
+const indicator = "inset-0 -z-10 bg-ink";
 
 function SegmentContent({ segment, active }: { segment: Segment; active: boolean }) {
   return (
@@ -33,7 +37,7 @@ function SegmentContent({ segment, active }: { segment: Segment; active: boolean
         <span
           className={cn(
             "font-mono text-label font-semibold leading-4",
-            active ? "text-on-ink/70" : "text-ink-muted group-has-checked:text-on-ink/70",
+            active ? "text-on-ink/70" : "text-ink-muted",
           )}
         >
           {segment.count}
@@ -65,6 +69,7 @@ export function SegmentedLinks({
   collapse?: boolean;
 }) {
   const router = useRouter();
+  const id = useId();
   const links = (
     <nav aria-label={label} className={groupClasses(size, fill)}>
       {segments.map((segment) => {
@@ -76,6 +81,7 @@ export function SegmentedLinks({
             aria-current={active ? "page" : undefined}
             className={segmentClasses(active, fill)}
           >
+            {active && <ActiveIndicator id={id} className={indicator} />}
             <SegmentContent segment={segment} active={active} />
           </Link>
         );
@@ -129,32 +135,36 @@ export function SegmentedControl({
   fill?: boolean;
 }) {
   const id = useId();
+  const [own, setOwn] = useState(defaultValue);
+  const selected = value ?? own;
   return (
     <div role="radiogroup" aria-label={label} className={groupClasses(size, fill)}>
       {segments.map((segment) => {
         const inputId = `${id}-${segment.value}`;
-        const checked = value !== undefined ? value === segment.value : undefined;
+        const active = selected === segment.value;
         return (
           <label
             key={segment.value}
             htmlFor={inputId}
             className={cn(
-              "group",
-              segmentClasses(false, fill),
-              "has-checked:bg-ink has-checked:text-on-ink has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-ink",
+              segmentClasses(active, fill),
+              "has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-ink",
             )}
           >
+            {active && <ActiveIndicator id={id} className={indicator} />}
             <input
               id={inputId}
               type="radio"
               name={name}
               value={segment.value}
               className="sr-only"
-              {...(checked !== undefined
-                ? { checked, onChange: () => onChange?.(segment.value) }
-                : { defaultChecked: defaultValue === segment.value })}
+              checked={active}
+              onChange={() => {
+                setOwn(segment.value);
+                onChange?.(segment.value);
+              }}
             />
-            <SegmentContent segment={segment} active={false} />
+            <SegmentContent segment={segment} active={active} />
           </label>
         );
       })}

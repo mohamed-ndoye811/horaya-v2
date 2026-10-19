@@ -44,6 +44,60 @@
   --text-display: 64px;
 
   --radius-dot: 999px;
+
+  /*
+   * Mouvement (lot 13, référence sftraces.com) : une seule courbe partout, douce à
+   * l'arrivée. Micro-interactions 120–200 ms, révélations 900 ms, 60 ms entre deux éléments.
+   */
+  --ease-out-soft: cubic-bezier(0.2, 0, 0, 1);
+  --default-transition-duration: 200ms;
+  --default-transition-timing-function: cubic-bezier(0.2, 0, 0, 1);
+  --animate-rise: rise 900ms cubic-bezier(0.2, 0, 0, 1) both;
+  --animate-drop: drop 380ms cubic-bezier(0.2, 0, 0, 1) both;
+  --animate-pop: pop 200ms cubic-bezier(0.2, 0, 0, 1) both;
+  --animate-grow-x: grow-x 900ms cubic-bezier(0.2, 0, 0, 1) both;
+
+  @keyframes rise {
+    from {
+      opacity: 0;
+      translate: 0 16px;
+    }
+  }
+  @keyframes drop {
+    from {
+      opacity: 0;
+      translate: 0 -8px;
+    }
+  }
+  @keyframes pop {
+    from {
+      opacity: 0;
+      scale: 0.96;
+    }
+  }
+  @keyframes grow-x {
+    from {
+      scale: 0 1;
+    }
+  }
+  @keyframes fade {
+    from {
+      opacity: 0;
+    }
+  }
+  @keyframes draw {
+    from {
+      stroke-dashoffset: 1;
+    }
+  }
+}
+
+:root {
+  --dur-1: 120ms;
+  --dur-2: 200ms;
+  --dur-3: 380ms;
+  --dur-reveal: 900ms;
+  --stagger: 60ms;
 }
 
 @theme inline {
@@ -117,3 +171,170 @@ input[type="password"] {
   font-size: 20px;
   letter-spacing: 0.05em;
 }
+
+/* ── Mouvement ─────────────────────────────────────────────────────────────── */
+
+/* Élément qui arrive au premier affichage ; `--i` décale (60 ms par rang). */
+@utility reveal {
+  animation: var(--animate-rise);
+  animation-delay: calc(var(--i, 0) * var(--stagger));
+}
+
+/* Les enfants arrivent l'un après l'autre (listes, cartes, lignes de tableau). */
+@utility reveal-group {
+  & > * {
+    animation: var(--animate-rise);
+    animation-delay: calc(min(var(--i, 0), 12) * var(--stagger));
+  }
+  & > :nth-child(2) {
+    --i: 1;
+  }
+  & > :nth-child(3) {
+    --i: 2;
+  }
+  & > :nth-child(4) {
+    --i: 3;
+  }
+  & > :nth-child(5) {
+    --i: 4;
+  }
+  & > :nth-child(6) {
+    --i: 5;
+  }
+  & > :nth-child(7) {
+    --i: 6;
+  }
+  & > :nth-child(8) {
+    --i: 7;
+  }
+  & > :nth-child(9) {
+    --i: 8;
+  }
+  & > :nth-child(10) {
+    --i: 9;
+  }
+  & > :nth-child(11) {
+    --i: 10;
+  }
+  & > :nth-child(12) {
+    --i: 11;
+  }
+  & > :nth-child(n + 13) {
+    --i: 12;
+  }
+}
+
+/*
+ * Arrive en entrant dans l'écran, au rythme du défilement (pages publiques).
+ * Navigateurs sans `animation-timeline` : affiché tout de suite.
+ */
+@utility reveal-scroll {
+  @media (prefers-reduced-motion: no-preference) {
+    @supports (animation-timeline: view()) {
+      animation: rise linear both;
+      animation-timeline: view();
+      animation-range: entry 0% entry 45%;
+    }
+  }
+}
+
+/* Mot d'un titre qui se lève (WordsReveal). */
+@utility reveal-word {
+  display: inline-block;
+  animation: var(--animate-rise);
+  animation-delay: calc(var(--i, 0) * var(--stagger));
+}
+
+/* Coche dessinée (confirmation) : le tracé doit avoir pathLength="1". */
+@utility draw {
+  stroke-dasharray: 1;
+  animation: draw 600ms var(--ease-out-soft) 200ms both;
+}
+
+/* Liens soulignés : au survol, le trait s'écarte un peu du texte. */
+a.underline {
+  transition:
+    color var(--dur-2) var(--ease-out-soft),
+    text-underline-offset var(--dur-2) var(--ease-out-soft);
+}
+a.underline:hover {
+  text-underline-offset: 5px;
+}
+
+/* Fenêtres modales : apparition douce, fond qui se fonce. */
+dialog {
+  transition:
+    opacity var(--dur-2) var(--ease-out-soft),
+    scale var(--dur-3) var(--ease-out-soft),
+    overlay var(--dur-2) allow-discrete,
+    display var(--dur-2) allow-discrete;
+  opacity: 0;
+  scale: 0.97;
+}
+dialog[open] {
+  opacity: 1;
+  scale: 1;
+  @starting-style {
+    opacity: 0;
+    scale: 0.97;
+  }
+}
+dialog::backdrop {
+  transition:
+    opacity var(--dur-3) var(--ease-out-soft),
+    overlay var(--dur-3) allow-discrete,
+    display var(--dur-3) allow-discrete;
+  opacity: 0;
+}
+dialog[open]::backdrop {
+  opacity: 1;
+  @starting-style {
+    opacity: 0;
+  }
+}
+
+/* Changement de page : fondu court, la page suivante monte de 8 px. */
+::view-transition {
+  pointer-events: none;
+}
+::view-transition-old(.page) {
+  animation: 140ms var(--ease-out-soft) both fade reverse;
+}
+::view-transition-new(.page) {
+  animation: 380ms var(--ease-out-soft) 60ms both page-in;
+}
+@keyframes page-in {
+  from {
+    opacity: 0;
+    translate: 0 8px;
+  }
+}
+
+/* Mouvement réduit : tout est posé d'emblée, rien ne bouge (!important : passe avant tout). */
+/* biome-ignore-start lint/complexity/noImportantStyles: interrupteur global du mouvement réduit et de l'impression. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after,
+  *::backdrop {
+    animation-duration: 0.01ms !important;
+    animation-delay: 0ms !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation: none !important;
+  }
+}
+
+@media print {
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+/* biome-ignore-end lint/complexity/noImportantStyles: fin de l'interrupteur. */

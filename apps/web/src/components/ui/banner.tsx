@@ -25,7 +25,7 @@ export function Banner({
     <div
       role={tone === "danger" ? "alert" : "status"}
       className={cn(
-        "flex flex-wrap items-center gap-x-4 gap-y-2 border-b-2 border-ink px-4 py-4 sm:px-10",
+        "flex animate-drop flex-wrap items-center gap-x-4 gap-y-2 border-b-2 border-ink px-4 py-4 sm:px-10",
         tones[tone].box,
       )}
     >

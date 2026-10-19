@@ -1,6 +1,7 @@
 import { countPendingBookings } from "@horaya/db";
 import { MobileTabBar, MobileTopBar } from "@/components/app/mobile-nav";
 import { Sidebar } from "@/components/app/sidebar";
+import { RouteTransition } from "@/components/motion/route-transition";
 import { requireWorkspace } from "@/server/auth";
 import { db } from "@/server/db";
 
@@ -23,7 +24,9 @@ export default async function AppLayout({ children }: LayoutProps<"/app">) {
       />
       <div className="flex min-w-0 flex-1 flex-col">
         <MobileTopBar user={{ name: user.name }} />
-        <main className="flex min-w-0 flex-1 flex-col">{children}</main>
+        <main className="flex min-w-0 flex-1 flex-col">
+          <RouteTransition>{children}</RouteTransition>
+        </main>
         <MobileTabBar pendingBookings={pendingBookings} />
       </div>
     </div>

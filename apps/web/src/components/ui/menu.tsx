@@ -158,7 +158,7 @@ export function ActionMenu({
             tabIndex={-1}
             onKeyDown={onMenuKey}
             className={cn(
-              "fixed z-50 min-w-52 max-w-[calc(100vw-16px)] border-2 border-ink bg-surface py-1 shadow-[4px_4px_0_var(--color-ink)]",
+              "fixed z-50 min-w-52 max-w-[calc(100vw-16px)] origin-top-right animate-pop border-2 border-ink bg-surface py-1 shadow-[4px_4px_0_var(--color-ink)]",
               !position && "invisible",
             )}
             style={position ?? { top: 0, left: 0 }}
