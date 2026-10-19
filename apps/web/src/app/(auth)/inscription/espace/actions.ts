@@ -1,12 +1,13 @@
 "use server";
 
-import { createWorkspaceSchema, slugSchema } from "@horaya/core";
-import { tenantSettingsRepository, workspaceDirectory } from "@horaya/db";
+import { createStarterContent, createWorkspaceSchema, slugSchema } from "@horaya/core";
+import { tenantSettingsReader, tenantSettingsRepository, workspaceDirectory } from "@horaya/db";
 import { isAPIError } from "better-auth/api";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { auth, getSession } from "@/server/auth";
 import { db } from "@/server/db";
+import { deps, requireMember } from "@/server/services";
 
 export type SlugStatus =
   | { state: "available" }
@@ -71,5 +72,13 @@ export async function createWorkspace(
   }
 
   await tenantSettingsRepository(db).saveBranding(organizationId, { brandColor, sector });
+  // Séance exemple en brouillon : l'espace ne démarre pas vide. Un échec ne bloque pas l'inscription.
+  try {
+    const actor = await requireMember();
+    const settings = await tenantSettingsReader(db).get(organizationId);
+    await createStarterContent(deps, actor, sector, settings.timezone);
+  } catch (error) {
+    console.error("createStarterContent", error);
+  }
   redirect("/inscription/paiements");
 }

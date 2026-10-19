@@ -52,6 +52,7 @@ export * from "./tenants/permissions";
 export * from "./tenants/ports";
 export * from "./tenants/settings";
 export * from "./tenants/settings-schemas";
+export * from "./tenants/starter";
 export * from "./tenants/types";
 export * from "./tenants/use-cases";
 export * from "./tenants/workspace";
