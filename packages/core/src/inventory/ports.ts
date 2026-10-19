@@ -39,6 +39,14 @@ export interface InventoryRepository {
   /** Lève une ConflictError si un exemplaire est déjà pris (contrainte d'exclusion). */
   insertAllocations(allocations: NewAllocation[]): Promise<ItemAllocation[]>;
   cancelAllocations(organizationId: string, filter: AllocationFilter, at: Date): Promise<number>;
+  /** Attribue des exemplaires du matériel d'un événement à une réservation de cet événement. */
+  assignAllocations(
+    organizationId: string,
+    allocationIds: string[],
+    bookingId: string,
+  ): Promise<void>;
+  /** Rend au matériel de l'événement les exemplaires attribués à une réservation. */
+  releaseBookingAllocations(organizationId: string, bookingId: string): Promise<void>;
   /** Décale les allocations d'un événement sur ses nouvelles dates (ConflictError si conflit). */
   moveEventAllocations(organizationId: string, eventId: string, period: Period): Promise<void>;
   findAllocation(

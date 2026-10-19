@@ -17,7 +17,11 @@ const tagsSchema = z
 const customerFields = {
   firstName: z.string().trim().min(1, "Prénom requis").max(60),
   lastName: z.string().trim().min(1, "Nom requis").max(60),
-  email: z.email("Adresse e-mail invalide").trim().toLowerCase(),
+  /** Facultatif (client saisi au comptoir) : vide = pas d'e-mail. */
+  email: z.preprocess(
+    (value) => (typeof value === "string" && value.trim() === "" ? null : value),
+    z.email("Adresse e-mail invalide").trim().toLowerCase().nullable(),
+  ),
   phone: optionalText(30),
   company: optionalText(120),
   tags: tagsSchema,

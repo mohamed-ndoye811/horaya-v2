@@ -11,6 +11,7 @@ import {
   EVENT_VISIBILITIES,
   ITEM_UNIT_STATUSES,
   PAYMENT_KINDS,
+  PAYMENT_METHODS,
   PAYMENT_MODES,
   PAYMENT_RECORD_STATUSES,
   STRIPE_ACCOUNT_STATUSES,
@@ -27,6 +28,7 @@ export const bookingPaymentStatus = pgEnum("booking_payment_status", BOOKING_PAY
 export const bookingSource = pgEnum("booking_source", BOOKING_SOURCES);
 export const paymentKind = pgEnum("payment_kind", PAYMENT_KINDS);
 export const paymentRecordStatus = pgEnum("payment_record_status", PAYMENT_RECORD_STATUSES);
+export const paymentMethod = pgEnum("payment_method", PAYMENT_METHODS);
 export const itemUnitStatus = pgEnum("item_unit_status", ITEM_UNIT_STATUSES);
 export const allocationKind = pgEnum("allocation_kind", ALLOCATION_KINDS);
 export const actorType = pgEnum("actor_type", ACTOR_TYPES);

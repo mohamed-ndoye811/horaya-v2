@@ -1,25 +1,25 @@
 "use server";
 
 import {
+  type CounterBookingInput,
   cancelBooking,
   confirmBooking,
-  createEventBooking,
+  createCounterBooking,
   recordManualPayment,
   recordManualRefund,
   refundBooking,
   refuseBooking,
   setBookingCheckIn,
 } from "@horaya/core";
+import { listCounterItems, listCustomers } from "@horaya/db";
 import { revalidatePath } from "next/cache";
-import { redirect } from "next/navigation";
 import { parseEuroToCents } from "@/lib/money";
 import { sendBookingCreatedEmail } from "@/server/booking-emails";
+import { db } from "@/server/db";
 import { type FormState, toFormState } from "@/server/form-state";
 import { paymentDeps } from "@/server/payments";
 import { deps } from "@/server/services";
 import { getWorkspaceContext } from "@/server/workspace";
-
-const text = (form: FormData, key: string) => String(form.get(key) ?? "").trim();
 
 async function run(work: () => Promise<unknown>, success: string): Promise<FormState> {
   try {
@@ -52,34 +52,68 @@ export async function checkInAction(bookingId: string, present: boolean): Promis
   return run(() => setBookingCheckIn(deps, actor, bookingId, present), "");
 }
 
-/** « Ajouter une réservation » : l'équipe inscrit un client (nouveau ou existant). */
-export async function createBookingAction(
-  _previous: FormState,
-  form: FormData,
-): Promise<FormState> {
+/** Comptoir, étape 2 : clients qui correspondent (nom, e-mail, téléphone). */
+export async function searchCounterCustomersAction(search: string) {
+  const { workspace } = await getWorkspaceContext();
+  if (search.trim().length < 2) return [];
+  const rows = await listCustomers(db, workspace.id, {
+    segment: "all",
+    now: new Date(),
+    search,
+    limit: 6,
+  });
+  return rows.map((row) => ({
+    id: row.id,
+    name: `${row.firstName} ${row.lastName}`,
+    phone: row.phone,
+    email: row.email,
+    bookings: row.bookings,
+  }));
+}
+
+/** Comptoir, étape 3 : matériel attribuable sur la séance (déjà prévu pour elle d'abord). */
+export async function counterItemsAction(eventId: string) {
+  const { workspace } = await getWorkspaceContext();
+  const items = await listCounterItems(db, workspace.id, eventId);
+  return items
+    .filter((item) => item.free > 0 || item.onEvent > 0)
+    .sort((a, b) => Number(b.onEvent > 0) - Number(a.onEvent > 0) || a.name.localeCompare(b.name));
+}
+
+export type CounterResult =
+  | {
+      ok: true;
+      bookingId: string;
+      reference: string;
+      status: string;
+      paymentStatus: string;
+      amountCents: number;
+      items: Array<{ name: string; labels: string[] }>;
+    }
+  | ({ ok: false } & FormState);
+
+/** Comptoir : enregistre la réservation (client, places, matériel, paiement) d'un coup. */
+export async function createCounterBookingAction(
+  input: CounterBookingInput,
+): Promise<CounterResult> {
   const { actor } = await getWorkspaceContext();
-  let bookingId: string;
   try {
-    const { booking, manageToken } = await createEventBooking(deps, actor, {
-      eventId: text(form, "eventId"),
-      seats: Number(text(form, "seats") || 1),
-      customer: {
-        firstName: text(form, "firstName"),
-        lastName: text(form, "lastName"),
-        email: text(form, "email"),
-        phone: text(form, "phone") || null,
-        company: text(form, "company") || null,
-      },
-      customerMessage: text(form, "customerMessage") || null,
-    });
-    bookingId = booking.id;
-    // Le client reçoit sa confirmation et son lien « Gérer ma réservation ».
+    const { booking, manageToken, items } = await createCounterBooking(deps, actor, input);
+    // Confirmation et lien « Gérer ma réservation » si le client a un e-mail.
     await sendBookingCreatedEmail(actor.organizationId, booking.id, manageToken);
+    revalidatePath("/app", "layout");
+    return {
+      ok: true,
+      bookingId: booking.id,
+      reference: booking.reference,
+      status: booking.status,
+      paymentStatus: booking.paymentStatus,
+      amountCents: booking.amountCents,
+      items: items.map(({ name, labels }) => ({ name, labels })),
+    };
   } catch (error) {
-    return toFormState(error);
+    return { ok: false, ...toFormState(error) };
   }
-  revalidatePath("/app", "layout");
-  redirect(`/app/reservations/${bookingId}`);
 }
 
 /** « Rembourser » sur la fiche d'une réservation payée en ligne. */

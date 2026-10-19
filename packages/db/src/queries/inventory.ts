@@ -1,7 +1,7 @@
 import type { AllocationKind, ItemUnitStatus } from "@horaya/core";
 import { and, asc, desc, eq, inArray, isNull, sql } from "drizzle-orm";
 import type { Executor } from "../client";
-import { item, itemAllocation, itemType, itemUnit } from "../schema";
+import { event as eventTable, item, itemAllocation, itemType, itemUnit } from "../schema";
 
 const iso = (date: Date) => sql`${date.toISOString()}::timestamptz`;
 const toDate = (value: unknown): Date | null =>
@@ -319,6 +319,33 @@ export async function listItemsAvailableBetween(
       free: sql<number>`(select count(*) from item_unit u where u.item_id = "item"."id" and u.status = 'available'
         and not exists (select 1 from item_allocation a where a.item_unit_id = u.id and a.cancelled_at is null
           and a.starts_at < ${iso(period.endsAt)} and a.ends_at > ${iso(period.startsAt)} ${ignore}))::int`,
+    })
+    .from(item)
+    .where(and(eq(item.organizationId, organizationId), isNull(item.archivedAt)))
+    .orderBy(asc(item.name));
+}
+
+/**
+ * Comptoir : matériel attribuable à une réservation de la séance. Est libre un exemplaire
+ * en service que rien n'occupe sur la séance, sauf le matériel de l'événement que
+ * personne n'a encore (il est pris en premier).
+ */
+export async function listCounterItems(db: Executor, organizationId: string, eventId: string) {
+  const [event] = await db
+    .select({ id: eventTable.id, startsAt: eventTable.startsAt, endsAt: eventTable.endsAt })
+    .from(eventTable)
+    .where(and(eq(eventTable.organizationId, organizationId), eq(eventTable.id, eventId)));
+  if (!event) return [];
+  return db
+    .select({
+      id: item.id,
+      name: item.name,
+      free: sql<number>`(select count(*) from item_unit u where u.item_id = "item"."id" and u.status = 'available'
+        and not exists (select 1 from item_allocation a where a.item_unit_id = u.id and a.cancelled_at is null
+          and a.starts_at < ${iso(event.endsAt)} and a.ends_at > ${iso(event.startsAt)}
+          and not (a.event_id = ${event.id} and a.booking_id is null)))::int`,
+      onEvent: sql<number>`(select count(*) from item_allocation a join item_unit u on u.id = a.item_unit_id
+        where u.item_id = "item"."id" and a.event_id = ${event.id} and a.cancelled_at is null)::int`,
     })
     .from(item)
     .where(and(eq(item.organizationId, organizationId), isNull(item.archivedAt)))

@@ -60,13 +60,12 @@ export function CustomerForm({
               />
             )}
           </Field>
-          <Field label="E-mail" required error={errors.email}>
+          <Field label="E-mail" error={errors.email}>
             {(field) => (
               <input
                 {...field}
                 type="email"
                 name="email"
-                required
                 defaultValue={initial.email}
                 className={inputClasses()}
               />

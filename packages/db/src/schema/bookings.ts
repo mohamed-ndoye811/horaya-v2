@@ -18,6 +18,7 @@ import {
   bookingSource,
   bookingStatus,
   paymentKind,
+  paymentMethod,
   paymentMode,
   paymentRecordStatus,
 } from "./enums";
@@ -109,6 +110,8 @@ export const payment = pgTable(
     providerReference: text(),
     /** Page de paiement (session Checkout) d'où vient ce paiement. */
     checkoutReference: text(),
+    /** Paiement noté à la main : espèces, carte, chèque ou virement. */
+    method: paymentMethod(),
     createdAt: createdAt(),
   },
   (t) => [
