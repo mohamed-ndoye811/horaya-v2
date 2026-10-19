@@ -67,10 +67,11 @@ const METHODS: Array<{ value: PaymentMethod; label: string }> = [
   { value: "transfer", label: "Virement" },
 ];
 
-const STEPS: Array<{ step: Step; label: string }> = [
-  { step: 1, label: "Séance" },
-  { step: 2, label: "Client" },
-  { step: 3, label: "Matériel & paiement" },
+/** `short` : libellé sur mobile, où les trois étapes tiennent sur une ligne. */
+const STEPS: Array<{ step: Step; label: string; short: string }> = [
+  { step: 1, label: "Séance", short: "Séance" },
+  { step: 2, label: "Client", short: "Client" },
+  { step: 3, label: "Matériel & paiement", short: "Matériel" },
 ];
 
 const EMPTY_CONTACT = { firstName: "", lastName: "", phone: "", email: "" };
@@ -590,22 +591,18 @@ function Stepper({
             >
               {isDone ? <Check size={12} /> : entry.step}
             </span>
-            <span
-              className={cn(
-                "min-w-0 flex-col gap-0.5 text-left sm:flex",
-                current ? "flex" : "hidden",
-              )}
-            >
+            <span className="flex min-w-0 flex-col gap-0.5 text-left">
               <span
                 className={cn(
-                  "text-[15px] font-bold leading-5",
+                  "truncate text-sm font-bold leading-5 sm:text-[15px]",
                   isDone ? "text-success" : current ? "text-on-ink" : "text-ink-subtle",
                 )}
               >
-                {entry.label}
+                <span className="sm:hidden">{entry.short}</span>
+                <span className="hidden sm:inline">{entry.label}</span>
               </span>
               {isDone && summaries[entry.step] && (
-                <span className="truncate font-mono text-label font-medium leading-4 text-success">
+                <span className="hidden truncate font-mono text-label font-medium leading-4 text-success sm:block">
                   {summaries[entry.step]}
                 </span>
               )}
@@ -613,7 +610,7 @@ function Stepper({
           </>
         );
         const className = cn(
-          "flex min-w-0 flex-1 items-center gap-3 px-3 py-3 sm:px-[18px] sm:py-3.5",
+          "flex min-w-0 flex-1 items-center gap-2 px-2.5 py-3 sm:gap-3 sm:px-[18px] sm:py-3.5",
           entry.step > 1 && "border-l-2 border-ink",
           isDone && "bg-success-bg",
           current && "bg-ink",
