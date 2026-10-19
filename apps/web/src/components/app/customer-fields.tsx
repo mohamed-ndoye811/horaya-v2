@@ -3,7 +3,7 @@ import { Field, inputClasses, textareaClasses } from "@/components/ui/field";
 export interface CustomerDefaults {
   firstName: string;
   lastName: string;
-  email: string;
+  email: string | null;
   phone: string | null;
   company: string | null;
 }
@@ -53,7 +53,7 @@ export function CustomerFields({
               type="email"
               name="email"
               required
-              defaultValue={customer?.email}
+              defaultValue={customer?.email ?? undefined}
               className={inputClasses()}
             />
           )}

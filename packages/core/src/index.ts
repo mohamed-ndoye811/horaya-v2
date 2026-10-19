@@ -4,6 +4,7 @@
 export * from "./accounts/password";
 export * from "./bookings/capacity";
 export * from "./bookings/check-in";
+export * from "./bookings/counter";
 export * from "./bookings/model";
 export * from "./bookings/ports";
 export * from "./bookings/pricing";

@@ -158,6 +158,33 @@ export function inventoryRepository(db: Executor): InventoryRepository {
       return rows.length;
     },
 
+    async assignAllocations(organizationId, allocationIds, bookingId) {
+      if (allocationIds.length === 0) return;
+      await db
+        .update(itemAllocation)
+        .set({ bookingId })
+        .where(
+          and(
+            eq(itemAllocation.organizationId, organizationId),
+            inArray(itemAllocation.id, allocationIds),
+          ),
+        );
+    },
+
+    async releaseBookingAllocations(organizationId, bookingId) {
+      await db
+        .update(itemAllocation)
+        .set({ bookingId: null })
+        .where(
+          and(
+            eq(itemAllocation.organizationId, organizationId),
+            eq(itemAllocation.bookingId, bookingId),
+            eq(itemAllocation.kind, "event"),
+            isNull(itemAllocation.cancelledAt),
+          ),
+        );
+    },
+
     async moveEventAllocations(organizationId, eventId, period) {
       await db
         .update(itemAllocation)

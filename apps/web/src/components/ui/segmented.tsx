@@ -33,7 +33,7 @@ function SegmentContent({ segment, active }: { segment: Segment; active: boolean
         <span
           className={cn(
             "font-mono text-label font-semibold leading-4",
-            active ? "text-on-ink/70" : "text-ink-muted",
+            active ? "text-on-ink/70" : "text-ink-muted group-has-checked:text-on-ink/70",
           )}
         >
           {segment.count}
@@ -139,6 +139,7 @@ export function SegmentedControl({
             key={segment.value}
             htmlFor={inputId}
             className={cn(
+              "group",
               segmentClasses(false, fill),
               "has-checked:bg-ink has-checked:text-on-ink has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-ink",
             )}

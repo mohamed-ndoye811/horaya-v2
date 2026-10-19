@@ -60,6 +60,14 @@ function segmentCondition(segment: CustomerSegment, now: Date) {
   }
 }
 
+/** Recherche par téléphone, quels que soient les espaces ou les points (« 06 12 » trouve « 0612… »). */
+function phoneDigits(search: string) {
+  const digits = search.replace(/\D/g, "");
+  return digits.length >= 2
+    ? sql` or regexp_replace(coalesce(${customer.phone}, ''), '\\D', '', 'g') like ${`%${digits}%`}`
+    : sql``;
+}
+
 /** Liste des clients (écran 22). */
 export async function listCustomers(
   db: Executor,
@@ -86,7 +94,7 @@ export async function listCustomers(
         isNull(customer.anonymizedAt),
         segmentCondition(options.segment, options.now),
         search
-          ? sql`(${customer.firstName} || ' ' || ${customer.lastName} ilike ${`%${search}%`} or ${customer.email} ilike ${`%${search}%`} or ${customer.company} ilike ${`%${search}%`})`
+          ? sql`(${customer.firstName} || ' ' || ${customer.lastName} ilike ${`%${search}%`} or ${customer.email} ilike ${`%${search}%`} or ${customer.company} ilike ${`%${search}%`}${phoneDigits(search)})`
           : undefined,
       ),
     )

@@ -71,6 +71,13 @@
       "when": 1791413872219,
       "tag": "0009_calendar_links",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1792403811649,
+      "tag": "0010_counter_booking",
+      "breakpoints": true
     }
   ]
 }

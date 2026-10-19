@@ -10,7 +10,8 @@ export const customer = pgTable(
     organizationId: organizationId(),
     firstName: text().notNull(),
     lastName: text().notNull(),
-    email: text().notNull(),
+    /** Facultatif : un client saisi au comptoir peut n'avoir qu'un téléphone. */
+    email: text(),
     phone: text(),
     company: text(),
     tags: text().array().notNull().default(sql`'{}'::text[]`),

@@ -61,7 +61,9 @@ function paymentSummary(
   if (booking.paymentStatus === "paid") {
     return booking.paymentMode === "deposit"
       ? `Acompte payé · ${formatMoney(booking.amountCents - paid)} sur place`
-      : "Payé en ligne";
+      : booking.paymentMode === "on_site"
+        ? "Payé"
+        : "Payé en ligne";
   }
   return booking.paymentMode === "on_site"
     ? "À régler sur place"
@@ -75,7 +77,15 @@ export default async function BookingDetailPage({ params }: PageProps<"/app/rese
   const detail = await getBookingDetail(db, workspace.id, id);
   if (!detail) notFound();
 
-  const { booking, participants, activity, customerStats, eventSeatsHeld, rentalItems } = detail;
+  const {
+    booking,
+    participants,
+    activity,
+    customerStats,
+    eventSeatsHeld,
+    rentalItems,
+    assignedItems,
+  } = detail;
   const { actor } = await getWorkspaceContext();
   const payments = await listBookingPayments(db, booking.id);
   const paid = paidCents(payments);
@@ -186,6 +196,29 @@ export default async function BookingDetailPage({ params }: PageProps<"/app/rese
                   </dd>
                 </div>
               </dl>
+              {assignedItems.length > 0 && (
+                <ul className="border-t border-line-soft">
+                  {assignedItems.map((entry) => (
+                    <li key={entry.itemId} className="flex items-center gap-3.5 px-5 py-3">
+                      <ItemTile name={entry.name} reference={entry.reference} />
+                      <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+                        <Link
+                          href={`/app/materiel/${entry.itemId}`}
+                          className="truncate text-base font-bold text-ink hover:underline"
+                        >
+                          {entry.name}
+                        </Link>
+                        <span className="font-mono text-label text-ink-muted">
+                          Attribué · ex. {compactUnitLabels(entry.units)}
+                        </span>
+                      </div>
+                      <span className="font-mono text-sm font-semibold text-ink">
+                        × {entry.quantity}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              )}
             </section>
           )}
 

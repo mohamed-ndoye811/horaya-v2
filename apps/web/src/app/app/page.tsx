@@ -153,8 +153,9 @@ export default async function DashboardPage() {
           steps={["Crée un événement", "Partage ta page publique", "Reçois tes réservations"]}
         />
       ) : (
-        <div className="grid flex-1 grid-cols-[minmax(0,1fr)] xl:grid-cols-2">
-          <section className="border-ink xl:border-r-2">
+        <div className="grid flex-1 grid-cols-[minmax(0,1fr)] gap-0.5 bg-ink xl:grid-cols-2">
+          {/* Mêmes filets que StatGrid (2 px de fond encre) : la séparation tombe sous celle des indicateurs. */}
+          <section className="bg-bg">
             <SectionHeading
               title="À venir"
               action={{ label: "Tous les événements", href: "/app/evenements" }}
@@ -201,7 +202,7 @@ export default async function DashboardPage() {
               </ul>
             )}
           </section>
-          <section className="border-t-2 border-ink xl:border-t-0">
+          <section className="bg-bg">
             <SectionHeading
               title="Dernières réservations"
               action={{ label: "Tout voir", href: "/app/reservations" }}
@@ -215,7 +216,7 @@ export default async function DashboardPage() {
                 {latest.map((entry) => (
                   <li
                     key={entry.id}
-                    className="relative flex items-center gap-4 border-b border-line-soft px-4 py-3.5 hover:bg-surface sm:pr-10 sm:pl-8"
+                    className="relative flex items-center gap-4 border-b border-line-soft px-4 py-3.5 hover:bg-surface sm:pr-8 sm:pl-10"
                   >
                     <div className="min-w-0 flex-1">
                       <PersonCell

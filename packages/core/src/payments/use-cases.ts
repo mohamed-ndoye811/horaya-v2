@@ -1,7 +1,9 @@
+import type { Booking } from "../bookings/model";
+import type { PaymentMethod } from "../bookings/types";
 import { cancelBookingBySystem } from "../bookings/use-cases";
 import { type Actor, actorRef, assertMemberCan } from "../shared/actor";
 import { ConflictError, NotFoundError, ValidationError } from "../shared/errors";
-import type { Deps } from "../shared/unit-of-work";
+import type { Deps, Repositories } from "../shared/unit-of-work";
 import type { StripeAccountStatus } from "../tenants/types";
 import type { PaymentGateway } from "./ports";
 import { amountDueOnline, awaitsOnlinePayment, paidCents, refundForCancellation } from "./rules";
@@ -281,6 +283,7 @@ export async function recordManualPayment(
   actor: Actor,
   bookingId: string,
   amountCents: number,
+  method: PaymentMethod | null = null,
 ): Promise<void> {
   assertMemberCan(actor, "booking", "update");
   if (!Number.isInteger(amountCents) || amountCents <= 0) {
@@ -291,44 +294,50 @@ export async function recordManualPayment(
   await deps.uow.run(async (repositories) => {
     const booking = await repositories.bookings.find(actor.organizationId, bookingId);
     if (!booking) throw new NotFoundError("Réservation", bookingId);
-    if (booking.status === "cancelled" || booking.status === "refused") {
-      throw new ConflictError("Cette réservation n'est plus active");
-    }
-    const already = paidCents(await repositories.payments.listForBooking(bookingId));
-    if (already + amountCents > booking.amountCents) {
-      const left = ((booking.amountCents - already) / 100).toFixed(2).replace(".", ",");
-      throw new ConflictError(`Il reste ${left} € à payer au plus`);
-    }
-    await repositories.payments.insert({
-      organizationId: actor.organizationId,
-      bookingId,
-      kind:
-        booking.paymentMode === "deposit" && already + amountCents < booking.amountCents
-          ? "deposit"
-          : "charge",
-      status: "succeeded",
-      amountCents,
-      currency: booking.currency,
-      provider: "manual",
-      providerReference: null,
-      checkoutReference: null,
-    });
-    await repositories.bookings.updatePaymentStatus(actor.organizationId, bookingId, "paid");
-    await repositories.activity.record({
-      organizationId: actor.organizationId,
-      entityType: "booking",
-      entityId: bookingId,
-      action: "booking.paid",
-      ...actorRef(actor),
-      data: {
-        amountCents,
-        kind:
-          booking.paymentMode === "deposit" && already + amountCents < booking.amountCents
-            ? "deposit"
-            : "charge",
-        manual: true,
-      },
-    });
+    await recordManualPaymentIn(repositories, actor, booking, amountCents, method);
+  });
+}
+
+/** « Marquer comme payé » dans une transaction déjà ouverte (aussi utilisé par le comptoir). */
+export async function recordManualPaymentIn(
+  repositories: Repositories,
+  actor: Actor,
+  booking: Booking,
+  amountCents: number,
+  method: PaymentMethod | null = null,
+): Promise<void> {
+  if (booking.status === "cancelled" || booking.status === "refused") {
+    throw new ConflictError("Cette réservation n'est plus active");
+  }
+  const already = paidCents(await repositories.payments.listForBooking(booking.id));
+  if (already + amountCents > booking.amountCents) {
+    const left = ((booking.amountCents - already) / 100).toFixed(2).replace(".", ",");
+    throw new ConflictError(`Il reste ${left} € à payer au plus`);
+  }
+  const kind =
+    booking.paymentMode === "deposit" && already + amountCents < booking.amountCents
+      ? "deposit"
+      : "charge";
+  await repositories.payments.insert({
+    organizationId: actor.organizationId,
+    bookingId: booking.id,
+    kind,
+    status: "succeeded",
+    amountCents,
+    currency: booking.currency,
+    provider: "manual",
+    providerReference: null,
+    checkoutReference: null,
+    method,
+  });
+  await repositories.bookings.updatePaymentStatus(actor.organizationId, booking.id, "paid");
+  await repositories.activity.record({
+    organizationId: actor.organizationId,
+    entityType: "booking",
+    entityId: booking.id,
+    action: "booking.paid",
+    ...actorRef(actor),
+    data: { amountCents, kind, manual: true, method },
   });
 }
 

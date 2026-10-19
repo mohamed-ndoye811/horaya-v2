@@ -27,7 +27,7 @@ export default async function EditCustomerPage({
         initial={{
           firstName: customer.firstName,
           lastName: customer.lastName,
-          email: customer.email,
+          email: customer.email ?? "",
           phone: customer.phone ?? "",
           company: customer.company ?? "",
           tags: customer.tags.join(", "),

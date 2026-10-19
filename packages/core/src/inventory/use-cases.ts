@@ -312,9 +312,21 @@ export async function setEventItemQuantity(
         })),
       );
     } else if (data.quantity < current.length) {
+      // On libère d'abord les exemplaires que personne n'a encore (comptoir).
+      const assigned = current.filter((allocation) => allocation.bookingId !== null).length;
+      if (data.quantity < assigned) {
+        throw new ConflictError(
+          `${assigned} exemplaire${assigned > 1 ? "s sont attribués" : " est attribué"} à des réservations : retire-les d'abord des réservations`,
+        );
+      }
+      const unassigned = current.filter((allocation) => allocation.bookingId === null);
       await repositories.inventory.cancelAllocations(
         actor.organizationId,
-        { allocationIds: current.slice(data.quantity).map((allocation) => allocation.id) },
+        {
+          allocationIds: unassigned
+            .slice(0, current.length - data.quantity)
+            .map((allocation) => allocation.id),
+        },
         deps.clock.now(),
       );
     }
@@ -338,12 +350,99 @@ export async function removeEventItem(
 ): Promise<void> {
   assertMemberCan(actor, "event", "update");
   await deps.uow.run(async (repositories) => {
+    const locked = await repositories.events.lockForBooking(actor.organizationId, eventId);
+    if (!locked) throw new NotFoundError("Événement", eventId);
+    const found = await repositories.inventory.lockItem(actor.organizationId, itemId);
+    if (!found) throw new NotFoundError("Article", itemId);
+    const current = await repositories.inventory.activeAllocations(
+      found.units.map((unit) => unit.id),
+      { startsAt: locked.event.startsAt, endsAt: locked.event.endsAt },
+    );
+    if (current.some((allocation) => allocation.eventId === eventId && allocation.bookingId)) {
+      throw new ConflictError(
+        "Des exemplaires sont attribués à des réservations : retire-les d'abord des réservations",
+      );
+    }
     await repositories.inventory.cancelAllocations(
       actor.organizationId,
       { eventId, itemId },
       deps.clock.now(),
     );
   });
+}
+
+export interface AssignedItem {
+  itemId: string;
+  name: string;
+  /** Exemplaires attribués (#3, #5…). */
+  labels: string[];
+}
+
+/**
+ * Matériel attribué à une réservation d'événement (comptoir) : pris d'abord dans le
+ * matériel déjà réservé pour l'événement, puis dans le stock libre sur la séance (le
+ * matériel de l'événement grandit d'autant). À appeler sous le verrou de l'événement.
+ */
+export async function assignEventItems(
+  repositories: Repositories,
+  actor: Actor,
+  event: { id: string; startsAt: Date; endsAt: Date },
+  bookingId: string,
+  items: ReadonlyArray<{ itemId: string; quantity: number }>,
+): Promise<AssignedItem[]> {
+  const period = { startsAt: event.startsAt, endsAt: event.endsAt };
+  const assigned: AssignedItem[] = [];
+  // Toujours dans le même ordre : deux saisies simultanées ne s'interbloquent pas.
+  const sorted = [...items].sort((a, b) => a.itemId.localeCompare(b.itemId));
+  for (const { itemId, quantity } of sorted) {
+    const { item, units } = await lockItemOrThrow(repositories, actor.organizationId, itemId);
+    const service = inService(units);
+    const overlapping = await repositories.inventory.activeAllocations(
+      service.map((unit) => unit.id),
+      period,
+    );
+    const pool = overlapping
+      .filter((allocation) => allocation.eventId === event.id && allocation.bookingId === null)
+      .slice(0, quantity);
+    await repositories.inventory.assignAllocations(
+      actor.organizationId,
+      pool.map((allocation) => allocation.id),
+      bookingId,
+    );
+    const missing = quantity - pool.length;
+    const extra = missing > 0 ? freeUnits(service, overlapping, period).slice(0, missing) : [];
+    if (extra.length < missing) {
+      const left = pool.length + extra.length;
+      throw new ConflictError(
+        `${item.name} : il ne reste que ${left} exemplaire${left > 1 ? "s" : ""} pour cette séance`,
+      );
+    }
+    await repositories.inventory.insertAllocations(
+      extra.map((unit) => ({
+        organizationId: actor.organizationId,
+        itemUnitId: unit.id,
+        kind: "event" as const,
+        eventId: event.id,
+        bookingId,
+        ...period,
+        title: null,
+        provider: null,
+        costCents: null,
+        note: null,
+        createdByMemberId: actor.type === "member" ? actor.memberId : null,
+      })),
+    );
+    const taken = new Set([
+      ...pool.map((allocation) => allocation.itemUnitId),
+      ...extra.map((unit) => unit.id),
+    ]);
+    assigned.push({
+      itemId,
+      name: item.name,
+      labels: service.filter((unit) => taken.has(unit.id)).map((unit) => unit.label),
+    });
+  }
+  return assigned;
 }
 
 /** Intervention de maintenance sur un ou plusieurs exemplaires (immobilisés sur la période). */

@@ -1,5 +1,18 @@
 import type { BookingPaymentStatus, BookingSource, BookingStatus, PaymentMode } from "@horaya/core";
-import { and, asc, count, desc, eq, gte, ilike, inArray, or, type SQL, sql } from "drizzle-orm";
+import {
+  and,
+  asc,
+  count,
+  desc,
+  eq,
+  gte,
+  ilike,
+  inArray,
+  isNull,
+  or,
+  type SQL,
+  sql,
+} from "drizzle-orm";
 import type { Executor } from "../client";
 import {
   activityLog,
@@ -178,6 +191,38 @@ export async function listBookableEvents(db: Executor, organizationId: string, n
     .orderBy(asc(event.startsAt));
 }
 
+/** Comptoir : séances publiées à venir (jusqu'à `until`), avec les places prises. */
+export async function listCounterEvents(
+  db: Executor,
+  organizationId: string,
+  options: { now: Date; until: Date },
+) {
+  return db
+    .select({
+      id: event.id,
+      title: event.title,
+      startsAt: event.startsAt,
+      endsAt: event.endsAt,
+      locationName: event.locationName,
+      capacity: event.capacity,
+      priceCents: event.priceCents,
+      color: eventType.color,
+      waitlistEnabled: sql<boolean>`coalesce((${eventType.bookingRules}->>'waitlistEnabled')::boolean, false)`,
+      seatsHeld: sql<number>`coalesce((select sum(b.seats) from booking b where b.event_id = "event"."id" and b.status in ('pending', 'confirmed')), 0)::int`,
+    })
+    .from(event)
+    .innerJoin(eventType, eq(eventType.id, event.eventTypeId))
+    .where(
+      and(
+        eq(event.organizationId, organizationId),
+        eq(event.status, "published"),
+        gte(event.endsAt, options.now),
+        sql`${event.startsAt} < ${options.until.toISOString()}::timestamptz`,
+      ),
+    )
+    .orderBy(asc(event.startsAt));
+}
+
 const ACTIVITY_SELECT = {
   id: activityLog.id,
   action: activityLog.action,
@@ -186,6 +231,34 @@ const ACTIVITY_SELECT = {
   data: activityLog.data,
   createdAt: activityLog.createdAt,
 };
+
+/**
+ * Matériel d'une réservation : loué (location, historique compris) ou attribué au
+ * comptoir (événement, seulement ce qui est encore attribué).
+ */
+function bookingItems(db: Executor, bookingId: string, activeOnly: boolean) {
+  return db
+    .select({
+      itemId: item.id,
+      name: item.name,
+      reference: item.reference,
+      dailyRateCents: item.dailyRateCents,
+      depositCents: item.depositCents,
+      quantity: sql<number>`count(*)::int`,
+      units: sql<string>`string_agg(${itemUnit.label}, ', ' order by ${itemUnit.label})`,
+    })
+    .from(itemAllocation)
+    .innerJoin(itemUnit, eq(itemUnit.id, itemAllocation.itemUnitId))
+    .innerJoin(item, eq(item.id, itemUnit.itemId))
+    .where(
+      and(
+        eq(itemAllocation.bookingId, bookingId),
+        activeOnly ? isNull(itemAllocation.cancelledAt) : undefined,
+      ),
+    )
+    .groupBy(item.id)
+    .orderBy(asc(item.name));
+}
 
 /** Fiche d'une réservation (écran 17) : réservation, client, événement, participants, historique. */
 export async function getBookingDetail(db: Executor, organizationId: string, bookingId: string) {
@@ -235,7 +308,7 @@ export async function getBookingDetail(db: Executor, organizationId: string, boo
     .where(and(eq(booking.organizationId, organizationId), eq(booking.id, bookingId)));
   if (!row) return null;
 
-  const [participants, activity, [stats], [held], rentalItems] = await Promise.all([
+  const [participants, activity, [stats], [held], items] = await Promise.all([
     db
       .select()
       .from(bookingParticipant)
@@ -274,24 +347,7 @@ export async function getBookingDetail(db: Executor, organizationId: string, boo
             ),
           )
       : Promise.resolve([{ value: 0 }]),
-    row.kind === "rental"
-      ? db
-          .select({
-            itemId: item.id,
-            name: item.name,
-            reference: item.reference,
-            dailyRateCents: item.dailyRateCents,
-            depositCents: item.depositCents,
-            quantity: sql<number>`count(*)::int`,
-            units: sql<string>`string_agg(${itemUnit.label}, ', ' order by ${itemUnit.label})`,
-          })
-          .from(itemAllocation)
-          .innerJoin(itemUnit, eq(itemUnit.id, itemAllocation.itemUnitId))
-          .innerJoin(item, eq(item.id, itemUnit.itemId))
-          .where(eq(itemAllocation.bookingId, bookingId))
-          .groupBy(item.id)
-          .orderBy(asc(item.name))
-      : Promise.resolve([]),
+    bookingItems(db, bookingId, row.kind === "event"),
   ]);
 
   return {
@@ -307,7 +363,9 @@ export async function getBookingDetail(db: Executor, organizationId: string, boo
     }>,
     customerStats: stats ?? { bookings: 0, spentCents: 0, cancellations: 0 },
     eventSeatsHeld: held?.value ?? 0,
-    rentalItems,
+    rentalItems: row.kind === "rental" ? items : [],
+    /** Matériel attribué à une réservation d'événement (comptoir). */
+    assignedItems: row.kind === "event" ? items : [],
   };
 }
 

@@ -3,7 +3,8 @@ export interface Customer {
   organizationId: string;
   firstName: string;
   lastName: string;
-  email: string;
+  /** Facultatif pour un client saisi au comptoir (nom + téléphone suffisent). */
+  email: string | null;
   phone: string | null;
   company: string | null;
   tags: string[];

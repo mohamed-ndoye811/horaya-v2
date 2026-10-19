@@ -103,12 +103,14 @@ async function loadBooking(organizationId: string, bookingId: string) {
     eventsUrl: absoluteUrl(`/${workspace.slug}`),
     // Sans jeton (stocké haché), on renvoie vers « Mes réservations » qui en génère un neuf.
     linkRequestUrl: absoluteUrl(
-      `/${workspace.slug}/mes-reservations?email=${encodeURIComponent(booking.customer.email)}`,
+      `/${workspace.slug}/mes-reservations${booking.customer.email ? `?email=${encodeURIComponent(booking.customer.email)}` : ""}`,
     ),
   };
 }
 
-async function send(to: string, content: EmailContent) {
+/** Un client saisi au comptoir peut n'avoir pas d'e-mail : rien à envoyer. */
+async function send(to: string | null, content: EmailContent) {
+  if (!to) return;
   try {
     await mailer.send(to, content);
   } catch (error) {

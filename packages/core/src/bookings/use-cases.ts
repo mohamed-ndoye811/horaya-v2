@@ -1,6 +1,6 @@
 import type { CalendarLink } from "../calendar-links/model";
 import { calendarLinkAllows } from "../calendar-links/rules";
-import type { Event } from "../events/model";
+import type { Event, EventType } from "../events/model";
 import { type Actor, actorRef, assertMemberCan } from "../shared/actor";
 import { ConflictError, ForbiddenError, NotFoundError, ValidationError } from "../shared/errors";
 import { generateToken, hashToken } from "../shared/tokens";
@@ -8,7 +8,7 @@ import type { Deps, Repositories } from "../shared/unit-of-work";
 import { validate } from "../shared/validate";
 import { decideBookingStatus, SEAT_HOLDING_STATUSES } from "./capacity";
 import { CHECK_IN_OPENS_BEFORE_HOURS, isCheckInOpen } from "./check-in";
-import type { Booking } from "./model";
+import type { Booking, ParticipantInput } from "./model";
 import { priceBooking } from "./pricing";
 import { formatBookingReference, referencePeriod } from "./reference";
 import {
@@ -89,56 +89,82 @@ export async function createEventBooking(
         : null;
       assertCustomerCanBook(event, eventType.bookingRules, data.seats, now, link);
     }
-    if (event.endsAt <= now) throw new ConflictError("Cet événement est terminé");
-
-    const status = decideBookingStatus({
-      capacity: event.capacity,
-      seatsHeld: await repositories.bookings.seatsHeld(event.id),
-      seatsRequested: data.seats,
-      // Une réservation saisie par l'équipe vaut validation.
-      requiresApproval: actor.type !== "member" && event.requiresApproval,
-      waitlistEnabled: eventType.bookingRules.waitlistEnabled ?? false,
-    });
-
     const customer = await repositories.customers.upsertByEmail(
       actor.organizationId,
       data.customer,
     );
-    const settings = await repositories.settings.get(actor.organizationId);
-    const period = referencePeriod(now, settings.timezone);
-    const sequence = await repositories.references.next(actor.organizationId, "booking", period);
-
-    const created = await repositories.bookings.insert(
-      {
-        organizationId: actor.organizationId,
-        reference: formatBookingReference(settings.bookingReferencePrefix, period, sequence),
-        kind: "event",
-        eventId: event.id,
-        customerId: customer.id,
-        seats: data.seats,
-        status,
-        ...priceBooking(event, data.seats),
-        currency: event.currency,
-        paymentMode: event.paymentMode,
-        customerMessage: data.customerMessage,
-        source: SOURCE_BY_ACTOR[actor.type],
-        confirmedAt: status === "confirmed" ? now : null,
-        manageTokenHash,
-      },
-      data.participants,
-    );
-    await repositories.activity.record({
-      organizationId: actor.organizationId,
-      entityType: "booking",
-      entityId: created.id,
-      action: "booking.created",
-      ...actorRef(actor),
-      data: { status, seats: data.seats },
+    return insertEventBooking(repositories, actor, locked, now, {
+      customerId: customer.id,
+      seats: data.seats,
+      participants: data.participants,
+      customerMessage: data.customerMessage,
+      manageTokenHash,
     });
-    return created;
   });
 
   return { booking, manageToken };
+}
+
+/**
+ * Écriture d'une réservation d'événement, sous le verrou de l'événement : décision
+ * (confirmée, en attente, liste d'attente), référence, insertion et journal.
+ */
+export async function insertEventBooking(
+  repositories: Repositories,
+  actor: Actor,
+  { event, eventType }: { event: Event; eventType: EventType },
+  now: Date,
+  data: {
+    customerId: string;
+    seats: number;
+    participants: ParticipantInput[];
+    customerMessage: string | null;
+    manageTokenHash: string;
+  },
+): Promise<Booking> {
+  if (event.endsAt <= now) throw new ConflictError("Cet événement est terminé");
+
+  const status = decideBookingStatus({
+    capacity: event.capacity,
+    seatsHeld: await repositories.bookings.seatsHeld(event.id),
+    seatsRequested: data.seats,
+    // Une réservation saisie par l'équipe vaut validation.
+    requiresApproval: actor.type !== "member" && event.requiresApproval,
+    waitlistEnabled: eventType.bookingRules.waitlistEnabled ?? false,
+  });
+
+  const settings = await repositories.settings.get(actor.organizationId);
+  const period = referencePeriod(now, settings.timezone);
+  const sequence = await repositories.references.next(actor.organizationId, "booking", period);
+
+  const created = await repositories.bookings.insert(
+    {
+      organizationId: actor.organizationId,
+      reference: formatBookingReference(settings.bookingReferencePrefix, period, sequence),
+      kind: "event",
+      eventId: event.id,
+      customerId: data.customerId,
+      seats: data.seats,
+      status,
+      ...priceBooking(event, data.seats),
+      currency: event.currency,
+      paymentMode: event.paymentMode,
+      customerMessage: data.customerMessage,
+      source: SOURCE_BY_ACTOR[actor.type],
+      confirmedAt: status === "confirmed" ? now : null,
+      manageTokenHash: data.manageTokenHash,
+    },
+    data.participants,
+  );
+  await repositories.activity.record({
+    organizationId: actor.organizationId,
+    entityType: "booking",
+    entityId: created.id,
+    action: "booking.created",
+    ...actorRef(actor),
+    data: { status, seats: data.seats },
+  });
+  return created;
 }
 
 /**
@@ -287,13 +313,16 @@ async function cancelLocked(
     ...actorRef(actor),
     data: { reason },
   });
-  // Location : les exemplaires bloqués redeviennent libres.
+  // Location : les exemplaires bloqués redeviennent libres. Événement : le matériel
+  // attribué à la réservation (comptoir) retourne au matériel de l'événement.
   if (booking.kind === "rental") {
     await repositories.inventory.cancelAllocations(
       booking.organizationId,
       { bookingId: booking.id },
       now,
     );
+  } else {
+    await repositories.inventory.releaseBookingAllocations(booking.organizationId, booking.id);
   }
   if (event && SEAT_HOLDING_STATUSES.has(booking.status)) {
     await promoteWaitlist(repositories, event, actor, now);

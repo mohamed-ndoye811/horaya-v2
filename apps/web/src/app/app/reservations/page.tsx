@@ -22,7 +22,12 @@ import { SearchInput } from "@/components/ui/search-input";
 import { SegmentedLinks } from "@/components/ui/segmented";
 import { BOOKING_STATUS_BADGE } from "@/components/ui/status";
 import { startOfDay, todayIn } from "@/lib/dates";
-import { formatDateTimeShort, formatMoney, PAYMENT_MODE_LABELS } from "@/lib/format";
+import {
+  formatDateTimeShort,
+  formatMoney,
+  formatShortDateTime,
+  PAYMENT_MODE_LABELS,
+} from "@/lib/format";
 import { param, withParams } from "@/lib/search-params";
 import { db } from "@/server/db";
 import { getWorkspaceContext } from "@/server/workspace";
@@ -256,6 +261,16 @@ export default async function BookingsPage({ searchParams }: PageProps<"/app/res
                       <MonoCaption>{formatDateTimeShort(row.eventStartsAt, timeZone)}</MonoCaption>
                     )}
                   </div>
+                ),
+              },
+              {
+                key: "date",
+                header: "Réservé le",
+                width: 150,
+                cell: (row) => (
+                  <span className="font-mono text-sm text-ink-muted">
+                    {formatShortDateTime(row.createdAt, timeZone)}
+                  </span>
                 ),
               },
               {

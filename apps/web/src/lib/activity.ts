@@ -11,6 +11,17 @@ export interface ActivityEntry {
 const by = (entry: ActivityEntry) =>
   entry.actorName ? ` par ${entry.actorName.split(" ")[0]}` : "";
 
+const METHOD_LABELS: Record<string, string> = {
+  cash: "espèces",
+  card: "carte",
+  check: "chèque",
+  transfer: "virement",
+};
+
+/** « · carte » pour un paiement noté avec son moyen. */
+const methodLabel = (method: unknown) =>
+  typeof method === "string" && METHOD_LABELS[method] ? ` · ${METHOD_LABELS[method]}` : "";
+
 export function describeBookingActivity(
   entry: ActivityEntry,
   source?: string,
@@ -54,7 +65,7 @@ export function describeBookingActivity(
       const amount = Number(entry.data?.amountCents ?? 0);
       return {
         title: entry.data?.manual
-          ? `${entry.data?.kind === "deposit" ? "Acompte noté" : "Paiement noté"}${by(entry)} · ${formatMoney(amount)}`
+          ? `${entry.data?.kind === "deposit" ? "Acompte noté" : "Paiement noté"}${by(entry)} · ${formatMoney(amount)}${methodLabel(entry.data?.method)}`
           : `${entry.data?.kind === "deposit" ? "Acompte payé" : "Payé en ligne"} · ${formatMoney(amount)}`,
         tone: "success",
       };
