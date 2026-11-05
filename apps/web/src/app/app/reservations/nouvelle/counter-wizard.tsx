@@ -3,16 +3,12 @@
 import type { CounterBookingInput, PaymentMethod } from "@horaya/core";
 import { motion } from "motion/react";
 import { type FormEvent, type ReactNode, useEffect, useRef, useState, useTransition } from "react";
-import { ActiveIndicator } from "@/components/motion/indicator";
 import { WordsReveal } from "@/components/motion/words";
 import { Avatar } from "@/components/ui/avatar";
 import { Button, ButtonLink } from "@/components/ui/button";
-import { ChoiceCards } from "@/components/ui/choice-cards";
 import { Field, inputClasses } from "@/components/ui/field";
 import { FormAlert } from "@/components/ui/form-alert";
-import { Check } from "@/components/ui/icons";
 import { SearchInput } from "@/components/ui/search-input";
-import { SegmentedControl } from "@/components/ui/segmented";
 import { cn } from "@/lib/cn";
 import { formatMoney } from "@/lib/format";
 import {
@@ -33,6 +29,8 @@ export interface CounterEvent {
   location: string | null;
   priceCents: number;
   color: string;
+  /** « Mar. 16 · 10h » : ligne de la séance. */
+  label: string;
   /** null = places illimitées. */
   remaining: number | null;
   capacity: number | null;
@@ -54,7 +52,6 @@ interface CounterItem {
   onEvent: number;
 }
 
-type Step = 1 | 2 | 3;
 type Done = Extract<CounterResult, { ok: true }>;
 
 const DAYS = [
@@ -70,18 +67,11 @@ const METHODS: Array<{ value: PaymentMethod; label: string }> = [
   { value: "transfer", label: "Virement" },
 ];
 
-/** `short` : libellé sur mobile, où les trois étapes tiennent sur une ligne. */
-const STEPS: Array<{ step: Step; label: string; short: string }> = [
-  { step: 1, label: "Séance", short: "Séance" },
-  { step: 2, label: "Client", short: "Client" },
-  { step: 3, label: "Matériel & paiement", short: "Matériel" },
-];
-
 const EMPTY_CONTACT = { firstName: "", lastName: "", phone: "", email: "" };
 
 /**
- * Comptoir : séance et places, client, matériel et paiement, une étape à la fois, avec le
- * récapitulatif à droite (bureau) ou la barre d'action en bas (mobile).
+ * Comptoir sur un seul écran (maquette 1.6b) : séance et places, client, matériel et
+ * paiement dans une carte, le récapitulatif noir à droite. ⌘ Entrée enregistre.
  */
 export function CounterWizard({
   events,
@@ -93,22 +83,19 @@ export function CounterWizard({
   initialCustomer?: CustomerHit;
 }) {
   const initialEvent = events.find((event) => event.id === initialEventId);
-  const [step, setStepState] = useState<Step>(1);
-  // Sens du dernier changement d'étape : le contenu glisse dans le sens du parcours.
-  const [direction, setDirection] = useState(1);
-  const setStep = (target: Step) => {
-    setDirection(target >= step ? 1 : -1);
-    setStepState(target);
-  };
+  const formRef = useRef<HTMLFormElement>(null);
   const [day, setDay] = useState(initialEvent?.day ?? events[0]?.day ?? "today");
+  const [sessionSearch, setSessionSearch] = useState("");
   const [eventId, setEventId] = useState(initialEvent?.id ?? "");
   const [seats, setSeats] = useState(1);
   const [customer, setCustomer] = useState<CustomerHit | null>(initialCustomer ?? null);
+  const [creating, setCreating] = useState(false);
   const [contact, setContact] = useState(EMPTY_CONTACT);
   const [search, setSearch] = useState("");
   const [hits, setHits] = useState<CustomerHit[]>([]);
   const [items, setItems] = useState<CounterItem[] | null>(null);
   const [quantities, setQuantities] = useState<Record<string, number>>({});
+  const [pickingItems, setPickingItems] = useState(false);
   const [paid, setPaid] = useState(true);
   const [method, setMethod] = useState<PaymentMethod>("card");
   const [error, setError] = useState<string | null>(null);
@@ -122,6 +109,14 @@ export function CounterWizard({
   const newName = `${contact.firstName} ${contact.lastName}`.trim();
   const customerName = customer?.name ?? (newName || null);
   const chosenItems = Object.entries(quantities).filter(([, quantity]) => quantity > 0);
+  const itemName = (id: string) => items?.find((item) => item.id === id)?.name ?? "Matériel";
+  const needle = sessionSearch.trim().toLowerCase();
+  // Une recherche parcourt tous les jours ; sinon, le jour choisi.
+  const sessions = events.filter((entry) =>
+    needle
+      ? `${entry.title} ${entry.location ?? ""}`.toLowerCase().includes(needle)
+      : entry.day === day,
+  );
 
   // Recherche du client, sans attendre la touche Entrée.
   useEffect(() => {
@@ -139,32 +134,28 @@ export function CounterWizard({
   useEffect(() => {
     setItems(null);
     setQuantities({});
+    setPickingItems(false);
     if (eventId) counterItemsAction(eventId).then(setItems);
   }, [eventId]);
 
-  function canContinue(): string | null {
-    if (step === 1) {
-      if (!event) return "Choisis une séance.";
-      if (full && !event.waitlist)
-        return `Il ne reste que ${event.remaining} place${(event.remaining ?? 0) > 1 ? "s" : ""}.`;
-    }
-    if (step === 2 && !customer) {
+  function blocking(): string | null {
+    if (!event) return "Choisis une séance.";
+    if (full && !event.waitlist)
+      return `Il ne reste que ${event.remaining} place${(event.remaining ?? 0) > 1 ? "s" : ""}.`;
+    if (!customer) {
       if (!contact.firstName.trim() || !contact.lastName.trim())
         return "Choisis un client ou indique au moins son prénom et son nom.";
-      if (!contact.phone.trim() && !contact.email.trim()) return "Un téléphone ou un e-mail.";
+      if (!contact.phone.trim() && !contact.email.trim())
+        return "Indique un téléphone ou un e-mail pour le client.";
     }
     return null;
   }
 
   function submit(formEvent: FormEvent) {
     formEvent.preventDefault();
-    const blocking = canContinue();
-    setError(blocking);
-    if (blocking) return;
-    if (step < 3) {
-      setStep((step + 1) as Step);
-      return;
-    }
+    const problem = blocking();
+    setError(problem);
+    if (problem) return;
     const input: CounterBookingInput = {
       eventId,
       seats,
@@ -181,18 +172,19 @@ export function CounterWizard({
       }
       setError(result.error ?? "La réservation n'a pas pu être enregistrée.");
       setFieldErrors(result.fieldErrors ?? {});
-      if (result.fieldErrors?.customer) setStep(2);
+      if (result.fieldErrors?.customer) setCreating(true);
     });
   }
 
   function restart() {
     setDone(null);
-    setStep(1);
     setEventId("");
     setSeats(1);
     setCustomer(null);
+    setCreating(false);
     setContact(EMPTY_CONTACT);
     setSearch("");
+    setSessionSearch("");
     setError(null);
     setFieldErrors({});
   }
@@ -211,603 +203,615 @@ export function CounterWizard({
     );
   }
 
-  return (
-    <form onSubmit={submit} className="flex flex-1 flex-col lg:flex-row">
-      <div className="flex min-w-0 flex-1 flex-col gap-7 px-4 pt-6 pb-10 sm:pt-7">
-        <Stepper
-          step={step}
-          summaries={{
-            1: event ? `${event.title} · ${event.time} · ${seats} pl.` : null,
-            2: customerName,
-          }}
-          onBack={(target) => {
-            setError(null);
-            setStep(target);
-          }}
-        />
-        {error && <FormAlert>{error}</FormAlert>}
+  const paymentLabel =
+    total === 0
+      ? event
+        ? "Gratuit"
+        : null
+      : paid
+        ? `Payé · ${METHODS.find((entry) => entry.value === method)?.label.toLowerCase()}`
+        : "Lien envoyé par e-mail";
 
-        {step === 1 && (
-          <StepBlock title="Quelle séance ?" direction={direction}>
-            <SegmentedControl
-              name="jour"
-              label="Jour"
-              value={day}
-              onChange={(value) => setDay(value as CounterEvent["day"])}
-              segments={DAYS.map((entry) => ({
-                ...entry,
-                count: events.filter((event) => event.day === entry.value).length,
-              }))}
-              size="md"
-            />
-            <div key={day} className="reveal-group flex flex-col gap-2">
-              {events
-                .filter((entry) => entry.day === day)
-                .map((entry) => (
-                  <SessionTile
-                    key={entry.id}
-                    event={entry}
-                    selected={entry.id === eventId}
-                    onSelect={() => {
-                      setEventId(entry.id);
-                      setSeats(1);
-                    }}
-                  />
-                ))}
-              {events.every((entry) => entry.day !== day) && (
-                <p className="border-[1.5px] border-dashed border-line-soft px-4 py-6 text-center text-sm font-medium text-ink-muted">
-                  Aucune séance ce jour-là.
-                </p>
-              )}
-            </div>
-            {event && (
-              <div className="flex items-center justify-between gap-4 border-t border-line-soft pt-4">
-                <div className="flex flex-col gap-0.5">
-                  <span className="text-base font-bold leading-5 text-ink">Places</span>
-                  <span className="text-[13px] font-medium leading-[18px] text-ink-muted">
-                    {event.remaining === null
-                      ? "Places illimitées"
-                      : `${event.remaining} libre${event.remaining > 1 ? "s" : ""} sur ${event.capacity}`}
-                    {full && event.waitlist ? " · liste d'attente" : ""}
-                  </span>
-                </div>
-                <QuantityStepper value={seats} onChange={setSeats} min={1} max={99} size="lg" />
-              </div>
-            )}
-          </StepBlock>
+  return (
+    <form
+      ref={formRef}
+      onSubmit={submit}
+      onKeyDown={(key) => {
+        if (key.key === "Enter" && (key.metaKey || key.ctrlKey)) {
+          key.preventDefault();
+          formRef.current?.requestSubmit();
+        }
+      }}
+      className="flex flex-1 flex-col gap-4 px-4 pb-6 lg:flex-row lg:items-stretch"
+    >
+      <div className="flex min-w-0 flex-1 flex-col overflow-hidden rounded-3xl bg-surface">
+        {error && (
+          <div className="px-6 pt-5">
+            <FormAlert>{error}</FormAlert>
+          </div>
         )}
 
-        {step === 2 && (
-          <StepBlock title="Pour qui ?" direction={direction}>
-            <SearchInput
-              label="Rechercher un client"
-              placeholder="Nom, téléphone ou e-mail"
-              value={search}
-              autoFocus
-              onChange={(change) => setSearch(change.target.value)}
-            />
-            {(customer || hits.length > 0) && (
-              <div className="flex flex-col border-[1.5px] border-ink">
-                {[
-                  ...(customer ? [customer] : []),
-                  ...hits.filter((hit) => hit.id !== customer?.id),
-                ].map((hit, index) => {
-                  const selected = hit.id === customer?.id;
-                  return (
+        <Section
+          number={1}
+          title="Séance"
+          aside={
+            <div className="flex gap-1 rounded-full bg-[#f2f2f0] p-[3px]">
+              {DAYS.map((entry) => (
+                <button
+                  key={entry.value}
+                  type="button"
+                  aria-pressed={!needle && day === entry.value}
+                  onClick={() => {
+                    setDay(entry.value as CounterEvent["day"]);
+                    setSessionSearch("");
+                  }}
+                  className={cn(
+                    "flex h-[30px] items-center rounded-full px-3 text-[13px] font-semibold leading-4",
+                    !needle && day === entry.value
+                      ? "bg-ink text-on-ink"
+                      : "text-ink hover:bg-surface",
+                  )}
+                >
+                  {entry.label}
+                </button>
+              ))}
+            </div>
+          }
+        >
+          <SearchInput
+            label="Rechercher une séance"
+            placeholder="Rechercher une séance, un lieu…"
+            value={sessionSearch}
+            onChange={(change) => setSessionSearch(change.target.value)}
+          />
+          <div key={needle ? "recherche" : day} className="reveal-group flex flex-col gap-1.5">
+            {sessions.map((entry) => (
+              <SessionRow
+                key={entry.id}
+                event={entry}
+                selected={entry.id === eventId}
+                seats={seats}
+                onSeats={setSeats}
+                onSelect={() => {
+                  setEventId(entry.id);
+                  setSeats(1);
+                }}
+              />
+            ))}
+            {sessions.length === 0 && (
+              <p className="rounded-[14px] border border-dashed border-line px-4 py-5 text-center text-sm text-ink-muted">
+                {needle ? "Aucune séance ne correspond." : "Aucune séance ce jour-là."}
+              </p>
+            )}
+          </div>
+        </Section>
+
+        <Section
+          number={2}
+          title="Client"
+          aside={
+            !customer && (
+              <button
+                type="button"
+                onClick={() => setCreating(!creating)}
+                className="text-[13px] font-bold leading-4 text-ink hover:underline"
+              >
+                {creating ? "Chercher un client" : "+ Nouveau client"}
+              </button>
+            )
+          }
+        >
+          {customer ? (
+            <div className="flex items-center gap-3 rounded-[14px] bg-field py-2.5 pr-2.5 pl-3">
+              <Avatar name={customer.name} size="sm" />
+              <span className="flex min-w-0 flex-1 flex-col gap-px">
+                <span className="truncate text-sm font-semibold leading-[18px] text-ink">
+                  {customer.name}
+                </span>
+                <span className="truncate text-xs leading-4 text-ink-subtle">
+                  {[
+                    customer.email,
+                    customer.phone,
+                    `${customer.bookings} réservation${customer.bookings > 1 ? "s" : ""}`,
+                  ]
+                    .filter(Boolean)
+                    .join(" · ")}
+                </span>
+              </span>
+              <button
+                type="button"
+                onClick={() => setCustomer(null)}
+                className="flex h-8 shrink-0 items-center rounded-full border border-line bg-surface px-3 text-xs font-semibold text-ink hover:bg-field"
+              >
+                Changer
+              </button>
+            </div>
+          ) : creating ? (
+            <fieldset className="grid gap-3 sm:grid-cols-2">
+              <legend className="sr-only">Nouveau client</legend>
+              <ContactInput
+                label="Prénom"
+                value={contact.firstName}
+                error={fieldErrors["customer.firstName"]}
+                onChange={(firstName) => setContact({ ...contact, firstName })}
+              />
+              <ContactInput
+                label="Nom"
+                value={contact.lastName}
+                error={fieldErrors["customer.lastName"]}
+                onChange={(lastName) => setContact({ ...contact, lastName })}
+              />
+              <ContactInput
+                label="Téléphone"
+                type="tel"
+                value={contact.phone}
+                error={fieldErrors["customer.phone"]}
+                onChange={(phone) => setContact({ ...contact, phone })}
+              />
+              <ContactInput
+                label="E-mail (facultatif)"
+                type="email"
+                value={contact.email}
+                error={fieldErrors["customer.email"]}
+                hint="Sans e-mail, pas de confirmation envoyée : donne-lui la référence."
+                onChange={(email) => setContact({ ...contact, email })}
+              />
+            </fieldset>
+          ) : (
+            <>
+              <SearchInput
+                label="Rechercher un client"
+                placeholder="Nom, téléphone ou e-mail"
+                value={search}
+                onChange={(change) => setSearch(change.target.value)}
+              />
+              {hits.length > 0 && (
+                <div className="flex flex-col overflow-hidden rounded-[14px] border border-bg">
+                  {hits.map((hit) => (
                     <button
                       key={hit.id}
                       type="button"
-                      onClick={() => setCustomer(selected ? null : hit)}
-                      aria-pressed={selected}
-                      className={cn(
-                        "flex items-center gap-3 px-3.5 py-3 text-left",
-                        index > 0 && "border-t-[1.5px] border-line-soft",
-                        selected ? "bg-ink" : "hover:bg-surface",
-                      )}
+                      onClick={() => setCustomer(hit)}
+                      className="flex items-center gap-3 border-t border-bg px-3 py-2.5 text-left first:border-t-0 hover:bg-field"
                     >
-                      <Avatar name={hit.name} />
-                      <span className="flex min-w-0 flex-1 flex-col gap-0.5">
-                        <span
-                          className={cn(
-                            "text-base font-bold leading-5",
-                            selected ? "text-on-ink" : "text-ink",
-                          )}
-                        >
+                      <Avatar name={hit.name} size="sm" />
+                      <span className="flex min-w-0 flex-col gap-px">
+                        <span className="text-sm font-semibold leading-[18px] text-ink">
                           {hit.name}
                         </span>
-                        <span
-                          className={cn(
-                            "truncate font-mono text-label font-medium leading-4",
-                            selected ? "text-on-ink/80" : "text-ink-muted",
-                          )}
-                        >
-                          {[hit.phone ?? hit.email, `${hit.bookings} résa`]
+                        <span className="truncate text-xs leading-4 text-ink-subtle">
+                          {[
+                            hit.phone ?? hit.email,
+                            `${hit.bookings} réservation${hit.bookings > 1 ? "s" : ""}`,
+                          ]
                             .filter(Boolean)
                             .join(" · ")}
                         </span>
                       </span>
-                      <span className="w-[18px] shrink-0 text-on-ink">
-                        {selected && <Check size={16} />}
-                      </span>
                     </button>
-                  );
-                })}
-              </div>
-            )}
-            {!customer && (
-              <fieldset className="flex flex-col gap-3 border-t border-line-soft pt-4">
-                <legend className="sr-only">Nouveau client</legend>
-                <div className="flex items-baseline justify-between gap-3">
-                  <span className="text-base font-bold leading-5 text-ink">+ Nouveau client</span>
-                  <span className="font-mono text-label font-semibold uppercase leading-4 tracking-[0.055em] text-ink-muted">
-                    Nom + tél. suffisent
-                  </span>
-                </div>
-                <div className="grid gap-3 sm:grid-cols-2">
-                  <ContactInput
-                    label="Prénom"
-                    value={contact.firstName}
-                    error={fieldErrors["customer.firstName"]}
-                    onChange={(firstName) => setContact({ ...contact, firstName })}
-                  />
-                  <ContactInput
-                    label="Nom"
-                    value={contact.lastName}
-                    error={fieldErrors["customer.lastName"]}
-                    onChange={(lastName) => setContact({ ...contact, lastName })}
-                  />
-                </div>
-                <ContactInput
-                  label="Téléphone"
-                  type="tel"
-                  value={contact.phone}
-                  error={fieldErrors["customer.phone"]}
-                  onChange={(phone) => setContact({ ...contact, phone })}
-                />
-                <ContactInput
-                  label="E-mail (facultatif)"
-                  type="email"
-                  value={contact.email}
-                  error={fieldErrors["customer.email"]}
-                  hint="Sans e-mail, pas de confirmation envoyée : donne-lui la référence."
-                  onChange={(email) => setContact({ ...contact, email })}
-                />
-              </fieldset>
-            )}
-          </StepBlock>
-        )}
-
-        {step === 3 && event && (
-          <StepBlock title="Matériel & paiement" direction={direction}>
-            <section className="flex flex-col gap-2.5">
-              <div className="flex items-baseline justify-between gap-3">
-                <h3 className="font-mono text-label font-semibold uppercase leading-4 tracking-[0.055em] text-neutral">
-                  Matériel
-                </h3>
-                <span className="text-[13px] font-medium leading-[18px] text-ink-muted">
-                  Attribué à cette réservation
-                </span>
-              </div>
-              {items === null ? (
-                <p className="text-sm font-medium text-ink-muted">Chargement du matériel…</p>
-              ) : items.length === 0 ? (
-                <p className="border-[1.5px] border-dashed border-line-soft px-4 py-5 text-sm font-medium text-ink-muted">
-                  Aucun matériel libre sur cette séance.
-                </p>
-              ) : (
-                <div className="flex flex-col border-[1.5px] border-ink">
-                  {items.map((item, index) => {
-                    const quantity = quantities[item.id] ?? 0;
-                    return (
-                      <div
-                        key={item.id}
-                        className={cn(
-                          "flex items-center gap-3 py-2.5 pr-2.5 pl-3.5",
-                          index > 0 && "border-t-[1.5px] border-line-soft",
-                        )}
-                      >
-                        <div className="flex min-w-0 flex-1 flex-col gap-0.5">
-                          <span className="text-[15px] font-bold leading-5 text-ink">
-                            {item.name}
-                          </span>
-                          <span
-                            className={cn(
-                              "font-mono text-label font-semibold leading-4",
-                              item.free - quantity <= 1 ? "text-warning" : "text-success",
-                            )}
-                          >
-                            {item.free - quantity} libre{item.free - quantity > 1 ? "s" : ""}
-                          </span>
-                        </div>
-                        <QuantityStepper
-                          value={quantity}
-                          min={0}
-                          max={item.free}
-                          label={item.name}
-                          onChange={(next) => setQuantities({ ...quantities, [item.id]: next })}
-                        />
-                      </div>
-                    );
-                  })}
+                  ))}
                 </div>
               )}
-            </section>
-
-            {total > 0 && (
-              <section className="flex flex-col gap-2.5 border-t border-line-soft pt-4">
-                <div className="flex items-baseline justify-between gap-3">
-                  <h3 className="font-mono text-label font-semibold uppercase leading-4 tracking-[0.055em] text-neutral">
-                    Paiement
-                  </h3>
-                  <span className="font-mono text-[15px] font-semibold leading-5 text-ink">
-                    {seats} × {formatMoney(event.priceCents)} = {formatMoney(total)}
-                  </span>
-                </div>
-                <ChoiceCards
-                  name="paiement"
-                  label="Paiement"
-                  value={paid ? "now" : "later"}
-                  onChange={(value) => setPaid(value === "now")}
-                  options={[
-                    {
-                      value: "now",
-                      label: "Payé maintenant",
-                      description: "Reçu envoyé au client",
-                    },
-                    { value: "later", label: "À payer", description: "Lien envoyé par e-mail" },
-                  ]}
-                />
-                {paid && (
-                  <fieldset className="flex flex-wrap gap-2">
-                    <legend className="sr-only">Moyen de paiement</legend>
-                    {METHODS.map((entry) => (
-                      <label
-                        key={entry.value}
-                        className={cn(
-                          "flex h-10 items-center border-[1.5px] border-ink px-3.5 text-sm font-bold leading-[18px]",
-                          "has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-ink",
-                          method === entry.value
-                            ? "bg-ink text-on-ink"
-                            : "text-ink hover:bg-surface",
-                        )}
-                      >
-                        <input
-                          type="radio"
-                          name="moyen"
-                          value={entry.value}
-                          checked={method === entry.value}
-                          onChange={() => setMethod(entry.value)}
-                          className="sr-only"
-                        />
-                        {entry.label}
-                      </label>
-                    ))}
-                  </fieldset>
-                )}
-              </section>
-            )}
-          </StepBlock>
-        )}
-      </div>
-
-      <aside className="sticky bottom-0 z-30 flex flex-col border-t border-line-soft bg-bg pb-[env(safe-area-inset-bottom)] lg:static lg:w-[360px] lg:shrink-0 lg:border-t-0 lg:border-l-2 lg:bg-surface lg:pb-0">
-        <div className="hidden flex-1 flex-col gap-[18px] px-7 pt-7 pb-6 lg:flex">
-          <p className="font-mono text-label font-semibold uppercase leading-4 tracking-[0.055em] text-neutral">
-            Ta saisie
-          </p>
-          {event ? (
-            <div className="flex flex-col gap-1">
-              <div className="flex items-center gap-2">
-                <span className="size-2.5 shrink-0" style={{ backgroundColor: event.color }} />
-                <span className="text-[17px] font-bold leading-[22px] text-ink">{event.title}</span>
-              </div>
-              <span className="text-sm font-medium leading-5 text-ink-muted">
-                {[`${event.date} · ${event.range}`, event.location].filter(Boolean).join(" · ")}
-              </span>
-            </div>
-          ) : (
-            <p className="text-sm font-medium text-ink-subtle">Choisis une séance.</p>
+            </>
           )}
-          <dl className="flex flex-col gap-[18px] border-t-[1.5px] border-line-soft pt-3.5">
-            <RecapLine label="Places" value={event ? String(seats) : null} mono />
-            <RecapLine label="Client" value={customerName} />
-            <RecapLine
-              label="Matériel"
-              value={
-                chosenItems.length > 0
-                  ? chosenItems
-                      .map(
-                        ([id, quantity]) =>
-                          `${items?.find((item) => item.id === id)?.name} ×${quantity}`,
-                      )
-                      .join(" · ")
-                  : step === 3
-                    ? "aucun"
-                    : null
-              }
-              placeholder="à l'étape 3"
-            />
-          </dl>
-          <div className="flex items-baseline justify-between border-t border-line-soft pt-3.5">
-            <span className="text-[15px] font-bold leading-5 text-ink">Total</span>
-            <span className="font-mono text-[22px] font-semibold leading-7 text-ink">
-              {total > 0 ? formatMoney(total) : event ? "Gratuit" : "—"}
-            </span>
-          </div>
-        </div>
-        <div className="flex flex-col gap-2.5 px-5 py-3 lg:border-t-2 lg:border-ink lg:px-7 lg:pt-5 lg:pb-7">
-          <Button type="submit" pending={pending} className="w-full">
-            <span className="flex w-full items-center justify-between gap-3">
-              <span>{step < 3 ? "Continuer" : pending ? "Enregistrement…" : "Enregistrer"}</span>
-              <span className="font-mono text-[13px] font-semibold opacity-85">
-                {step === 3 && total > 0
-                  ? `${formatMoney(total)} · ${paid ? "payé" : "à payer"}`
-                  : "Entrée ↵"}
+          {seats > 1 && (
+            <p className="text-xs leading-4 text-ink-subtle">
+              {seats === 2
+                ? "Participant 2 : tu pourras compléter son nom plus tard."
+                : `Participants 2 à ${seats} : tu pourras compléter leurs noms plus tard.`}
+            </p>
+          )}
+        </Section>
+
+        <Section number={3} title="Matériel et paiement">
+          <div className="flex flex-wrap gap-2">
+            {chosenItems.map(([id, quantity]) => (
+              <span
+                key={id}
+                className="flex h-9 items-center gap-2 rounded-full bg-field pr-1.5 pl-3 text-[13px] font-semibold leading-4 text-ink"
+              >
+                {itemName(id)} ×{quantity}
+                <button
+                  type="button"
+                  aria-label={`Retirer ${itemName(id)}`}
+                  onClick={() => setQuantities({ ...quantities, [id]: 0 })}
+                  className="flex size-6 items-center justify-center rounded-full bg-surface text-[13px] text-ink-subtle hover:text-ink"
+                >
+                  ✕
+                </button>
               </span>
-            </span>
-          </Button>
-          {step > 1 && (
+            ))}
             <button
               type="button"
-              onClick={() => {
-                setError(null);
-                setStep((step - 1) as Step);
-              }}
-              className="h-10 text-[15px] font-bold leading-5 text-ink underline decoration-1 underline-offset-[3px]"
+              disabled={!event || items === null || items.length === 0}
+              aria-expanded={pickingItems}
+              onClick={() => setPickingItems(!pickingItems)}
+              className="flex h-9 items-center rounded-full border-[1.5px] border-dashed border-[#d6d6d2] px-3 text-[13px] font-semibold leading-4 text-ink-muted hover:text-ink disabled:hover:text-ink-muted"
             >
-              ← Retour {step === 2 ? "à la séance" : "au client"}
+              {!event
+                ? "Choisis d'abord une séance"
+                : items === null
+                  ? "Chargement du matériel…"
+                  : items.length === 0
+                    ? "Aucun matériel libre sur cette séance"
+                    : "+ Ajouter du matériel"}
             </button>
+          </div>
+          {pickingItems && items && items.length > 0 && (
+            <div className="flex flex-col overflow-hidden rounded-[14px] border border-bg">
+              {items.map((item) => {
+                const quantity = quantities[item.id] ?? 0;
+                return (
+                  <div
+                    key={item.id}
+                    className="flex items-center gap-3 border-t border-bg py-2 pr-2 pl-3.5 first:border-t-0"
+                  >
+                    <span className="flex min-w-0 flex-1 flex-col gap-px">
+                      <span className="text-sm font-semibold leading-[18px] text-ink">
+                        {item.name}
+                      </span>
+                      <span
+                        className={cn(
+                          "text-xs leading-4",
+                          item.free - quantity <= 1 ? "text-warning" : "text-success",
+                        )}
+                      >
+                        {item.free - quantity} libre{item.free - quantity > 1 ? "s" : ""}
+                      </span>
+                    </span>
+                    <QuantityStepper
+                      value={quantity}
+                      min={0}
+                      max={item.free}
+                      label={item.name}
+                      onChange={(next) => setQuantities({ ...quantities, [item.id]: next })}
+                    />
+                  </div>
+                );
+              })}
+            </div>
           )}
+          {total > 0 && (
+            <>
+              <fieldset className="grid gap-2 sm:grid-cols-2">
+                <legend className="sr-only">Paiement</legend>
+                {[
+                  {
+                    value: true,
+                    label: "Payé sur place",
+                    detail: "Espèces, carte, chèque ou virement",
+                  },
+                  { value: false, label: "À payer", detail: "Lien envoyé avec la confirmation" },
+                ].map((option) => (
+                  <label
+                    key={option.label}
+                    className={cn(
+                      "flex flex-col gap-0.5 rounded-[14px] px-3 py-2.5",
+                      "has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-ink",
+                      paid === option.value ? "bg-ink" : "border border-line hover:bg-field",
+                    )}
+                  >
+                    <input
+                      type="radio"
+                      name="paiement"
+                      checked={paid === option.value}
+                      onChange={() => setPaid(option.value)}
+                      className="sr-only"
+                    />
+                    <span
+                      className={cn(
+                        "text-[13px] font-semibold leading-4",
+                        paid === option.value ? "text-white" : "text-ink",
+                      )}
+                    >
+                      {option.label}
+                    </span>
+                    <span
+                      className={cn(
+                        "text-[11px] leading-[14px]",
+                        paid === option.value ? "text-[#9a9ea8]" : "text-ink-subtle",
+                      )}
+                    >
+                      {option.detail}
+                    </span>
+                  </label>
+                ))}
+              </fieldset>
+              {paid && (
+                <fieldset className="flex flex-wrap gap-1.5">
+                  <legend className="sr-only">Moyen de paiement</legend>
+                  {METHODS.map((entry) => (
+                    <label
+                      key={entry.value}
+                      className={cn(
+                        "flex h-9 items-center rounded-full px-3.5 text-[13px] font-semibold leading-4",
+                        "has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-ink",
+                        method === entry.value
+                          ? "bg-ink text-on-ink"
+                          : "bg-field text-ink hover:bg-line-soft",
+                      )}
+                    >
+                      <input
+                        type="radio"
+                        name="moyen"
+                        value={entry.value}
+                        checked={method === entry.value}
+                        onChange={() => setMethod(entry.value)}
+                        className="sr-only"
+                      />
+                      {entry.label}
+                    </label>
+                  ))}
+                </fieldset>
+              )}
+            </>
+          )}
+        </Section>
+      </div>
+
+      <aside className="flex w-full shrink-0 flex-col justify-between gap-6 rounded-3xl bg-ink p-[22px] lg:sticky lg:top-[62px] lg:w-[360px] lg:self-start lg:min-h-[calc(100dvh-180px)]">
+        <div className="flex flex-col gap-4">
+          <div className="flex items-center justify-between">
+            <p className="font-mono text-[11px] font-semibold leading-[14px] tracking-[0.06em] text-ink-subtle">
+              TA SAISIE
+            </p>
+            <button
+              type="button"
+              onClick={restart}
+              className="text-xs font-semibold text-[#9a9ea8] hover:text-white"
+            >
+              Tout effacer
+            </button>
+          </div>
+          {event ? (
+            <div className="flex gap-3">
+              <span
+                aria-hidden="true"
+                className="w-[3px] shrink-0 rounded-[2px]"
+                style={{ backgroundColor: event.color }}
+              />
+              <div className="flex flex-col gap-[3px]">
+                <p className="text-lg font-semibold leading-[22px] text-white">{event.title}</p>
+                <p className="text-[13px] leading-[18px] text-[#9a9ea8]">
+                  {event.date} · {event.range}
+                  {event.location && (
+                    <>
+                      <br />
+                      {event.location}
+                    </>
+                  )}
+                </p>
+              </div>
+            </div>
+          ) : (
+            <p className="text-sm text-[#9a9ea8]">Choisis une séance.</p>
+          )}
+          <dl className="flex flex-col border-t border-[#2a2a2a]">
+            <SummaryLine
+              label={
+                event && event.priceCents > 0
+                  ? `${seats} place${seats > 1 ? "s" : ""} × ${formatMoney(event.priceCents)}`
+                  : "Places"
+              }
+              value={event ? (total > 0 ? formatMoney(total) : String(seats)) : null}
+            />
+            {chosenItems.map(([id, quantity]) => (
+              <SummaryLine key={id} label={`${itemName(id)} ×${quantity}`} value="attribué" />
+            ))}
+            <SummaryLine label="Client" value={customerName} />
+            <SummaryLine label="Paiement" value={paymentLabel} accent={total > 0 && !paid} />
+          </dl>
+        </div>
+        <div className="flex flex-col gap-3.5">
+          <div className="flex items-end justify-between border-t border-[#2a2a2a] pt-3.5">
+            <span className="text-[13px] leading-4 text-[#9a9ea8]">Total</span>
+            <span className="text-[40px] font-medium leading-[42px] tracking-[-0.03em] text-white">
+              {total > 0 ? (
+                <>
+                  {formatMoney(total).replace(/\s?€$/, "")}{" "}
+                  <span className="text-lg font-light tracking-normal">€</span>
+                </>
+              ) : event ? (
+                "Gratuit"
+              ) : (
+                "—"
+              )}
+            </span>
+          </div>
+          <button
+            type="submit"
+            disabled={pending}
+            aria-busy={pending}
+            className="flex h-[52px] items-center justify-center rounded-full bg-white text-base font-semibold text-ink transition-colors hover:bg-field disabled:opacity-70"
+          >
+            {pending ? "Enregistrement…" : "Enregistrer la réservation"}
+          </button>
+          <p className="hidden text-center text-xs leading-4 text-ink-muted lg:block">
+            ou ⌘ Entrée
+          </p>
         </div>
       </aside>
     </form>
   );
 }
 
-function StepBlock({
+function Section({
+  number,
   title,
-  direction,
+  aside,
   children,
 }: {
+  number: number;
   title: string;
-  direction: number;
+  aside?: ReactNode;
   children: ReactNode;
 }) {
   return (
-    <motion.div
-      initial={{ opacity: 0, x: 32 * direction }}
-      animate={{ opacity: 1, x: 0 }}
-      className="flex flex-col gap-4"
-    >
-      <h2 className="font-headline text-[44px] leading-[42px] text-ink">
-        <WordsReveal>{title}</WordsReveal>
-      </h2>
+    <section className="flex flex-col gap-3 border-t border-[#f4f4f2] px-5 py-5 first:border-t-0 sm:px-6">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h2 className="flex items-center gap-2.5">
+          <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-ink text-[11px] font-bold leading-[14px] text-on-ink">
+            {number}
+          </span>
+          <span className="text-[17px] font-semibold leading-[22px] text-ink">{title}</span>
+        </h2>
+        {aside}
+      </div>
       {children}
-    </motion.div>
+    </section>
   );
 }
 
-/** Les trois étapes ; une étape faite affiche son résumé et permet d'y revenir. */
-function Stepper({
-  step,
-  summaries,
-  onBack,
-}: {
-  step: Step;
-  summaries: Partial<Record<Step, string | null>>;
-  onBack: (step: Step) => void;
-}) {
-  return (
-    <ol className="flex border-2 border-ink">
-      {STEPS.map((entry) => {
-        const isDone = entry.step < step;
-        const current = entry.step === step;
-        const content = (
-          <>
-            {current && <ActiveIndicator id="counter-step" className="inset-0 -z-10 bg-ink" />}
-            <span
-              className={cn(
-                "flex size-7 shrink-0 items-center justify-center font-mono text-[13px] font-semibold",
-                isDone && "bg-success text-on-ink",
-                current && "border-[1.5px] border-on-ink text-on-ink",
-                !isDone && !current && "border-[1.5px] border-ink-subtle text-ink-subtle",
-              )}
-            >
-              {isDone ? <Check size={12} /> : entry.step}
-            </span>
-            <span className="flex min-w-0 flex-col gap-0.5 text-left">
-              <span
-                className={cn(
-                  "truncate text-sm font-bold leading-5 sm:text-[15px]",
-                  isDone ? "text-success" : current ? "text-on-ink" : "text-ink-subtle",
-                )}
-              >
-                <span className="sm:hidden">{entry.short}</span>
-                <span className="hidden sm:inline">{entry.label}</span>
-              </span>
-              {isDone && summaries[entry.step] && (
-                <span className="hidden truncate font-mono text-label font-medium leading-4 text-success sm:block">
-                  {summaries[entry.step]}
-                </span>
-              )}
-            </span>
-          </>
-        );
-        const className = cn(
-          "relative isolate flex min-w-0 flex-1 items-center gap-2 px-2.5 py-3 transition-colors sm:gap-3 sm:px-[18px] sm:py-3.5",
-          entry.step > 1 && "border-l-2 border-ink",
-          isDone && "bg-success-bg",
-        );
-        return (
-          <li
-            key={entry.step}
-            className="flex min-w-0 flex-1"
-            aria-current={current ? "step" : undefined}
-          >
-            {isDone ? (
-              <button
-                type="button"
-                onClick={() => onBack(entry.step)}
-                className={cn(className, "hover:brightness-95")}
-              >
-                {content}
-              </button>
-            ) : (
-              <span className={className}>{content}</span>
-            )}
-          </li>
-        );
-      })}
-    </ol>
-  );
-}
-
-function SessionTile({
+function SessionRow({
   event,
   selected,
+  seats,
+  onSeats,
   onSelect,
 }: {
   event: CounterEvent;
   selected: boolean;
+  seats: number;
+  onSeats: (seats: number) => void;
   onSelect: () => void;
 }) {
   const full = event.remaining === 0;
   const blocked = full && !event.waitlist;
+  const remaining =
+    event.remaining === null
+      ? "Places illimitées"
+      : `${event.remaining} place${event.remaining > 1 ? "s" : ""} libre${event.remaining > 1 ? "s" : ""}`;
+  const title = (
+    <span className="text-sm font-semibold leading-[18px] text-ink">
+      {event.title}{" "}
+      <span className="font-normal text-ink-subtle">
+        · {event.priceCents > 0 ? formatMoney(event.priceCents) : "Gratuit"}
+      </span>
+    </span>
+  );
+  const date = (
+    <span className="w-[76px] shrink-0 text-[13px] font-semibold leading-4 text-ink">
+      {event.label}
+    </span>
+  );
+  const bar = (
+    <span
+      aria-hidden="true"
+      className="h-[26px] w-[3px] shrink-0 rounded-[2px]"
+      style={{ backgroundColor: event.color }}
+    />
+  );
+  if (selected) {
+    return (
+      <div className="flex min-h-[60px] items-center gap-3.5 rounded-[14px] border-[1.5px] border-ink bg-band py-1.5 pr-2 pl-3.5">
+        {date}
+        {bar}
+        <span className="flex min-w-0 flex-1 flex-col gap-px">
+          {title}
+          <span className={cn("text-xs leading-4", full ? "text-info" : "text-success")}>
+            {full ? "Complet · liste d'attente" : remaining}
+          </span>
+        </span>
+        <QuantityStepper value={seats} onChange={onSeats} min={1} max={99} />
+      </div>
+    );
+  }
   return (
     <button
       type="button"
       onClick={onSelect}
       disabled={blocked}
-      aria-pressed={selected}
-      className={cn(
-        "flex items-center gap-3.5 p-3.5 text-left transition-[background-color,scale] active:scale-[0.99]",
-        selected
-          ? "border-[1.5px] border-ink bg-ink"
-          : full
-            ? "border-[1.5px] border-dashed border-line-soft"
-            : "border-[1.5px] border-ink bg-surface hover:bg-bg",
-      )}
+      className="flex h-[52px] items-center gap-3.5 rounded-[14px] border border-bg px-3.5 text-left transition-colors hover:bg-band disabled:hover:bg-transparent"
     >
-      <span className="flex w-14 shrink-0 flex-col gap-0.5">
+      {date}
+      {bar}
+      <span className="min-w-0 flex-1 truncate">{title}</span>
+      {full ? (
+        <span className="flex items-center gap-1.5">
+          <span className="text-[13px] font-bold leading-4 text-danger">Complet</span>
+          {event.waitlist && (
+            <span className="rounded-full bg-info-bg px-[7px] py-0.5 text-[11px] font-bold leading-[14px] text-info">
+              attente
+            </span>
+          )}
+        </span>
+      ) : (
         <span
           className={cn(
-            "font-mono text-[17px] font-semibold leading-[22px]",
-            selected ? "text-on-ink" : full ? "text-ink-muted" : "text-ink",
+            "text-[13px] font-bold leading-4",
+            event.remaining !== null && event.remaining <= 2 ? "text-warning" : "text-ink-subtle",
           )}
         >
-          {event.time}
+          {event.remaining === null
+            ? "∞"
+            : `${event.remaining} libre${event.remaining > 1 ? "s" : ""}`}
         </span>
-        <span
-          className={cn(
-            "font-mono text-label font-medium leading-4",
-            selected ? "text-on-ink/80" : "text-ink-muted",
-          )}
-        >
-          {event.day === "later" ? event.date : event.duration}
-        </span>
-      </span>
-      <span className="flex min-w-0 flex-1 flex-col gap-1">
-        <span className="flex items-center gap-2">
-          <span className="size-2.5 shrink-0" style={{ backgroundColor: event.color }} />
-          <span
-            className={cn(
-              "text-base font-bold leading-5",
-              selected ? "text-on-ink" : full ? "text-ink-muted" : "text-ink",
-            )}
-          >
-            {event.title}
-          </span>
-        </span>
-        <span
-          className={cn(
-            "text-[13px] font-medium leading-[18px]",
-            selected ? "text-on-ink/80" : "text-ink-muted",
-          )}
-        >
-          {[event.location, event.priceCents > 0 ? formatMoney(event.priceCents) : "Gratuit"]
-            .filter(Boolean)
-            .join(" · ")}
-        </span>
-      </span>
-      <span className="flex w-[68px] shrink-0 flex-col items-end gap-0.5">
-        <span
-          className={cn(
-            "font-mono font-semibold",
-            full ? "text-label leading-4 text-danger" : "text-[15px] leading-5",
-            !full &&
-              (selected
-                ? "text-on-ink"
-                : (event.remaining ?? 99) <= 2
-                  ? "text-warning"
-                  : "text-success"),
-          )}
-        >
-          {full ? "Complet" : event.remaining === null ? "∞" : event.remaining}
-        </span>
-        <span
-          className={cn(
-            "text-label font-medium leading-4",
-            selected ? "text-on-ink/80" : "text-ink-muted",
-          )}
-        >
-          {full ? (event.waitlist ? "attente" : "") : event.remaining === 1 ? "place" : "places"}
-        </span>
-      </span>
+      )}
     </button>
   );
 }
 
-/** Compteur − n + (places, exemplaires). */
+function SummaryLine({
+  label,
+  value,
+  accent = false,
+}: {
+  label: string;
+  value: string | null;
+  accent?: boolean;
+}) {
+  return (
+    <div className="flex h-10 items-center justify-between gap-4">
+      <dt className="truncate text-[13px] leading-4 text-[#9a9ea8]">{label}</dt>
+      <dd
+        className={cn(
+          "truncate text-sm font-semibold leading-[18px]",
+          value ? (accent ? "text-accent" : "text-white") : "text-ink-muted",
+        )}
+      >
+        {value ?? "—"}
+      </dd>
+    </div>
+  );
+}
+
+/** Compteur − n + (places, exemplaires) : pilule blanche, « + » en noir (maquette 1.6b). */
 function QuantityStepper({
   value,
   onChange,
   min,
   max,
   label = "Places",
-  size = "md",
 }: {
   value: number;
   onChange: (value: number) => void;
   min: number;
   max: number;
   label?: string;
-  size?: "md" | "lg";
 }) {
-  const box =
-    (size === "lg" ? "h-[52px] w-[52px] text-2xl" : "size-10 text-xl") +
-    " transition-[color,background-color,scale] active:scale-90";
   // Le chiffre roule : il arrive par le bas quand on ajoute, par le haut quand on retire.
   const previous = useRef(value);
   const rise = value >= previous.current ? 1 : -1;
   useEffect(() => {
     previous.current = value;
   }, [value]);
+  const round =
+    "flex size-8 items-center justify-center rounded-full text-lg leading-[18px] transition-[color,background-color,scale] active:scale-90";
   return (
-    <div
-      className={cn(
-        "flex shrink-0 items-center border-ink",
-        size === "lg" ? "border-2" : "border-[1.5px]",
-      )}
-    >
+    <div className="flex shrink-0 items-center gap-2.5 rounded-full border border-bg bg-surface p-1">
       <button
         type="button"
         aria-label={`Moins (${label})`}
         disabled={value <= min}
         onClick={() => onChange(value - 1)}
-        className={cn(
-          box,
-          "flex items-center justify-center font-semibold text-ink disabled:text-ink-subtle",
-        )}
+        className={cn(round, "border border-line text-ink disabled:text-ink-subtle")}
       >
         −
       </button>
       <output
         aria-label={label}
         className={cn(
-          "flex items-center justify-center overflow-hidden border-ink font-mono font-semibold",
-          size === "lg"
-            ? "h-[52px] w-14 border-x-2 text-[22px]"
-            : "size-10 border-x-[1.5px] text-[17px]",
+          "flex min-w-4 justify-center overflow-hidden text-[17px] font-semibold leading-5",
           value === 0 ? "text-ink-subtle" : "text-ink",
         )}
       >
@@ -825,11 +829,7 @@ function QuantityStepper({
         aria-label={`Plus (${label})`}
         disabled={value >= max}
         onClick={() => onChange(value + 1)}
-        className={cn(
-          box,
-          "flex items-center justify-center font-semibold disabled:text-ink-subtle",
-          size === "lg" ? "bg-ink text-on-ink disabled:bg-transparent" : "text-ink",
-        )}
+        className={cn(round, "bg-ink text-on-ink disabled:bg-line-soft disabled:text-ink-subtle")}
       >
         +
       </button>
@@ -875,39 +875,6 @@ function ContactInput({
   );
 }
 
-function RecapLine({
-  label,
-  value,
-  placeholder = "—",
-  mono = false,
-}: {
-  label: string;
-  value: string | null;
-  placeholder?: string;
-  mono?: boolean;
-}) {
-  return (
-    <div className="flex items-baseline justify-between gap-4">
-      <dt className="text-sm font-medium leading-5 text-ink-muted">{label}</dt>
-      <motion.dd
-        key={value ?? "vide"}
-        initial={{ opacity: 0, y: 4 }}
-        animate={{ opacity: 1, y: 0 }}
-        className={cn(
-          "text-right",
-          value
-            ? mono
-              ? "font-mono text-[15px] font-semibold leading-5 text-ink"
-              : "text-[15px] font-bold leading-5 text-ink"
-            : "text-sm font-medium leading-5 text-ink-subtle",
-        )}
-      >
-        {value ?? placeholder}
-      </motion.dd>
-    </div>
-  );
-}
-
 function CounterDone({
   done,
   event,
@@ -932,9 +899,9 @@ function CounterDone({
         ? `Payé · ${METHODS.find((entry) => entry.value === method)?.label.toLowerCase() ?? "noté"}`
         : "À payer";
   return (
-    <div className="flex max-w-[640px] flex-col gap-6 px-4 pt-6 pb-10 sm:pt-7">
+    <div className="flex max-w-[640px] flex-col gap-6 px-4 pt-2 pb-10">
       <div className="flex flex-col gap-3">
-        <span className="flex size-14 items-center justify-center bg-success text-on-ink">
+        <span className="flex size-14 items-center justify-center rounded-full bg-success text-on-ink">
           {/* La coche se dessine (classe `draw`). */}
           <svg width="30" height="30" viewBox="0 0 24 24" aria-hidden="true">
             <path
@@ -947,7 +914,7 @@ function CounterDone({
             />
           </svg>
         </span>
-        <p className="reveal font-mono text-label font-semibold uppercase leading-4 tracking-[0.055em] text-success">
+        <p className="reveal font-mono text-xs font-semibold leading-4 text-success">
           Réf. {done.reference}
         </p>
         <h2 className="font-headline text-[44px] leading-[42px] text-ink">
@@ -956,7 +923,7 @@ function CounterDone({
           </WordsReveal>
         </h2>
       </div>
-      <dl className="reveal-group flex flex-col border-[1.5px] border-ink bg-surface">
+      <dl className="reveal-group flex flex-col rounded-3xl bg-surface px-2">
         <DoneRow label="Séance">
           <span className="text-[15px] font-bold leading-5 text-ink">{event.title}</span>
           <span className="text-[13px] font-medium leading-[18px] text-ink-muted">
@@ -985,16 +952,16 @@ function CounterDone({
         <DoneRow label="Paiement" last>
           <span className="flex items-center gap-2.5">
             {done.amountCents > 0 && (
-              <span className="font-mono text-[15px] font-semibold leading-5 text-ink">
+              <span className="text-[15px] font-semibold leading-5 text-ink">
                 {formatMoney(done.amountCents)}
               </span>
             )}
             <span
               className={cn(
-                "border-[1.5px] px-2 py-0.5 text-[13px] font-bold leading-[18px]",
+                "rounded-full px-2.5 py-0.5 text-xs font-bold leading-[18px]",
                 done.paymentStatus === "paid" || done.amountCents === 0
-                  ? "border-success bg-success-bg text-success"
-                  : "border-warning bg-warning-bg text-warning",
+                  ? "bg-success-bg text-success"
+                  : "bg-warning-bg text-warning",
               )}
             >
               {paidLabel}
@@ -1024,10 +991,8 @@ function DoneRow({
   last?: boolean;
 }) {
   return (
-    <div className={cn("flex gap-3 p-3.5", !last && "border-b-[1.5px] border-line-soft")}>
-      <dt className="w-[84px] shrink-0 font-mono text-label font-semibold uppercase leading-5 tracking-[0.055em] text-neutral">
-        {label}
-      </dt>
+    <div className={cn("flex gap-3 p-3.5", !last && "border-b border-[#f4f4f2]")}>
+      <dt className="w-[84px] shrink-0 text-sm leading-5 text-ink-subtle">{label}</dt>
       <dd className="flex min-w-0 flex-1 flex-col gap-0.5">{children}</dd>
     </div>
   );
