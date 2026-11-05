@@ -1,23 +1,95 @@
 import type { PublicEventRow } from "@horaya/db";
 import Link from "next/link";
-import { AvailabilityMeter } from "@/components/public/availability-meter";
-import { ArrowRight } from "@/components/ui/icons";
+import type { CSSProperties, ReactNode } from "react";
+import { WordsReveal } from "@/components/motion/words";
+import { cardShellClasses } from "@/components/ui/section";
 import { cn } from "@/lib/cn";
+import { displayFontClass } from "@/lib/fonts";
 import {
   formatDayNumber,
-  formatHour,
   formatMoney,
   formatMonthShort,
   formatPublicSchedule,
   formatWeekdayShort,
 } from "@/lib/format";
-import { availability, bookingState, pluralize } from "@/lib/public-booking";
+import { availability, type BookingState, bookingState, pluralize } from "@/lib/public-booking";
 import { param, withParams } from "@/lib/search-params";
 
+/** Image d'un événement, ou un dégradé de la couleur de l'espace quand il n'en a pas. */
+export function eventCover(imageUrl: string | null): CSSProperties {
+  return {
+    backgroundImage: imageUrl
+      ? `url(${imageUrl})`
+      : "linear-gradient(in oklab 135deg, var(--brand) 0%, color-mix(in srgb, var(--brand) 62%, black) 100%)",
+  };
+}
+
+/** Grand bandeau sombre en tête de page (maquette 5.1). */
+export function PublicHero({
+  eyebrow,
+  title,
+  lead,
+  font,
+}: {
+  eyebrow?: ReactNode;
+  title: string;
+  lead?: ReactNode;
+  font: string;
+}) {
+  return (
+    <section
+      className="flex min-h-[260px] flex-col justify-end gap-3.5 rounded-3xl px-6 py-7 text-white lg:h-[340px] lg:px-10 lg:py-9"
+      style={{
+        background:
+          "radial-gradient(circle at 85% 20%, color-mix(in srgb, var(--brand) 55%, transparent), transparent 60%), var(--color-ink)",
+      }}
+    >
+      {eyebrow && (
+        <p className="reveal text-[13px] font-semibold leading-4 text-[var(--brand-light)]">
+          {eyebrow}
+        </p>
+      )}
+      <h1
+        className={cn(
+          "text-[44px] leading-[48px] tracking-[-0.045em] lg:text-[72px] lg:leading-[72px]",
+          displayFontClass(font),
+        )}
+      >
+        <WordsReveal delay={1}>{title}</WordsReveal>
+      </h1>
+      {lead && (
+        <p className="reveal max-w-[520px] text-[17px] leading-[25px] text-white/85">{lead}</p>
+      )}
+    </section>
+  );
+}
+
+/** Pastille d'état d'un événement sur sa photo (« Plus que 2 places », « Complet »…). */
+export function eventBadge(
+  state: BookingState,
+  seats: ReturnType<typeof availability>,
+  requiresApproval: boolean,
+): { label: string; className: string } | null {
+  if (state.kind === "closed")
+    return { label: "Réservations closes", className: "bg-draft-bg text-draft" };
+  if (state.kind !== "open") return { label: "Complet", className: "bg-draft-bg text-draft" };
+  if (requiresApproval) return { label: "Sur validation", className: "bg-info-bg text-info" };
+  if (seats.tone === "warning")
+    return { label: seats.label, className: "bg-warning-bg text-warning" };
+  return null;
+}
+
+const ACTIONS: Record<BookingState["kind"], { label: string; className: string }> = {
+  open: { label: "Réserver →", className: "text-[var(--brand-text)]" },
+  waitlist: { label: "Liste d'attente →", className: "text-ink" },
+  full: { label: "Complet", className: "text-ink-subtle" },
+  closed: { label: "Voir →", className: "text-ink-subtle" },
+};
+
 /**
- * Liste des événements à venir d'une page publique (écran 27), avec le filtre par type
- * et le tri. Sert aussi aux liens calendrier : `linkSlug` suit le visiteur jusqu'à la
- * réservation.
+ * Événements à venir d'une page publique (maquette 5.1) : filtre par type, tri, cartes pour
+ * la semaine, puis une liste pour la suite. Sert aussi aux liens calendrier : `linkSlug`
+ * suit le visiteur jusqu'à la réservation.
  */
 export function PublicEvents({
   events,
@@ -54,185 +126,280 @@ export function PublicEvents({
         (sort === "prix" ? a.priceCents - b.priceCents : 0) ||
         a.startsAt.getTime() - b.startsAt.getTime(),
     );
+  // Par date : les 7 prochains jours en cartes (ou les 4 premiers), la suite en liste.
+  const weekEnd = now.getTime() + 7 * 86_400_000;
+  const thisWeek = shown.filter((entry) => entry.startsAt.getTime() < weekEnd);
+  const cards = sort === "prix" ? [] : thisWeek.length > 0 ? thisWeek : shown.slice(0, 4);
+  const rest = shown.slice(cards.length);
+
   const href = (overrides: Record<string, string | undefined>) =>
     withParams(basePath, {
       type: type?.id,
       tri: sort === "date" ? undefined : sort,
       ...overrides,
     });
+  const eventHref = (entry: PublicEventRow) =>
+    withParams(`/${workspaceSlug}/${entry.slug}`, { lien: linkSlug });
   const chip = (active: boolean) =>
     cn(
-      "flex h-10 shrink-0 items-center gap-2 px-4 text-sm font-bold transition-colors",
-      active ? "bg-ink text-on-ink" : "border-2 border-ink text-ink hover:bg-surface",
+      "flex h-[38px] shrink-0 items-center gap-2 rounded-full px-4 text-sm font-semibold leading-[18px] transition-colors",
+      active ? "bg-ink text-on-ink" : "bg-surface text-ink hover:bg-field",
+    );
+  const count = (active: boolean) =>
+    cn("font-mono text-[11px] leading-[14px]", active ? "text-on-ink/60" : "text-ink-subtle");
+  const sortLink = (active: boolean) =>
+    cn(
+      "text-sm leading-[18px]",
+      active ? "font-semibold text-ink" : "text-ink-subtle hover:text-ink",
     );
 
-  return events.length === 0 ? (
-    <div className="px-5 py-16 sm:px-16">
-      <p className="max-w-xl text-lg font-medium text-ink-muted">
-        Aucun événement à venir pour l'instant. Reviens bientôt !
-      </p>
-    </div>
-  ) : (
+  if (events.length === 0) {
+    return (
+      <div className={cn(cardShellClasses, "items-start gap-2 p-8")}>
+        <p className="text-section font-medium leading-[26px] text-ink">
+          Aucun événement à venir pour l'instant.
+        </p>
+        <p className="text-base text-ink-muted">Reviens bientôt !</p>
+      </div>
+    );
+  }
+
+  return (
     <>
-      <div className="flex items-center justify-between gap-6 border-b-2 border-ink px-5 py-4 sm:px-16 sm:py-6">
+      <div className="flex items-center justify-between gap-4">
         <nav
           aria-label="Filtrer par type"
-          className="-mx-1 flex min-w-0 gap-2.5 overflow-x-auto px-1"
+          className="-mx-1 flex min-w-0 gap-1.5 overflow-x-auto px-1 py-1"
         >
           <Link
             href={href({ type: undefined })}
             aria-current={!type ? "page" : undefined}
             className={chip(!type)}
           >
-            Tous · {events.length}
+            Tout <span className={count(!type)}>{events.length}</span>
           </Link>
-          {types.map((entry) => (
-            <Link
-              key={entry.id}
-              href={href({ type: entry.id })}
-              aria-current={type?.id === entry.id ? "page" : undefined}
-              className={chip(type?.id === entry.id)}
-            >
-              <span
-                aria-hidden="true"
-                className="size-2.5 shrink-0"
-                style={{ backgroundColor: entry.color }}
-              />
-              {pluralize(entry.name)} · {events.filter((event) => event.typeId === entry.id).length}
-            </Link>
-          ))}
+          {types.map((entry) => {
+            const active = type?.id === entry.id;
+            return (
+              <Link
+                key={entry.id}
+                href={href({ type: entry.id })}
+                aria-current={active ? "page" : undefined}
+                className={chip(active)}
+              >
+                <span
+                  aria-hidden="true"
+                  className="size-2 shrink-0 rounded-[3px]"
+                  style={{ backgroundColor: entry.color }}
+                />
+                {pluralize(entry.name)}
+                <span className={count(active)}>
+                  {events.filter((event) => event.typeId === entry.id).length}
+                </span>
+              </Link>
+            );
+          })}
         </nav>
-        <div className="hidden shrink-0 items-center gap-2.5 text-sm sm:flex">
-          <span className="font-semibold text-ink-muted">Trier par</span>
+        <div className="hidden h-[38px] shrink-0 items-center gap-2 rounded-full bg-surface px-3.5 sm:flex">
+          <span className="text-[13px] text-ink-subtle">Trier par</span>
           <Link
             href={href({ tri: undefined })}
             aria-current={sort === "date" ? "true" : undefined}
-            className={cn(
-              "text-ink",
-              sort === "date"
-                ? "font-bold underline decoration-1 underline-offset-[3px]"
-                : "font-semibold hover:underline",
-            )}
+            className={sortLink(sort === "date")}
           >
             Date
           </Link>
           <Link
             href={href({ tri: "prix" })}
             aria-current={sort === "prix" ? "true" : undefined}
-            className={cn(
-              "text-ink",
-              sort === "prix"
-                ? "font-bold underline decoration-1 underline-offset-[3px]"
-                : "font-semibold hover:underline",
-            )}
+            className={sortLink(sort === "prix")}
           >
             Prix
           </Link>
         </div>
       </div>
-      <ul className="flex flex-col px-5 pb-10 sm:px-16">
-        {shown.map((entry) => {
-          const seats = availability(entry.capacity, entry.seatsHeld);
-          const state = bookingState(entry, now);
-          const eventHref = withParams(`/${workspaceSlug}/${entry.slug}`, { lien: linkSlug });
-          const details = [
-            formatPublicSchedule(entry.startsAt, entry.endsAt, tz).hours,
-            entry.locationName ?? (entry.onlineUrl ? "En ligne" : null),
-            ...entry.highlights.slice(0, 1),
-          ].filter(Boolean);
-          return (
-            <li
-              key={entry.id}
-              className="reveal-scroll flex flex-col gap-4 border-b border-line-soft py-6 last:border-b-0 lg:flex-row lg:items-center lg:gap-8 lg:py-[22px]"
-            >
-              <div className="hidden w-[88px] shrink-0 flex-col gap-1 lg:flex">
-                <span className="font-mono text-label font-semibold uppercase tracking-[0.055em] text-ink-muted">
-                  {formatWeekdayShort(entry.startsAt, tz)} {formatMonthShort(entry.startsAt, tz)}
-                </span>
-                <span className="font-headline text-[52px] leading-[48px] text-ink">
-                  {formatDayNumber(entry.startsAt, tz)}
-                </span>
-              </div>
-              <div className="flex min-w-0 flex-1 flex-col gap-2">
-                <p className="flex items-center gap-2.5 font-mono text-label font-semibold uppercase tracking-[0.055em] text-ink-muted lg:hidden">
-                  <span
-                    aria-hidden="true"
-                    className="size-2.5 shrink-0"
-                    style={{ backgroundColor: entry.typeColor }}
-                  />
-                  {formatWeekdayShort(entry.startsAt, tz)} {formatDayNumber(entry.startsAt, tz)}{" "}
-                  {formatMonthShort(entry.startsAt, tz)} · {formatHour(entry.startsAt, tz)}
-                </p>
-                <Link
-                  href={eventHref}
-                  className="flex min-w-0 items-center gap-2.5 text-ink hover:underline"
-                >
-                  <span
-                    aria-hidden="true"
-                    className="hidden size-3 shrink-0 lg:block"
-                    style={{ backgroundColor: entry.typeColor }}
-                  />
-                  <span className="truncate text-lg font-extrabold leading-6 lg:text-section lg:leading-7">
-                    {entry.title}
-                  </span>
-                </Link>
-                <p className="truncate text-[15px] font-medium leading-5 text-ink-muted">
-                  {details.join(" · ")}
-                </p>
-              </div>
-              <div className="lg:w-[170px] lg:shrink-0">
-                <AvailabilityMeter label={seats.label} tone={seats.tone} ratio={seats.ratio} />
-              </div>
-              <div className="flex items-center justify-between gap-4 lg:contents">
-                <div className="flex items-baseline gap-2 lg:w-[110px] lg:shrink-0 lg:flex-col lg:items-end lg:gap-0.5">
-                  <span className="text-section font-extrabold leading-[26px] text-ink">
-                    {entry.priceCents > 0 ? formatMoney(entry.priceCents) : "Gratuit"}
-                  </span>
-                  <span className="whitespace-nowrap font-mono text-[11px] font-semibold uppercase tracking-[0.5px] text-ink-muted">
-                    {entry.priceCents > 0 ? "/ pers." : "Sur inscription"}
-                  </span>
-                </div>
-                <PublicAction href={eventHref} state={state.kind} />
-              </div>
-            </li>
-          );
-        })}
-      </ul>
+
+      {cards.length > 0 && (
+        <section className="flex flex-col gap-3">
+          <h2 className="text-section font-medium leading-[26px] tracking-[-0.02em] text-ink">
+            {thisWeek.length > 0 ? "Cette semaine" : "Prochainement"}
+          </h2>
+          <ul className="reveal-group grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+            {cards.map((entry) => (
+              <li key={entry.id} className="flex">
+                <EventCard event={entry} href={eventHref(entry)} timeZone={tz} now={now} />
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
+      {rest.length > 0 && (
+        <section className="flex flex-col gap-3">
+          <h2 className="text-section font-medium leading-[26px] tracking-[-0.02em] text-ink">
+            {sort === "prix" ? "Du moins cher au plus cher" : "Plus tard"}
+          </h2>
+          <ul className={cn(cardShellClasses, "overflow-hidden")}>
+            {rest.map((entry) => (
+              <li key={entry.id} className="border-t border-bg first:border-t-0">
+                <EventRow event={entry} href={eventHref(entry)} timeZone={tz} />
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
     </>
   );
 }
 
-function PublicAction({
+function EventCard({
+  event,
   href,
-  state,
+  timeZone: tz,
+  now,
 }: {
+  event: PublicEventRow;
   href: string;
-  state: "open" | "waitlist" | "full" | "closed";
+  timeZone: string;
+  now: Date;
 }) {
-  const base =
-    "flex h-12 w-[150px] shrink-0 items-center justify-center gap-2.5 text-[15px] font-extrabold transition-colors";
-  if (state === "open") {
-    return (
-      <Link href={href} className={cn(base, "bg-ink text-on-ink hover:bg-info")}>
-        Réserver
-        <ArrowRight />
-      </Link>
-    );
-  }
-  if (state === "waitlist") {
-    return (
-      <Link href={href} className={cn(base, "border-2 border-ink text-ink hover:bg-surface")}>
-        Liste d'attente
-        <ArrowRight />
-      </Link>
-    );
-  }
+  const seats = availability(event.capacity, event.seatsHeld);
+  const state = bookingState(event, now);
+  const badge = eventBadge(state, seats, event.requiresApproval);
+  const action =
+    state.kind === "open" && event.requiresApproval
+      ? { ...ACTIONS.open, label: "Demander →" }
+      : ACTIONS[state.kind];
   return (
     <Link
       href={href}
-      className={cn(base, "border-2 border-ink-subtle text-ink-muted hover:border-ink")}
+      className={cn(
+        cardShellClasses,
+        "reveal w-full overflow-hidden rounded-[22px] transition-transform hover:-translate-y-0.5",
+      )}
     >
-      {state === "full" ? "Complet" : "Voir"}
+      <div
+        className={cn(
+          "flex h-[180px] shrink-0 items-start justify-between bg-cover bg-center p-3",
+          state.kind !== "open" && "opacity-85",
+        )}
+        style={eventCover(event.coverImageUrl)}
+      >
+        <span className="flex w-[52px] shrink-0 flex-col items-center rounded-xl bg-surface py-1.5">
+          <span className="text-[10px] font-bold uppercase leading-3 text-[var(--brand-text)]">
+            {formatWeekdayShort(event.startsAt, tz)}
+          </span>
+          <span className="text-section font-semibold leading-6 text-ink">
+            {formatDayNumber(event.startsAt, tz)}
+          </span>
+          <span className="text-[10px] font-semibold uppercase leading-3 text-ink-subtle">
+            {formatMonthShort(event.startsAt, tz)}
+          </span>
+        </span>
+        {badge && (
+          <span
+            className={cn(
+              "rounded-full px-2.5 py-[5px] text-xs font-bold leading-[14px]",
+              badge.className,
+            )}
+          >
+            {badge.label}
+          </span>
+        )}
+      </div>
+      <div className="flex flex-1 flex-col gap-2.5 px-[18px] pt-4 pb-[18px]">
+        <p className="flex items-center gap-2 text-xs font-semibold leading-4 text-ink-subtle">
+          <span
+            aria-hidden="true"
+            className="size-2 shrink-0 rounded-[3px]"
+            style={{ backgroundColor: event.typeColor }}
+          />
+          <span className="truncate">
+            {event.typeName} · {formatPublicSchedule(event.startsAt, event.endsAt, tz).hours}
+          </span>
+        </p>
+        <p className="text-lg font-semibold leading-[22px] tracking-[-0.01em] text-ink">
+          {event.title}
+        </p>
+        {seats.ratio === null ? (
+          <p className="text-[13px] text-ink-subtle">{seats.label}</p>
+        ) : (
+          <div className="flex items-center gap-2.5">
+            <span aria-hidden="true" className="flex h-1 flex-1 rounded-full bg-line-soft">
+              <span
+                className={cn("rounded-full", seats.full ? "bg-ink" : "bg-[var(--brand)]")}
+                style={{ width: `${Math.round(seats.ratio * 100)}%` }}
+              />
+            </span>
+            <span className="font-mono text-[11px] font-semibold leading-[14px] text-ink">
+              {event.seatsHeld} / {event.capacity}
+            </span>
+          </div>
+        )}
+        <div className="mt-auto flex items-center justify-between pt-0.5">
+          <span className="text-[15px] font-semibold leading-5 text-ink">
+            {event.priceCents > 0 ? (
+              <>
+                {formatMoney(event.priceCents)}{" "}
+                <span className="font-normal text-ink-subtle">/ pers.</span>
+              </>
+            ) : (
+              "Gratuit"
+            )}
+          </span>
+          <span className={cn("text-sm font-bold leading-[18px]", action.className)}>
+            {action.label}
+          </span>
+        </div>
+      </div>
+    </Link>
+  );
+}
+
+function EventRow({
+  event,
+  href,
+  timeZone: tz,
+}: {
+  event: PublicEventRow;
+  href: string;
+  timeZone: string;
+}) {
+  const seats = availability(event.capacity, event.seatsHeld);
+  return (
+    <Link
+      href={href}
+      className="group flex items-center gap-[18px] px-5 py-4 transition-colors hover:bg-band lg:h-[72px] lg:py-0"
+    >
+      <span className="w-24 shrink-0 text-sm font-semibold leading-[18px] text-ink">
+        {formatWeekdayShort(event.startsAt, tz)} {formatDayNumber(event.startsAt, tz)}{" "}
+        {formatMonthShort(event.startsAt, tz).toLowerCase()}
+      </span>
+      <span className="hidden w-[110px] shrink-0 font-mono text-xs leading-4 text-ink-subtle lg:block">
+        {formatPublicSchedule(event.startsAt, event.endsAt, tz).hours}
+      </span>
+      <span className="flex min-w-0 flex-1 items-center gap-2.5">
+        <span
+          aria-hidden="true"
+          className="size-2 shrink-0 rounded-[3px]"
+          style={{ backgroundColor: event.typeColor }}
+        />
+        <span className="truncate text-base font-semibold leading-5 text-ink">{event.title}</span>
+      </span>
+      <span
+        className={cn(
+          "hidden w-[150px] shrink-0 text-[13px] leading-4 md:block",
+          seats.tone === "warning" ? "font-semibold text-warning" : "text-ink-subtle",
+        )}
+      >
+        {seats.label}
+      </span>
+      <span className="w-[72px] shrink-0 text-right text-[15px] font-semibold leading-5 text-ink lg:w-[90px]">
+        {event.priceCents > 0 ? formatMoney(event.priceCents) : "Gratuit"}
+      </span>
+      <span className="hidden h-9 shrink-0 items-center rounded-full bg-bg px-4 text-[13px] font-bold text-ink transition-colors group-hover:bg-line sm:flex">
+        Voir
+      </span>
     </Link>
   );
 }

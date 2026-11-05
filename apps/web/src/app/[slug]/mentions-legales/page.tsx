@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import type { ReactNode } from "react";
-import { BrandBand, PublicNav } from "@/components/public/public-chrome";
 import { cn } from "@/lib/cn";
 import { displayFontClass } from "@/lib/fonts";
 import { getWorkspaceBySlug } from "@/server/public";
@@ -15,21 +14,16 @@ export default async function LegalNoticePage({ params }: PageProps<"/[slug]/men
   const siret = workspace.siret?.replace(/^(\d{3})(\d{3})(\d{3})(\d{5})$/, "$1 $2 $3 $4");
 
   return (
-    <>
-      <BrandBand>
-        <PublicNav workspace={workspace} />
-        <div className="px-5 pt-10 pb-10 sm:px-16 sm:pt-14 sm:pb-14">
-          <h1
-            className={cn(
-              "text-[52px] leading-[48px] sm:text-[96px] sm:leading-[88px]",
-              displayFontClass(workspace.displayFont),
-            )}
-          >
-            Mentions légales
-          </h1>
-        </div>
-      </BrandBand>
-      <div className="flex max-w-[720px] flex-col gap-10 px-5 py-10 sm:px-16 sm:py-14">
+    <div className="flex flex-col gap-6">
+      <h1
+        className={cn(
+          "px-1 pt-4 text-[40px] leading-[44px] tracking-[-0.04em] text-ink sm:text-[52px] sm:leading-[56px]",
+          displayFontClass(workspace.displayFont),
+        )}
+      >
+        Mentions légales
+      </h1>
+      <div className="flex max-w-[760px] flex-col gap-4">
         <Block title="Éditeur de la page">
           <p className="font-bold text-ink">{workspace.legalName ?? workspace.name}</p>
           {workspace.legalName && workspace.legalName !== workspace.name && (
@@ -60,19 +54,15 @@ export default async function LegalNoticePage({ params }: PageProps<"/[slug]/men
           <p>Infomaniak Network SA, rue Eugène-Marziano 25, 1227 Les Acacias (GE), Suisse.</p>
         </Block>
       </div>
-    </>
+    </div>
   );
 }
 
 function Block({ title, children }: { title: string; children: ReactNode }) {
   return (
-    <section className="flex flex-col gap-3">
-      <h2 className="border-b-2 border-ink pb-2.5 font-section text-section leading-7 text-ink">
-        {title}
-      </h2>
-      <div className="flex flex-col gap-1 text-base font-medium leading-7 text-ink-muted">
-        {children}
-      </div>
+    <section className="flex flex-col gap-3 rounded-3xl bg-surface p-6">
+      <h2 className="text-xl font-semibold leading-6 text-ink">{title}</h2>
+      <div className="flex flex-col gap-1 text-base leading-7 text-ink-muted">{children}</div>
     </section>
   );
 }

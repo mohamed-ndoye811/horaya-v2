@@ -3,11 +3,11 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { WordsReveal } from "@/components/motion/words";
-import { AvailabilityMeter } from "@/components/public/availability-meter";
-import { BrandBand, brandRule, PublicNav } from "@/components/public/public-chrome";
+import { brandButtonClasses } from "@/components/public/public-chrome";
+import { eventBadge, eventCover } from "@/components/public/public-events";
 import { NotFoundScreen } from "@/components/public/public-not-found";
 import { SeatPicker } from "@/components/public/seat-picker";
-import { ArrowRight, Check } from "@/components/ui/icons";
+import { ArrowLeft, ArrowRight, Check } from "@/components/ui/icons";
 import { cn } from "@/lib/cn";
 import { displayFontClass } from "@/lib/fonts";
 import { formatMoney, formatPublicSchedule } from "@/lib/format";
@@ -48,7 +48,7 @@ export async function generateMetadata({
   };
 }
 
-/** Écran 10 : page publique d'un événement. */
+/** Maquette 5.2 : page publique d'un événement. */
 export default async function PublicEventPage({
   params,
   searchParams,
@@ -96,123 +96,138 @@ export default async function PublicEventPage({
         ? "Demander mes places"
         : "Réserver mes places";
 
+  const badge = eventBadge(state, seats, event.requiresApproval);
+
   return (
-    <>
-      <BrandBand>
-        <PublicNav workspace={workspace} />
-        <div className="flex flex-col gap-6 px-5 pt-8 pb-8 sm:px-16 sm:pt-14 sm:pb-16">
-          <div className="flex flex-wrap gap-2">
-            <span className="flex h-7 items-center bg-[var(--on-brand)] px-2.5 font-mono text-label font-semibold uppercase tracking-[0.055em] text-[var(--brand)]">
+    <div className="flex flex-col gap-6 pb-24 lg:pb-0">
+      <Link
+        href={homeHref}
+        className="flex w-fit items-center gap-1.5 text-sm font-semibold leading-[18px] text-ink-muted hover:text-ink"
+      >
+        <ArrowLeft className="size-3.5" />
+        Tous les événements
+      </Link>
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-start">
+        <div className="flex min-w-0 flex-1 flex-col gap-4">
+          <div
+            className="h-[240px] shrink-0 rounded-3xl bg-cover bg-center sm:h-[400px]"
+            style={eventCover(event.coverImageUrl)}
+          />
+          <div className="flex flex-col gap-3 px-1 pt-2 pb-1">
+            <p className="flex flex-wrap items-center gap-2 text-[13px] font-semibold leading-4 text-ink-muted">
+              <span
+                aria-hidden="true"
+                className="size-2 shrink-0 rounded-[3px]"
+                style={{ backgroundColor: event.typeColor }}
+              />
               {event.typeName}
-            </span>
-            {recurrence && (
-              <span className="flex h-7 items-center border-[1.5px] border-[var(--on-brand)] px-2.5 font-mono text-label font-semibold uppercase tracking-[0.055em]">
-                {recurrence}
-              </span>
-            )}
-          </div>
-          <h1
-            className={cn(
-              "text-[52px] leading-[48px] sm:text-[112px] sm:leading-[100px]",
-              displayFontClass(workspace.displayFont),
-            )}
-          >
-            <WordsReveal>{event.title}</WordsReveal>
-          </h1>
-          <p className="text-base font-medium leading-6 opacity-90 sm:text-lg sm:leading-[26px]">
-            Organisé par {workspace.name}
-            {event.seatsHeld > 0 &&
-              ` · ${event.seatsHeld} inscrit${event.seatsHeld > 1 ? "s" : ""}`}
-          </p>
-        </div>
-        <dl className={cn("grid border-t sm:grid-cols-3", brandRule)}>
-          {[
-            ["Date", schedule.date],
-            ["Horaires", schedule.schedule],
-            ["Lieu", place],
-          ].map(([label, value], index) => (
-            <div
-              key={label}
+              {recurrence && <span className="font-medium text-ink-subtle">· {recurrence}</span>}
+              {badge && (
+                <span
+                  className={cn(
+                    "rounded-full px-2.5 py-1 text-xs font-bold leading-[14px]",
+                    badge.className,
+                  )}
+                >
+                  {badge.label}
+                </span>
+              )}
+            </p>
+            <h1
               className={cn(
-                "flex flex-col gap-2 px-5 py-4 sm:py-6",
-                index === 0 ? "sm:pl-16" : "sm:px-8",
-                index === 2 && "sm:pr-16",
-                index < 2 && cn("border-b sm:border-r sm:border-b-0", brandRule),
+                "text-[40px] leading-[44px] tracking-[-0.04em] text-ink sm:text-[52px] sm:leading-[56px]",
+                displayFontClass(workspace.displayFont),
               )}
             >
-              <dt className="font-mono text-label font-semibold uppercase tracking-[0.055em] opacity-80">
-                {label}
-              </dt>
-              <dd className="text-lg font-bold leading-6 sm:text-xl sm:leading-[26px]">{value}</dd>
-            </div>
-          ))}
-        </dl>
-      </BrandBand>
-
-      <div className="flex flex-col gap-10 px-5 pt-8 pb-28 sm:px-16 sm:pt-14 lg:flex-row lg:items-start lg:gap-14 lg:pb-[72px]">
-        {/* Sans programme, la colonne est vide : sur mobile, la carte remonte. */}
-        <div
-          className={cn(
-            "min-w-0 flex-1 flex-col gap-5 [&>*]:max-w-[680px]",
-            hasProgram ? "flex" : "hidden lg:flex",
-          )}
-        >
-          {/* Sans programme, la carte de réservation suit aussitôt : sa jauge suffit. */}
-          {event.capacity !== null && hasProgram && (
-            <div className="lg:hidden">
-              <AvailabilityMeter
-                label={seats.label}
-                tone={seats.tone}
-                ratio={seats.ratio}
-                count={`${event.seatsHeld} / ${event.capacity}`}
-              />
-            </div>
-          )}
-          {/* Sans description ni points forts, pas de section vide « bientôt ». */}
+              <WordsReveal>{event.title}</WordsReveal>
+            </h1>
+          </div>
+          <dl className="grid gap-3 sm:grid-cols-3">
+            {[
+              ["Date", schedule.date],
+              ["Horaires", schedule.schedule],
+              ["Lieu", place],
+            ].map(([label, value]) => (
+              <div
+                key={label}
+                className="flex flex-col gap-1 rounded-[18px] bg-surface px-[18px] py-4"
+              >
+                <dt className="text-xs font-semibold leading-4 text-ink-subtle">{label}</dt>
+                <dd className="text-base font-semibold leading-5 text-ink">{value}</dd>
+              </div>
+            ))}
+          </dl>
           {hasProgram && (
-            <h2 className="font-section text-[28px] leading-8 text-ink">Au programme</h2>
-          )}
-          {paragraphs.map((text) => (
-            <p
-              key={text.slice(0, 40)}
-              className="whitespace-pre-line text-base font-medium leading-7 text-ink sm:text-lg sm:leading-[29px]"
-            >
-              {text}
-            </p>
-          ))}
-          {event.highlights.length > 0 && (
-            <ul className="reveal-group flex flex-wrap gap-2.5 pt-1">
-              {event.highlights.map((highlight) => (
-                <li
-                  key={highlight}
-                  className="flex h-9 items-center gap-2 border-[1.5px] border-ink px-3.5 text-sm font-semibold text-ink"
+            <section className="flex flex-col gap-3 rounded-3xl bg-surface p-6">
+              <h2 className="text-xl font-semibold leading-6 text-ink">Au programme</h2>
+              {paragraphs.map((text) => (
+                <p
+                  key={text.slice(0, 40)}
+                  className="whitespace-pre-line text-base leading-[26px] text-ink/85"
                 >
-                  <Check size={12} />
-                  {highlight}
-                </li>
+                  {text}
+                </p>
               ))}
-            </ul>
+              {event.highlights.length > 0 && (
+                <ul className="flex flex-wrap gap-x-6 gap-y-2 pt-1.5">
+                  {event.highlights.map((highlight) => (
+                    <li
+                      key={highlight}
+                      className="flex items-center gap-1.5 text-sm font-medium leading-5 text-ink"
+                    >
+                      <Check size={12} />
+                      {highlight}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </section>
           )}
         </div>
 
         <aside
           id="reserver"
-          className="flex w-full shrink-0 scroll-mt-6 flex-col border-2 border-ink bg-surface lg:w-[400px]"
+          className="flex w-full shrink-0 scroll-mt-20 flex-col gap-[18px] rounded-3xl bg-surface p-6 shadow-[0_1px_2px_rgba(0,0,0,0.05),0_20px_50px_rgba(0,0,0,0.08)] lg:sticky lg:top-[62px] lg:w-[400px]"
         >
-          <div className="flex items-baseline gap-2 px-6 pt-6 pb-4">
-            <span className="font-headline text-[48px] leading-[48px] text-ink">{price}</span>
+          <p className="flex items-baseline gap-1.5">
+            <span className="text-[36px] font-medium leading-10 tracking-[-0.03em] text-ink">
+              {price}
+            </span>
             {event.priceCents > 0 && (
-              <span className="text-[15px] font-semibold text-ink-muted">/ personne</span>
+              <span className="text-[15px] leading-5 text-ink-subtle">/ personne</span>
             )}
-          </div>
-          <div className="border-b border-line-soft px-6 pb-5">
-            <AvailabilityMeter
-              label={seats.label}
-              tone={seats.tone}
-              ratio={seats.ratio}
-              count={event.capacity === null ? undefined : `${event.seatsHeld} / ${event.capacity}`}
-              thick
-            />
+          </p>
+          <div className="flex flex-col gap-2">
+            <p className="flex justify-between gap-3 text-[13px] leading-4">
+              <span className="font-semibold text-ink">
+                {event.capacity === null
+                  ? `${event.seatsHeld} inscrit${event.seatsHeld > 1 ? "s" : ""}`
+                  : `${event.seatsHeld} inscrit${event.seatsHeld > 1 ? "s" : ""} sur ${event.capacity}`}
+              </span>
+              <span
+                className={cn(
+                  "font-bold",
+                  seats.tone === "warning"
+                    ? "text-warning"
+                    : seats.full
+                      ? "text-ink"
+                      : "text-success",
+                )}
+              >
+                {seats.label}
+              </span>
+            </p>
+            {seats.ratio !== null && (
+              <span aria-hidden="true" className="flex h-1.5 rounded-full bg-line-soft">
+                <span
+                  className={cn(
+                    "origin-left animate-grow-x rounded-full",
+                    seats.full ? "bg-ink" : "bg-[var(--brand)]",
+                  )}
+                  style={{ width: `${Math.round(seats.ratio * 100)}%` }}
+                />
+              </span>
+            )}
           </div>
           {state.kind === "open" || state.kind === "waitlist" ? (
             <SeatPicker
@@ -222,28 +237,31 @@ export default async function PublicEventPage({
               label={ctaLabel}
             />
           ) : (
-            <p className="px-6 pt-5 text-[15px] font-semibold text-ink-muted">
+            <p className="border-t border-bg pt-4 text-[15px] font-semibold leading-[22px] text-ink-muted">
               {state.kind === "full"
                 ? "C'est complet : il n'y a plus de place pour cet événement."
                 : "Les réservations en ligne sont closes pour cet événement."}
             </p>
           )}
-          <p className="px-6 pt-3 pb-6 text-center text-[13px] font-medium leading-[18px] text-ink-muted">
-            {state.kind === "waitlist"
-              ? "C'est complet : ta demande passe en liste d'attente."
-              : notes.join(" · ")}
-          </p>
+          <ul className="flex flex-col gap-2 rounded-[14px] bg-field p-3.5 text-[13px] leading-[18px] text-ink/85">
+            {(state.kind === "waitlist"
+              ? ["C'est complet : ta demande passe en liste d'attente."]
+              : notes
+            ).map((note) => (
+              <li key={note}>{note}</li>
+            ))}
+          </ul>
         </aside>
       </div>
 
       {(state.kind === "open" || state.kind === "waitlist") && (
-        <div className="fixed inset-x-0 bottom-0 z-30 flex items-center justify-between gap-4 border-t-2 border-ink bg-surface px-5 py-4 lg:hidden">
+        <div className="fixed inset-x-0 bottom-0 z-30 flex items-center justify-between gap-4 rounded-t-3xl bg-surface px-5 py-4 shadow-[0_-12px_40px_rgba(0,0,0,0.08)] lg:hidden">
           <div className="flex flex-col">
             <span className="flex items-baseline gap-1.5">
-              <span className="font-headline text-[32px] leading-8 text-ink">{price}</span>
-              {event.priceCents > 0 && (
-                <span className="text-sm font-semibold text-ink-muted">/ pers.</span>
-              )}
+              <span className="text-[28px] font-medium leading-8 tracking-[-0.03em] text-ink">
+                {price}
+              </span>
+              {event.priceCents > 0 && <span className="text-sm text-ink-subtle">/ pers.</span>}
             </span>
             <span
               className={cn(
@@ -254,15 +272,12 @@ export default async function PublicEventPage({
               {seats.full ? "Liste d'attente" : seats.label}
             </span>
           </div>
-          <Link
-            href="#reserver"
-            className="flex h-[52px] items-center gap-2.5 bg-ink px-6 text-base font-extrabold text-on-ink"
-          >
+          <Link href="#reserver" className={cn(brandButtonClasses, "h-12 px-6 text-base")}>
             Réserver
             <ArrowRight />
           </Link>
         </div>
       )}
-    </>
+    </div>
   );
 }
