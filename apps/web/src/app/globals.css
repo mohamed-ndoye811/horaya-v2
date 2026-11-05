@@ -55,21 +55,24 @@
   --radius-dot: 999px;
 
   /*
-   * Mouvement (lot 13, référence sftraces.com) : une seule courbe partout, douce à
-   * l'arrivée. Micro-interactions 120–200 ms, révélations 900 ms, 60 ms entre deux éléments.
+   * Mouvement (repensé après le lot 19) : une seule courbe, douce à l'arrivée.
+   * Micro-interactions 120–200 ms, arrivées 500 ms sur 10 px, 40 ms entre deux éléments.
+   * Les arrivées sont en `backwards` : une fois finies, elles ne laissent rien sur
+   * l'élément (pas de contexte d'empilement ni de bloc conteneur pour un `fixed`).
    */
   --ease-out-soft: cubic-bezier(0.2, 0, 0, 1);
   --default-transition-duration: 200ms;
   --default-transition-timing-function: cubic-bezier(0.2, 0, 0, 1);
-  --animate-rise: rise 900ms cubic-bezier(0.2, 0, 0, 1) both;
-  --animate-drop: drop 380ms cubic-bezier(0.2, 0, 0, 1) both;
-  --animate-pop: pop 200ms cubic-bezier(0.2, 0, 0, 1) both;
-  --animate-grow-x: grow-x 900ms cubic-bezier(0.2, 0, 0, 1) both;
+  --animate-rise: rise 500ms cubic-bezier(0.2, 0, 0, 1) backwards;
+  --animate-drop: drop 320ms cubic-bezier(0.2, 0, 0, 1) backwards;
+  --animate-pop: pop 180ms cubic-bezier(0.2, 0, 0, 1) backwards;
+  --animate-grow-x: grow-x 700ms cubic-bezier(0.2, 0, 0, 1) backwards;
+  --animate-fade: fade 200ms cubic-bezier(0.2, 0, 0, 1) backwards;
 
   @keyframes rise {
     from {
       opacity: 0;
-      translate: 0 16px;
+      translate: 0 10px;
     }
   }
   @keyframes drop {
@@ -105,8 +108,8 @@
   --dur-1: 120ms;
   --dur-2: 200ms;
   --dur-3: 380ms;
-  --dur-reveal: 900ms;
-  --stagger: 60ms;
+  --dur-reveal: 500ms;
+  --stagger: 40ms;
 }
 
 @theme inline {
@@ -178,7 +181,7 @@ input[type="password"] {
 
 /* ── Mouvement ─────────────────────────────────────────────────────────────── */
 
-/* Élément qui arrive au premier affichage ; `--i` décale (60 ms par rang). */
+/* Élément qui arrive au premier affichage ; `--i` décale (40 ms par rang). */
 @utility reveal {
   animation: var(--animate-rise);
   animation-delay: calc(var(--i, 0) * var(--stagger));
@@ -188,7 +191,7 @@ input[type="password"] {
 @utility reveal-group {
   & > * {
     animation: var(--animate-rise);
-    animation-delay: calc(min(var(--i, 0), 12) * var(--stagger));
+    animation-delay: calc(min(var(--i, 0), 8) * var(--stagger));
   }
   & > :nth-child(2) {
     --i: 1;
@@ -214,17 +217,8 @@ input[type="password"] {
   & > :nth-child(9) {
     --i: 8;
   }
-  & > :nth-child(10) {
-    --i: 9;
-  }
-  & > :nth-child(11) {
-    --i: 10;
-  }
-  & > :nth-child(12) {
-    --i: 11;
-  }
-  & > :nth-child(n + 13) {
-    --i: 12;
+  & > :nth-child(n + 10) {
+    --i: 8;
   }
 }
 
@@ -252,7 +246,7 @@ input[type="password"] {
 /* Coche dessinée (confirmation) : le tracé doit avoir pathLength="1". */
 @utility draw {
   stroke-dasharray: 1;
-  animation: draw 600ms var(--ease-out-soft) 200ms both;
+  animation: draw 600ms var(--ease-out-soft) 200ms backwards;
 }
 
 /* Liens soulignés : au survol, le trait s'écarte un peu du texte. */
@@ -297,23 +291,6 @@ dialog[open]::backdrop {
   }
 }
 
-/* Changement de page : fondu court, la page suivante monte de 8 px. */
-::view-transition {
-  pointer-events: none;
-}
-::view-transition-old(.page) {
-  animation: 140ms var(--ease-out-soft) both fade reverse;
-}
-::view-transition-new(.page) {
-  animation: 380ms var(--ease-out-soft) 60ms both page-in;
-}
-@keyframes page-in {
-  from {
-    opacity: 0;
-    translate: 0 8px;
-  }
-}
-
 /* Mouvement réduit : tout est posé d'emblée, rien ne bouge (!important : passe avant tout). */
 /* biome-ignore-start lint/complexity/noImportantStyles: interrupteur global du mouvement réduit et de l'impression. */
 @media (prefers-reduced-motion: reduce) {
@@ -325,11 +302,6 @@ dialog[open]::backdrop {
     animation-delay: 0ms !important;
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
-  }
-  ::view-transition-group(*),
-  ::view-transition-old(*),
-  ::view-transition-new(*) {
-    animation: none !important;
   }
 }
 

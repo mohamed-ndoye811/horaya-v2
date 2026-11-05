@@ -359,7 +359,7 @@ export default async function CalendarPage({ searchParams }: PageProps<"/app/cal
                 />
               )}
               {selected && (
-                <aside className="fixed inset-x-0 bottom-0 z-50 flex max-h-[85dvh] animate-[rise_380ms_cubic-bezier(0.2,0,0,1)_both] flex-col overflow-y-auto rounded-t-3xl bg-surface pb-[env(safe-area-inset-bottom)] lg:sticky lg:top-4 lg:z-auto lg:max-h-none lg:w-[380px] lg:shrink-0 lg:animate-none lg:overflow-visible lg:rounded-3xl lg:pb-0">
+                <aside className="fixed inset-x-0 bottom-0 z-50 flex max-h-[85dvh] animate-[rise_380ms_cubic-bezier(0.2,0,0,1)_backwards] flex-col overflow-y-auto rounded-t-3xl bg-surface pb-[env(safe-area-inset-bottom)] lg:sticky lg:top-4 lg:z-auto lg:max-h-none lg:w-[380px] lg:shrink-0 lg:animate-none lg:overflow-visible lg:rounded-3xl lg:pb-0">
                   <div aria-hidden="true" className="flex justify-center pt-2.5 lg:hidden">
                     <span className="h-1 w-10 rounded-full bg-line" />
                   </div>
