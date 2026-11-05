@@ -12,7 +12,12 @@ export default async function NewCustomerPage() {
       <PageHeader
         eyebrow="Clients / Nouveau"
         title="Nouveau client"
-        subtitle="Les clients sont aussi créés automatiquement à leur première réservation."
+        subtitle={
+          <>
+            Les clients sont aussi créés automatiquement{" "}
+            <span className="text-ink">à leur première réservation.</span>
+          </>
+        }
       />
       <CustomerForm
         customerId={null}

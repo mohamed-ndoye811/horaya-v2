@@ -15,6 +15,7 @@ import { PageHeader } from "@/components/app/page-header";
 import { Avatar } from "@/components/ui/avatar";
 import { StatusBadge } from "@/components/ui/badge";
 import { EventThumb } from "@/components/ui/cells";
+import { cardClasses } from "@/components/ui/section";
 import { BOOKING_STATUS_BADGE } from "@/components/ui/status";
 import { Timeline } from "@/components/ui/timeline";
 import { describeBookingActivity } from "@/lib/activity";
@@ -65,9 +66,7 @@ function paymentSummary(
     : "En attente du paiement en ligne";
 }
 
-/** Carte blanche de la fiche (DA v4). */
-const card =
-  "flex flex-col rounded-3xl bg-surface p-5 shadow-[0_1px_2px_rgba(0,0,0,0.04),0_16px_40px_rgba(0,0,0,0.06)]";
+const card = cardClasses;
 
 function CardTitle({ children, count }: { children: ReactNode; count?: number }) {
   return (

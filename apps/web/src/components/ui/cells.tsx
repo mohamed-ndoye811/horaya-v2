@@ -138,24 +138,40 @@ export function DateBlock({
   date,
   timeZone,
   layout = "month-first",
+  dark = false,
 }: {
   date: Date;
   timeZone?: string;
   /** `month-first` : mois au-dessus du jour ; `day-first` : jour de la semaine au-dessus. */
   layout?: "month-first" | "day-first";
+  /** Pastille noire : la prochaine venue dans un historique. */
+  dark?: boolean;
 }) {
   // DA v4 : petite pastille grise, libellé court en capitales et numéro du jour.
   return (
     <time
       dateTime={date.toISOString()}
-      className="flex h-[42px] w-10 shrink-0 flex-col items-center justify-center rounded-[10px] bg-field whitespace-nowrap"
+      className={cn(
+        "flex h-[42px] w-10 shrink-0 flex-col items-center justify-center rounded-[10px] whitespace-nowrap",
+        dark ? "bg-ink" : "bg-field",
+      )}
     >
-      <span className="text-[9px] font-bold uppercase leading-[11px] text-ink-muted">
+      <span
+        className={cn(
+          "text-[9px] font-bold uppercase leading-[11px]",
+          dark ? "text-white/60" : "text-ink-muted",
+        )}
+      >
         {layout === "month-first"
           ? formatMonthShort(date, timeZone)
           : formatWeekdayShort(date, timeZone)}
       </span>
-      <span className="text-[15px] font-semibold leading-[18px] text-ink tabular-nums">
+      <span
+        className={cn(
+          "text-[15px] font-semibold leading-[18px] tabular-nums",
+          dark ? "text-white" : "text-ink",
+        )}
+      >
         {formatDayNumber(date, timeZone)}
       </span>
     </time>

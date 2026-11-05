@@ -7,6 +7,7 @@ import {
   formatMonthShort,
   formatPublicSchedule,
   formatRelativeDateTime,
+  formatRelativeDay,
   formatTimeRange,
   formatWeekdayShort,
   initials,
@@ -15,6 +16,17 @@ import {
 const june17 = new Date("2026-06-17T09:00:00Z"); // 11h à Paris
 
 describe("format", () => {
+  it("situe la prochaine venue d'un client", () => {
+    const now = new Date("2026-06-15T20:00:00Z");
+    expect(formatRelativeDay(new Date("2026-06-16T08:00:00Z"), "Europe/Paris", now)).toBe("demain");
+    expect(formatRelativeDay(new Date("2026-06-15T08:00:00Z"), "Europe/Paris", now)).toBe(
+      "aujourd'hui",
+    );
+    expect(formatRelativeDay(new Date("2026-06-20T08:00:00Z"), "Europe/Paris", now)).toBe(
+      "le 20 juin",
+    );
+  });
+
   it("date une réservation par rapport à aujourd'hui", () => {
     const now = new Date("2026-06-17T14:00:00Z");
     expect(formatRelativeDateTime(new Date("2026-06-17T06:30:00Z"), "Europe/Paris", now)).toBe(
