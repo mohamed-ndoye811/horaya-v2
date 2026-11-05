@@ -3,6 +3,8 @@ import {
   countEventsStartingBetween,
   getDashboardOverview,
   getDashboardStats,
+  getWorkspaceSettings,
+  listEventTypes,
   listLatestBookings,
   listUpcomingEvents,
 } from "@horaya/db";
@@ -10,7 +12,6 @@ import type { Metadata } from "next";
 import { FabLink } from "@/components/app/fab";
 import { PageHeader } from "@/components/app/page-header";
 import { ButtonLink } from "@/components/ui/button";
-import { EmptyState } from "@/components/ui/empty-state";
 import { PlusIcon } from "@/components/ui/icons";
 import { SectionHeading } from "@/components/ui/section";
 import { cumulative, dailySeries, percentChange } from "@/lib/dashboard";
@@ -25,6 +26,7 @@ import {
   TodayCard,
   TodoCards,
 } from "./dashboard-sections";
+import { GettingStarted, type StartStep } from "./getting-started";
 
 export const metadata: Metadata = { title: "Tableau de bord · Horaya" };
 
@@ -45,7 +47,7 @@ export default async function DashboardPage() {
   const dayStart = startOfDay(today, timeZone);
   const dayEnd = startOfDay(addDays(today, 1), timeZone);
 
-  const [stats, overview, upcoming, latest, startingToday] = await Promise.all([
+  const [stats, overview, upcoming, latest, startingToday, types, settings] = await Promise.all([
     getDashboardStats(db, workspace.id, {
       now,
       weekStart: startOfDay(monday, timeZone),
@@ -68,6 +70,8 @@ export default async function DashboardPage() {
     listUpcomingEvents(db, workspace.id, now, 8),
     listLatestBookings(db, workspace.id, 5),
     countEventsStartingBetween(db, workspace.id, dayStart, dayEnd),
+    listEventTypes(db, workspace.id),
+    getWorkspaceSettings(db, workspace.id),
   ]);
 
   const nextDays = upcoming.filter((event) => event.startsAt.getTime() < now.getTime() + WEEK_MS);
@@ -101,23 +105,71 @@ export default async function DashboardPage() {
   const period = `du 1er au ${today.day} ${monthName.format(now)}, comparé à ${previousMonthName}`;
 
   const empty = upcoming.length === 0 && latest.length === 0;
+  const steps: StartStep[] = [
+    { label: "Créer ton espace", href: "/app/parametres/organisation", done: true },
+    {
+      label: "Ajouter ton lien de paiement",
+      detail: "Tes clients reçoivent un bouton « Payer » dans chaque confirmation.",
+      duration: "1 min",
+      href: "/app/parametres/paiements",
+      done: Boolean(settings?.paymentLinkUrl),
+    },
+    {
+      label: "Créer un type d'événement",
+      detail: "Durée, prix, places : tes futurs événements seront pré-remplis.",
+      duration: "1 min",
+      href: "/app/evenements/types?type=nouveau",
+      done: types.length > 0,
+    },
+    {
+      label: "Créer ton premier événement",
+      detail: "Il apparaît dans ton calendrier et sur ta page publique.",
+      duration: "2 min",
+      href: "/app/evenements/nouveau",
+      done: types.some((type) => type.eventCount > 0),
+    },
+    {
+      label: "Partager ta page publique",
+      detail: "Envoie le lien à tes clients, ou ajoute-le à ton site.",
+      duration: "1 min",
+      href: `/${workspace.slug}`,
+      done: latest.length > 0,
+    },
+  ];
+  const remaining = steps.filter((step) => !step.done).length;
 
   return (
     <>
       <PageHeader
         eyebrow={`${dateLabel.charAt(0).toUpperCase()}${dateLabel.slice(1)} · Semaine ${isoWeek(today)}`}
-        title={`Bonjour ${firstName}`}
+        title={empty ? `Bienvenue, ${firstName}.` : `Bonjour ${firstName}`}
         subtitle={
-          subtitleParts.length > 0
-            ? `${subtitleParts.join(". ")}.`
-            : `Rien d'urgent dans ${workspace.name}.`
+          empty ? (
+            <>
+              {workspace.name} est en ligne ·{" "}
+              <span className="text-ink">
+                {remaining} étape{remaining > 1 ? "s" : ""} avant tes premières réservations
+              </span>
+            </>
+          ) : subtitleParts.length > 0 ? (
+            `${subtitleParts.join(". ")}.`
+          ) : (
+            `Rien d'urgent dans ${workspace.name}.`
+          )
         }
         actions={
-          <div className="hidden lg:flex">
-            <ButtonLink href="/app/evenements/nouveau" icon={<PlusIcon />}>
-              Nouvel événement
-            </ButtonLink>
-          </div>
+          <>
+            {empty && (
+              <ButtonLink href={`/${workspace.slug}`} variant="secondary" target="_blank">
+                Ma page publique
+              </ButtonLink>
+            )}
+            <div className="hidden lg:flex">
+              <ButtonLink href="/app/evenements/nouveau" icon={<PlusIcon />}>
+                Nouvel événement
+              </ButtonLink>
+            </div>
+          </>
         }
       />
       {!user.emailVerified && (
@@ -127,16 +179,7 @@ export default async function DashboardPage() {
       )}
 
       {empty ? (
-        <EmptyState
-          title="Rien à l'agenda. Pour l'instant."
-          description="Crée ton premier événement : il apparaîtra dans ton calendrier et sur ta page publique, prêt à recevoir des réservations."
-          actions={
-            <ButtonLink href="/app/evenements/nouveau" arrow>
-              Créer mon premier événement
-            </ButtonLink>
-          }
-          steps={["Crée un événement", "Partage ta page publique", "Reçois tes réservations"]}
-        />
+        <GettingStarted steps={steps} slug={workspace.slug} />
       ) : (
         <div className="flex flex-1 flex-col">
           <div className="grid grid-cols-[minmax(0,1fr)] xl:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)]">
