@@ -202,6 +202,7 @@ export default async function CustomersPage({ searchParams }: PageProps<"/app/cl
             label="Clients"
             rows={rows}
             rowKey={(row) => row.id}
+            rowHref={(row) => `/app/clients/${row.id}`}
             minWidth={1000}
             empty={
               <p className="px-4 py-10 text-center text-base font-medium text-ink-muted">

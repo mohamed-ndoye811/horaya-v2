@@ -214,6 +214,7 @@ export default async function EventDetailPage({
             label="Participants"
             rows={bookings}
             rowKey={(row) => row.id}
+            rowHref={(row) => `/app/reservations/${row.id}`}
             rowTone={(row) => (row.status === "pending" ? "warning" : undefined)}
             dense
             card={(row) => (

@@ -204,6 +204,7 @@ export default async function EventsPage({ searchParams }: PageProps<"/app/evene
         label="Événements"
         rows={events}
         rowKey={(row) => row.id}
+        rowHref={(row) => `/app/evenements/${row.id}`}
         group={groupOf}
         minWidth={1000}
         empty={

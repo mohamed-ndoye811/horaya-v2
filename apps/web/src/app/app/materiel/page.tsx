@@ -208,6 +208,7 @@ export default async function InventoryPage({ searchParams }: PageProps<"/app/ma
             label="Matériel"
             rows={rows}
             rowKey={(row) => row.id}
+            rowHref={(row) => `/app/materiel/${row.id}`}
             minWidth={1060}
             rowTone={(row) =>
               row.units > 0 && row.inMaintenanceNow >= row.units ? "warning" : undefined

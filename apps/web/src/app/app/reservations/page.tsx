@@ -194,6 +194,7 @@ export default async function BookingsPage({ searchParams }: PageProps<"/app/res
             label="Réservations"
             rows={bookings}
             rowKey={(row) => row.id}
+            rowHref={(row) => `/app/reservations/${row.id}`}
             minWidth={1060}
             rowTone={(row) =>
               row.status === "pending"
