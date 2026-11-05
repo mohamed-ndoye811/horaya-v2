@@ -70,7 +70,8 @@ export default async function DashboardPage() {
       timeZone,
     }),
     listUpcomingEvents(db, workspace.id, now, 8),
-    listLatestBookings(db, workspace.id, 5),
+    // Trois, comme la maquette : tout le tableau de bord tient sans défiler.
+    listLatestBookings(db, workspace.id, 3),
     countEventsStartingBetween(db, workspace.id, dayStart, dayEnd),
     listEventTypes(db, workspace.id),
     getWorkspaceSettings(db, workspace.id),
@@ -219,7 +220,7 @@ export default async function DashboardPage() {
                   action={{ label: "Ouvrir le comptoir", href: "/app/reservations/nouvelle" }}
                   className="xl:pl-0"
                 />
-                <div className="px-4 xl:pl-0">
+                <div className="flex flex-1 flex-col px-4 xl:pl-0">
                   <TodayCard entries={overview.today} now={now} timeZone={timeZone} />
                 </div>
               </section>

@@ -42,19 +42,19 @@ function TodoCard({
     <Link
       href={href}
       className={cn(
-        "flex min-h-[124px] flex-col justify-between gap-3 rounded-3xl p-4 transition-[scale,box-shadow] hover:shadow-[0_12px_32px_rgba(0,0,0,0.08)] active:scale-[0.99]",
+        "flex min-h-[116px] flex-col justify-between gap-3 rounded-[28px] px-[18px] py-4 transition-[scale,box-shadow] hover:shadow-[0_12px_32px_rgba(0,0,0,0.08)] active:scale-[0.99]",
         accent ? "bg-linear-135 from-[#f0975f] to-[#d8723a] text-white" : "bg-surface text-ink",
       )}
     >
       <div className="flex items-start justify-between gap-3">
-        <span className="flex items-center gap-2 text-[13px] font-semibold leading-4">
-          <span aria-hidden="true" className={cn("size-[7px] rounded-full", dot)} />
+        <span className="flex items-center gap-2 text-[13px] font-semibold leading-[17px]">
+          <span aria-hidden="true" className={cn("size-2 rounded-full", dot)} />
           {label}
         </span>
         {aside && (
           <span
             className={cn(
-              "text-right text-[13px] font-semibold leading-4",
+              "text-right text-[13px] font-bold leading-[17px]",
               accent ? "text-white/90" : "text-ink-muted",
             )}
           >
@@ -63,8 +63,8 @@ function TodoCard({
         )}
       </div>
       <div className="flex items-end justify-between gap-3">
-        <span className="font-headline text-[44px] leading-[44px]">{value}</span>
-        <div className="flex min-w-0 flex-col items-end gap-1.5 text-right">{children}</div>
+        <span className="font-headline text-[48px] leading-[44px] tracking-[-0.04em]">{value}</span>
+        <div className="flex min-w-0 flex-col items-end gap-1.5 pb-1 text-right">{children}</div>
       </div>
     </Link>
   );
@@ -177,28 +177,28 @@ export function TodoCards({
 
 function Ring({ value, max, className }: { value: number; max: number; className?: string }) {
   const ratio = max > 0 ? Math.min(1, value / max) : 0;
-  const circumference = 2 * Math.PI * 15;
+  const circumference = 2 * Math.PI * 16;
   return (
-    <svg width="38" height="38" viewBox="0 0 38 38" aria-hidden="true" className={className}>
+    <svg width="40" height="40" viewBox="0 0 40 40" aria-hidden="true" className={className}>
       <circle
-        cx="19"
-        cy="19"
-        r="15"
+        cx="20"
+        cy="20"
+        r="16"
         fill="none"
         stroke="currentColor"
         strokeOpacity="0.15"
-        strokeWidth="3.5"
+        strokeWidth="4"
       />
       <circle
-        cx="19"
-        cy="19"
-        r="15"
+        cx="20"
+        cy="20"
+        r="16"
         fill="none"
         stroke="currentColor"
-        strokeWidth="3.5"
+        strokeWidth="4"
         strokeLinecap="round"
         strokeDasharray={`${ratio * circumference} ${circumference}`}
-        transform="rotate(-90 19 19)"
+        transform="rotate(-90 20 20)"
       />
     </svg>
   );
@@ -225,26 +225,29 @@ export function TodayCard({
 }) {
   if (entries.length === 0) {
     return (
-      <div className="flex min-h-[260px] flex-col items-center justify-center gap-1 rounded-3xl bg-surface p-6 text-center">
+      <div className="flex min-h-[244px] flex-1 flex-col items-center justify-center gap-1 rounded-[28px] bg-surface p-6 text-center">
         <p className="text-[15px] font-semibold text-ink">Rien au programme aujourd'hui.</p>
         <p className="text-[13px] text-ink-muted">Profites-en pour préparer la suite.</p>
       </div>
     );
   }
   return (
-    <ol className="reveal-group flex flex-col rounded-3xl bg-surface px-5 py-2">
+    <ol className="reveal-group flex min-h-[244px] flex-1 flex-col rounded-[28px] bg-surface py-1 pr-[22px] pl-5">
       {entries.map((entry, index) => {
         const state = stateOf(entry, now);
         const Icon = entry.kind === "event" ? TicketIcon : BoxIcon;
         const href =
           entry.kind === "event" ? `/app/evenements/${entry.id}` : `/app/reservations/${entry.id}`;
         return (
-          <li key={`${entry.kind}-${entry.id}`} className="relative flex items-center gap-4 py-3">
-            <div className="w-12 shrink-0">
-              <p className="text-[15px] font-semibold leading-5 text-ink">
+          <li
+            key={`${entry.kind}-${entry.id}`}
+            className="relative flex flex-1 items-center gap-3.5 py-3"
+          >
+            <div className="w-[46px] shrink-0">
+              <p className="text-base font-semibold leading-5 text-ink">
                 {formatHour(entry.startsAt, timeZone)}
               </p>
-              <p className="text-xs leading-4 text-ink-muted">
+              <p className="text-[13px] leading-[17px] text-ink-muted">
                 {entry.kind === "event" ? formatHour(entry.endsAt, timeZone) : "retour"}
               </p>
             </div>
@@ -264,17 +267,17 @@ export function TodayCard({
             </span>
             <span
               aria-hidden="true"
-              className="flex size-10 shrink-0 items-center justify-center rounded-xl text-ink"
+              className="flex size-11 shrink-0 items-center justify-center rounded-[14px] text-ink"
               style={{
                 backgroundColor: entry.color ? `${entry.color}33` : "var(--color-info-bg)",
               }}
             >
-              <Icon size={18} />
+              <Icon size={20} />
             </span>
-            <div className="flex min-w-0 flex-1 flex-col gap-1">
+            <div className="flex min-w-0 flex-1 flex-col gap-1.5">
               <Link
                 href={href}
-                className="truncate text-[15px] font-semibold leading-5 text-ink after:absolute after:inset-0"
+                className="truncate text-base font-semibold leading-5 text-ink after:absolute after:inset-0"
               >
                 {entry.title}
               </Link>
@@ -374,34 +377,41 @@ export function NextDaysCards({ events, timeZone }: { events: EventRow[]; timeZo
 
 export function LatestBookings({ bookings, now }: { bookings: LatestBookingRow[]; now: Date }) {
   return (
-    <ul className="reveal-group flex flex-col rounded-3xl bg-surface px-5">
+    <ul className="reveal-group flex flex-col rounded-3xl bg-surface px-5 py-1.5">
       {bookings.map((entry) => {
         const badge = BOOKING_STATUS_BADGE[entry.status];
         return (
           <li
             key={entry.id}
-            className="relative flex items-center gap-4 border-t border-line-soft py-3 first:border-t-0"
+            className="relative flex h-11 items-center gap-4 border-t border-line-soft first:border-t-0"
           >
-            <Avatar name={entry.customerName} size="sm" />
-            <Link
-              href={`/app/reservations/${entry.id}`}
-              className="w-40 shrink-0 truncate text-sm font-semibold text-ink after:absolute after:inset-0"
-            >
-              {entry.customerName}
-            </Link>
-            <span className="hidden min-w-0 flex-1 truncate text-sm text-ink-muted md:block">
+            <span className="flex w-60 shrink-0 items-center gap-2.5">
+              <Avatar name={entry.customerName} size="xs" />
+              <Link
+                href={`/app/reservations/${entry.id}`}
+                className="truncate text-sm font-semibold leading-[18px] text-ink after:absolute after:inset-0"
+              >
+                {entry.customerName}
+              </Link>
+            </span>
+            <span className="hidden min-w-0 flex-1 truncate text-sm leading-[18px] text-ink-muted md:block">
               {entry.eventTitle ?? "Location"}
             </span>
-            <span className="hidden w-20 shrink-0 text-sm text-ink-muted lg:block">
+            <span className="hidden w-20 shrink-0 text-[13px] leading-[17px] text-ink-muted lg:block">
               {plural(entry.seats, "place")}
             </span>
-            <span className="ml-auto w-20 shrink-0 text-right text-sm font-semibold text-ink md:ml-0">
+            <span
+              className={cn(
+                "ml-auto w-[90px] shrink-0 text-right text-sm font-semibold leading-[18px] md:ml-0",
+                entry.amountCents > 0 ? "text-ink" : "text-ink-muted",
+              )}
+            >
               {entry.amountCents > 0 ? formatMoney(entry.amountCents) : "Gratuit"}
             </span>
-            <span className="hidden w-28 shrink-0 justify-end sm:flex">
+            <span className="hidden w-[120px] shrink-0 justify-end sm:flex">
               <StatusBadge tone={badge.tone}>{badge.label}</StatusBadge>
             </span>
-            <span className="hidden w-24 shrink-0 text-right text-[13px] text-ink-muted lg:block">
+            <span className="hidden w-[90px] shrink-0 text-right text-[13px] leading-[17px] text-ink-muted lg:block">
               il y a {elapsed(entry.createdAt, now)}
             </span>
           </li>
@@ -432,7 +442,7 @@ function Delta({ value }: { value: number | null }) {
 function MonthDays({ values, today }: { values: number[]; today: number }) {
   const max = Math.max(...values, 1);
   return (
-    <span aria-hidden="true" className="flex h-8 items-end gap-[3px]">
+    <span aria-hidden="true" className="flex h-7 items-end gap-[3px]">
       {values.map((value, index) => {
         const day = index + 1;
         return (
@@ -473,19 +483,19 @@ function MonthStat({
   chart?: ReactNode;
 }) {
   return (
-    <div className="flex min-w-0 flex-1 flex-col gap-3 md:border-l md:border-white/10 md:pl-6">
-      <div className="flex flex-col gap-1.5">
-        <p className="text-[13px] leading-4 text-[#9a9ea8]">{label}</p>
-        <p className="font-headline text-[34px] leading-9 text-white">
+    <div className="flex min-w-0 flex-1 flex-col gap-1.5 md:border-l md:border-white/10 md:pl-6">
+      <p className="flex min-w-0 items-center gap-2 text-[13px] leading-5 text-[#9a9ea8]">
+        <span className="shrink-0">{label}</span>
+        <Delta value={delta ?? null} />
+        <span className="truncate text-xs text-[#6f737c]">{note}</span>
+      </p>
+      <div className="flex items-end gap-5">
+        <p className="shrink-0 font-headline text-[34px] leading-9 text-white">
           {value}
           {suffix && <span className="ml-1 text-lg font-light">{suffix}</span>}
         </p>
-        <p className="flex min-h-5 items-center gap-2 text-xs leading-4 text-[#9a9ea8]">
-          <Delta value={delta ?? null} />
-          {note}
-        </p>
+        {chart && <div className="min-w-0 flex-1 pb-1.5">{chart}</div>}
       </div>
-      {chart && <div className="mt-auto">{chart}</div>}
     </div>
   );
 }
@@ -518,11 +528,12 @@ export function MonthBand({
 }) {
   const bookings = bookingsByDay.reduce((sum, value) => sum + value, 0);
   const collectedCents = collectedByDay.reduce((sum, value) => sum + value, 0);
-  const sameDate = `à la même date en ${previousMonth}`;
+  // « 3 au 6 octobre » : le mois précédent, à la même date.
+  const sameDate = `au ${today} ${previousMonth}`;
   return (
     <section
       aria-label="Ce mois-ci"
-      className="relative mt-auto flex flex-col gap-5 bg-ink px-5 py-5 md:flex-row md:items-stretch md:gap-6 lg:-mb-4 lg:px-6"
+      className="relative mt-auto flex flex-col gap-5 bg-ink px-5 py-5 md:flex-row md:items-center md:gap-6 lg:-mb-4 lg:px-6"
     >
       <span
         aria-hidden="true"
@@ -555,11 +566,7 @@ export function MonthBand({
         label="Remplissage"
         value={fillRate === null ? "—" : String(fillRate)}
         suffix={fillRate === null ? undefined : "%"}
-        note={
-          fillRate === null
-            ? "Aucun événement à venir avec un nombre de places limité"
-            : "des places des événements à venir"
-        }
+        note={fillRate === null ? "aucune jauge à venir" : "des événements à venir"}
         chart={
           fillRate === null ? undefined : (
             <span
