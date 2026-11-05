@@ -3,7 +3,7 @@
 import { checkPassword } from "@horaya/core";
 import { useRouter } from "next/navigation";
 import { type FormEvent, useState } from "react";
-import { AuthTitle, Eyebrow } from "@/components/auth/auth-shell";
+import { AuthLead, AuthTitle, Eyebrow } from "@/components/auth/auth-shell";
 import { GoogleButton } from "@/components/auth/google-button";
 import { PasswordMeter } from "@/components/auth/password-strength";
 import { Button } from "@/components/ui/button";
@@ -66,14 +66,18 @@ export function SignupForm({
 
   return (
     <form onSubmit={submit} className="flex flex-col gap-[22px]">
-      <div className="flex flex-col gap-3">
-        <Eyebrow>
-          {invitation
-            ? `Invitation · ${invitation.organizationName}`
-            : "Étape 1 sur 3 · Ton compte"}
-        </Eyebrow>
-        <AuthTitle>Créer ton compte</AuthTitle>
+      <div className="flex flex-col gap-2">
+        {invitation && <Eyebrow>Invitation · {invitation.organizationName}</Eyebrow>}
+        <AuthTitle>Crée ton compte.</AuthTitle>
+        <AuthLead>Deux minutes, et ton agenda est en ligne.</AuthLead>
       </div>
+
+      {googleEnabled && (
+        <>
+          <GoogleButton label="S'inscrire avec Google" />
+          <OrDivider />
+        </>
+      )}
 
       {error && <FormAlert>{error}</FormAlert>}
 
@@ -156,13 +160,6 @@ export function SignupForm({
       <Button size="lg" type="submit" arrow pending={pending} className="w-full">
         {pending ? "Création du compte…" : "Créer mon compte"}
       </Button>
-
-      {googleEnabled && (
-        <>
-          <OrDivider />
-          <GoogleButton label="S'inscrire avec Google" />
-        </>
-      )}
     </form>
   );
 }

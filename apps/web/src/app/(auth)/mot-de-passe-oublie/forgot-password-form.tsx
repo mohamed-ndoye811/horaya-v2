@@ -2,11 +2,11 @@
 
 import Link from "next/link";
 import { type FormEvent, useEffect, useState } from "react";
-import { AuthLead, AuthTitle, Eyebrow } from "@/components/auth/auth-shell";
-import { Button, textLinkClasses } from "@/components/ui/button";
+import { AuthLead, AuthTitle } from "@/components/auth/auth-shell";
+import { Button } from "@/components/ui/button";
 import { Field, inputClasses } from "@/components/ui/field";
 import { FormAlert } from "@/components/ui/form-alert";
-import { ArrowLeft, Envelope } from "@/components/ui/icons";
+import { ArrowLeft, Check, Envelope } from "@/components/ui/icons";
 import { authClient } from "@/lib/auth-client";
 import { authErrorMessage } from "@/lib/auth-errors";
 
@@ -56,7 +56,7 @@ export function ForgotPasswordForm() {
   const back = (
     <Link
       href="/connexion"
-      className={`${textLinkClasses} flex items-center gap-2 text-sm no-underline`}
+      className="flex items-center justify-center gap-2 text-sm font-semibold text-ink hover:underline"
     >
       <ArrowLeft />
       Retour à la connexion
@@ -67,29 +67,28 @@ export function ForgotPasswordForm() {
     const minutes = Math.floor(cooldown / 60);
     const seconds = String(cooldown % 60).padStart(2, "0");
     return (
-      <div className="flex flex-col gap-7">
-        {back}
-        <div className="flex flex-col gap-3">
-          <Eyebrow>E-mail envoyé</Eyebrow>
-          <AuthTitle>Vérifie ta boîte</AuthTitle>
+      <div className="flex flex-col gap-6">
+        <span
+          aria-hidden="true"
+          className="flex size-16 items-center justify-center rounded-2xl bg-ink text-white"
+        >
+          <Envelope size={22} />
+        </span>
+        <div className="flex flex-col gap-2">
+          <AuthTitle>Vérifie ta boîte.</AuthTitle>
           <AuthLead>
-            Clique sur le lien reçu pour choisir un nouveau mot de passe. Tu peux fermer cette page.
+            On a envoyé un lien à{" "}
+            <strong className="font-semibold text-ink">{maskEmail(email)}</strong>. Clique dessus
+            pour choisir un nouveau mot de passe.
           </AuthLead>
         </div>
-        <div
-          className="flex items-center gap-4 border-2 border-success bg-success-bg p-[18px]"
+        <p
           role="status"
+          className="flex items-center gap-2.5 rounded-2xl bg-success-bg px-4 py-3 text-sm font-semibold text-success"
         >
-          <span className="flex size-12 shrink-0 items-center justify-center bg-success text-white">
-            <Envelope />
-          </span>
-          <div className="flex min-w-0 flex-col gap-1 text-success">
-            <p className="text-base font-bold leading-5">Lien envoyé à {maskEmail(email)}</p>
-            <p className="text-sm font-medium leading-[19px]">
-              Valable 30 minutes. Pense à vérifier tes spams.
-            </p>
-          </div>
-        </div>
+          <Check size={14} />
+          E-mail envoyé · valable 30 minutes
+        </p>
         {error && <FormAlert>{error}</FormAlert>}
         <Button
           size="lg"
@@ -102,16 +101,16 @@ export function ForgotPasswordForm() {
         >
           {cooldown > 0 ? `Renvoyer le lien dans ${minutes}:${seconds}` : "Renvoyer le lien"}
         </Button>
+        {back}
       </div>
     );
   }
 
   return (
-    <form onSubmit={submit} className="flex flex-col gap-7">
+    <form onSubmit={submit} className="flex flex-col gap-6">
       {back}
-      <div className="flex flex-col gap-3">
-        <Eyebrow>Réinitialisation</Eyebrow>
-        <AuthTitle>Mot de passe oublié</AuthTitle>
+      <div className="flex flex-col gap-2">
+        <AuthTitle>Mot de passe oublié.</AuthTitle>
         <AuthLead>
           Indique l'e-mail de ton compte : on t'envoie un lien pour choisir un nouveau mot de passe.
           Il reste valable 30 minutes.

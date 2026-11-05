@@ -13,6 +13,7 @@ export default async function SignupPage({ searchParams }: PageProps<"/inscripti
 
   return (
     <AuthShell
+      step={invitation ? undefined : 1}
       topLink={{
         prompt: "Déjà un compte ?",
         label: "Se connecter",

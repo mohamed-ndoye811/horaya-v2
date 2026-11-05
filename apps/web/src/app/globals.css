@@ -342,3 +342,9 @@ dialog[open]::backdrop {
   }
 }
 /* biome-ignore-end lint/complexity/noImportantStyles: fin de l'interrupteur. */
+
+/* Écrans de compte (DA v4) : champs blancs sur le fond gris, comme les maquettes 4.x. */
+.auth-fields
+:is(input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]), textarea, select) {
+  background-color: var(--color-surface);
+}

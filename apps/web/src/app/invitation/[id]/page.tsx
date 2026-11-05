@@ -1,7 +1,7 @@
 import { getInvitationSummary } from "@horaya/db";
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
-import { AuthShell, AuthTitle, Eyebrow } from "@/components/auth/auth-shell";
+import { AuthShell, AuthTitle, BrandAside } from "@/components/auth/auth-shell";
 import { ButtonLink } from "@/components/ui/button";
 import { ROLE_LABELS } from "@/lib/roles";
 import { getSession } from "@/server/auth";
@@ -81,16 +81,26 @@ export default async function InvitationPage({ params }: PageProps<"/invitation/
     );
   })();
 
-  return <AuthShell>{body}</AuthShell>;
+  return (
+    <AuthShell
+      aside={
+        <BrandAside
+          title="Rejoins l'équipe."
+          lead="Ton équipe organise ses événements sur Horaya. Il ne manque plus que toi."
+        />
+      }
+    >
+      {body}
+    </AuthShell>
+  );
 }
 
 function Message({ title, text, children }: { title: string; text: string; children?: ReactNode }) {
   return (
-    <div className="flex flex-col gap-7">
-      <div className="flex flex-col gap-3">
-        <Eyebrow>Invitation</Eyebrow>
+    <div className="flex flex-col gap-6">
+      <div className="flex flex-col gap-2">
         <AuthTitle>{title}</AuthTitle>
-        <p className="text-base font-medium leading-6 text-ink-muted">{text}</p>
+        <p className="text-base leading-6 text-ink-muted">{text}</p>
       </div>
       {children}
     </div>
