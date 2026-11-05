@@ -11,7 +11,7 @@ import { MonthCalendar } from "@/components/calendar/month-calendar";
 import { TimeGridCalendar } from "@/components/calendar/time-grid";
 import type { CalendarEvent } from "@/components/calendar/types";
 import { Avatar, CategorySwatch } from "@/components/ui/avatar";
-import { ButtonLink, IconLink } from "@/components/ui/button";
+import { ButtonLink } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight, CloseIcon, PlusIcon } from "@/components/ui/icons";
 import { Eyebrow } from "@/components/ui/section";
 import { SegmentedLinks } from "@/components/ui/segmented";
@@ -55,6 +55,7 @@ const SHORT_MONTHS = [
 ];
 const WEEKDAYS = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"];
 
+const capitalize = (word: string) => word.charAt(0).toUpperCase() + word.slice(1);
 const plural = (count: number, word: string) => `${count} ${word}${count > 1 ? "s" : ""}`;
 
 /** Écrans 06 à 08 : calendrier mois, semaine, jour. */
@@ -112,7 +113,11 @@ export default async function CalendarPage({ searchParams }: PageProps<"/app/cal
     color: row.typeColor,
     detail: [
       row.locationName,
-      row.capacity !== null ? `${row.seatsHeld} / ${row.capacity} places` : null,
+      row.capacity === null
+        ? null
+        : row.seatsHeld >= row.capacity
+          ? "Complet"
+          : `${row.seatsHeld} / ${row.capacity}`,
     ]
       .filter(Boolean)
       .join(" · "),
@@ -136,7 +141,7 @@ export default async function CalendarPage({ searchParams }: PageProps<"/app/cal
         : `${civilKey(date) === civilKey(today) ? "Aujourd'hui" : "Calendrier"} · ${plural(rows.length, "événement")}`;
   const title =
     view === "mois"
-      ? `${MONTHS[date.month - 1]} ${date.year}`
+      ? `${capitalize(MONTHS[date.month - 1] ?? "")} ${date.year}`
       : view === "semaine"
         ? first.month === last.month
           ? `${first.day} – ${last.day} ${SHORT_MONTHS[last.month - 1]}`
@@ -148,12 +153,28 @@ export default async function CalendarPage({ searchParams }: PageProps<"/app/cal
     view === "mois" ? `${date.year} · ${plural(inMonth.length, "événement")}` : eyebrow;
   const mobileTitle =
     view === "mois"
-      ? MONTHS[date.month - 1]
+      ? capitalize(MONTHS[date.month - 1] ?? "")
       : view === "semaine"
         ? first.month === last.month
           ? title
           : `${first.day}/${first.month} – ${last.day}/${last.month}`
         : `${WEEKDAYS[(new Date(Date.UTC(date.year, date.month - 1, date.day)).getUTCDay() + 6) % 7]?.slice(0, 3)}. ${date.day} ${SHORT_MONTHS[date.month - 1]}`;
+
+  // Sous-titre : « Juin 2026. 2 événements aujourd'hui, 6 cette semaine. »
+  const todayStart = startOfDay(today, timeZone);
+  const todayEnd = startOfDay(addDays(today, 1), timeZone);
+  const showsToday = todayStart >= from && todayStart < to;
+  const todayCount = rows.filter(
+    (row) => row.startsAt < todayEnd && row.endsAt > todayStart,
+  ).length;
+  const monthLabel = `${capitalize(MONTHS[date.month - 1] ?? "")} ${date.year}.`;
+  const period = view === "mois" ? "ce mois-ci" : view === "semaine" ? "cette semaine" : null;
+  const summary =
+    period === null
+      ? `${plural(rows.length, "événement")}.`
+      : showsToday
+        ? `${todayCount === 0 ? "Aucun événement" : plural(todayCount, "événement")} aujourd'hui, ${inMonth.length} ${period}.`
+        : `${plural(inMonth.length, "événement")} ${period}.`;
 
   // Plage horaire : 8 h – 20 h, élargie si des événements débordent.
   const hours = rows
@@ -180,6 +201,34 @@ export default async function CalendarPage({ searchParams }: PageProps<"/app/cal
     ),
   });
 
+  const periodNav = (
+    <nav
+      aria-label="Période"
+      className="flex h-10 shrink-0 items-center rounded-full bg-surface p-[3px] shadow-[0_1px_2px_rgba(0,0,0,0.04)]"
+    >
+      <Link
+        href={href({ date: previous })}
+        aria-label="Période précédente"
+        className="flex size-[34px] items-center justify-center rounded-full text-ink hover:bg-field"
+      >
+        <ChevronLeft />
+      </Link>
+      <Link
+        href={href({ date: today })}
+        className="flex h-[34px] items-center rounded-full px-3 text-sm font-semibold leading-[18px] text-ink hover:bg-field"
+      >
+        Aujourd'hui
+      </Link>
+      <Link
+        href={href({ date: next })}
+        aria-label="Période suivante"
+        className="flex size-[34px] items-center justify-center rounded-full text-ink hover:bg-field"
+      >
+        <ChevronRight />
+      </Link>
+    </nav>
+  );
+
   const views = [
     { value: "mois", label: "Mois", href: href({ vue: "mois" }) },
     { value: "semaine", label: "Semaine", href: href({ vue: "semaine" }) },
@@ -189,7 +238,6 @@ export default async function CalendarPage({ searchParams }: PageProps<"/app/cal
   return (
     <>
       <PageHeader
-        actionsInCorner={false}
         eyebrow={
           <>
             <span className="lg:hidden">{mobileEyebrow}</span>
@@ -202,37 +250,43 @@ export default async function CalendarPage({ searchParams }: PageProps<"/app/cal
             <span className="hidden lg:inline">{title}</span>
           </>
         }
-        titleAside={
-          <div className="flex gap-2">
-            <IconLink label="Période précédente" href={href({ date: previous })}>
-              <ChevronLeft />
-            </IconLink>
-            <IconLink label="Période suivante" href={href({ date: next })}>
-              <ChevronRight />
-            </IconLink>
-          </div>
+        subtitle={
+          <>
+            {view !== "mois" && `${monthLabel} `}
+            <span className="text-ink">{summary}</span>
+          </>
+        }
+        toolbar={
+          <>
+            <CalendarLegend
+              categories={types.map((type) => ({ name: type.name, color: type.color }))}
+            />
+            {/* Sur mobile, période et vues sur une seule ligne, vues en pleine largeur. */}
+            <div className="flex gap-3">
+              {periodNav}
+              <div className="min-w-0 flex-1 sm:hidden">
+                <SegmentedLinks
+                  label="Vue du calendrier"
+                  value={view}
+                  segments={views}
+                  size="sm"
+                  fill
+                />
+              </div>
+              <div className="hidden sm:block">
+                <SegmentedLinks label="Vue du calendrier" value={view} segments={views} size="sm" />
+              </div>
+            </div>
+          </>
         }
         actions={
-          // Sur mobile, vues et « Aujourd'hui » sur une seule ligne, vues en pleine largeur.
-          <div className="flex w-full gap-2 sm:w-auto sm:gap-3">
-            <div className="min-w-0 flex-1 sm:hidden">
-              <SegmentedLinks label="Vue du calendrier" value={view} segments={views} fill />
-            </div>
-            <div className="hidden sm:block">
-              <SegmentedLinks label="Vue du calendrier" value={view} segments={views} />
-            </div>
-            <ButtonLink href={href({ date: today })} variant="secondary">
-              Aujourd'hui
+          <div className="hidden lg:flex">
+            <ButtonLink href={newEventHref} icon={<PlusIcon />}>
+              Nouvel événement
             </ButtonLink>
-            <div className="hidden lg:flex">
-              <ButtonLink href={newEventHref} icon={<PlusIcon />}>
-                Nouvel événement
-              </ButtonLink>
-            </div>
           </div>
         }
       />
-      <CalendarLegend categories={types.map((type) => ({ name: type.name, color: type.color }))} />
 
       {/* Changement de vue ou de date : le calendrier se fond dans le suivant. */}
       <ViewTransition key={`${view}-${civilKey(date)}`} enter="page" exit="page" default="none">
@@ -285,7 +339,7 @@ export default async function CalendarPage({ searchParams }: PageProps<"/app/cal
             </>
           )}
           {view === "jour" && (
-            <div className="flex flex-col lg:flex-row">
+            <div className="flex flex-col lg:flex-row lg:items-start lg:pr-4">
               <div className="min-w-0 flex-1">
                 <TimeGridCalendar
                   days={days}
@@ -305,17 +359,17 @@ export default async function CalendarPage({ searchParams }: PageProps<"/app/cal
                 />
               )}
               {selected && (
-                <aside className="fixed inset-x-0 bottom-0 z-50 flex max-h-[85dvh] animate-[rise_380ms_cubic-bezier(0.2,0,0,1)_both] lg:animate-none flex-col overflow-y-auto border-t border-line-soft bg-surface pb-[env(safe-area-inset-bottom)] lg:static lg:z-auto lg:max-h-none lg:w-[380px] lg:shrink-0 lg:overflow-visible lg:border-t-0 lg:border-l-2 lg:pb-0">
+                <aside className="fixed inset-x-0 bottom-0 z-50 flex max-h-[85dvh] animate-[rise_380ms_cubic-bezier(0.2,0,0,1)_both] flex-col overflow-y-auto rounded-t-3xl bg-surface pb-[env(safe-area-inset-bottom)] lg:sticky lg:top-4 lg:z-auto lg:max-h-none lg:w-[380px] lg:shrink-0 lg:animate-none lg:overflow-visible lg:rounded-3xl lg:pb-0">
                   <div aria-hidden="true" className="flex justify-center pt-2.5 lg:hidden">
-                    <span className="h-1 w-10 bg-ink-subtle" />
+                    <span className="h-1 w-10 rounded-full bg-line" />
                   </div>
-                  <div className="flex items-start justify-between gap-4 border-b border-line-soft px-7 py-6">
+                  <div className="flex items-start justify-between gap-4 border-b border-line-soft px-6 py-5">
                     <div className="flex min-w-0 flex-col gap-3">
-                      <p className="flex items-center gap-2 font-mono text-label font-semibold uppercase tracking-[0.055em] text-neutral">
+                      <p className="flex items-center gap-2 text-xs font-bold leading-4 text-ink-muted">
                         <CategorySwatch color={selected.event.typeColor} size={10} />
                         {selected.event.typeName} · {workspace.name}
                       </p>
-                      <h2 className="font-headline text-[36px] leading-9 text-ink">
+                      <h2 className="font-headline text-[32px] leading-9 text-ink">
                         {selected.event.title}
                       </h2>
                       <p className="text-[15px] font-medium text-ink-muted">
@@ -325,20 +379,20 @@ export default async function CalendarPage({ searchParams }: PageProps<"/app/cal
                     <Link
                       href={href({})}
                       aria-label="Fermer"
-                      className="flex size-9 shrink-0 items-center justify-center text-ink hover:bg-draft-bg"
+                      className="flex size-9 shrink-0 items-center justify-center rounded-full text-ink hover:bg-field"
                     >
                       <CloseIcon />
                     </Link>
                   </div>
                   {selected.event.locationName && (
-                    <div className="flex flex-col gap-2 border-b border-line-soft px-7 py-5">
+                    <div className="flex flex-col gap-2 border-b border-line-soft px-6 py-4">
                       <Eyebrow>Lieu</Eyebrow>
                       <p className="text-base font-semibold text-ink">
                         {selected.event.locationName}
                       </p>
                     </div>
                   )}
-                  <div className="flex flex-col gap-3 border-b border-line-soft px-7 py-5">
+                  <div className="flex flex-col gap-3 border-b border-line-soft px-6 py-4">
                     <Eyebrow>
                       Participants · {selected.event.seatsHeld}
                       {selected.event.capacity !== null ? ` / ${selected.event.capacity}` : ""}
@@ -360,14 +414,14 @@ export default async function CalendarPage({ searchParams }: PageProps<"/app/cal
                     </div>
                   </div>
                   {selected.event.description && (
-                    <div className="flex flex-col gap-2 border-b border-line-soft px-7 py-5">
+                    <div className="flex flex-col gap-2 border-b border-line-soft px-6 py-4">
                       <Eyebrow>Description</Eyebrow>
                       <p className="line-clamp-6 text-sm font-medium leading-6 text-ink">
                         {selected.event.description}
                       </p>
                     </div>
                   )}
-                  <div className="mt-auto flex gap-3 px-7 py-6">
+                  <div className="mt-auto flex gap-3 px-6 py-5">
                     <ButtonLink
                       href={`/app/evenements/${selected.event.id}/modifier`}
                       className="flex-1"

@@ -3,17 +3,23 @@ import Link from "next/link";
 import type { CSSProperties } from "react";
 import { type CivilDate, civilKey, isAllDay, layoutDay, layoutSpans } from "@/lib/calendar";
 import { cn } from "@/lib/cn";
-import { textOn } from "@/lib/colors";
+import { shadeOf, tintOf } from "@/lib/colors";
 import { formatHour, formatTimeRange, formatWeekdayShort } from "@/lib/format";
 import { type CalendarEvent, WEEKDAY_LABELS } from "./types";
 
-/** Hauteur d'une heure dans la grille (maquette : 76 px). */
-const HOUR_HEIGHT = 76;
+/** Hauteur d'une heure dans la grille (maquette 1.3 : 64 px). */
+const HOUR_HEIGHT = 64;
+/** Filets de la grille, plus clairs que `line-soft` (maquette : #F4F4F2). */
+const GRID_LINE = "#f4f4f2";
+
+/** Carte blanche des vues du calendrier (DA v4). */
+export const calendarCard =
+  "mx-4 overflow-hidden rounded-3xl bg-surface shadow-[0_1px_2px_rgba(0,0,0,0.04),0_16px_40px_rgba(0,0,0,0.06)]";
 
 /**
- * Vues Semaine et Jour (écrans 07 et 08) : ligne « Jour » pour les événements sur
- * plusieurs jours, puis grille horaire avec les événements placés en colonnes quand
- * ils se chevauchent, et la ligne rouge de l'heure actuelle.
+ * Vues Semaine et Jour (maquette 1.3) : en-têtes des jours, ligne « Jour » pour les
+ * événements sur plusieurs jours s'il y en a, puis grille horaire avec les événements
+ * placés en colonnes quand ils se chevauchent, et le trait orange de l'heure actuelle.
  */
 export function TimeGridCalendar({
   days,
@@ -38,133 +44,144 @@ export function TimeGridCalendar({
   const lanes = Math.max(1, ...spans.map((span) => span.lane + 1));
   const hours = Array.from({ length: endHour - startHour }, (_, index) => startHour + index);
   const todayKey = civilKey(today);
-  const columns = `56px repeat(${days.length}, minmax(0, 1fr))`;
+  const columns = `60px repeat(${days.length}, minmax(0, 1fr))`;
   const pxPerMinute = HOUR_HEIGHT / 60;
+  const isWeekend = (day: CivilDate) => weekdayOf(day.year, day.month, day.day) >= 5;
 
   return (
-    <div className="overflow-x-auto">
-      <div className={days.length > 1 ? "min-w-[840px]" : undefined}>
-        {/* En-têtes des jours */}
-        <div className="grid border-b border-line-soft" style={{ gridTemplateColumns: columns }}>
-          <span />
-          {days.map((day) => {
-            const weekday = weekdayOf(day.year, day.month, day.day);
-            const isToday = civilKey(day) === todayKey;
-            return (
-              <div
-                key={civilKey(day)}
-                className={cn(
-                  "flex items-center gap-2 border-l border-line-soft p-2.5",
-                  isToday ? "bg-today" : weekday >= 5 && "bg-weekend",
-                )}
-              >
-                <span
-                  className={cn(
-                    "font-mono text-label font-semibold uppercase tracking-[0.055em]",
-                    weekday >= 5 ? "text-neutral" : "text-ink",
-                  )}
-                >
-                  {WEEKDAY_LABELS[weekday]}
-                </span>
-                <span
-                  className={cn(
-                    "text-base font-extrabold leading-5",
-                    isToday ? "bg-ink px-1.5 py-0.5 text-on-ink" : "text-ink",
-                  )}
-                >
-                  {day.day}
-                </span>
-              </div>
-            );
-          })}
-        </div>
-
-        {/* Ligne « Jour » */}
-        <div className="grid border-b border-line-soft" style={{ gridTemplateColumns: columns }}>
-          <span className="flex justify-end pt-2.5 pr-2 font-mono text-[10px] font-semibold uppercase tracking-[0.04em] text-neutral">
-            Jour
-          </span>
+    <div className={calendarCard}>
+      <div className="overflow-x-auto">
+        <div className={days.length > 1 ? "min-w-[840px]" : undefined}>
+          {/* En-têtes des jours */}
           <div
-            className="relative grid gap-y-1 border-l border-line-soft py-1.5"
-            style={{
-              gridColumn: `2 / span ${days.length}`,
-              gridTemplateColumns: `repeat(${days.length}, minmax(0, 1fr))`,
-              gridTemplateRows: `repeat(${lanes}, 26px)`,
-              minHeight: 40,
-            }}
+            className="grid h-[60px] border-b border-line-soft"
+            style={{ gridTemplateColumns: columns }}
           >
-            {spans.map(({ item, startColumn, endColumn, lane }) => (
-              <EventBar
-                key={item.id}
-                event={item}
-                timeZone={timeZone}
-                style={{
-                  gridColumn: `${startColumn + 1} / ${endColumn + 2}`,
-                  gridRow: lane + 1,
-                }}
-              />
-            ))}
+            <span />
+            {days.map((day) => {
+              const isToday = civilKey(day) === todayKey;
+              const weekend = isWeekend(day);
+              return (
+                <div
+                  key={civilKey(day)}
+                  aria-current={isToday ? "date" : undefined}
+                  className={cn("flex items-center justify-center gap-2", weekend && "bg-band")}
+                >
+                  <span
+                    className={cn(
+                      "text-xs uppercase leading-4",
+                      isToday ? "font-bold text-ink" : "font-semibold text-ink-subtle",
+                    )}
+                  >
+                    {WEEKDAY_LABELS[weekdayOf(day.year, day.month, day.day)]}
+                  </span>
+                  {isToday ? (
+                    <span className="flex size-8 items-center justify-center rounded-full bg-ink text-[15px] font-bold leading-[18px] text-on-ink">
+                      {day.day}
+                    </span>
+                  ) : (
+                    <span
+                      className={cn(
+                        "text-lg font-semibold leading-[22px]",
+                        weekend ? "text-ink-subtle" : "text-ink",
+                      )}
+                    >
+                      {day.day}
+                    </span>
+                  )}
+                </div>
+              );
+            })}
           </div>
-        </div>
 
-        {/* Grille horaire */}
-        <div className="relative grid" style={{ gridTemplateColumns: columns }}>
-          <div className="flex flex-col">
-            {hours.map((hour) => (
-              <span
-                key={hour}
-                className="flex justify-end pt-1 pr-2 font-mono text-label font-medium leading-[14px] text-ink-muted"
-                style={{ height: HOUR_HEIGHT }}
-              >
-                {hour}h
+          {/* Ligne « Jour » : seulement quand un événement dure toute la journée ou plus. */}
+          {spans.length > 0 && (
+            <div
+              className="grid border-b border-line-soft"
+              style={{ gridTemplateColumns: columns }}
+            >
+              <span className="flex justify-end pt-2.5 pr-2.5 text-[11px] font-semibold leading-[14px] text-[#ababa6]">
+                Jour
               </span>
-            ))}
-          </div>
-          {days.map((day) => {
-            const weekday = weekdayOf(day.year, day.month, day.day);
-            const isToday = civilKey(day) === todayKey;
-            const placed = layoutDay(timed, day, timeZone, { startHour, endHour });
-            const nowMinutes = isToday ? minutesSinceStart(now, timeZone, startHour) : null;
-            return (
               <div
-                key={civilKey(day)}
-                className={cn(
-                  "relative border-l border-line-soft",
-                  isToday ? "bg-ink/5" : weekday >= 5 && "bg-black/[0.035]",
-                )}
+                className="relative grid gap-y-1 border-l border-line-soft py-1.5"
                 style={{
-                  height: hours.length * HOUR_HEIGHT,
-                  backgroundImage: `repeating-linear-gradient(to bottom, var(--color-line-soft) 0 1px, transparent 1px ${HOUR_HEIGHT}px)`,
+                  gridColumn: `2 / span ${days.length}`,
+                  gridTemplateColumns: `repeat(${days.length}, minmax(0, 1fr))`,
+                  gridTemplateRows: `repeat(${lanes}, 26px)`,
+                  minHeight: 40,
                 }}
               >
-                {placed.map(({ item, top, height, column, columns: count }) => (
-                  <EventBlock
+                {spans.map(({ item, startColumn, endColumn, lane }) => (
+                  <EventBar
                     key={item.id}
                     event={item}
                     timeZone={timeZone}
                     style={{
-                      top: top * pxPerMinute,
-                      height: height * pxPerMinute - 2,
-                      left: `calc(${(column / count) * 100}% + 4px)`,
-                      width: `calc(${100 / count}% - 8px)`,
+                      gridColumn: `${startColumn + 1} / ${endColumn + 2}`,
+                      gridRow: lane + 1,
                     }}
-                    compact={height * pxPerMinute < 56}
-                    stacked={column > 0}
                   />
                 ))}
-                {nowMinutes !== null && nowMinutes >= 0 && nowMinutes <= hours.length * 60 && (
-                  <div
-                    aria-hidden="true"
-                    className="pointer-events-none absolute inset-x-0"
-                    style={{ top: nowMinutes * pxPerMinute }}
-                  >
-                    <div className="h-0.5 bg-danger" />
-                    <div className="absolute -top-1 -left-[5px] size-2.5 rounded-dot bg-danger" />
-                  </div>
-                )}
               </div>
-            );
-          })}
+            </div>
+          )}
+
+          {/* Grille horaire */}
+          <div className="relative grid" style={{ gridTemplateColumns: columns }}>
+            <div className="flex flex-col border-r border-line-soft">
+              {hours.map((hour) => (
+                <span
+                  key={hour}
+                  className="flex justify-end pt-1.5 pr-2.5 text-[11px] font-semibold leading-[14px] text-[#ababa6]"
+                  style={{ height: HOUR_HEIGHT }}
+                >
+                  {hour}h
+                </span>
+              ))}
+            </div>
+            {days.map((day, index) => {
+              const isToday = civilKey(day) === todayKey;
+              const placed = layoutDay(timed, day, timeZone, { startHour, endHour });
+              const nowMinutes = isToday ? minutesSinceStart(now, timeZone, startHour) : null;
+              return (
+                <div
+                  key={civilKey(day)}
+                  className={cn("relative", isWeekend(day) && "bg-band")}
+                  style={{
+                    height: hours.length * HOUR_HEIGHT,
+                    borderLeft: index > 0 ? `1px solid ${GRID_LINE}` : undefined,
+                    backgroundImage: `repeating-linear-gradient(to bottom, ${GRID_LINE} 0 1px, transparent 1px ${HOUR_HEIGHT}px)`,
+                  }}
+                >
+                  {placed.map(({ item, top, height, column, columns: count }) => (
+                    <EventBlock
+                      key={item.id}
+                      event={item}
+                      timeZone={timeZone}
+                      style={{
+                        top: top * pxPerMinute + 2,
+                        height: height * pxPerMinute - 4,
+                        left: `calc(${(column / count) * 100}% + 4px)`,
+                        width: `calc(${100 / count}% - 8px)`,
+                      }}
+                      compact={height * pxPerMinute < 56}
+                    />
+                  ))}
+                  {nowMinutes !== null && nowMinutes >= 0 && nowMinutes <= hours.length * 60 && (
+                    <div
+                      aria-hidden="true"
+                      className="pointer-events-none absolute inset-x-0 z-10"
+                      style={{ top: nowMinutes * pxPerMinute }}
+                    >
+                      <div className="h-0.5 bg-accent" />
+                      <div className="absolute -top-1 -left-[5px] size-2.5 rounded-full bg-accent" />
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
         </div>
       </div>
     </div>
@@ -191,6 +208,14 @@ function spanLabel(event: CalendarEvent, timeZone: string): string | null {
   return `${formatWeekdayShort(event.startsAt, timeZone)} ${start} → ${formatWeekdayShort(event.endsAt, timeZone)} ${end}`;
 }
 
+/** Fond pâle, filet de 3 px et texte foncé de la couleur du type. */
+const blockStyle = (event: CalendarEvent, style: CSSProperties): CSSProperties => ({
+  ...style,
+  backgroundColor: tintOf(event.color),
+  borderLeftColor: event.color,
+  color: shadeOf(event.color),
+});
+
 function EventBar({
   event,
   timeZone,
@@ -200,25 +225,27 @@ function EventBar({
   timeZone: string;
   style: CSSProperties;
 }) {
-  const color = textOn(event.color);
   const content = (
     <>
-      <span className="truncate text-[13px] font-bold leading-4">{event.title}</span>
+      <span className="truncate text-[13px] font-bold leading-4 text-ink">{event.title}</span>
       {spanLabel(event, timeZone) && (
-        <span className="hidden shrink-0 font-mono text-[11px] font-semibold opacity-85 sm:inline">
-          {spanLabel(event, timeZone)}
-        </span>
+        <span className="hidden shrink-0 text-xs sm:inline">{spanLabel(event, timeZone)}</span>
       )}
     </>
   );
-  const className = "mx-1 flex min-w-0 items-center gap-2 overflow-hidden px-2.5";
-  const merged = { ...style, backgroundColor: event.color, color };
+  const className =
+    "mx-1 flex min-w-0 items-center gap-2 overflow-hidden rounded-lg border-l-[3px] px-2.5 hover:brightness-[0.97]";
   return event.href ? (
-    <Link href={event.href} className={className} style={merged} title={event.title}>
+    <Link
+      href={event.href}
+      className={className}
+      style={blockStyle(event, style)}
+      title={event.title}
+    >
       {content}
     </Link>
   ) : (
-    <div className={className} style={merged} title={event.title}>
+    <div className={className} style={blockStyle(event, style)} title={event.title}>
       {content}
     </div>
   );
@@ -229,47 +256,42 @@ function EventBlock({
   timeZone,
   style,
   compact,
-  stacked,
 }: {
   event: CalendarEvent;
   timeZone: string;
   style: CSSProperties;
   /** Événement court : heure et titre sur une ligne. */
   compact: boolean;
-  /** Décalé à droite d'un autre : filet couleur de fond pour le détacher. */
-  stacked: boolean;
 }) {
-  const color = textOn(event.color);
   const className = cn(
-    "absolute flex overflow-hidden px-2 hover:brightness-95",
-    compact ? "items-center gap-1.5 py-1" : "flex-col gap-0.5 py-1.5",
-    stacked && "border-t-2 border-l-2 border-bg",
+    "absolute flex overflow-hidden rounded-xl border-l-[3px] px-2.5 hover:brightness-[0.97]",
+    compact ? "items-center gap-1.5 py-1" : "flex-col gap-0.5 py-2",
   );
   const content = compact ? (
     <>
-      <span className="shrink-0 font-mono text-[11px] font-semibold opacity-85">
-        {formatHour(event.startsAt, timeZone)}
-      </span>
-      <span className="truncate text-[13px] font-bold leading-4">{event.title}</span>
+      <span className="shrink-0 text-xs">{formatHour(event.startsAt, timeZone)}</span>
+      <span className="truncate text-[13px] font-bold leading-4 text-ink">{event.title}</span>
     </>
   ) : (
     <>
-      <span className="font-mono text-[11px] font-semibold leading-[13px] opacity-85">
-        {formatTimeRange(event.startsAt, event.endsAt, timeZone).replace(" – ", " - ")}
+      <span className="text-[13px] font-bold leading-[17px] text-ink">{event.title}</span>
+      <span className="text-xs leading-4">
+        {formatTimeRange(event.startsAt, event.endsAt, timeZone)}
       </span>
-      <span className="text-[13px] font-bold leading-4">{event.title}</span>
-      {event.detail && (
-        <span className="text-label font-medium leading-[15px]">{event.detail}</span>
-      )}
+      {event.detail && <span className="text-xs leading-4">{event.detail}</span>}
     </>
   );
-  const merged = { ...style, backgroundColor: event.color, color };
   return event.href ? (
-    <Link href={event.href} className={className} style={merged} title={event.title}>
+    <Link
+      href={event.href}
+      className={className}
+      style={blockStyle(event, style)}
+      title={event.title}
+    >
       {content}
     </Link>
   ) : (
-    <div className={className} style={merged} title={event.title}>
+    <div className={className} style={blockStyle(event, style)} title={event.title}>
       {content}
     </div>
   );
