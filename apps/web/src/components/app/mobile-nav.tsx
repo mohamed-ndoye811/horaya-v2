@@ -101,7 +101,7 @@ export function MobileTabBar({ pendingBookings }: { pendingBookings: number }) {
   }
   return (
     <BottomNotch label="Navigation principale">
-      <ul className="flex gap-1">
+      <ul className="flex w-full justify-between gap-1">
         {TABS.map((tab) => {
           const active = tab.match(pathname);
           const Icon = tab.icon;
