@@ -73,6 +73,18 @@ export function formatRelativeDateTime(
   return `${part(date, timeZone, { day: "numeric", month: "long" })}, ${time}`;
 }
 
+/** « aujourd'hui », « demain », « le 16 juin » (prochaine venue d'un client). */
+export function formatRelativeDay(
+  date: Date,
+  timeZone = DEFAULT_TIME_ZONE,
+  now = new Date(),
+): string {
+  const dayOf = (value: Date) => part(value, timeZone, { dateStyle: "short" });
+  if (dayOf(date) === dayOf(now)) return "aujourd'hui";
+  if (dayOf(date) === dayOf(new Date(now.getTime() + 86_400_000))) return "demain";
+  return `le ${part(date, timeZone, { day: "numeric", month: "long" })}`;
+}
+
 /** « Mohamed Ndoye » → « MN ». */
 export function initials(name: string): string {
   const words = name.trim().split(/\s+/).filter(Boolean);

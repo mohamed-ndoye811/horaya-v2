@@ -12,6 +12,8 @@ const sizes = {
   lg: "size-10 text-sm",
   /** Carte client d'une réservation. */
   profile: "size-[52px] text-[17px]",
+  /** En-tête de fiche client (DA v4). */
+  header: "size-[72px] text-2xl",
   /** En-tête de fiche client (96 px). */
   xl: "size-24 font-headline text-[40px]",
 };

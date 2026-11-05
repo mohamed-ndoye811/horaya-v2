@@ -24,6 +24,7 @@ export function PageHeader({
   stickyActions,
   actionsInCorner = true,
   toolbar,
+  leading,
   className,
 }: {
   /** Fil d'Ariane ou contexte (« Tableau de bord / Réservations »). */
@@ -42,6 +43,8 @@ export function PageHeader({
   stickyActions?: "bottom" | "above-tabs";
   /** Actions trop larges pour le coin du notch (sélecteur de vue du calendrier) : `false`. */
   actionsInCorner?: boolean;
+  /** À gauche du titre : avatar de la fiche client. */
+  leading?: ReactNode;
   /** Recherche et filtres de la liste : à droite du titre sur grand écran, dessous sinon. */
   toolbar?: ReactNode;
   className?: string;
@@ -53,24 +56,29 @@ export function PageHeader({
         className,
       )}
     >
-      <div className="flex min-w-0 flex-col gap-1.5 xl:shrink-0">
-        <p className={cn("reveal text-[13px] font-semibold leading-4 text-ink-muted", cornerLeft)}>
-          {eyebrow}
-        </p>
-        <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
-          <h1 className="font-headline text-[34px] leading-[38px] text-ink sm:text-[40px] sm:leading-[44px]">
-            <WordsReveal delay={1}>{title}</WordsReveal>
-          </h1>
-          {titleAside}
-        </div>
-        {subtitle && (
-          <div
-            className="reveal text-[15px] font-medium leading-[22px] text-ink-muted"
-            style={stagger(3)}
+      <div className="flex min-w-0 items-center gap-[18px] xl:shrink-0">
+        {leading}
+        <div className="flex min-w-0 flex-col gap-1.5">
+          <p
+            className={cn("reveal text-[13px] font-semibold leading-4 text-ink-muted", cornerLeft)}
           >
-            {subtitle}
+            {eyebrow}
+          </p>
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+            <h1 className="font-headline text-[34px] leading-[38px] text-ink sm:text-[40px] sm:leading-[44px]">
+              <WordsReveal delay={1}>{title}</WordsReveal>
+            </h1>
+            {titleAside}
           </div>
-        )}
+          {subtitle && (
+            <div
+              className="reveal text-[15px] font-medium leading-[22px] text-ink-muted"
+              style={stagger(3)}
+            >
+              {subtitle}
+            </div>
+          )}
+        </div>
       </div>
       {toolbar && (
         <div

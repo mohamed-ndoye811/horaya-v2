@@ -119,3 +119,71 @@ export function Stat({
     </div>
   );
 }
+
+/**
+ * Chiffre clé compact (DA v4, clients et matériel) : libellé, valeur en Urbanist avec
+ * son unité en petit, et un complément à droite (pastille, précision, anneau).
+ */
+export function MiniStat({
+  label,
+  value,
+  unit,
+  aside,
+  dark = false,
+}: {
+  label: string;
+  value: ReactNode;
+  /** « € », « % » : en petit après la valeur. */
+  unit?: ReactNode;
+  aside?: ReactNode;
+  /** Carte noire de synthèse (« Clients VIP », « Prochaine venue »). */
+  dark?: boolean;
+}) {
+  return (
+    <div
+      className={cn(
+        "flex min-w-0 items-end justify-between gap-3 rounded-[20px] px-5 py-4",
+        dark
+          ? "bg-ink"
+          : "bg-surface shadow-[0_1px_2px_rgba(0,0,0,0.04),0_16px_40px_rgba(0,0,0,0.05)]",
+      )}
+    >
+      <div className="flex min-w-0 flex-col gap-1.5">
+        <p className="text-[13px] font-semibold leading-[17px] text-ink-subtle">{label}</p>
+        <p
+          className={cn(
+            "truncate font-headline text-[32px] leading-9 tracking-[-0.03em]",
+            dark ? "text-white" : "text-ink",
+          )}
+        >
+          {value}
+          {unit && <span className="ml-1 text-base font-light tracking-normal">{unit}</span>}
+        </p>
+      </div>
+      {aside && (
+        <div className="shrink-0 text-right text-xs leading-4 text-ink-subtle">{aside}</div>
+      )}
+    </div>
+  );
+}
+
+/** Anneau de progression de 44 px (taux de retour, taux de présence). */
+export function ProgressRing({ percent }: { percent: number }) {
+  const circumference = 2 * Math.PI * 18;
+  const filled = (Math.min(100, Math.max(0, percent)) / 100) * circumference;
+  return (
+    <svg aria-hidden="true" width="44" height="44" viewBox="0 0 44 44" className="-rotate-90">
+      <circle cx="22" cy="22" r="18" fill="none" stroke="#ededeb" strokeWidth="4" />
+      <circle
+        cx="22"
+        cy="22"
+        r="18"
+        fill="none"
+        stroke="#111111"
+        strokeWidth="4"
+        strokeLinecap="round"
+        strokeDasharray={`${filled} ${circumference}`}
+      />
+    </svg>
+  );
+}

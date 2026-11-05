@@ -15,7 +15,7 @@ import { PlusIcon } from "@/components/ui/icons";
 import { ActionMenu } from "@/components/ui/menu";
 import { SearchInput } from "@/components/ui/search-input";
 import { SegmentedLinks } from "@/components/ui/segmented";
-import { Stat, StatGrid } from "@/components/ui/stat";
+import { MiniStat, ProgressRing } from "@/components/ui/stat";
 import { Tag } from "@/components/ui/tag";
 import { customerTags } from "@/lib/customer-tags";
 import { startOfDay, todayIn } from "@/lib/dates";
@@ -42,6 +42,11 @@ function visitLabel(date: Date, timeZone: string) {
   })
     .format(date)
     .replace(/^./, (letter) => letter.toUpperCase());
+}
+
+/** « 21 juin » : prochaine venue d'un client. */
+function dayMonth(date: Date, timeZone: string) {
+  return new Intl.DateTimeFormat("fr-FR", { day: "numeric", month: "long", timeZone }).format(date);
 }
 
 /** « 12 oct. » : la carte mobile n'a pas la place du jour de la semaine. */
@@ -78,7 +83,18 @@ export default async function CustomersPage({ searchParams }: PageProps<"/app/cl
       <PageHeader
         eyebrow="Tableau de bord / Clients"
         title="Clients"
-        subtitle={`${stats.total} client${stats.total > 1 ? "s" : ""} · ${stats.newThisMonth} nouveau${stats.newThisMonth > 1 ? "x" : ""} ce mois-ci${stats.returnRate !== null ? ` · ${stats.returnRate} % reviennent au moins une fois` : ""}`}
+        subtitle={
+          <>
+            {stats.total} client{stats.total > 1 ? "s" : ""}.{" "}
+            <span className="text-ink">
+              {stats.newThisMonth} nouveau{stats.newThisMonth > 1 ? "x" : ""} ce mois-ci
+              {stats.returnRate !== null
+                ? `, ${stats.returnRate} % reviennent au moins une fois`
+                : ""}
+              .
+            </span>
+          </>
+        }
         actions={
           <>
             <ButtonLink
@@ -98,30 +114,77 @@ export default async function CustomersPage({ searchParams }: PageProps<"/app/cl
             </div>
           </>
         }
+        toolbar={
+          counts.all > 0 && (
+            <>
+              <form action="/app/clients" className="min-w-0 md:flex-1 xl:max-w-[300px]">
+                {segment !== "all" && <input type="hidden" name="segment" value={segment} />}
+                <SearchInput
+                  label="Rechercher un client"
+                  name="q"
+                  defaultValue={search}
+                  placeholder="Nom, e-mail, entreprise…"
+                />
+              </form>
+              <SegmentedLinks
+                collapse
+                label="Filtrer les clients"
+                value={segment}
+                segments={SEGMENTS.map((entry) => ({
+                  ...entry,
+                  count: counts[entry.value],
+                  href: href({ segment: entry.value === "all" ? undefined : entry.value }),
+                }))}
+              />
+            </>
+          )
+        }
       />
-      <StatGrid>
-        <Stat
+      <div className="grid grid-cols-2 gap-3 px-4 pb-4 xl:grid-cols-4">
+        <MiniStat
           label="Clients"
           value={stats.total}
-          footer={`▲ +${stats.newThisMonth} ce mois-ci`}
-          footerTone={stats.newThisMonth > 0 ? "success" : "muted"}
+          aside={
+            stats.newThisMonth > 0 && (
+              <Tag tone="success">{`+${stats.newThisMonth} ce mois-ci`}</Tag>
+            )
+          }
         />
-        <Stat
+        <MiniStat
           label="Panier moyen"
-          value={stats.averageBasketCents === null ? "—" : formatMoney(stats.averageBasketCents)}
-          footer="par réservation payante"
+          value={
+            stats.averageBasketCents === null
+              ? "—"
+              : formatMoney(stats.averageBasketCents).replace(/\s?€$/, "")
+          }
+          unit={stats.averageBasketCents === null ? undefined : "€"}
+          aside={
+            <>
+              par réservation
+              <br />
+              payante
+            </>
+          }
         />
-        <Stat
+        <MiniStat
           label="Taux de retour"
-          value={stats.returnRate === null ? "—" : `${stats.returnRate}%`}
-          footer="au moins deux réservations"
+          value={stats.returnRate ?? "—"}
+          unit={stats.returnRate === null ? undefined : "%"}
+          aside={stats.returnRate !== null && <ProgressRing percent={stats.returnRate} />}
         />
-        <Stat
+        <MiniStat
+          dark
           label="Clients VIP"
           value={counts.vip}
-          footer="5 réservations ou plus, ou étiquette VIP"
+          aside={
+            <>
+              5 réservations ou plus,
+              <br />
+              ou étiquette VIP
+            </>
+          }
         />
-      </StatGrid>
+      </div>
 
       {counts.all === 0 ? (
         <EmptyState
@@ -135,27 +198,6 @@ export default async function CustomersPage({ searchParams }: PageProps<"/app/cl
         />
       ) : (
         <>
-          <div className="flex flex-col gap-4 px-4 py-6 xl:flex-row xl:items-center">
-            <form action="/app/clients" className="xl:flex-1">
-              {segment !== "all" && <input type="hidden" name="segment" value={segment} />}
-              <SearchInput
-                label="Rechercher un client"
-                name="q"
-                defaultValue={search}
-                placeholder="Nom, e-mail, entreprise…"
-              />
-            </form>
-            <SegmentedLinks
-              collapse
-              label="Filtrer les clients"
-              value={segment}
-              segments={SEGMENTS.map((entry) => ({
-                ...entry,
-                count: counts[entry.value],
-                href: href({ segment: entry.value === "all" ? undefined : entry.value }),
-              }))}
-            />
-          </div>
           <DataTable
             label="Clients"
             rows={rows}
@@ -187,7 +229,7 @@ export default async function CustomersPage({ searchParams }: PageProps<"/app/cl
                   />
                 </div>
                 <div className="flex shrink-0 flex-col items-end gap-1.5">
-                  <span className="text-base font-extrabold leading-5 text-ink">
+                  <span className="text-sm font-semibold leading-[18px] text-ink">
                     {formatMoney(row.spentCents)}
                   </span>
                   {customerTags(row, now)
@@ -215,10 +257,9 @@ export default async function CustomersPage({ searchParams }: PageProps<"/app/cl
               {
                 key: "bookings",
                 header: "Réservations",
-                width: 120,
-                align: "right",
+                width: 150,
                 cell: (row) => (
-                  <span className="font-mono text-sm font-semibold">{row.bookings}</span>
+                  <span className="text-sm font-semibold leading-[18px]">{row.bookings}</span>
                 ),
               },
               {
@@ -227,8 +268,8 @@ export default async function CustomersPage({ searchParams }: PageProps<"/app/cl
                 width: 110,
                 align: "right",
                 cell: (row) => (
-                  <span className="text-[15px] font-extrabold text-ink">
-                    {formatMoney(row.spentCents)}
+                  <span className="text-sm font-semibold leading-[18px] text-ink">
+                    {row.spentCents > 0 ? formatMoney(row.spentCents) : "—"}
                   </span>
                 ),
               },
@@ -236,26 +277,21 @@ export default async function CustomersPage({ searchParams }: PageProps<"/app/cl
                 key: "visit",
                 header: "Dernière venue",
                 width: 170,
-                cell: (row) => (
-                  <span
-                    className={
-                      row.lastVisit
-                        ? "text-sm font-medium text-ink"
-                        : "text-sm font-medium text-ink-muted"
-                    }
-                  >
-                    {row.lastVisit
-                      ? visitLabel(row.lastVisit, timeZone)
-                      : row.nextVisit
-                        ? `Prochaine venue le ${visitLabel(row.nextVisit, timeZone).toLowerCase()}`
-                        : "—"}
-                  </span>
-                ),
+                cell: (row) =>
+                  row.nextVisit ? (
+                    <span className="text-[13px] font-medium leading-[17px] text-success">
+                      Prochaine le {dayMonth(row.nextVisit, timeZone)}
+                    </span>
+                  ) : (
+                    <span className="text-[13px] leading-[17px] text-[#4a4a4a]">
+                      {row.lastVisit ? visitLabel(row.lastVisit, timeZone) : "—"}
+                    </span>
+                  ),
               },
               {
                 key: "tags",
                 header: "Étiquettes",
-                width: 210,
+                width: 240,
                 cell: (row) => (
                   <div className="flex flex-wrap gap-1.5">
                     {customerTags(row, now).map((tag) => (
