@@ -25,26 +25,24 @@ export function TitleBlock({
   stretched?: boolean;
 }) {
   return (
-    <div className="flex min-w-0 flex-1 flex-col gap-1">
+    <div className="flex min-w-0 flex-1 flex-col gap-px">
       <div className="flex min-w-0 items-center gap-2">
         {leading}
         {href ? (
           <Link
             href={href}
             className={cn(
-              "truncate text-base font-bold leading-5 text-ink hover:underline hover:decoration-1 hover:underline-offset-[3px]",
+              "truncate text-sm font-semibold leading-[18px] text-ink hover:underline hover:decoration-1 hover:underline-offset-[3px]",
               stretched && "after:absolute after:inset-0",
             )}
           >
             {title}
           </Link>
         ) : (
-          <span className="truncate text-base font-bold leading-5 text-ink">{title}</span>
+          <span className="truncate text-sm font-semibold leading-[18px] text-ink">{title}</span>
         )}
       </div>
-      {subtitle && (
-        <p className="truncate text-sm font-medium leading-[18px] text-ink-muted">{subtitle}</p>
-      )}
+      {subtitle && <p className="truncate text-xs leading-4 text-ink-subtle">{subtitle}</p>}
     </div>
   );
 }
@@ -54,20 +52,20 @@ export function PersonCell({
   name,
   detail,
   href,
-  avatarSize = "lg",
+  avatarSize = "row",
   pending,
   stretched,
 }: {
   name: string;
   detail?: ReactNode;
   href?: string;
-  avatarSize?: "sm" | "md" | "lg";
+  avatarSize?: "row" | "sm" | "md" | "lg";
   pending?: boolean;
   /** Voir `TitleBlock`. */
   stretched?: boolean;
 }) {
   return (
-    <div className="flex min-w-0 items-center gap-3.5">
+    <div className="flex min-w-0 items-center gap-3">
       <Avatar name={name} size={avatarSize} pending={pending} />
       <TitleBlock title={name} subtitle={detail} href={href} stretched={stretched} />
     </div>
@@ -104,12 +102,22 @@ export function EventCell({
  * Vignette d'événement (DA v4) : la photo de couverture, sinon un carré teinté de la couleur
  * du type avec un ticket.
  */
-export function EventThumb({ imageUrl, color }: { imageUrl?: string | null; color: string }) {
+export function EventThumb({
+  imageUrl,
+  color,
+  size = "md",
+}: {
+  imageUrl?: string | null;
+  color: string;
+  /** `lg` : 56 px (en-tête de la fiche réservation). */
+  size?: "md" | "lg";
+}) {
+  const box = size === "lg" ? "size-14 rounded-[14px]" : "size-10 rounded-[10px]";
   if (imageUrl) {
     return (
       <span
         aria-hidden="true"
-        className="size-10 shrink-0 rounded-[10px] bg-cover bg-center"
+        className={cn("shrink-0 bg-cover bg-center", box)}
         style={{ backgroundImage: `url(${imageUrl})` }}
       />
     );
@@ -117,10 +125,10 @@ export function EventThumb({ imageUrl, color }: { imageUrl?: string | null; colo
   return (
     <span
       aria-hidden="true"
-      className="flex size-10 shrink-0 items-center justify-center rounded-[10px] text-ink"
+      className={cn("flex shrink-0 items-center justify-center text-ink", box)}
       style={{ backgroundColor: `${color}2e` }}
     >
-      <TicketIcon size={17} />
+      <TicketIcon size={size === "lg" ? 22 : 17} />
     </span>
   );
 }

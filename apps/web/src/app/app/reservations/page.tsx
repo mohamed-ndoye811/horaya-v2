@@ -21,11 +21,12 @@ import { PlusIcon } from "@/components/ui/icons";
 import { SearchInput } from "@/components/ui/search-input";
 import { SegmentedLinks } from "@/components/ui/segmented";
 import { BOOKING_STATUS_BADGE } from "@/components/ui/status";
+import { elapsed } from "@/lib/dashboard";
 import { startOfDay, todayIn } from "@/lib/dates";
 import {
   formatDateTimeShort,
   formatMoney,
-  formatShortDateTime,
+  formatRelativeDateTime,
   PAYMENT_MODE_LABELS,
 } from "@/lib/format";
 import { param, withParams } from "@/lib/search-params";
@@ -93,7 +94,14 @@ export default async function BookingsPage({ searchParams }: PageProps<"/app/res
       <PageHeader
         eyebrow="Tableau de bord / Réservations"
         title="Réservations"
-        subtitle={`${counts.all} réservation${counts.all > 1 ? "s" : ""} · ${formatMoney(monthAmount)} confirmés en ${MONTHS[today.month - 1]}`}
+        subtitle={
+          <>
+            {counts.all} réservation{counts.all > 1 ? "s" : ""}.{" "}
+            <span className="text-ink">
+              {formatMoney(monthAmount)} confirmés en {MONTHS[today.month - 1]}.
+            </span>
+          </>
+        }
         actions={
           <>
             <ButtonLink
@@ -114,20 +122,58 @@ export default async function BookingsPage({ searchParams }: PageProps<"/app/res
             </div>
           </>
         }
+        toolbar={
+          counts.all > 0 && (
+            <>
+              <form action="/app/reservations" className="min-w-0 md:flex-1 xl:max-w-[260px]">
+                {tab !== "all" && <input type="hidden" name="statut" value={tab} />}
+                {eventId && <input type="hidden" name="evenement" value={eventId} />}
+                <SearchInput
+                  label="Rechercher une réservation"
+                  name="q"
+                  defaultValue={search}
+                  placeholder="Client, e-mail, référence…"
+                />
+              </form>
+              {/* Sur mobile, les deux listes déroulantes côte à côte. */}
+              <div className="grid grid-cols-2 gap-3 md:flex md:items-center">
+                <SegmentedLinks
+                  collapse
+                  label="Filtrer par statut"
+                  value={tab}
+                  segments={TABS.map((entry) => ({
+                    ...entry,
+                    count: counts[entry.value],
+                    alert: entry.value === "pending",
+                    href: href({ statut: entry.value === "all" ? undefined : entry.value }),
+                  }))}
+                />
+                <FilterSelect
+                  param="evenement"
+                  label="Événement"
+                  className="md:w-[200px]"
+                  options={[
+                    { value: "", label: "Tous les événements" },
+                    ...events.map((event) => ({ value: event.id, label: event.title })),
+                  ]}
+                />
+              </div>
+            </>
+          )
+        }
       />
       {counts.pending > 0 && tab !== "pending" && (
         <Banner
-          action={
-            <Link
-              href={href({ statut: "pending" })}
-              className="tap-area underline decoration-1 underline-offset-[3px]"
-            >
-              Afficher uniquement celles-ci
-            </Link>
-          }
+          action={<Link href={href({ statut: "pending" })}>Afficher uniquement celles-ci</Link>}
         >
-          {counts.pending > 1 ? `${counts.pending} réservations attendent` : "1 réservation attend"}{" "}
-          ta validation.
+          <strong>
+            {counts.pending > 1
+              ? `${counts.pending} réservations attendent`
+              : "1 réservation attend"}{" "}
+            ta validation.
+          </strong>
+          {counts.oldestPendingAt &&
+            ` ${counts.pending > 1 ? "La plus ancienne attend" : "Elle attend"} depuis ${elapsed(counts.oldestPendingAt, new Date())}.`}
         </Banner>
       )}
 
@@ -143,45 +189,19 @@ export default async function BookingsPage({ searchParams }: PageProps<"/app/res
         />
       ) : (
         <>
-          <div className="flex flex-col gap-4 px-4 py-6 xl:flex-row xl:items-center">
-            <form action="/app/reservations" className="xl:flex-1">
-              {tab !== "all" && <input type="hidden" name="statut" value={tab} />}
-              {eventId && <input type="hidden" name="evenement" value={eventId} />}
-              <SearchInput
-                label="Rechercher une réservation"
-                name="q"
-                defaultValue={search}
-                placeholder="Client, e-mail, référence…"
-              />
-            </form>
-            {/* Sur mobile, les deux listes déroulantes côte à côte. */}
-            <div className="grid grid-cols-2 gap-3 md:flex md:flex-col md:gap-4 xl:flex-row xl:items-center">
-              <SegmentedLinks
-                collapse
-                label="Filtrer par statut"
-                value={tab}
-                segments={TABS.map((entry) => ({
-                  ...entry,
-                  count: counts[entry.value],
-                  href: href({ statut: entry.value === "all" ? undefined : entry.value }),
-                }))}
-              />
-              <FilterSelect
-                param="evenement"
-                label="Événement"
-                className="xl:w-[220px]"
-                options={[
-                  { value: "", label: "Événements" },
-                  ...events.map((event) => ({ value: event.id, label: event.title })),
-                ]}
-              />
-            </div>
-          </div>
+          <div className="h-4" />
           <DataTable
             label="Réservations"
             rows={bookings}
             rowKey={(row) => row.id}
             minWidth={1060}
+            rowTone={(row) =>
+              row.status === "pending"
+                ? "warning"
+                : row.status === "cancelled" || row.status === "refused"
+                  ? "muted"
+                  : undefined
+            }
             empty={
               <p className="px-4 py-10 text-center text-base font-medium text-ink-muted">
                 Aucune réservation ne correspond à ces filtres.
@@ -228,6 +248,7 @@ export default async function BookingsPage({ searchParams }: PageProps<"/app/res
               {
                 key: "client",
                 header: "Client",
+                width: 300,
                 cell: (row) => (
                   <PersonCell
                     name={row.customerName}
@@ -239,20 +260,19 @@ export default async function BookingsPage({ searchParams }: PageProps<"/app/res
               {
                 key: "event",
                 header: "Événement",
-                width: 260,
                 cell: (row) => (
-                  <div className="flex min-w-0 flex-col gap-1">
+                  <div className="flex min-w-0 flex-col gap-px">
                     {row.eventId ? (
                       <Link
                         href={`/app/evenements/${row.eventId}`}
-                        className="truncate text-sm font-semibold text-ink hover:underline"
+                        className="truncate text-sm font-medium leading-[18px] text-ink hover:underline"
                       >
                         {row.eventTitle}
                       </Link>
                     ) : (
                       <Link
                         href={`/app/reservations/${row.id}`}
-                        className="truncate text-sm font-semibold text-ink hover:underline"
+                        className="truncate text-sm font-medium leading-[18px] text-ink hover:underline"
                       >
                         {row.eventTitle ?? "Location"}
                       </Link>
@@ -268,8 +288,8 @@ export default async function BookingsPage({ searchParams }: PageProps<"/app/res
                 header: "Réservé le",
                 width: 150,
                 cell: (row) => (
-                  <span className="font-mono text-sm text-ink-muted">
-                    {formatShortDateTime(row.createdAt, timeZone)}
+                  <span className="text-[13px] leading-[17px] text-[#4a4a4a]">
+                    {formatRelativeDateTime(row.createdAt, timeZone)}
                   </span>
                 ),
               },
@@ -277,19 +297,22 @@ export default async function BookingsPage({ searchParams }: PageProps<"/app/res
                 key: "seats",
                 header: "Places",
                 width: 80,
-                cell: (row) => <span className="font-mono text-sm font-semibold">{row.seats}</span>,
+                cell: (row) => (
+                  <span className="text-sm font-semibold leading-[18px]">{row.seats}</span>
+                ),
               },
               {
                 key: "amount",
                 header: "Montant",
-                width: 110,
+                width: 120,
                 align: "right",
                 cell: (row) => <MoneyCell cents={row.amountCents} caption={amountCaption(row)} />,
               },
               {
                 key: "status",
                 header: "Statut",
-                width: 160,
+                width: 150,
+                align: "right",
                 cell: (row) => (
                   <StatusBadge tone={BOOKING_STATUS_BADGE[row.status].tone}>
                     {BOOKING_STATUS_BADGE[row.status].label}
@@ -298,8 +321,8 @@ export default async function BookingsPage({ searchParams }: PageProps<"/app/res
               },
               {
                 key: "actions",
-                header: "Actions",
-                width: 110,
+                header: <span className="sr-only">Actions</span>,
+                width: 104,
                 align: "right",
                 cell: (row) => (
                   <BookingRowActions

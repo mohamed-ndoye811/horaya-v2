@@ -230,13 +230,7 @@ export default function DesignSystemPage() {
 
       <section id="reservations" className="border-b border-line-soft">
         <SectionHeading title="Liste avec filtres" />
-        <Banner
-          action={
-            <a href="#reservations" className="underline decoration-1 underline-offset-[3px]">
-              Afficher uniquement celles-ci
-            </a>
-          }
-        >
+        <Banner action={<a href="#reservations">Afficher uniquement celles-ci</a>}>
           3 réservations attendent ta validation. Les clients sont prévenus par e-mail dès que tu
           réponds.
         </Banner>

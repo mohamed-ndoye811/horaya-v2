@@ -51,8 +51,8 @@ export function DataTable<T>({
    * libellé du groupe de chaque ligne, déjà triée.
    */
   group?: (row: T) => string;
-  /** Ligne mise en avant (réservation à valider) : fond ambre pâle. */
-  rowTone?: (row: T) => "warning" | undefined;
+  /** Ligne mise en avant (réservation à valider) : fond ambre pâle ; `muted` : annulée, grisée. */
+  rowTone?: (row: T) => "warning" | "muted" | undefined;
 }) {
   const edge = "px-3 first:pl-5 last:pr-5";
   const groupOf = (index: number) => {
@@ -90,6 +90,7 @@ export function DataTable<T>({
                   className={cn(
                     "relative border-t border-line-soft px-4 py-4 first:border-t-0",
                     rowTone?.(row) === "warning" && "bg-warning-bg/50",
+                    rowTone?.(row) === "muted" && "opacity-60",
                   )}
                 >
                   {card(row)}
@@ -154,6 +155,7 @@ export function DataTable<T>({
                       className={cn(
                         "border-t border-line-soft transition-colors hover:bg-band",
                         rowTone?.(row) === "warning" && "bg-warning-bg/50",
+                        rowTone?.(row) === "muted" && "opacity-60",
                       )}
                     >
                       {columns.map((column) => (

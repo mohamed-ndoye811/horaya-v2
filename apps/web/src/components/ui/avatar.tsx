@@ -3,9 +3,15 @@ import { colorFor, textOn } from "@/lib/colors";
 import { initials } from "@/lib/format";
 
 const sizes = {
+  /** Participants d'une réservation. */
+  xs: "size-[30px] text-[11px]",
+  /** Lignes de liste (DA v4). */
+  row: "size-[34px] text-xs",
   sm: "size-8 text-label",
   md: "size-9 text-sm",
   lg: "size-10 text-sm",
+  /** Carte client d'une réservation. */
+  profile: "size-[52px] text-[17px]",
   /** En-tête de fiche client (96 px). */
   xl: "size-24 font-headline text-[40px]",
 };
