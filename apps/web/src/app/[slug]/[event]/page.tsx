@@ -2,6 +2,7 @@ import { getPublicEvent } from "@horaya/db";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { BottomNotch } from "@/components/app/bottom-notch";
 import { WordsReveal } from "@/components/motion/words";
 import { brandButtonClasses } from "@/components/public/public-chrome";
 import { eventBadge, eventCover } from "@/components/public/public-events";
@@ -99,10 +100,10 @@ export default async function PublicEventPage({
   const badge = eventBadge(state, seats, event.requiresApproval);
 
   return (
-    <div className="flex flex-col gap-6 pb-24 lg:pb-0">
+    <div className="flex flex-col gap-3.5 sm:gap-6">
       <Link
         href={homeHref}
-        className="flex w-fit items-center gap-1.5 text-sm font-semibold leading-[18px] text-ink-muted hover:text-ink"
+        className="hidden w-fit items-center gap-1.5 text-sm font-semibold leading-[18px] text-ink-muted hover:text-ink lg:flex"
       >
         <ArrowLeft className="size-3.5" />
         Tous les événements
@@ -110,9 +111,17 @@ export default async function PublicEventPage({
       <div className="flex flex-col gap-4 lg:flex-row lg:items-start">
         <div className="flex min-w-0 flex-1 flex-col gap-4">
           <div
-            className="h-[240px] shrink-0 rounded-3xl bg-cover bg-center sm:h-[400px]"
+            className="flex h-[230px] shrink-0 items-start rounded-[22px] bg-cover bg-center p-3 sm:h-[400px] sm:rounded-3xl"
             style={eventCover(event.coverImageUrl)}
-          />
+          >
+            <Link
+              href={homeHref}
+              className="flex h-8 items-center gap-1.5 rounded-full bg-white/90 px-3 text-[13px] font-semibold leading-4 text-ink lg:hidden"
+            >
+              <ArrowLeft className="size-3" />
+              Événements
+            </Link>
+          </div>
           <div className="flex flex-col gap-3 px-1 pt-2 pb-1">
             <p className="flex flex-wrap items-center gap-2 text-[13px] font-semibold leading-4 text-ink-muted">
               <span
@@ -135,14 +144,15 @@ export default async function PublicEventPage({
             </p>
             <h1
               className={cn(
-                "text-[40px] leading-[44px] tracking-[-0.04em] text-ink sm:text-[52px] sm:leading-[56px]",
+                "text-[34px] leading-[38px] tracking-[-0.04em] text-ink sm:text-[52px] sm:leading-[56px]",
                 displayFontClass(workspace.displayFont),
               )}
             >
               <WordsReveal>{event.title}</WordsReveal>
             </h1>
           </div>
-          <dl className="grid gap-3 sm:grid-cols-3">
+          {/* Mobile : une carte en lignes (maquette 6.5) ; grand écran : trois cartes (5.2). */}
+          <dl className="flex flex-col rounded-[20px] bg-surface px-4 py-0.5 sm:grid sm:grid-cols-3 sm:gap-3 sm:bg-transparent sm:p-0">
             {[
               ["Date", schedule.date],
               ["Horaires", schedule.schedule],
@@ -150,12 +160,32 @@ export default async function PublicEventPage({
             ].map(([label, value]) => (
               <div
                 key={label}
-                className="flex flex-col gap-1 rounded-[18px] bg-surface px-[18px] py-4"
+                className="flex min-h-[46px] items-center justify-between gap-4 border-t border-bg py-2 first:border-t-0 sm:flex-col sm:items-start sm:justify-start sm:gap-1 sm:rounded-[18px] sm:border-0 sm:bg-surface sm:px-[18px] sm:py-4"
               >
-                <dt className="text-xs font-semibold leading-4 text-ink-subtle">{label}</dt>
-                <dd className="text-base font-semibold leading-5 text-ink">{value}</dd>
+                <dt className="text-[13px] leading-4 text-ink-subtle sm:text-xs sm:font-semibold">
+                  {label}
+                </dt>
+                <dd className="text-right text-sm font-semibold leading-[18px] text-ink sm:text-left sm:text-base sm:leading-5">
+                  {value}
+                </dd>
               </div>
             ))}
+            {seats.ratio !== null && (
+              <div className="flex min-h-[46px] items-center justify-between gap-4 border-t border-bg sm:hidden">
+                <dt className="text-[13px] leading-4 text-ink-subtle">Places</dt>
+                <dd className="flex items-center gap-2">
+                  <span aria-hidden="true" className="flex h-1 w-[70px] rounded-full bg-line-soft">
+                    <span
+                      className={cn("rounded-full", seats.full ? "bg-ink" : "bg-[var(--brand)]")}
+                      style={{ width: `${Math.round(seats.ratio * 100)}%` }}
+                    />
+                  </span>
+                  <span className="font-mono text-xs font-semibold text-ink">
+                    {event.seatsHeld}/{event.capacity}
+                  </span>
+                </dd>
+              </div>
+            )}
           </dl>
           {hasProgram && (
             <section className="flex flex-col gap-3 rounded-3xl bg-surface p-6">
@@ -255,28 +285,22 @@ export default async function PublicEventPage({
       </div>
 
       {(state.kind === "open" || state.kind === "waitlist") && (
-        <div className="fixed inset-x-0 bottom-0 z-30 flex items-center justify-between gap-4 rounded-t-3xl bg-surface px-5 py-4 shadow-[0_-12px_40px_rgba(0,0,0,0.08)] lg:hidden">
-          <div className="flex flex-col">
-            <span className="flex items-baseline gap-1.5">
-              <span className="text-[28px] font-medium leading-8 tracking-[-0.03em] text-ink">
-                {price}
-              </span>
-              {event.priceCents > 0 && <span className="text-sm text-ink-subtle">/ pers.</span>}
+        <BottomNotch label="Réserver">
+          <p className="flex flex-col gap-px pl-1">
+            <span className="text-lg font-semibold leading-[22px] text-white">{price}</span>
+            <span className="text-[11px] leading-[14px] text-notch-idle">
+              {state.kind === "waitlist"
+                ? "liste d'attente"
+                : event.priceCents > 0
+                  ? "par personne"
+                  : seats.label}
             </span>
-            <span
-              className={cn(
-                "text-[13px] font-bold",
-                seats.tone === "warning" ? "text-warning" : "text-success",
-              )}
-            >
-              {seats.full ? "Liste d'attente" : seats.label}
-            </span>
-          </div>
-          <Link href="#reserver" className={cn(brandButtonClasses, "h-12 px-6 text-base")}>
+          </p>
+          <Link href="#reserver" className={cn(brandButtonClasses, "h-11 px-5 text-[15px]")}>
             Réserver
             <ArrowRight />
           </Link>
-        </div>
+        </BottomNotch>
       )}
     </div>
   );

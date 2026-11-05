@@ -21,7 +21,7 @@ export function ActionBar({
       className={cn(
         "fixed inset-x-0 z-30 flex items-center gap-4 bg-ink px-4 pt-3 lg:sticky lg:bottom-4 lg:rounded-full lg:py-2.5 lg:pr-2.5 lg:pl-6",
         aboveTabs
-          ? "bottom-[calc(64px+env(safe-area-inset-bottom))] pb-3"
+          ? "bottom-[calc(70px+env(safe-area-inset-bottom))] pb-3"
           : "bottom-0 pb-[calc(12px+env(safe-area-inset-bottom))]",
       )}
     >

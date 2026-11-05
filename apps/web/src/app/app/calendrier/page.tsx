@@ -442,7 +442,7 @@ export default async function CalendarPage({ searchParams }: PageProps<"/app/cal
           )}
         </div>
       </ViewTransition>
-      <FabLink href={newEventHref}>Nouvel événement</FabLink>
+      <FabLink href={newEventHref}>Nouveau</FabLink>
     </>
   );
 }

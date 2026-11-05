@@ -80,14 +80,19 @@ export function PublicNotch({
         </nav>
       </div>
 
-      <header className="flex items-center justify-between gap-3 bg-ink px-4 py-2.5 lg:hidden">
-        <Link href={home} className="flex min-w-0 items-center gap-2 text-on-ink">
+      <header className="flex items-center justify-between gap-3 px-4 pt-3 lg:hidden">
+        <Link href={home} className="flex min-w-0 items-center gap-2 text-ink">
           <WorkspaceMark name={workspace.name} />
-          <span className="truncate text-[15px] font-semibold">{workspace.name}</span>
+          <span className="truncate text-[15px] font-semibold leading-[18px]">
+            {workspace.name}
+          </span>
         </Link>
-        <nav aria-label="Navigation de l'espace" className="flex shrink-0 items-center">
-          {nav}
-        </nav>
+        <Link
+          href={bookings ? home : `${home}/mes-reservations`}
+          className="shrink-0 text-[13px] font-semibold leading-4 text-ink-muted"
+        >
+          {bookings ? "Événements" : "Mes réservations"}
+        </Link>
       </header>
     </>
   );

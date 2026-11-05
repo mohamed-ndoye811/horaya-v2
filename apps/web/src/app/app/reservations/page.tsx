@@ -135,8 +135,8 @@ export default async function BookingsPage({ searchParams }: PageProps<"/app/res
                   placeholder="Client, e-mail, référence…"
                 />
               </form>
-              {/* Sur mobile, les deux listes déroulantes côte à côte. */}
-              <div className="grid grid-cols-2 gap-3 md:flex md:items-center">
+              {/* Sur mobile, les pilules puis la liste des événements. */}
+              <div className="flex flex-col gap-3 md:flex-row md:items-center">
                 <SegmentedLinks
                   collapse
                   label="Filtrer par statut"

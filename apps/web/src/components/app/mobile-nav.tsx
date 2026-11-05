@@ -4,45 +4,36 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { ComponentType } from "react";
 import { ActiveIndicator } from "@/components/motion/indicator";
-import { Avatar } from "@/components/ui/avatar";
-import { CountBadge } from "@/components/ui/badge";
 import {
+  ArrowLeft,
   CalendarIcon,
-  ChevronLeft,
   DashboardIcon,
-  MoreIcon,
   ReceiptIcon,
   TicketIcon,
 } from "@/components/ui/icons";
 import { cn } from "@/lib/cn";
 import { backLink, isFormPage } from "@/lib/mobile-nav";
+import { BottomNotch } from "./bottom-notch";
 
 /*
- * Navigation mobile de l'admin (maquettes M5 à M25) : barre du haut avec le logo ou un
- * retour, et barre d'onglets fixée en bas. Masquées à partir de `lg`, où la colonne de
- * gauche prend le relais.
+ * Navigation mobile de l'admin (DA v4, maquettes 6.1 à 6.4) : un lien de retour en haut des
+ * fiches, et le notch noir en bas de l'écran avec les onglets en icônes, sous un fondu.
+ * Masqués à partir de `lg`, où le notch du haut prend le relais.
  */
 
-export function MobileTopBar({ user }: { user: { name: string } }) {
+/** Retour vers la liste ou la fiche parente (« ← Réservations »), seulement hors onglets. */
+export function MobileTopBar() {
   const pathname = usePathname();
   const back = backLink(pathname);
+  if (!back) return null;
   return (
-    <div className="flex h-14 items-center justify-between px-3 lg:hidden">
-      {back ? (
-        <Link
-          href={back.href}
-          className="flex h-10 items-center gap-2 px-2 text-[15px] font-bold leading-5 text-ink"
-        >
-          <ChevronLeft />
-          {back.label}
-        </Link>
-      ) : (
-        <Link href="/app" className="px-2 font-headline text-[28px] leading-7 text-ink">
-          Horaya
-        </Link>
-      )}
-      <Link href="/app/plus" aria-label="Compte et paramètres" className="p-1">
-        <Avatar name={user.name} size="md" color="#66537C" />
+    <div className="px-4 pt-4 lg:hidden">
+      <Link
+        href={back.href}
+        className="flex w-fit items-center gap-1.5 text-[13px] font-semibold leading-4 text-ink-muted"
+      >
+        <ArrowLeft className="size-3" />
+        {back.label}
       </Link>
     </div>
   );
@@ -82,13 +73,23 @@ const TABS: Tab[] = [
   {
     href: "/app/plus",
     label: "Plus",
-    icon: MoreIcon,
+    icon: MoreDots,
     match: (path) =>
       ["/app/plus", "/app/materiel", "/app/clients", "/app/parametres", "/app/design-system"].some(
         (prefix) => startsWith(prefix)(path),
       ),
   },
 ];
+
+function MoreDots({ size = 22 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" aria-hidden="true" fill="currentColor">
+      <circle cx="5" cy="12" r="1.8" />
+      <circle cx="12" cy="12" r="1.8" />
+      <circle cx="19" cy="12" r="1.8" />
+    </svg>
+  );
+}
 
 export function MobileTabBar({ pendingBookings }: { pendingBookings: number }) {
   const pathname = usePathname();
@@ -99,47 +100,41 @@ export function MobileTabBar({ pendingBookings }: { pendingBookings: number }) {
     );
   }
   return (
-    <>
-      {/* Réserve la place de la barre fixe sous le contenu. */}
-      <div aria-hidden="true" className="h-[calc(64px+env(safe-area-inset-bottom))] lg:hidden" />
-      <nav
-        aria-label="Navigation principale"
-        className="fixed inset-x-0 bottom-0 z-30 border-t border-line-soft bg-bg pb-[env(safe-area-inset-bottom)] lg:hidden"
-      >
-        <ul className="flex">
-          {TABS.map((tab) => {
-            const active = tab.match(pathname);
-            const Icon = tab.icon;
-            const badge = tab.href === "/app/reservations" ? pendingBookings : 0;
-            return (
-              <li key={tab.href} className="flex-1 basis-0">
-                <Link
-                  href={tab.href}
-                  aria-current={active ? "page" : undefined}
-                  className={cn(
-                    "relative flex h-16 flex-col items-center justify-center gap-1 transition-colors active:bg-surface",
-                    active ? "font-extrabold text-ink" : "font-semibold text-ink-muted",
-                  )}
-                >
-                  {active && (
-                    <ActiveIndicator id="mobile-tab" className="inset-x-0 top-0 h-[3px] bg-ink" />
-                  )}
-                  <Icon size={22} />
-                  <span className="text-[11px] leading-[14px]">{tab.label}</span>
-                  {badge > 0 && (
-                    <span className="absolute top-1.5 left-[calc(50%+4px)]">
-                      <CountBadge tone="danger">
-                        {badge}
-                        <span className="sr-only"> à valider</span>
-                      </CountBadge>
-                    </span>
-                  )}
-                </Link>
-              </li>
-            );
-          })}
-        </ul>
-      </nav>
-    </>
+    <BottomNotch label="Navigation principale">
+      <ul className="mt-0.5 flex w-[226px] justify-between mx-auto">
+        {TABS.map((tab) => {
+          const active = tab.match(pathname);
+          const Icon = tab.icon;
+          const pending = tab.href === "/app/reservations" && pendingBookings > 0;
+          return (
+            <li key={tab.href}>
+              <Link
+                href={tab.href}
+                aria-current={active ? "page" : undefined}
+                aria-label={pending ? `${tab.label}, ${pendingBookings} à valider` : tab.label}
+                className={cn(
+                  "relative isolate flex size-[42px] items-center justify-center rounded-[14px] transition-colors",
+                  active ? "text-on-ink" : "text-notch-idle",
+                )}
+              >
+                {active && (
+                  <ActiveIndicator
+                    id="mobile-tab"
+                    className="inset-0 -z-10 rounded-[14px] bg-on-ink/16"
+                  />
+                )}
+                <Icon size={22} />
+                {pending && (
+                  <span
+                    aria-hidden="true"
+                    className="absolute top-[9px] right-[9px] size-[7px] rounded-full bg-accent"
+                  />
+                )}
+              </Link>
+            </li>
+          );
+        })}
+      </ul>
+    </BottomNotch>
   );
 }
