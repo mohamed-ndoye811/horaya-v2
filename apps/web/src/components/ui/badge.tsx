@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import { cn } from "@/lib/cn";
 
-export type Tone = "success" | "warning" | "danger" | "info" | "draft";
+export type Tone = "success" | "warning" | "danger" | "info" | "draft" | "ink";
 
 const tones: Record<Tone, string> = {
   success: "bg-success-bg text-success",
@@ -9,6 +9,8 @@ const tones: Record<Tone, string> = {
   danger: "bg-danger-bg text-danger",
   info: "bg-info-bg text-info",
   draft: "bg-draft-bg text-draft",
+  /** Complet : pilule noire. */
+  ink: "bg-ink text-on-ink",
 };
 
 /** Pastille de statut (DA v4) : pilule teintée, texte 12 px gras. */

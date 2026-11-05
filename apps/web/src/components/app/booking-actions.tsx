@@ -301,31 +301,40 @@ export function CheckInToggle({
           aria-label={`Arrivée de ${customerName}`}
           className="peer sr-only"
         />
+        {/* Bureau : interrupteur (DA v4). Mobile (`lg`) : grosse pastille ronde à toucher. */}
         <span
           aria-hidden
           className={cn(
-            "flex shrink-0 items-center justify-center border-2 text-white peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-ink",
-            size === "lg" ? "size-9" : "size-5",
-            present ? "border-success bg-success" : "border-ink bg-transparent",
+            "flex shrink-0 rounded-full text-white transition-colors peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-ink",
+            size === "lg"
+              ? cn(
+                  "size-9 items-center justify-center border-2",
+                  present ? "border-success bg-success" : "border-line bg-surface",
+                )
+              : cn("h-5 w-9 p-0.5", present ? "justify-end bg-ink" : "bg-[#e2e2df]"),
           )}
         >
-          {present && size === "lg" && <Check size={16} />}
+          {size === "lg" ? (
+            present && <Check size={16} />
+          ) : (
+            <span className="size-4 rounded-full bg-surface shadow-sm" />
+          )}
         </span>
         {size === "lg" ? (
           <span
             className={cn(
-              "text-center font-mono text-[11px] font-semibold leading-[14px]",
+              "text-center text-[11px] font-semibold leading-[14px]",
               present ? "text-success" : "text-ink-muted",
             )}
           >
             {present ? (arrivedAt ?? "Arrivé·e") : "Pas arrivé·e"}
           </span>
         ) : present ? (
-          <span className="font-bold text-success">
+          <span className="font-semibold text-success">
             {arrivedAt ? `Arrivé·e ${arrivedAt}` : "Arrivé·e"}
           </span>
         ) : (
-          <span className="font-semibold text-ink-muted">Pas arrivé·e</span>
+          <span className="text-ink-muted">Pas arrivé·e</span>
         )}
       </label>
       {message?.tone === "danger" && <Toast message={message} />}

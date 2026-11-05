@@ -11,7 +11,7 @@ import { MoneyCell, PersonCell } from "@/components/ui/cells";
 import { DataTable } from "@/components/ui/data-table";
 import { fillTone, ProgressBar } from "@/components/ui/progress";
 import { Eyebrow } from "@/components/ui/section";
-import { Stat, StatGrid } from "@/components/ui/stat";
+import { Stat } from "@/components/ui/stat";
 import { BOOKING_STATUS_BADGE, eventStatusBadge } from "@/components/ui/status";
 import { Tabs } from "@/components/ui/tabs";
 import {
@@ -94,7 +94,22 @@ export default async function EventDetailPage({
         }
       />
 
-      <StatGrid>
+      <div className="grid grid-cols-2 gap-3 px-4 xl:grid-cols-[236px_repeat(4,minmax(0,1fr))]">
+        <div
+          aria-hidden="true"
+          className="col-span-2 hidden min-h-32 items-center justify-center rounded-3xl bg-cover bg-center xl:col-span-1 xl:flex"
+          style={
+            event.coverImageUrl
+              ? { backgroundImage: `url(${event.coverImageUrl})` }
+              : { background: `linear-gradient(150deg, ${event.typeColor} 0%, #1a1a1a 120%)` }
+          }
+        >
+          {!event.coverImageUrl && (
+            <span className="rounded-full bg-black/30 px-3 py-1 text-xs font-semibold text-white">
+              Photo · à venir
+            </span>
+          )}
+        </div>
         <Stat
           label="Inscrits"
           value={event.seatsHeld}
@@ -129,8 +144,16 @@ export default async function EventDetailPage({
         />
         {checkIn ? (
           <Stat
+            dark
             label="Taux de présence"
-            value={`${seatsArrived} / ${seatsConfirmed}`}
+            badge={
+              <span className="flex items-center gap-1.5 rounded-full bg-success/25 px-2 py-0.5 text-[11px] font-bold leading-4 text-[#8fd6ac]">
+                <span aria-hidden="true" className="size-1.5 rounded-full bg-[#8fd6ac]" />
+                Check-in ouvert
+              </span>
+            }
+            value={seatsArrived}
+            suffix={`/ ${seatsConfirmed}`}
             footer={
               !firstArrival
                 ? "Pointe les arrivées dans la liste"
@@ -153,9 +176,9 @@ export default async function EventDetailPage({
             }
           />
         )}
-      </StatGrid>
+      </div>
 
-      <div className="border-b border-line-soft px-4">
+      <div className="flex flex-wrap items-center justify-between gap-3 px-4 pt-5 pb-3">
         <Tabs
           label="Sections de l'événement"
           value={tab}
@@ -175,14 +198,23 @@ export default async function EventDetailPage({
             { value: "infos", label: "Infos", href: `/app/evenements/${event.id}?onglet=infos` },
           ]}
         />
+        <p className="text-[13px] text-ink-muted">
+          {[
+            event.requiresApproval ? "Validation manuelle" : "Réservation automatique",
+            event.paymentMode === "free"
+              ? "Gratuit"
+              : `${formatMoney(event.priceCents)} / pers. · ${PAYMENT_MODE_LABELS[event.paymentMode]?.toLowerCase()}`,
+          ].join(" · ")}
+        </p>
       </div>
 
       {tab === "participants" ? (
-        <div className="pt-5">
+        <div>
           <DataTable
             label="Participants"
             rows={bookings}
             rowKey={(row) => row.id}
+            rowTone={(row) => (row.status === "pending" ? "warning" : undefined)}
             dense
             card={(row) => (
               <div className="flex flex-col gap-3">
@@ -272,14 +304,14 @@ export default async function EventDetailPage({
                 key: "seats",
                 header: "Places",
                 width: 90,
-                cell: (row) => <span className="font-mono text-sm font-semibold">{row.seats}</span>,
+                cell: (row) => <span className="text-sm font-semibold">{row.seats}</span>,
               },
               {
                 key: "date",
                 header: "Réservé le",
-                width: 150,
+                width: 130,
                 cell: (row) => (
-                  <span className="font-mono text-sm text-ink-muted">
+                  <span className="text-sm text-ink-muted">
                     {formatShortDateTime(row.createdAt, timeZone)}
                   </span>
                 ),
@@ -378,9 +410,7 @@ export default async function EventDetailPage({
                 key={label}
                 className="flex flex-col gap-1 border-b border-line-soft px-5 py-3.5 last:border-b-0"
               >
-                <dt className="font-mono text-label font-semibold uppercase tracking-[0.055em] text-neutral">
-                  {label}
-                </dt>
+                <dt className="text-xs font-semibold leading-4 text-ink-muted">{label}</dt>
                 <dd className="break-words text-[15px] font-semibold text-ink">{value}</dd>
               </div>
             ))}

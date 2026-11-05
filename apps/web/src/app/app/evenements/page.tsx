@@ -1,11 +1,19 @@
-import { countEventsByTab, type EventTab, listEvents, listEventTypes } from "@horaya/db";
+import { addDays } from "@horaya/core";
+import {
+  countEventsByTab,
+  type EventRow,
+  type EventTab,
+  listEvents,
+  listEventTypes,
+} from "@horaya/db";
 import type { Metadata } from "next";
+import Link from "next/link";
 import { FabLink } from "@/components/app/fab";
 import { FilterSelect } from "@/components/app/filter-select";
 import { PageHeader } from "@/components/app/page-header";
 import { StatusBadge } from "@/components/ui/badge";
 import { ButtonLink } from "@/components/ui/button";
-import { DateBlock, EventCell } from "@/components/ui/cells";
+import { DateBlock, EventCell, EventThumb } from "@/components/ui/cells";
 import { DataTable } from "@/components/ui/data-table";
 import { EmptyState } from "@/components/ui/empty-state";
 import { PlusIcon } from "@/components/ui/icons";
@@ -14,7 +22,8 @@ import { fillTone, ProgressBar } from "@/components/ui/progress";
 import { SearchInput } from "@/components/ui/search-input";
 import { SegmentedLinks } from "@/components/ui/segmented";
 import { eventStatusBadge } from "@/components/ui/status";
-import { formatTimeRange, formatWeekdayShort } from "@/lib/format";
+import { mondayOf, startOfDay, todayIn } from "@/lib/dates";
+import { formatTimeRange } from "@/lib/format";
 import { param, withParams } from "@/lib/search-params";
 import { db } from "@/server/db";
 import { getWorkspaceContext } from "@/server/workspace";
@@ -81,7 +90,7 @@ export default async function EventsPage({ searchParams }: PageProps<"/app/evene
   const statusBadge = (row: (typeof events)[number]) =>
     row.endsAt < now && row.status === "published"
       ? { label: "Passé", tone: "draft" as const }
-      : eventStatusBadge(row.status, row);
+      : eventStatusBadge(row.status, row, now);
 
   const href = (overrides: Record<string, string | undefined>) =>
     withParams("/app/evenements", {
@@ -90,6 +99,44 @@ export default async function EventsPage({ searchParams }: PageProps<"/app/evene
       type: typeId,
       ...overrides,
     });
+
+  // Bandeaux de la liste : cette semaine, la suivante, puis mois par mois.
+  const monday = mondayOf(todayIn(timeZone, now));
+  const thisWeek = startOfDay(monday, timeZone);
+  const nextWeek = startOfDay(addDays(monday, 7), timeZone);
+  const weekAfter = startOfDay(addDays(monday, 14), timeZone);
+  const monthFormat = new Intl.DateTimeFormat("fr-FR", {
+    month: "long",
+    year: "numeric",
+    timeZone,
+  });
+  const currentYear = new Intl.DateTimeFormat("fr-FR", { year: "numeric", timeZone }).format(now);
+  const groupOf = (row: EventRow) => {
+    if (row.startsAt >= thisWeek && row.startsAt < nextWeek) return "Cette semaine";
+    if (row.startsAt >= nextWeek && row.startsAt < weekAfter) return "Semaine prochaine";
+    const label = monthFormat.format(row.startsAt).replace(` ${currentYear}`, "");
+    return `${label.charAt(0).toUpperCase()}${label.slice(1)}`;
+  };
+
+  const seatsCell = (row: EventRow, badgeTone: string) => (
+    <div className="flex w-full items-center gap-3">
+      <span className="w-14 shrink-0 text-sm text-ink-muted">
+        <span className="font-semibold text-ink">
+          {row.capacity === null && row.seatsHeld === 0 ? "—" : row.seatsHeld}
+        </span>{" "}
+        / {row.capacity ?? "∞"}
+      </span>
+      {row.capacity !== null && (
+        <ProgressBar
+          value={row.seatsHeld}
+          max={row.capacity}
+          tone={badgeTone === "danger" ? "danger" : "ink"}
+          label={`${row.seatsHeld} places réservées sur ${row.capacity}`}
+          className="flex-1"
+        />
+      )}
+    </div>
+  );
 
   return (
     <>
@@ -108,47 +155,49 @@ export default async function EventsPage({ searchParams }: PageProps<"/app/evene
             <div className="hidden lg:flex">{newEventButton}</div>
           </>
         }
+        toolbar={
+          <>
+            <form action="/app/evenements" className="md:flex-1 xl:w-[300px] xl:flex-none">
+              {tab !== "all" && <input type="hidden" name="onglet" value={tab} />}
+              {typeId && <input type="hidden" name="type" value={typeId} />}
+              <SearchInput
+                label="Rechercher un événement"
+                name="q"
+                defaultValue={search}
+                placeholder="Événement, lieu, type…"
+              />
+            </form>
+            {/* Sur mobile, les deux listes déroulantes côte à côte. */}
+            <div className="grid grid-cols-2 gap-3 md:flex md:items-center">
+              <SegmentedLinks
+                collapse
+                label="Filtrer les événements"
+                value={tab}
+                segments={TABS.map((entry) => ({
+                  ...entry,
+                  count: counts[entry.value],
+                  href: href({ onglet: entry.value === "all" ? undefined : entry.value }),
+                }))}
+              />
+              <FilterSelect
+                param="type"
+                label="Type d'événement"
+                className="md:w-[170px]"
+                options={[
+                  { value: "", label: "Tous les types" },
+                  ...types.map((type) => ({ value: type.id, label: type.name })),
+                ]}
+              />
+            </div>
+          </>
+        }
       />
-
-      <div className="flex flex-col gap-4 px-4 py-6 xl:flex-row xl:items-center">
-        <form action="/app/evenements" className="xl:flex-1">
-          {tab !== "all" && <input type="hidden" name="onglet" value={tab} />}
-          {typeId && <input type="hidden" name="type" value={typeId} />}
-          <SearchInput
-            label="Rechercher un événement"
-            name="q"
-            defaultValue={search}
-            placeholder="Événement, lieu, type…"
-          />
-        </form>
-        {/* Sur mobile, les deux listes déroulantes côte à côte. */}
-        <div className="grid grid-cols-2 gap-3 md:flex md:flex-col md:gap-4 xl:flex-row xl:items-center">
-          <SegmentedLinks
-            collapse
-            label="Filtrer les événements"
-            value={tab}
-            segments={TABS.map((entry) => ({
-              ...entry,
-              count: counts[entry.value],
-              href: href({ onglet: entry.value === "all" ? undefined : entry.value }),
-            }))}
-          />
-          <FilterSelect
-            param="type"
-            label="Type d'événement"
-            className="xl:w-[200px]"
-            options={[
-              { value: "", label: "Tous les types" },
-              ...types.map((type) => ({ value: type.id, label: type.name })),
-            ]}
-          />
-        </div>
-      </div>
 
       <DataTable
         label="Événements"
         rows={events}
         rowKey={(row) => row.id}
+        group={groupOf}
         minWidth={1000}
         empty={
           <p className="px-4 py-10 text-center text-base font-medium text-ink-muted">
@@ -175,19 +224,7 @@ export default async function EventsPage({ searchParams }: PageProps<"/app/evene
                     .join(" · ")}
                 />
                 <div className="flex items-center gap-3">
-                  <div className="flex min-w-0 flex-1 flex-col gap-1.5">
-                    <span className="font-mono text-xs font-semibold leading-[14px] text-ink">
-                      {row.seatsHeld} / {row.capacity ?? "∞"}
-                    </span>
-                    {row.capacity !== null && (
-                      <ProgressBar
-                        value={row.seatsHeld}
-                        max={row.capacity}
-                        tone={fillTone(row.seatsHeld, row.capacity)}
-                        label={`${row.seatsHeld} places réservées sur ${row.capacity}`}
-                      />
-                    )}
-                  </div>
+                  <div className="min-w-0 flex-1">{seatsCell(row, badge.tone)}</div>
                   <StatusBadge tone={badge.tone}>{badge.label}</StatusBadge>
                 </div>
               </div>
@@ -198,35 +235,51 @@ export default async function EventsPage({ searchParams }: PageProps<"/app/evene
           {
             key: "date",
             header: "Date",
-            width: 124,
+            width: 76,
             cell: (row) => <DateBlock date={row.startsAt} timeZone={timeZone} layout="day-first" />,
           },
           {
             key: "event",
             header: "Événement",
             cell: (row) => (
-              <EventCell
-                title={row.title}
-                color={row.typeColor}
-                href={`/app/evenements/${row.id}`}
-                detail={`${formatWeekdayShort(row.startsAt, timeZone)} ${formatTimeRange(row.startsAt, row.endsAt, timeZone)}${row.visibility === "invite_only" ? " · Sur invitation" : ""}`}
-              />
+              <div className="flex min-w-0 items-center gap-3">
+                <EventThumb imageUrl={row.coverImageUrl} color={row.typeColor} />
+                <div className="flex min-w-0 flex-col gap-0.5">
+                  <Link
+                    href={`/app/evenements/${row.id}`}
+                    className="truncate text-[15px] font-semibold leading-5 text-ink hover:underline"
+                  >
+                    {row.title}
+                  </Link>
+                  <span className="truncate text-xs leading-4 text-ink-muted">
+                    {formatTimeRange(row.startsAt, row.endsAt, timeZone)}
+                    {row.visibility === "invite_only" ? " · Sur invitation" : ""}
+                  </span>
+                </div>
+              </div>
             ),
           },
           {
             key: "type",
             header: "Type",
-            width: 130,
+            width: 150,
             cell: (row) => (
-              <span className="truncate text-[15px] font-semibold text-ink">{row.typeName}</span>
+              <span className="flex min-w-0 items-center gap-2 text-sm text-ink">
+                <span
+                  aria-hidden="true"
+                  className="size-[7px] shrink-0 rounded-full"
+                  style={{ backgroundColor: row.typeColor }}
+                />
+                <span className="truncate">{row.typeName}</span>
+              </span>
             ),
           },
           {
             key: "location",
             header: "Lieu",
-            width: 170,
+            width: 180,
             cell: (row) => (
-              <span className="truncate text-[15px] font-medium text-ink">
+              <span className="truncate text-sm text-ink">
                 {row.locationName ?? (row.onlineUrl ? "En ligne" : "—")}
               </span>
             ),
@@ -234,22 +287,8 @@ export default async function EventsPage({ searchParams }: PageProps<"/app/evene
           {
             key: "seats",
             header: "Places",
-            width: 150,
-            cell: (row) => (
-              <div className="flex w-full flex-col gap-1.5">
-                <span className="font-mono text-sm font-semibold text-ink">
-                  {row.seatsHeld} / {row.capacity ?? "∞"}
-                </span>
-                {row.capacity !== null && (
-                  <ProgressBar
-                    value={row.seatsHeld}
-                    max={row.capacity}
-                    tone={fillTone(row.seatsHeld, row.capacity)}
-                    label={`${row.seatsHeld} places réservées sur ${row.capacity}`}
-                  />
-                )}
-              </div>
-            ),
+            width: 200,
+            cell: (row) => seatsCell(row, statusBadge(row).tone),
           },
           {
             key: "status",
@@ -264,7 +303,7 @@ export default async function EventsPage({ searchParams }: PageProps<"/app/evene
           {
             key: "actions",
             header: <span className="sr-only">Actions</span>,
-            width: 64,
+            width: 56,
             align: "right",
             cell: (row) => (
               <ActionMenu

@@ -1,7 +1,8 @@
 "use client";
 
 import { generateOccurrences } from "@horaya/core";
-import { useMemo, useState } from "react";
+import { type ReactNode, useMemo, useState } from "react";
+import { ActionBar } from "@/components/ui/action-bar";
 import { CategorySwatch } from "@/components/ui/avatar";
 import { ChoiceCards } from "@/components/ui/choice-cards";
 import { AffixInput, Checkbox, Field, inputClasses, textareaClasses } from "@/components/ui/field";
@@ -88,12 +89,15 @@ export function EventForm({
   initial,
   timeZone,
   formId,
+  actions,
 }: {
   eventId: string | null;
   types: EventTypeOption[];
   initial: EventFormValues;
   timeZone: string;
   formId: string;
+  /** Boutons de la barre noire du bas (enregistrer, publier), en variantes `inverse`. */
+  actions: ReactNode;
 }) {
   const { state, onSubmit } = useFormAction<FormState>(saveEvent.bind(null, eventId), {});
   const [values, setValues] = useState(initial);
@@ -177,9 +181,9 @@ export function EventForm({
     <form
       id={formId}
       onSubmit={onSubmit}
-      className="grid gap-10 px-4 py-8 xl:grid-cols-[minmax(0,1fr)_320px]"
+      className="grid gap-4 px-4 pb-4 xl:grid-cols-[minmax(0,1fr)_340px]"
     >
-      <div className="flex min-w-0 flex-col gap-10">
+      <div className="flex min-w-0 flex-col gap-4">
         {state.error && <FormAlert>{state.error}</FormAlert>}
 
         <FormSection number={1} title="Informations">
@@ -501,31 +505,48 @@ export function EventForm({
             label="Valider manuellement chaque réservation"
           />
         </FormSection>
+
+        <ActionBar
+          message={
+            ready === checklist.length ? (
+              <>
+                <strong>Tout est prêt</strong> : tu peux publier.
+              </>
+            ) : (
+              <>
+                Il manque{" "}
+                <strong>{checklist.find((item) => !item.done)?.label.toLowerCase()}</strong> pour
+                publier.
+              </>
+            )
+          }
+        >
+          {actions}
+        </ActionBar>
       </div>
 
-      <aside className="flex flex-col gap-6 xl:sticky xl:top-6 xl:self-start">
+      <aside className="flex flex-col gap-4 xl:sticky xl:top-4 xl:self-start">
         <div className="flex flex-col overflow-hidden rounded-3xl bg-surface">
           <div
-            className="flex h-[150px] flex-col justify-between p-4"
-            style={{ backgroundColor: type?.color ?? "#264489" }}
+            className="flex h-[120px] flex-col justify-between p-4"
+            style={{
+              background: `linear-gradient(150deg, ${type?.color ?? "#111111"} 0%, color-mix(in srgb, ${type?.color ?? "#111111"} 70%, black) 100%)`,
+            }}
           >
-            <span
-              className="flex h-6 items-center self-start bg-on-ink px-2 font-mono text-[11px] font-semibold uppercase tracking-[0.045em]"
-              style={{ color: type?.color ?? "#264489" }}
-            >
+            <span className="text-[11px] font-bold uppercase tracking-[0.06em] text-white/80">
               Aperçu public
             </span>
-            <p className="font-headline text-[30px] leading-[30px] text-on-ink">
+            <p className="font-headline text-2xl leading-7 text-white">
               {values.title || "Titre de l'événement"}
             </p>
           </div>
-          <div className="flex flex-col gap-1 border-b border-line-soft px-4 py-3.5">
-            <p className="text-[15px] font-bold text-ink">
+          <div className="flex flex-col gap-1 px-4 py-3.5">
+            <p className="text-[15px] font-semibold text-ink">
               {start
-                ? `${formatWeekdayShort(start, "UTC")} ${start.getUTCDate()} ${start.toLocaleDateString("fr-FR", { month: "long", timeZone: "UTC" })}, ${formatHour(start, "UTC")}`
+                ? `${formatWeekdayShort(start, "UTC")} ${start.getUTCDate()} ${start.toLocaleDateString("fr-FR", { month: "long", timeZone: "UTC" })} · ${formatHour(start, "UTC")}`
                 : "Date à choisir"}
             </p>
-            <p className="text-[13px] font-medium text-ink-muted">
+            <p className="text-[13px] text-ink-muted">
               {[
                 values.locationName || (values.onlineUrl ? "En ligne" : null),
                 values.capacity ? `${values.capacity} places` : "Places illimitées",
@@ -539,51 +560,57 @@ export function EventForm({
                 .join(" · ")}
             </p>
           </div>
-          <div className="flex flex-col gap-3 px-4 py-4">
-            <p className="font-mono text-label font-semibold uppercase tracking-[0.055em] text-neutral">
-              Prêt à publier · {ready} / {checklist.length}
-            </p>
-            <div className="flex h-1 bg-line-soft">
-              <div
-                className="h-1 bg-success transition-[width]"
-                style={{ width: `${(ready / checklist.length) * 100}%` }}
-              />
-            </div>
-            <ul className="flex flex-col gap-2.5">
-              {checklist.map((item) => (
-                <li
-                  key={item.label}
-                  className="flex items-center gap-3 text-sm font-semibold text-ink"
-                >
-                  {item.done ? (
-                    <Check size={14} className="text-success" />
-                  ) : (
-                    <span className="size-3.5 border-2 border-warning" />
-                  )}
-                  {item.label}
-                </li>
-              ))}
-            </ul>
-          </div>
         </div>
 
-        <Field label="Visibilité" group>
-          {() => (
-            <SegmentedControl
-              name="visibility"
-              label="Visibilité"
-              value={values.visibility}
-              onChange={(visibility) => set({ visibility })}
-              segments={[
-                { value: "public", label: "Public" },
-                { value: "invite_only", label: "Sur invitation" },
-              ]}
+        <div className="flex flex-col gap-3 rounded-3xl bg-surface p-5">
+          <p className="flex items-baseline justify-between">
+            <span className="text-[15px] font-semibold text-ink">Prêt à publier</span>
+            <span className="text-sm font-semibold text-ink">
+              {ready}
+              <span className="font-normal text-ink-muted"> / {checklist.length}</span>
+            </span>
+          </p>
+          <div className="flex h-1 rounded-full bg-line-soft">
+            <div
+              className="h-1 rounded-full bg-ink transition-[width]"
+              style={{ width: `${(ready / checklist.length) * 100}%` }}
             />
-          )}
-        </Field>
-        <p className="text-[13px] font-medium leading-5 text-ink-muted">
-          Horaires dans le fuseau de l'espace ({timeZone.replace("_", " ")}).
-        </p>
+          </div>
+          <ul className="flex flex-col gap-2.5 pt-1">
+            {checklist.map((item) => (
+              <li key={item.label} className="flex items-center gap-2.5 text-sm text-ink">
+                {item.done ? (
+                  <span className="flex size-[18px] items-center justify-center rounded-full bg-success text-white">
+                    <Check size={10} />
+                  </span>
+                ) : (
+                  <span className="size-[18px] rounded-full border-[1.5px] border-line" />
+                )}
+                <span className={item.done ? undefined : "text-ink-muted"}>{item.label}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        <div className="flex flex-col gap-3 rounded-3xl bg-surface p-5">
+          <Field label="Visibilité" group>
+            {() => (
+              <SegmentedControl
+                name="visibility"
+                label="Visibilité"
+                value={values.visibility}
+                onChange={(visibility) => set({ visibility })}
+                segments={[
+                  { value: "public", label: "Public" },
+                  { value: "invite_only", label: "Sur invitation" },
+                ]}
+              />
+            )}
+          </Field>
+          <p className="text-xs leading-4 text-ink-muted">
+            Horaires dans le fuseau de l'espace ({timeZone.replace("_", " ")}).
+          </p>
+        </div>
       </aside>
     </form>
   );

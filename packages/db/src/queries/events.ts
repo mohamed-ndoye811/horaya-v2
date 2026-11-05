@@ -31,6 +31,7 @@ const eventColumns = {
   priceCents: event.priceCents,
   paymentMode: event.paymentMode,
   seriesId: event.seriesId,
+  coverImageUrl: event.coverImageUrl,
   typeId: eventType.id,
   typeName: eventType.name,
   typeColor: eventType.color,
@@ -53,6 +54,7 @@ export interface EventRow {
   priceCents: number;
   paymentMode: PaymentMode;
   seriesId: string | null;
+  coverImageUrl: string | null;
   typeId: string;
   typeName: string;
   typeColor: string;

@@ -17,18 +17,24 @@ export const ATTENDANCE_BADGE = {
 } satisfies Record<string, { label: string; tone: Tone }>;
 
 /**
- * Statut affiché d'un événement : on précise « Presque complet » (≥ 80 %) et « Complet »
- * pour un événement publié, sinon publié / brouillon / annulé.
+ * Statut affiché d'un événement publié : « Complet », « Presque complet » (≥ 80 %), ou
+ * « Peu rempli · J-3 » quand il démarre dans 3 jours ou moins à moins d'un tiers rempli.
+ * Sinon publié / brouillon / annulé.
  */
 export function eventStatusBadge(
   status: EventStatus,
-  fill?: { seatsHeld: number; capacity: number | null },
+  fill?: { seatsHeld: number; capacity: number | null; startsAt?: Date },
+  now = new Date(),
 ): { label: string; tone: Tone } {
   if (status === "draft") return { label: "Brouillon", tone: "draft" };
   if (status === "cancelled") return { label: "Annulé", tone: "danger" };
   if (fill?.capacity) {
-    if (fill.seatsHeld >= fill.capacity) return { label: "Complet", tone: "info" };
+    if (fill.seatsHeld >= fill.capacity) return { label: "Complet", tone: "ink" };
     if (fill.seatsHeld / fill.capacity >= 0.8) return { label: "Presque complet", tone: "warning" };
+    if (fill.startsAt && fill.startsAt > now && fill.seatsHeld / fill.capacity < 1 / 3) {
+      const days = Math.ceil((fill.startsAt.getTime() - now.getTime()) / 86_400_000);
+      if (days <= 3) return { label: `Peu rempli · J-${days}`, tone: "danger" };
+    }
   }
   return { label: "Publié", tone: "success" };
 }
