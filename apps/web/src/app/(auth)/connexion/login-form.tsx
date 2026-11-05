@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { type FormEvent, useState } from "react";
-import { AuthTitle, Eyebrow } from "@/components/auth/auth-shell";
+import { AuthLead, AuthTitle, Eyebrow } from "@/components/auth/auth-shell";
 import { GoogleButton } from "@/components/auth/google-button";
 import { Button, textLinkClasses } from "@/components/ui/button";
 import { OrDivider } from "@/components/ui/divider";
@@ -55,13 +55,18 @@ export function LoginForm({
 
   if (step === "email") {
     return (
-      <form onSubmit={submitEmail} className="flex flex-col gap-7">
-        <div className="flex flex-col gap-3">
-          <Eyebrow>
-            {invitation ? `Invitation · ${invitation.organizationName}` : "Étape 1 sur 2"}
-          </Eyebrow>
-          <AuthTitle>Connexion</AuthTitle>
+      <form onSubmit={submitEmail} className="flex flex-col gap-6">
+        <div className="flex flex-col gap-2">
+          {invitation && <Eyebrow>Invitation · {invitation.organizationName}</Eyebrow>}
+          <AuthTitle>Bon retour.</AuthTitle>
+          <AuthLead>Entre ton e-mail, on s'occupe du reste.</AuthLead>
         </div>
+        {googleEnabled && (
+          <>
+            <GoogleButton label="Continuer avec Google" />
+            <OrDivider />
+          </>
+        )}
         <Field label="Adresse e-mail">
           {(field) => (
             <input
@@ -80,18 +85,12 @@ export function LoginForm({
         <Button size="lg" type="submit" arrow className="w-full">
           Continuer
         </Button>
-        {googleEnabled && (
-          <>
-            <OrDivider />
-            <GoogleButton label="Continuer avec Google" />
-          </>
-        )}
       </form>
     );
   }
 
   return (
-    <form onSubmit={submitPassword} className="flex flex-col gap-7">
+    <form onSubmit={submitPassword} className="flex flex-col gap-6">
       <div className="flex flex-col gap-3">
         <Eyebrow>Étape 2 sur 2</Eyebrow>
         <AuthTitle>Mot de passe</AuthTitle>
