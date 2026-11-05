@@ -70,7 +70,7 @@ export function Notch({ user, workspace, pendingBookings }: NotchProps) {
       >
         <path d={NOTCH_PATH} className="fill-ink" />
       </svg>
-      <div className="absolute inset-x-11 top-0 flex h-14 items-center justify-center gap-1.5">
+      <div className="absolute inset-x-11 top-1.5 flex h-[50px] items-center justify-center gap-1.5">
         <Link
           href="/app"
           aria-label="Horaya, tableau de bord"
