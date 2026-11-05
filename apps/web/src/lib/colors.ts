@@ -35,3 +35,7 @@ export function colorFor(seed: string): string {
   for (const char of seed) hash = (hash * 31 + char.charCodeAt(0)) >>> 0;
   return CATEGORY_COLORS[hash % CATEGORY_COLORS.length] ?? CATEGORY_COLORS[0];
 }
+
+/** Blocs du calendrier (DA v4) : fond pâle et texte foncé tirés de la couleur du type. */
+export const tintOf = (color: string) => `color-mix(in srgb, ${color} 22%, white)`;
+export const shadeOf = (color: string) => `color-mix(in srgb, ${color} 62%, black)`;

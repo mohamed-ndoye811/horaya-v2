@@ -9,18 +9,16 @@ export function CalendarLegend({
   aside?: ReactNode;
 }) {
   return (
-    <div className="flex flex-wrap items-center justify-between gap-4 border-b border-line-soft px-4 py-3.5">
-      <ul className="flex flex-wrap gap-x-6 gap-y-2">
+    <div className="flex flex-wrap items-center justify-between gap-4">
+      <ul className="flex flex-wrap gap-x-3.5 gap-y-1.5">
         {categories.map((category) => (
-          <li key={category.name} className="flex items-center gap-2">
+          <li key={category.name} className="flex items-center gap-1.5">
             <span
               aria-hidden="true"
-              className="size-3 shrink-0"
+              className="size-2 shrink-0 rounded-[3px]"
               style={{ backgroundColor: category.color }}
             />
-            <span className="font-mono text-label font-semibold uppercase tracking-[0.055em] text-neutral">
-              {category.name}
-            </span>
+            <span className="text-xs font-semibold leading-4 text-[#4a4a4a]">{category.name}</span>
           </li>
         ))}
       </ul>
