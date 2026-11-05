@@ -67,7 +67,7 @@ export function PublicNotch({
         </svg>
         <nav
           aria-label="Navigation de l'espace"
-          className="relative flex h-[50px] items-center justify-center gap-2 px-11"
+          className="relative top-1.5 flex h-11 items-center justify-center gap-2 px-11"
         >
           <Link href={home} className="flex min-w-0 items-center gap-2 pr-1.5 text-on-ink">
             <WorkspaceMark name={workspace.name} />
