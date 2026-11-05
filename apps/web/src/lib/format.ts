@@ -60,6 +60,19 @@ export function formatDateTimeShort(date: Date, timeZone = DEFAULT_TIME_ZONE): s
   return `${formatWeekdayShort(date, timeZone)} ${day} · ${formatHour(date, timeZone)}`;
 }
 
+/** « Aujourd'hui, 8:30 », « Hier, 21:12 », « 14 juin, 11:20 » (colonne « Réservé le »). */
+export function formatRelativeDateTime(
+  date: Date,
+  timeZone = DEFAULT_TIME_ZONE,
+  now = new Date(),
+): string {
+  const dayOf = (value: Date) => part(value, timeZone, { dateStyle: "short" });
+  const time = part(date, timeZone, { hour: "numeric", minute: "2-digit", hourCycle: "h23" });
+  if (dayOf(date) === dayOf(now)) return `Aujourd'hui, ${time}`;
+  if (dayOf(date) === dayOf(new Date(now.getTime() - 86_400_000))) return `Hier, ${time}`;
+  return `${part(date, timeZone, { day: "numeric", month: "long" })}, ${time}`;
+}
+
 /** « Mohamed Ndoye » → « MN ». */
 export function initials(name: string): string {
   const words = name.trim().split(/\s+/).filter(Boolean);

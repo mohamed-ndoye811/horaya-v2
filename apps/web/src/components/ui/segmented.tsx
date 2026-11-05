@@ -10,8 +10,10 @@ import { Select } from "./select";
 interface Segment {
   value: string;
   label: ReactNode;
-  /** Compteur en mono après le libellé (« Toutes 156 »). */
+  /** Compteur après le libellé (« Toutes 156 »). */
   count?: number;
+  /** Compteur à traiter (« En attente 3 ») : pastille ambre. */
+  alert?: boolean;
 }
 
 // DA v4 : rail blanc en pilule, segment actif noir.
@@ -25,7 +27,7 @@ const groupClasses = (size: "sm" | "md", fill: boolean) =>
 // Le fond du segment actif est un repère qui glisse d'un segment à l'autre (ActiveIndicator).
 const segmentClasses = (active: boolean, fill: boolean) =>
   cn(
-    "relative isolate flex items-center justify-center gap-2 whitespace-nowrap rounded-full text-sm font-semibold leading-[18px] transition-colors",
+    "relative isolate flex items-center justify-center gap-[7px] whitespace-nowrap rounded-full text-sm font-semibold leading-[18px] transition-colors",
     // Pleine largeur : segments égaux, marge réduite pour tenir sur un petit écran.
     fill ? "flex-1 basis-0 px-2" : "px-4",
     active ? "text-on-ink" : "text-ink hover:bg-field",
@@ -37,16 +39,21 @@ function SegmentContent({ segment, active }: { segment: Segment; active: boolean
   return (
     <>
       {segment.label}
-      {segment.count !== undefined && (
-        <span
-          className={cn(
-            "font-mono text-label font-semibold leading-4",
-            active ? "text-on-ink/70" : "text-ink-muted",
-          )}
-        >
-          {segment.count}
-        </span>
-      )}
+      {segment.count !== undefined &&
+        (segment.alert && segment.count > 0 && !active ? (
+          <span className="flex h-[18px] items-center rounded-full bg-warning-bg px-1.5 text-[11px] font-bold leading-[14px] text-warning">
+            {segment.count}
+          </span>
+        ) : (
+          <span
+            className={cn(
+              "text-xs font-semibold leading-4",
+              active ? "text-on-ink/55" : "text-ink-subtle",
+            )}
+          >
+            {segment.count}
+          </span>
+        ))}
     </>
   );
 }

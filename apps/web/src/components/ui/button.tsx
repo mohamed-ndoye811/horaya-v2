@@ -4,7 +4,14 @@ import { cn } from "@/lib/cn";
 import { ArrowRight } from "./icons";
 
 /** `inverse` et `inverse-outline` : versions pour fond noir (barres d'action, cartes noires). */
-type Variant = "primary" | "secondary" | "success" | "danger" | "inverse" | "inverse-outline";
+type Variant =
+  | "primary"
+  | "secondary"
+  | "success"
+  | "danger"
+  | "inverse"
+  | "inverse-outline"
+  | "inverse-danger";
 
 /** `md` : boutons de l'admin (44 px). `lg` : formulaires des écrans de compte (52 px). */
 type Size = "md" | "lg";
@@ -32,6 +39,8 @@ const variants: Record<Variant, string> = {
     "border border-danger/40 bg-surface font-semibold text-danger hover:bg-danger-bg " +
     "disabled:border-line disabled:text-ink-subtle disabled:hover:bg-surface",
   inverse: "bg-surface font-semibold text-ink hover:bg-field focus-visible:outline-on-ink",
+  /** Refuser, sur un bandeau de décision teinté. */
+  "inverse-danger": "bg-surface font-semibold text-danger hover:bg-danger-bg",
   "inverse-outline":
     "border border-[#3a3a3a] font-semibold text-on-ink hover:bg-white/10 " +
     "focus-visible:outline-on-ink",
@@ -119,8 +128,8 @@ export function ButtonLink({
 type IconButtonVariant = "approve" | "refuse" | "outline" | "ghost";
 
 const iconButtonVariants: Record<IconButtonVariant, string> = {
-  approve: "bg-success text-white hover:brightness-95",
-  refuse: "border border-danger/40 bg-surface text-danger hover:bg-danger-bg",
+  approve: "bg-ink text-on-ink hover:bg-ink/85",
+  refuse: "border border-[#e2e2df] bg-surface text-ink hover:bg-field",
   outline: "border border-line bg-surface text-ink hover:bg-field",
   ghost: "text-ink hover:bg-field",
 };

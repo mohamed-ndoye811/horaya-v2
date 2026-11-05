@@ -159,7 +159,7 @@ export function BookingRowActions({
       {status === "pending" && layout === "buttons" ? (
         <div className="flex gap-2">
           <Button
-            variant="success"
+            variant="primary"
             icon={<Check size={14} />}
             pending={pending}
             className="flex-1"
@@ -347,10 +347,13 @@ export function BookingHeaderActions({
   bookingId,
   customerName,
   status,
+  decision = false,
 }: {
   bookingId: string;
   customerName: string;
   status: BookingStatus;
+  /** Dans le bandeau « attend ta réponse » : Refuser en blanc, Valider en noir. */
+  decision?: boolean;
 }) {
   const { pending, message, run } = useBookingAction();
   const [dialog, setDialog] = useState<"refuse" | "cancel" | null>(null);
@@ -358,13 +361,17 @@ export function BookingHeaderActions({
   return (
     <>
       {(status === "pending" || status === "waitlisted") && (
-        <Button variant="danger" icon={<CloseIcon size={12} />} onClick={() => setDialog("refuse")}>
+        <Button
+          variant={decision ? "inverse-danger" : "danger"}
+          icon={decision ? undefined : <CloseIcon size={12} />}
+          onClick={() => setDialog("refuse")}
+        >
           Refuser
         </Button>
       )}
       {status === "pending" && (
         <Button
-          variant="success"
+          variant={decision ? "primary" : "success"}
           icon={<Check />}
           pending={pending}
           onClick={() => run(() => confirmBookingAction(bookingId))}

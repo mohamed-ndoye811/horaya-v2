@@ -157,7 +157,7 @@ export default async function EventsPage({ searchParams }: PageProps<"/app/evene
         }
         toolbar={
           <>
-            <form action="/app/evenements" className="md:flex-1 xl:w-[300px] xl:flex-none">
+            <form action="/app/evenements" className="min-w-0 md:flex-1 xl:max-w-[300px]">
               {tab !== "all" && <input type="hidden" name="onglet" value={tab} />}
               {typeId && <input type="hidden" name="type" value={typeId} />}
               <SearchInput

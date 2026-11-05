@@ -1,6 +1,14 @@
 import { cn } from "@/lib/cn";
 
-/** Historique d'une réservation : le plus récent en haut, carrés reliés par un filet. */
+const dots = {
+  ink: "bg-ink",
+  warning: "bg-warning shadow-[0_0_0_4px_var(--color-warning-bg)]",
+  success: "bg-success",
+  danger: "bg-danger",
+  muted: "border-2 border-[#cfcfcb] bg-surface",
+};
+
+/** Historique (DA v4) : le plus récent en haut, pastilles rondes reliées par un filet. */
 export function Timeline({
   items,
 }: {
@@ -8,38 +16,28 @@ export function Timeline({
     id: string;
     title: string;
     meta: string;
-    tone?: "ink" | "warning" | "success" | "danger";
+    tone?: keyof typeof dots;
   }>;
 }) {
   return (
-    <ol className="relative flex flex-col gap-4">
-      {items.map((item, index) => (
-        <li key={item.id} className="relative flex gap-3">
-          {index < items.length - 1 && (
-            <span
-              aria-hidden="true"
-              className="absolute top-3.5 bottom-[-16px] left-[5px] w-0.5 bg-line-soft"
-            />
-          )}
-          <span
-            aria-hidden="true"
-            className={cn(
-              "relative mt-[3px] size-3 shrink-0",
-              item.tone === "warning"
-                ? "border-2 border-warning bg-bg"
-                : item.tone === "success"
-                  ? "bg-success"
-                  : item.tone === "danger"
-                    ? "bg-danger"
-                    : "bg-ink",
-            )}
-          />
-          <div className="flex min-w-0 flex-col gap-1">
-            <p className="text-sm font-bold leading-[18px] text-ink">{item.title}</p>
-            <p className="font-mono text-label font-medium leading-4 text-ink-muted">{item.meta}</p>
-          </div>
-        </li>
-      ))}
+    <ol className="flex flex-col">
+      {items.map((item, index) => {
+        const last = index === items.length - 1;
+        return (
+          <li key={item.id} className="flex gap-3">
+            <span aria-hidden="true" className="flex w-3 shrink-0 flex-col items-center">
+              <span
+                className={cn("mt-1 size-2.5 shrink-0 rounded-full", dots[item.tone ?? "ink"])}
+              />
+              {!last && <span className="mt-1.5 w-0.5 flex-1 bg-[#eaeae7]" />}
+            </span>
+            <div className={cn("flex min-w-0 flex-col gap-0.5", !last && "pb-[26px]")}>
+              <p className="text-sm font-semibold leading-[18px] text-ink">{item.title}</p>
+              <p className="text-xs leading-4 text-ink-subtle">{item.meta}</p>
+            </div>
+          </li>
+        );
+      })}
     </ol>
   );
 }

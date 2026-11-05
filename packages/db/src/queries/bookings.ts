@@ -136,7 +136,7 @@ export async function listBookings(
 export async function countBookingsByTab(
   db: Executor,
   organizationId: string,
-): Promise<Record<BookingTab, number>> {
+): Promise<Record<BookingTab, number> & { oldestPendingAt: Date | null }> {
   const [row] = await db
     .select({
       all: sql<number>`count(*)::int`,
@@ -144,10 +144,17 @@ export async function countBookingsByTab(
       confirmed: sql<number>`count(*) filter (where ${booking.status} = 'confirmed')::int`,
       waitlisted: sql<number>`count(*) filter (where ${booking.status} = 'waitlisted')::int`,
       cancelled: sql<number>`count(*) filter (where ${booking.status} in ('cancelled', 'refused'))::int`,
+      // Demande la plus ancienne à valider (« attend depuis 13 h »).
+      oldestPendingAt:
+        sql<Date | null>`min(${booking.createdAt}) filter (where ${booking.status} = 'pending')`.mapWith(
+          toDate,
+        ),
     })
     .from(booking)
     .where(eq(booking.organizationId, organizationId));
-  return row ?? { all: 0, pending: 0, confirmed: 0, waitlisted: 0, cancelled: 0 };
+  return (
+    row ?? { all: 0, pending: 0, confirmed: 0, waitlisted: 0, cancelled: 0, oldestPendingAt: null }
+  );
 }
 
 /** Montant des réservations confirmées reçues depuis une date (« 8 340 € réservés en juin »). */
@@ -298,6 +305,7 @@ export async function getBookingDetail(db: Executor, organizationId: string, boo
         capacity: event.capacity,
         status: event.status,
         paymentLinkUrl: event.paymentLinkUrl,
+        coverImageUrl: event.coverImageUrl,
       },
       typeColor: eventType.color,
     })

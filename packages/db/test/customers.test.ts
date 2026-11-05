@@ -153,6 +153,7 @@ describe("réservations", () => {
       confirmed: 1,
       cancelled: 1,
     });
+    expect((await countBookingsByTab(db, organizationId)).oldestPendingAt).toBeInstanceOf(Date);
     const searched = await listBookings(db, organizationId, { tab: "all", search: "fontaine" });
     expect(searched.map((row) => row.customerName)).toEqual(["Léa Fontaine"]);
   });

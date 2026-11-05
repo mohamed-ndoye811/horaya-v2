@@ -18,7 +18,7 @@ import {
   formatEventRange,
   formatHour,
   formatMoney,
-  formatShortDateTime,
+  formatRelativeDateTime,
   PAYMENT_MODE_LABELS,
 } from "@/lib/format";
 import { param } from "@/lib/search-params";
@@ -312,7 +312,7 @@ export default async function EventDetailPage({
                 width: 130,
                 cell: (row) => (
                   <span className="text-sm text-ink-muted">
-                    {formatShortDateTime(row.createdAt, timeZone)}
+                    {formatRelativeDateTime(row.createdAt, timeZone)}
                   </span>
                 ),
               },

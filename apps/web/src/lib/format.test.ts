@@ -6,6 +6,7 @@ import {
   formatMoney,
   formatMonthShort,
   formatPublicSchedule,
+  formatRelativeDateTime,
   formatTimeRange,
   formatWeekdayShort,
   initials,
@@ -14,6 +15,19 @@ import {
 const june17 = new Date("2026-06-17T09:00:00Z"); // 11h à Paris
 
 describe("format", () => {
+  it("date une réservation par rapport à aujourd'hui", () => {
+    const now = new Date("2026-06-17T14:00:00Z");
+    expect(formatRelativeDateTime(new Date("2026-06-17T06:30:00Z"), "Europe/Paris", now)).toBe(
+      "Aujourd'hui, 8:30",
+    );
+    expect(formatRelativeDateTime(new Date("2026-06-16T19:12:00Z"), "Europe/Paris", now)).toBe(
+      "Hier, 21:12",
+    );
+    expect(formatRelativeDateTime(new Date("2026-06-14T09:20:00Z"), "Europe/Paris", now)).toBe(
+      "14 juin, 11:20",
+    );
+  });
+
   it("affiche les montants sans centimes inutiles", () => {
     expect(formatMoney(24000)).toBe("240 €");
     expect(formatMoney(3550)).toBe("35,50 €");

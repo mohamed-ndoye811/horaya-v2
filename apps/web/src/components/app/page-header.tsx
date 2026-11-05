@@ -53,7 +53,7 @@ export function PageHeader({
         className,
       )}
     >
-      <div className="flex min-w-0 flex-col gap-1.5">
+      <div className="flex min-w-0 flex-col gap-1.5 xl:shrink-0">
         <p className={cn("reveal text-[13px] font-semibold leading-4 text-ink-muted", cornerLeft)}>
           {eyebrow}
         </p>
@@ -74,7 +74,7 @@ export function PageHeader({
       </div>
       {toolbar && (
         <div
-          className="reveal flex min-w-0 flex-col gap-3 md:flex-row md:items-center xl:ml-auto xl:shrink-0"
+          className="reveal flex min-w-0 flex-col gap-3 md:flex-row md:items-center xl:ml-auto"
           style={stagger(3)}
         >
           {toolbar}
