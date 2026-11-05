@@ -10,7 +10,7 @@ import { StatusBadge } from "@/components/ui/badge";
 import { ButtonLink } from "@/components/ui/button";
 import { DateBlock } from "@/components/ui/cells";
 import { PlusIcon } from "@/components/ui/icons";
-import { cardClasses } from "@/components/ui/section";
+import { cardClasses, cardShellClasses } from "@/components/ui/section";
 import { MiniStat, ProgressRing } from "@/components/ui/stat";
 import { ATTENDANCE_BADGE, BOOKING_STATUS_BADGE } from "@/components/ui/status";
 import { Tag } from "@/components/ui/tag";
@@ -232,7 +232,7 @@ export default async function CustomerDetailPage({ params }: PageProps<"/app/cli
           </section>
         </div>
 
-        <section className="flex min-w-0 flex-col overflow-hidden rounded-3xl bg-surface pt-1 pb-2 shadow-[0_1px_2px_rgba(0,0,0,0.04),0_16px_40px_rgba(0,0,0,0.06)]">
+        <section className={cn(cardShellClasses, "min-w-0 overflow-hidden pt-1 pb-2")}>
           <h2 className="flex items-baseline gap-2 px-5 pt-4 pb-3 text-base font-semibold leading-5 text-ink">
             Historique des réservations
             <span className="text-[13px] font-normal leading-[17px] text-ink-subtle">

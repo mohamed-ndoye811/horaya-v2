@@ -1,7 +1,7 @@
 import { cn } from "@/lib/cn";
 import { initials } from "@/lib/format";
 
-/** Vignette d'un article : préfixe de sa référence (« VP » pour VP-014), ambre s'il est en maintenance. */
+/** Vignette d'un article (DA v4) : préfixe de sa référence (« VP » pour VP-014) sur fond gris, ambre en maintenance. */
 export function ItemTile({
   name,
   reference,
@@ -18,11 +18,9 @@ export function ItemTile({
     <span
       aria-hidden="true"
       className={cn(
-        "flex shrink-0 items-center justify-center border-[1.5px] font-mono font-semibold",
-        size === "md" ? "size-10 text-label" : "size-24 text-2xl",
-        maintenance
-          ? "border-warning bg-warning-bg text-warning"
-          : "border-ink bg-info-bg text-ink",
+        "flex shrink-0 items-center justify-center font-bold",
+        size === "md" ? "size-11 rounded-xl text-xs" : "size-24 rounded-2xl text-2xl",
+        maintenance ? "bg-warning-bg text-warning" : "bg-field text-ink-subtle",
       )}
     >
       {prefix || initials(name)}

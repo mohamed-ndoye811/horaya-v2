@@ -45,7 +45,7 @@ export function AvailabilityGrid({
   visibleRows?: number;
 }) {
   const todayKey = civilKey(today);
-  const columns = `88px repeat(${days.length}, minmax(44px, 1fr))`;
+  const columns = `64px repeat(${days.length}, minmax(44px, 1fr))`;
   const isWeekend = (day: CivilDate) => weekdayOf(day.year, day.month, day.day) >= 5;
   const row = (unit: (typeof units)[number]) => {
     const spans = layoutSpans(
@@ -58,18 +58,18 @@ export function AvailabilityGrid({
     return (
       <div
         key={unit.id}
-        className="grid border-b border-line-soft last:border-b-0"
+        className="grid border-b border-[#f4f4f2] last:border-b-0"
         style={{
           gridTemplateColumns: columns,
           gridTemplateRows: `repeat(${lanes}, minmax(0, 1fr))`,
-          height: 56 + (lanes - 1) * 28,
+          height: 40 + (lanes - 1) * 28,
         }}
       >
         <span
           style={{ gridColumn: 1, gridRow: "1 / -1" }}
           className={cn(
-            "flex items-center px-3 font-mono text-label font-semibold uppercase tracking-[0.055em]",
-            unit.status === "available" ? "text-ink" : "text-ink-subtle line-through",
+            "flex items-center text-xs font-semibold leading-4",
+            unit.status === "available" ? "text-ink-subtle" : "text-[#ababa6] line-through",
           )}
         >
           Ex. {unit.label}
@@ -79,8 +79,8 @@ export function AvailabilityGrid({
             key={civilKey(day)}
             aria-hidden="true"
             className={cn(
-              "border-l border-line-soft",
-              civilKey(day) === todayKey ? "bg-today" : isWeekend(day) ? "bg-weekend" : "",
+              civilKey(day) === todayKey && "border-l-2 border-ink/15",
+              isWeekend(day) && "bg-band",
             )}
             style={{ gridColumn: index + 2, gridRow: "1 / -1" }}
           />
@@ -92,15 +92,16 @@ export function AvailabilityGrid({
           const color =
             allocation.kind === "rental" ? RENTAL_COLOR : (allocation.eventColor ?? RENTAL_COLOR);
           const className = cn(
-            "z-10 mx-1 flex min-w-0 items-center overflow-hidden px-2 text-xs font-semibold",
+            "z-10 mx-0.5 flex min-w-0 items-center overflow-hidden rounded-lg px-2 text-[11px] font-bold leading-[14px]",
             lanes === 1
-              ? "my-2"
+              ? "my-[7px]"
               : lane === 0
                 ? "mt-1.5 mb-0.5"
                 : lane === lanes - 1
                   ? "mt-0.5 mb-1.5"
                   : "my-0.5",
-            maintenance && "border-[1.5px] border-dashed border-warning bg-warning-bg text-warning",
+            maintenance &&
+              "border-[1.5px] border-dashed border-[#d9a441] bg-warning-bg text-warning",
             href && "hover:brightness-95",
           );
           const style = {
@@ -124,11 +125,8 @@ export function AvailabilityGrid({
 
   return (
     <div className="overflow-x-auto">
-      <figure
-        aria-label="Disponibilité par exemplaire"
-        className="m-0 min-w-[720px] overflow-hidden rounded-3xl bg-surface"
-      >
-        <div className="grid border-b border-line-soft" style={{ gridTemplateColumns: columns }}>
+      <figure aria-label="Disponibilité par exemplaire" className="m-0 min-w-[720px]">
+        <div className="grid pb-3.5" style={{ gridTemplateColumns: columns }}>
           <span aria-hidden="true" />
           {days.map((day) => {
             const isToday = civilKey(day) === todayKey;
@@ -136,23 +134,43 @@ export function AvailabilityGrid({
               <span
                 key={civilKey(day)}
                 aria-current={isToday ? "date" : undefined}
-                className={cn(
-                  "flex flex-col items-center gap-0.5 border-l border-line-soft py-2",
-                  isToday ? "bg-ink text-bg" : isWeekend(day) ? "bg-weekend text-ink" : "text-ink",
-                )}
+                className="flex justify-center"
               >
-                <span className="font-mono text-[10px] font-semibold leading-3">
-                  {DAY_LETTERS[weekdayOf(day.year, day.month, day.day)]}
+                <span
+                  className={cn(
+                    "flex size-11 flex-col items-center justify-center rounded-xl",
+                    isToday && "bg-ink",
+                  )}
+                >
+                  <span
+                    className={cn(
+                      "text-[10px] font-bold leading-3",
+                      isToday
+                        ? "text-white/60"
+                        : isWeekend(day)
+                          ? "text-[#ababa6]"
+                          : "text-ink-subtle",
+                    )}
+                  >
+                    {DAY_LETTERS[weekdayOf(day.year, day.month, day.day)]}
+                  </span>
+                  <span
+                    className={cn(
+                      "text-[15px] font-semibold leading-[18px]",
+                      isToday ? "text-white" : isWeekend(day) ? "text-[#ababa6]" : "text-ink",
+                    )}
+                  >
+                    {day.day}
+                  </span>
                 </span>
-                <span className="text-sm font-bold leading-4">{day.day}</span>
               </span>
             );
           })}
         </div>
         {units.slice(0, visibleRows).map(row)}
         {units.length > visibleRows && (
-          <details className="group border-t border-line-soft">
-            <summary className="flex list-none items-center justify-center gap-2 px-3 py-3 text-sm font-bold text-ink hover:bg-draft-bg group-open:border-b group-open:border-line-soft [&::-webkit-details-marker]:hidden">
+          <details className="group border-t border-[#f4f4f2]">
+            <summary className="flex list-none items-center justify-center gap-2 rounded-xl px-3 py-2.5 text-[13px] font-semibold text-ink hover:bg-field [&::-webkit-details-marker]:hidden">
               <span className="group-open:hidden">
                 Afficher les {units.length - visibleRows} autres exemplaires
               </span>

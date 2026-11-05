@@ -15,7 +15,12 @@ export default async function NewItemPage() {
       <PageHeader
         eyebrow="Matériel / Nouveau"
         title="Nouvel article"
-        subtitle="Chaque exemplaire (#1, #2…) est suivi séparément : jamais deux réservations sur le même au même moment."
+        subtitle={
+          <>
+            Chaque exemplaire (#1, #2…) est suivi séparément :{" "}
+            <span className="text-ink">jamais deux réservations sur le même au même moment.</span>
+          </>
+        }
       />
       <ItemForm
         itemId={null}

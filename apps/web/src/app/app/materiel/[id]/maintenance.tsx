@@ -2,11 +2,10 @@
 
 import { useRouter } from "next/navigation";
 import { useRef, useState, useTransition } from "react";
-import { Button, monoLinkClasses, textLinkClasses } from "@/components/ui/button";
+import { Button, textLinkClasses } from "@/components/ui/button";
 import { Dialog } from "@/components/ui/dialog";
 import { AffixInput, Checkbox, Field, inputClasses, textareaClasses } from "@/components/ui/field";
 import { FormAlert } from "@/components/ui/form-alert";
-import { PlusIcon } from "@/components/ui/icons";
 import { cn } from "@/lib/cn";
 import { useFormAction } from "@/lib/use-form-action";
 import type { FormState } from "@/server/form-state";
@@ -28,10 +27,9 @@ export function AddMaintenance({
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className={`${monoLinkClasses} flex items-center gap-1.5 whitespace-nowrap`}
+        className="whitespace-nowrap text-[13px] font-semibold leading-[17px] text-ink hover:underline"
       >
-        <PlusIcon size={10} />
-        Ajouter une intervention
+        + Ajouter une intervention
       </button>
       {open && (
         <MaintenanceDialog

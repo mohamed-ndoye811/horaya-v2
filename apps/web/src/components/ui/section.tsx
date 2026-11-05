@@ -3,9 +3,12 @@ import type { ReactNode } from "react";
 import { cn } from "@/lib/cn";
 import { monoLinkClasses } from "./button";
 
-/** Carte blanche des fiches (DA v4) : coins de 24 px, ombre douce. */
-export const cardClasses =
-  "flex flex-col rounded-3xl bg-surface p-5 shadow-[0_1px_2px_rgba(0,0,0,0.04),0_16px_40px_rgba(0,0,0,0.06)]";
+/** Carte blanche des fiches (DA v4) sans marge intérieure : coins de 24 px, ombre douce. */
+export const cardShellClasses =
+  "flex flex-col rounded-3xl bg-surface shadow-[0_1px_2px_rgba(0,0,0,0.04),0_16px_40px_rgba(0,0,0,0.06)]";
+
+/** Carte blanche des fiches, avec 20 px de marge intérieure. */
+export const cardClasses = `${cardShellClasses} p-5`;
 
 /** Titre de bloc (« À venir ») avec précision grise et lien discret à droite. */
 export function SectionHeading({
