@@ -138,14 +138,14 @@ export function CalendarLinksTable({
                 <button
                   type="button"
                   onClick={() => setEditing(row)}
-                  className="truncate text-left text-base font-bold leading-5 text-ink hover:underline"
+                  className="truncate text-left text-sm font-semibold leading-[18px] text-ink hover:underline"
                 >
                   {row.name}
                 </button>
-                <span className="truncate font-mono text-[13px] font-medium text-ink-muted">
+                <span className="truncate font-mono text-xs text-ink-subtle">
                   {row.url.replace(/^https?:\/\//, "")}
                 </span>
-                <span className="text-sm font-semibold leading-5 text-ink">
+                <span className="text-[13px] leading-5 text-[#4a4a4a]">
                   {row.summary} · {row.upcomingEvents} à venir
                 </span>
               </div>
@@ -173,11 +173,11 @@ export function CalendarLinksTable({
                 <button
                   type="button"
                   onClick={() => setEditing(row)}
-                  className="truncate text-left text-base font-bold text-ink hover:underline"
+                  className="truncate text-left text-sm font-semibold leading-[18px] text-ink hover:underline"
                 >
                   {row.name}
                 </button>
-                <span className="truncate font-mono text-[13px] font-medium text-ink-muted">
+                <span className="truncate font-mono text-xs text-ink-subtle">
                   {row.url.replace(/^https?:\/\//, "")}
                 </span>
               </div>
@@ -188,7 +188,7 @@ export function CalendarLinksTable({
             header: "Montre",
             width: 260,
             cell: (row) => (
-              <span className="line-clamp-2 text-sm font-semibold text-ink">{row.summary}</span>
+              <span className="line-clamp-2 text-[13px] text-[#4a4a4a]">{row.summary}</span>
             ),
           },
           {
@@ -196,7 +196,7 @@ export function CalendarLinksTable({
             header: "À venir",
             width: 100,
             cell: (row) => (
-              <span className="font-mono text-sm font-semibold text-ink">{row.upcomingEvents}</span>
+              <span className="text-sm font-semibold text-ink">{row.upcomingEvents}</span>
             ),
           },
           {
@@ -392,7 +392,7 @@ function LinkDialog({
         {mode !== "all" && (
           <fieldset className="flex flex-col gap-2.5">
             <div className="flex items-center justify-between gap-3">
-              <legend className="text-sm font-bold text-ink">
+              <legend className="text-[13px] font-semibold text-ink">
                 {mode === "event_types" ? "Types d'événements" : "Événements à venir"} ·{" "}
                 {selected.size} choisi{selected.size > 1 ? "s" : ""}
               </legend>
@@ -404,14 +404,14 @@ function LinkDialog({
                       allSelected ? new Set() : new Set(options.map((option) => option.id)),
                     )
                   }
-                  className="text-sm font-bold text-ink underline decoration-1 underline-offset-[3px]"
+                  className="text-[13px] font-semibold text-ink hover:underline"
                 >
                   {allSelected ? "Tout décocher" : "Tout cocher"}
                 </button>
               )}
             </div>
             {options.length === 0 ? (
-              <p className="text-sm font-medium text-ink-muted">
+              <p className="text-[13px] text-ink-subtle">
                 {mode === "event_types"
                   ? "Aucun type d'événement pour l'instant."
                   : "Aucun événement à venir pour l'instant."}
@@ -432,9 +432,9 @@ function LinkDialog({
                       label={
                         <span className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
                           {option.swatch && <CategorySwatch color={option.swatch} />}
-                          <span className="font-bold">{option.label}</span>
+                          <span className="font-semibold">{option.label}</span>
                           {option.detail && (
-                            <span className="font-medium text-ink-muted">{option.detail}</span>
+                            <span className="text-xs text-ink-subtle">{option.detail}</span>
                           )}
                         </span>
                       }

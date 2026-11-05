@@ -111,21 +111,21 @@ export function EventTypeForm({ initial }: { initial: EventTypeFormValues }) {
 
   return (
     <form onSubmit={onSubmit} className="flex h-full flex-col">
-      <div className="flex items-center justify-between border-b border-line-soft px-6 py-5">
-        <h2 className="font-section text-section leading-7 text-ink">
-          {initial.id ? "Modifier le type" : "Nouveau type"}
+      <div className="flex items-center justify-between px-6 pt-6 pb-2">
+        <h2 className="font-headline text-2xl leading-7 text-ink">
+          {initial.id ? initial.name || "Modifier le type" : "Nouveau type"}
         </h2>
         <Link
           href="/app/evenements/types"
           aria-label="Fermer"
-          className="flex size-9 items-center justify-center text-ink hover:bg-draft-bg"
+          className="flex size-9 items-center justify-center rounded-full bg-field text-ink hover:bg-line-soft"
         >
           <CloseIcon />
         </Link>
       </div>
 
       <div className="flex flex-1 flex-col overflow-y-auto">
-        <div className="flex flex-col gap-5 border-b border-line-soft px-6 py-6">
+        <div className="flex flex-col gap-5 px-6 pt-4 pb-6">
           {state.error && <FormAlert>{state.error}</FormAlert>}
           <Field label="Nom" required error={errors.name}>
             {(field) => (
@@ -141,7 +141,7 @@ export function EventTypeForm({ initial }: { initial: EventTypeFormValues }) {
             )}
           </Field>
           <fieldset className="flex flex-col gap-2">
-            <legend className="mb-2 text-sm font-bold text-ink">Couleur</legend>
+            <legend className="mb-2 text-[13px] font-semibold text-ink">Couleur</legend>
             <input type="hidden" name="color" value={color} />
             <div className="flex flex-wrap gap-2">
               {TYPE_COLORS.map((swatch) => (
@@ -152,11 +152,14 @@ export function EventTypeForm({ initial }: { initial: EventTypeFormValues }) {
                   aria-label={`Couleur ${swatch}`}
                   aria-pressed={color === swatch}
                   className={cn(
-                    "size-9 border-2 p-0.5",
+                    "size-9 rounded-full border-2 p-0.5",
                     color === swatch ? "border-ink" : "border-transparent",
                   )}
                 >
-                  <span className="block size-full" style={{ backgroundColor: swatch }} />
+                  <span
+                    className="block size-full rounded-full"
+                    style={{ backgroundColor: swatch }}
+                  />
                 </button>
               ))}
             </div>
@@ -194,7 +197,6 @@ export function EventTypeForm({ initial }: { initial: EventTypeFormValues }) {
                   }
                   placeholder="Gratuit"
                   suffix="€"
-                  mono
                 />
               )}
             </Field>
@@ -208,19 +210,18 @@ export function EventTypeForm({ initial }: { initial: EventTypeFormValues }) {
                 defaultValue={initial.defaultCapacity ?? ""}
                 placeholder="Illimité"
                 suffix="places"
-                mono
               />
             )}
           </Field>
         </div>
 
-        <div className="flex flex-col gap-3 border-b border-line-soft px-6 py-6">
-          <p className="font-mono text-label font-semibold uppercase tracking-[0.055em] text-neutral">
+        <div className="mx-6 flex flex-col gap-3 border-t border-line-soft py-5">
+          <p className="text-[15px] font-semibold leading-5 text-ink">
             Champs demandés à la réservation
           </p>
           <input type="hidden" name="customFields" value={JSON.stringify(fields)} />
           {fields.length === 0 && (
-            <p className="text-sm font-medium text-ink-muted">
+            <p className="text-[13px] text-ink-subtle">
               Seuls le nom, l'e-mail et le téléphone sont demandés.
             </p>
           )}
@@ -228,13 +229,11 @@ export function EventTypeForm({ initial }: { initial: EventTypeFormValues }) {
             {fields.map((field) => (
               <li
                 key={field.key}
-                className="flex items-center justify-between gap-3 rounded-xl border border-line-soft bg-field px-3.5 py-2.5"
+                className="flex items-center justify-between gap-3 rounded-xl bg-field px-3.5 py-2.5"
               >
-                <span className="min-w-0 truncate text-sm font-semibold text-ink">
-                  {field.label}
-                </span>
+                <span className="min-w-0 truncate text-sm text-ink">{field.label}</span>
                 <span className="flex shrink-0 items-center gap-3">
-                  <span className="font-mono text-[11px] font-semibold uppercase tracking-[0.045em] text-ink-muted">
+                  <span className="rounded-md bg-surface px-1.5 py-0.5 text-[11px] font-semibold text-ink-subtle">
                     {FIELD_TYPE_LABELS[field.type]}
                     {field.required ? " · requis" : ""}
                   </span>
@@ -252,7 +251,7 @@ export function EventTypeForm({ initial }: { initial: EventTypeFormValues }) {
               </li>
             ))}
           </ul>
-          <div className="flex flex-col gap-2.5 border-[1.5px] border-dashed border-ink-subtle p-3">
+          <div className="flex flex-col gap-2.5 rounded-xl border-[1.5px] border-dashed border-[#dcdcd8] p-3">
             <div className="flex gap-2">
               <input
                 value={draftLabel}
@@ -309,10 +308,8 @@ export function EventTypeForm({ initial }: { initial: EventTypeFormValues }) {
           )}
         </div>
 
-        <div className="flex flex-col gap-4 px-6 py-6">
-          <p className="font-mono text-label font-semibold uppercase tracking-[0.055em] text-neutral">
-            Règles de réservation
-          </p>
+        <div className="mx-6 flex flex-col gap-4 border-t border-line-soft py-5">
+          <p className="text-[15px] font-semibold leading-5 text-ink">Règles de réservation</p>
           <Switch
             name="requiresApproval"
             defaultChecked={initial.requiresApproval}
@@ -324,7 +321,7 @@ export function EventTypeForm({ initial }: { initial: EventTypeFormValues }) {
             label="Liste d'attente quand c'est complet"
           />
           <div className="flex items-center justify-between gap-3">
-            <label htmlFor="type-min-advance" className="text-[15px] font-bold text-ink">
+            <label htmlFor="type-min-advance" className="text-sm text-ink">
               Réservation en ligne jusqu'à
             </label>
             <Select
@@ -349,7 +346,7 @@ export function EventTypeForm({ initial }: { initial: EventTypeFormValues }) {
         </div>
       </div>
 
-      <div className="flex flex-wrap items-center justify-between gap-3 border-t border-line-soft px-6 py-5">
+      <div className="mx-6 mb-6 flex flex-wrap items-center justify-between gap-3 rounded-full bg-ink py-2 pr-2 pl-5">
         {initial.id ? (
           <button
             type="button"
@@ -360,7 +357,7 @@ export function EventTypeForm({ initial }: { initial: EventTypeFormValues }) {
                 if (result?.error) setArchiveError(result.error);
               })
             }
-            className="text-sm font-bold text-danger underline decoration-1 underline-offset-[3px] hover:text-danger/80"
+            className="text-sm font-semibold text-[#f0a090] hover:underline"
             title={initial.eventCount > 0 ? "Les événements existants gardent ce type" : undefined}
           >
             {archiving ? "Suppression…" : "Supprimer le type"}
@@ -368,11 +365,11 @@ export function EventTypeForm({ initial }: { initial: EventTypeFormValues }) {
         ) : (
           <span />
         )}
-        <Button type="submit" pending={pending}>
+        <Button type="submit" variant="inverse" pending={pending}>
           {initial.id ? "Enregistrer" : "Créer le type"}
         </Button>
         {archiveError && (
-          <p className="w-full text-[13px] font-semibold text-danger">{archiveError}</p>
+          <p className="w-full pb-2 text-[13px] font-semibold text-[#f0a090]">{archiveError}</p>
         )}
       </div>
     </form>

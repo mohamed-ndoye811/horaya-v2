@@ -106,7 +106,7 @@ export default async function PaymentsSettingsPage({
       subtitle={
         !paymentGateway
           ? settings.paymentLinkUrl
-            ? "Paiement en ligne par lien · réception confirmée par l'équipe"
+            ? "Paiement en ligne par lien. Réception confirmée par l'équipe."
             : "Paiements sur place ou auprès de l'organisateur"
           : connected
             ? `Paiements en ligne via Stripe${testPayments ? " (mode test)" : ""} · versements automatiques`
@@ -130,7 +130,7 @@ export default async function PaymentsSettingsPage({
         ),
       }}
     >
-      <div className="flex flex-col gap-8">
+      <div className="flex flex-col gap-4">
         {paymentGateway ? (
           <section
             aria-label="Paiements en ligne"
@@ -140,13 +140,13 @@ export default async function PaymentsSettingsPage({
               <div className="flex min-w-0 items-center gap-3.5">
                 <span
                   aria-hidden="true"
-                  className="flex size-10 shrink-0 items-center justify-center bg-[#635BFF] text-xl font-extrabold text-white"
+                  className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-[#635BFF] text-xl font-bold text-white"
                 >
                   S
                 </span>
                 <div className="flex min-w-0 flex-col gap-[3px]">
                   <p className="text-base font-extrabold text-ink">Stripe · {workspace.name}</p>
-                  <p className="font-mono text-label text-ink-muted">
+                  <p className="text-xs text-ink-subtle">
                     {accountId ? `${accountId.slice(0, 9)}…${accountId.slice(-4)} · ` : ""}
                     {state.line}
                   </p>
@@ -155,15 +155,13 @@ export default async function PaymentsSettingsPage({
               </div>
               {connected ? (
                 testPayments ? (
-                  <span className="font-mono text-label font-semibold uppercase tracking-[0.055em] text-warning">
-                    Mode test
-                  </span>
+                  <span className="text-xs font-bold text-warning">Mode test</span>
                 ) : (
                   <a
                     href="https://dashboard.stripe.com/"
                     target="_blank"
                     rel="noreferrer"
-                    className="flex h-10 items-center gap-2 border-2 border-ink px-4 text-sm font-bold text-ink transition-colors hover:bg-bg"
+                    className="flex h-10 items-center gap-2 rounded-full border border-line px-4 text-sm font-semibold text-ink transition-colors hover:bg-field"
                   >
                     Ouvrir Stripe ↗
                   </a>
@@ -202,9 +200,7 @@ export default async function PaymentsSettingsPage({
                   key={label}
                   className={`flex flex-col gap-2 px-5 py-4 ${index > 0 ? "border-t border-line-soft sm:border-t-0 sm:border-l" : ""}`}
                 >
-                  <dt className="font-mono text-label font-semibold uppercase tracking-[0.055em] text-neutral">
-                    {label}
-                  </dt>
+                  <dt className="text-xs font-semibold text-ink-subtle">{label}</dt>
                   <dd className="font-headline text-[36px] leading-9 text-ink">{value}</dd>
                 </div>
               ))}
@@ -213,39 +209,61 @@ export default async function PaymentsSettingsPage({
         ) : (
           <section
             aria-label="Paiement par lien"
-            className="flex flex-col overflow-hidden rounded-3xl bg-surface"
+            className="flex flex-col gap-5 rounded-3xl bg-ink p-5 lg:flex-row lg:items-stretch lg:p-6"
           >
-            <div className="flex flex-col gap-1 border-b border-line-soft px-5 py-4">
-              <p className="text-base font-extrabold text-ink">Paiement en ligne par lien</p>
-              <p className="text-sm font-medium leading-5 text-ink-muted">
-                Colle ci-dessous le lien de ton outil de paiement (lien de paiement Stripe, SumUp,
-                PayPal, HelloAsso…) : après une réservation payante, le client le reçoit avec un
-                bouton « Payer ». Quand l'argent arrive, note-le sur la réservation avec « Marquer
-                comme payé ». Un événement peut avoir son propre lien.
+            <div className="flex min-w-0 flex-1 flex-col gap-3">
+              <div className="flex items-center gap-3">
+                <span
+                  aria-hidden="true"
+                  className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-white/10 text-white"
+                >
+                  <svg
+                    aria-hidden="true"
+                    width="18"
+                    height="18"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.75"
+                    strokeLinecap="round"
+                  >
+                    <path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7" />
+                  </svg>
+                </span>
+                <h2 className="text-lg font-semibold leading-[22px] text-white">
+                  Paiement en ligne par lien
+                </h2>
+              </div>
+              <p className="text-[13px] leading-5 text-[#9a9ea8]">
+                Ton client reçoit un bouton « Payer » vers ton lien (Stripe, SumUp, PayPal,
+                HelloAsso…). Quand l'argent arrive, ton équipe clique « Marquer comme payé » sur la
+                réservation : les chiffres restent justes. Un événement peut avoir son propre lien.
               </p>
             </div>
-            <dl className="grid sm:grid-cols-2">
+            <dl className="grid shrink-0 grid-cols-2 gap-3 lg:w-[376px]">
               {[
                 [
                   `Encaissé en ${MONTHS[today.month - 1]}`,
                   formatMoney(collected),
                   "noté dans Horaya",
+                  "text-white",
                 ],
                 [
                   "À encaisser",
                   formatMoney(awaiting.cents),
                   `${awaiting.count} réservation${awaiting.count > 1 ? "s" : ""} à payer`,
+                  "text-accent",
                 ],
-              ].map(([label, value, caption], index) => (
+              ].map(([label, value, caption, tone]) => (
                 <div
                   key={label}
-                  className={`flex flex-col gap-2 px-5 py-4 ${index > 0 ? "border-t border-line-soft sm:border-t-0 sm:border-l" : ""}`}
+                  className="flex flex-col gap-1.5 rounded-[18px] bg-white/[0.06] px-4 py-3.5"
                 >
-                  <dt className="font-mono text-label font-semibold uppercase tracking-[0.055em] text-neutral">
-                    {label}
-                  </dt>
-                  <dd className="font-headline text-[36px] leading-9 text-ink">{value}</dd>
-                  <dd className="text-[13px] font-medium text-ink-muted">{caption}</dd>
+                  <dt className="text-xs font-semibold leading-4 text-[#9a9ea8]">{label}</dt>
+                  <dd className={`font-headline text-[28px] leading-8 tracking-[-0.03em] ${tone}`}>
+                    {value}
+                  </dd>
+                  <dd className="text-xs leading-4 text-[#9a9ea8]">{caption}</dd>
                 </div>
               ))}
             </dl>
