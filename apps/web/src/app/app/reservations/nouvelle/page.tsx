@@ -5,6 +5,7 @@ import { PageHeader } from "@/components/app/page-header";
 import { ButtonLink } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { startOfDay, todayIn } from "@/lib/dates";
+import { formatDayNumber, formatHour, formatWeekdayShort } from "@/lib/format";
 import { param } from "@/lib/search-params";
 import { db } from "@/server/db";
 import { getWorkspaceContext } from "@/server/workspace";
@@ -23,8 +24,8 @@ function duration(startsAt: Date, endsAt: Date) {
 }
 
 /**
- * Comptoir (maquettes 29a-c, M26-M29) : une réservation prise au téléphone ou sur place,
- * en trois étapes. Remplace l'ancien formulaire « Nouvelle réservation ».
+ * Comptoir (maquette 1.6b) : une réservation prise au téléphone ou sur place, sur un seul
+ * écran. Remplace l'ancien formulaire « Nouvelle réservation ».
  */
 export default async function CounterPage({
   searchParams,
@@ -55,7 +56,8 @@ export default async function CounterPage({
       event.startsAt < tomorrow ? "today" : event.startsAt < afterTomorrow ? "tomorrow" : "later",
     time: clock.format(event.startsAt),
     duration: duration(event.startsAt, event.endsAt),
-    date: weekday.format(event.startsAt),
+    date: weekday.format(event.startsAt).replace(/^./, (first) => first.toUpperCase()),
+    label: `${formatWeekdayShort(event.startsAt, timeZone)} ${formatDayNumber(event.startsAt, timeZone)} · ${formatHour(event.startsAt, timeZone)}`,
     range: `${clock.format(event.startsAt)} – ${clock.format(event.endsAt)}`,
     location: event.locationName,
     priceCents: event.priceCents,
@@ -70,7 +72,12 @@ export default async function CounterPage({
       <PageHeader
         eyebrow="Réservations / Comptoir"
         title="Comptoir"
-        subtitle="Une réservation prise au téléphone ou sur place, en trois gestes."
+        subtitle={
+          <>
+            Une réservation prise au téléphone ou sur place,{" "}
+            <span className="text-ink">sur un seul écran.</span>
+          </>
+        }
       />
       {counterEvents.length === 0 ? (
         <EmptyState
