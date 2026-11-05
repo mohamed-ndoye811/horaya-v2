@@ -6,7 +6,7 @@ import { StatusBadge } from "@/components/ui/badge";
 import { BoxIcon, TicketIcon } from "@/components/ui/icons";
 import { BOOKING_STATUS_BADGE } from "@/components/ui/status";
 import { cn } from "@/lib/cn";
-import { elapsed, joinNames, sparklinePoints } from "@/lib/dashboard";
+import { elapsed, joinNames, percentChange } from "@/lib/dashboard";
 import {
   formatDayNumber,
   formatHour,
@@ -413,7 +413,7 @@ export function LatestBookings({ bookings, now }: { bookings: LatestBookingRow[]
 
 /* ── Ce mois-ci ───────────────────────────────────────────────────────────── */
 
-function Delta({ value, unit = "%" }: { value: number | null; unit?: string }) {
+function Delta({ value }: { value: number | null }) {
   if (value === null) return null;
   return (
     <span
@@ -423,72 +423,106 @@ function Delta({ value, unit = "%" }: { value: number | null; unit?: string }) {
       )}
     >
       {value > 0 ? "+" : value < 0 ? "−" : ""}
-      {Math.abs(value)} {unit}
+      {Math.abs(value)} %
+    </span>
+  );
+}
+
+/** Le mois jour par jour : une barre par jour passé, un trait pour les jours à venir. */
+function MonthDays({ values, today }: { values: number[]; today: number }) {
+  const max = Math.max(...values, 1);
+  return (
+    <span aria-hidden="true" className="flex h-8 items-end gap-[3px]">
+      {values.map((value, index) => {
+        const day = index + 1;
+        return (
+          <span
+            // biome-ignore lint/suspicious/noArrayIndexKey: un jour du mois, jamais réordonné.
+            key={index}
+            className={cn(
+              "min-h-[2px] flex-1 rounded-[1px]",
+              day > today
+                ? "bg-white/8"
+                : day === today
+                  ? "bg-white"
+                  : value > 0
+                    ? "bg-white/55"
+                    : "bg-white/20",
+            )}
+            style={{ height: day <= today && value > 0 ? `${(value / max) * 100}%` : undefined }}
+          />
+        );
+      })}
     </span>
   );
 }
 
 function MonthStat({
   label,
-  delta,
-  deltaUnit,
   value,
   suffix,
+  delta,
+  note,
   chart,
 }: {
   label: string;
-  delta: number | null;
-  deltaUnit?: string;
   value: string;
   suffix?: string;
-  chart: ReactNode;
+  delta?: number | null;
+  note: string;
+  chart?: ReactNode;
 }) {
   return (
-    <div className="flex min-w-0 flex-1 items-end justify-between gap-4 md:border-l md:border-white/10 md:pl-6">
+    <div className="flex min-w-0 flex-1 flex-col gap-3 md:border-l md:border-white/10 md:pl-6">
       <div className="flex flex-col gap-1.5">
-        <p className="flex items-center gap-2 text-[13px] leading-4 text-[#9a9ea8]">
-          {label}
-          <Delta value={delta} unit={deltaUnit} />
-        </p>
+        <p className="text-[13px] leading-4 text-[#9a9ea8]">{label}</p>
         <p className="font-headline text-[34px] leading-9 text-white">
           {value}
           {suffix && <span className="ml-1 text-lg font-light">{suffix}</span>}
         </p>
+        <p className="flex min-h-5 items-center gap-2 text-xs leading-4 text-[#9a9ea8]">
+          <Delta value={delta ?? null} />
+          {note}
+        </p>
       </div>
-      {chart}
+      {chart && <div className="mt-auto">{chart}</div>}
     </div>
   );
 }
 
 /**
  * Bande noire « Ce mois-ci », collée au bas du cadre : ses coins rentrants prolongent le
- * cadre comme le notch (maquette 1.1).
+ * cadre comme le notch (maquette 1.1). Chaque chiffre est comparé à la même date du mois
+ * précédent ; les séries couvrent le mois entier, jour par jour.
  */
 export function MonthBand({
   period,
-  bookings,
-  bookingsDelta,
-  bookingsCurve,
-  collectedCents,
-  collectedDelta,
-  collectedBars,
+  previousMonth,
+  today,
+  bookingsByDay,
+  previousBookings,
+  collectedByDay,
+  previousCollectedCents,
   fillRate,
 }: {
   period: string;
-  bookings: number;
-  bookingsDelta: number | null;
-  bookingsCurve: number[];
-  collectedCents: number;
-  collectedDelta: number | null;
-  collectedBars: number[];
+  /** « octobre » */
+  previousMonth: string;
+  /** Jour du mois (1 à 31). */
+  today: number;
+  bookingsByDay: number[];
+  previousBookings: number;
+  collectedByDay: number[];
+  previousCollectedCents: number;
   fillRate: number | null;
 }) {
-  const maxBar = Math.max(...collectedBars, 1);
-  const bars = collectedBars.slice(-14);
+  const bookings = bookingsByDay.reduce((sum, value) => sum + value, 0);
+  const collectedCents = collectedByDay.reduce((sum, value) => sum + value, 0);
+  const sameDate = `à la même date en ${previousMonth}`;
   return (
     <section
       aria-label="Ce mois-ci"
-      className="relative mt-auto flex flex-col gap-5 bg-ink px-5 py-5 md:flex-row md:items-center md:gap-6 lg:-mb-4 lg:px-6"
+      className="relative mt-auto flex flex-col gap-5 bg-ink px-5 py-5 md:flex-row md:items-stretch md:gap-6 lg:-mb-4 lg:px-6"
     >
       <span
         aria-hidden="true"
@@ -498,60 +532,47 @@ export function MonthBand({
         aria-hidden="true"
         className="absolute -top-6 right-0 hidden size-6 bg-[radial-gradient(circle_at_0_0,transparent_24px,var(--color-ink)_24.5px)] lg:block"
       />
-      <div className="flex shrink-0 flex-col gap-1 md:w-48">
+      <div className="flex shrink-0 flex-col gap-1 md:w-40">
         <p className="font-headline text-xl leading-6 text-white">Ce mois-ci</p>
         <p className="text-xs leading-4 text-[#9a9ea8]">{period}</p>
       </div>
       <MonthStat
         label="Réservations"
-        delta={bookingsDelta}
         value={String(bookings)}
-        chart={
-          <svg
-            width="96"
-            height="32"
-            viewBox="-2 -2 100 36"
-            aria-hidden="true"
-            className="shrink-0"
-          >
-            <polyline
-              points={sparklinePoints(bookingsCurve, 96, 32)}
-              fill="none"
-              stroke="white"
-              strokeWidth="1.6"
-              strokeLinejoin="round"
-              strokeLinecap="round"
-            />
-          </svg>
-        }
+        delta={percentChange(bookings, previousBookings)}
+        note={`${previousBookings} ${sameDate}`}
+        chart={<MonthDays values={bookingsByDay} today={today} />}
       />
       <MonthStat
         label="Encaissé"
-        delta={collectedDelta}
         value={formatMoney(collectedCents).replace(/\s?€$/, "")}
         suffix="€"
-        chart={
-          <span aria-hidden="true" className="flex h-8 shrink-0 items-end gap-[3px]">
-            {bars.map((value, index) => (
-              <span
-                // biome-ignore lint/suspicious/noArrayIndexKey: barres d'une série fixe, jamais réordonnées.
-                key={index}
-                className={cn(
-                  "w-[3px] rounded-full",
-                  index === bars.length - 1 ? "bg-white" : "bg-white/40",
-                )}
-                style={{ height: `${Math.max(8, (value / maxBar) * 100)}%` }}
-              />
-            ))}
-          </span>
-        }
+        delta={percentChange(collectedCents, previousCollectedCents)}
+        note={`${formatMoney(previousCollectedCents)} ${sameDate}`}
+        chart={<MonthDays values={collectedByDay} today={today} />}
       />
       <MonthStat
         label="Remplissage"
-        delta={null}
         value={fillRate === null ? "—" : String(fillRate)}
         suffix={fillRate === null ? undefined : "%"}
-        chart={<Ring value={fillRate ?? 0} max={100} className="shrink-0 text-white" />}
+        note={
+          fillRate === null
+            ? "Aucun événement à venir avec un nombre de places limité"
+            : "des places des événements à venir"
+        }
+        chart={
+          fillRate === null ? undefined : (
+            <span
+              aria-hidden="true"
+              className="block h-1.5 overflow-hidden rounded-full bg-white/15"
+            >
+              <span
+                className="block h-full rounded-full bg-white"
+                style={{ width: `${fillRate}%` }}
+              />
+            </span>
+          )
+        }
       />
     </section>
   );
