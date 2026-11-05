@@ -556,3 +556,132 @@ export function MonthBand({
     </section>
   );
 }
+
+/** Tableau de bord sur mobile (maquette 6.1) : deux compteurs, le programme du jour, le mois. */
+export function MobileSummary({
+  pending,
+  toCollect,
+  today,
+  now,
+  timeZone,
+  month,
+}: {
+  pending: number;
+  toCollect: { count: number; amountCents: number };
+  today: TodayEntry[];
+  now: Date;
+  timeZone: string;
+  month: { bookings: number; fillRate: number | null; collectedCents: number };
+}) {
+  const stat = (href: string, dot: string, label: string, value: ReactNode, detail: string) => (
+    <Link
+      href={href}
+      className="flex min-w-0 flex-1 basis-0 flex-col gap-1.5 rounded-[20px] bg-surface p-3.5"
+    >
+      <span className="flex items-center gap-1.5 text-xs font-semibold leading-4 text-ink-muted">
+        <span aria-hidden="true" className={cn("size-[7px] shrink-0 rounded-full", dot)} />
+        {label}
+      </span>
+      <span className="text-[32px] font-medium leading-[34px] tracking-[-0.03em] text-ink">
+        {value}
+      </span>
+      <span className="truncate text-xs leading-4 text-ink-subtle">{detail}</span>
+    </Link>
+  );
+  const euros = formatMoney(toCollect.amountCents).replace(/\s?€$/, "");
+  return (
+    <div className="flex flex-col gap-[18px] px-4 lg:hidden">
+      <div className="flex gap-2.5">
+        {stat(
+          "/app/reservations?statut=pending",
+          "bg-info",
+          "À valider",
+          pending,
+          `demande${pending > 1 ? "s" : ""} de réservation`,
+        )}
+        {stat(
+          "/app/reservations",
+          "bg-warning",
+          "À encaisser",
+          <>
+            {euros} <span className="text-base font-light tracking-normal">€</span>
+          </>,
+          `${toCollect.count} réservation${toCollect.count > 1 ? "s" : ""}`,
+        )}
+      </div>
+
+      <section className="flex flex-col overflow-hidden rounded-[22px] bg-surface">
+        <h2 className="flex h-11 items-center justify-between bg-band px-4">
+          <span className="text-[13px] font-bold leading-4 text-ink">Aujourd'hui</span>
+          <span className="text-xs leading-4 text-ink-subtle">
+            {today.length === 0 ? "Rien au programme" : `${today.length} au programme`}
+          </span>
+        </h2>
+        {today.map((entry) => {
+          const href =
+            entry.kind === "event"
+              ? `/app/evenements/${entry.id}`
+              : `/app/reservations/${entry.id}`;
+          const full = entry.capacity !== null && entry.seatsHeld >= entry.capacity;
+          return (
+            <Link
+              key={`${entry.kind}-${entry.id}`}
+              href={href}
+              className="flex min-h-[62px] items-center gap-3 border-t border-[#f4f4f2] px-4 py-2.5"
+            >
+              <span className="w-11 shrink-0 font-mono text-xs font-semibold leading-4 text-ink">
+                {formatHour(entry.startsAt, timeZone)}
+              </span>
+              <span
+                aria-hidden="true"
+                className="h-8 w-[3px] shrink-0 rounded-[2px]"
+                style={{ backgroundColor: entry.color ?? "var(--color-info)" }}
+              />
+              <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+                <span className="truncate text-[15px] font-semibold leading-5 text-ink">
+                  {entry.title}
+                </span>
+                <span className="truncate text-xs leading-4 text-ink-subtle">
+                  {entry.kind === "event"
+                    ? (entry.locationName ?? stateOf(entry, now).label)
+                    : `Retour · ${entry.customerName ?? ""}`}
+                </span>
+              </span>
+              {entry.kind === "event" &&
+                (full ? (
+                  <span className="rounded-full bg-success-bg px-2 py-[3px] text-[11px] font-bold leading-[14px] text-success">
+                    Complet
+                  </span>
+                ) : (
+                  <span className="font-mono text-xs font-semibold leading-4 text-ink">
+                    {entry.seatsHeld}
+                    {entry.capacity !== null && `/${entry.capacity}`}
+                  </span>
+                ))}
+            </Link>
+          );
+        })}
+      </section>
+
+      <section className="flex flex-col gap-3.5 rounded-[22px] bg-ink p-[18px]">
+        <h2 className="text-[13px] font-semibold leading-4 text-[#9a9ea8]">Ce mois-ci</h2>
+        <dl className="flex justify-between gap-3">
+          {[
+            [String(month.bookings), "réservations", "text-white"],
+            [month.fillRate === null ? "—" : `${month.fillRate} %`, "remplissage", "text-white"],
+            [formatMoney(month.collectedCents), "encaissé", "text-accent"],
+          ].map(([value, label, color]) => (
+            <div key={label} className="flex flex-col-reverse gap-0.5">
+              <dt className="text-[11px] leading-[14px] text-ink-subtle">{label}</dt>
+              <dd
+                className={cn("text-[26px] font-medium leading-[30px] tracking-[-0.03em]", color)}
+              >
+                {value}
+              </dd>
+            </div>
+          ))}
+        </dl>
+      </section>
+    </div>
+  );
+}

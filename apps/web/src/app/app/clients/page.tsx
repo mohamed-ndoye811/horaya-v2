@@ -323,7 +323,7 @@ export default async function CustomersPage({ searchParams }: PageProps<"/app/cl
               },
             ]}
           />
-          <FabLink href="/app/clients/nouveau">Ajouter un client</FabLink>
+          <FabLink href="/app/clients/nouveau">Ajouter</FabLink>
         </>
       )}
     </>

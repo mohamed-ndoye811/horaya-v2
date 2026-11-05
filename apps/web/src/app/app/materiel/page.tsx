@@ -322,7 +322,7 @@ export default async function InventoryPage({ searchParams }: PageProps<"/app/ma
               },
             ]}
           />
-          <FabLink href="/app/materiel/nouveau">Ajouter un article</FabLink>
+          <FabLink href="/app/materiel/nouveau">Ajouter</FabLink>
         </>
       )}
     </>

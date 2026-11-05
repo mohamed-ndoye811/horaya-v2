@@ -216,7 +216,7 @@ export default async function EventTypesPage({ searchParams }: PageProps<"/app/e
         )}
       </div>
       {!panelValues && types.length > 0 && (
-        <FabLink href="/app/evenements/types?type=nouveau">Nouveau type</FabLink>
+        <FabLink href="/app/evenements/types?type=nouveau">Nouveau</FabLink>
       )}
     </div>
   );

@@ -1,11 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { type ReactNode, useId, useState } from "react";
 import { ActiveIndicator } from "@/components/motion/indicator";
 import { cn } from "@/lib/cn";
-import { Select } from "./select";
 
 interface Segment {
   value: string;
@@ -60,8 +58,8 @@ function SegmentContent({ segment, active }: { segment: Segment; active: boolean
 
 /**
  * Filtres ou vues sous forme de liens (« Toutes / En attente / Confirmées »).
- * `collapse` : sous 768 px, liste déroulante native à la place des segments, qui
- * débordaient de l'écran (filtres de listes à 4 ou 5 entrées).
+ * `collapse` : sous 768 px, pilules qui défilent à l'horizontale à la place des segments
+ * (maquette 6.2), qui débordaient de l'écran (filtres de listes à 4 ou 5 entrées).
  */
 export function SegmentedLinks({
   segments,
@@ -79,7 +77,6 @@ export function SegmentedLinks({
   fill?: boolean;
   collapse?: boolean;
 }) {
-  const router = useRouter();
   const id = useId();
   const links = (
     <nav aria-label={label} className={groupClasses(size, fill)}>
@@ -102,24 +99,27 @@ export function SegmentedLinks({
   if (!collapse) return links;
   return (
     <>
-      <div className="md:hidden">
-        <Select
-          variant="filter"
-          aria-label={label}
-          value={value}
-          onChange={(event) => {
-            const target = segments.find((segment) => segment.value === event.target.value);
-            if (target) router.push(target.href);
-          }}
-        >
-          {segments.map((segment) => (
-            <option key={segment.value} value={segment.value}>
-              {typeof segment.label === "string" ? segment.label : segment.value}
-              {segment.count !== undefined ? ` · ${segment.count}` : ""}
-            </option>
-          ))}
-        </Select>
-      </div>
+      <nav
+        aria-label={label}
+        className="-mx-4 flex gap-1.5 overflow-x-auto px-4 [scrollbar-width:none] md:hidden"
+      >
+        {segments.map((segment) => {
+          const active = segment.value === value;
+          return (
+            <Link
+              key={segment.value}
+              href={segment.href}
+              aria-current={active ? "page" : undefined}
+              className={cn(
+                "flex h-9 shrink-0 items-center gap-1.5 rounded-full px-3.5 text-sm font-semibold leading-[18px]",
+                active ? "bg-ink text-on-ink" : "bg-surface text-ink",
+              )}
+            >
+              <SegmentContent segment={segment} active={active} />
+            </Link>
+          );
+        })}
+      </nav>
       <div className="hidden md:block">{links}</div>
     </>
   );

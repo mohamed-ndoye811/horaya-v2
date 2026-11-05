@@ -146,12 +146,19 @@ export default async function EventsPage({ searchParams }: PageProps<"/app/evene
         subtitle={`${counts.all} événement${counts.all > 1 ? "s" : ""} · ${counts.published} à venir · ${counts.draft} brouillon${counts.draft > 1 ? "s" : ""}`}
         actions={
           <>
-            <ButtonLink href="/app/evenements/liens" variant="secondary" title="Liens calendrier">
-              Calendriers
-            </ButtonLink>
-            <ButtonLink href="/app/evenements/types" variant="secondary" title="Types d'événements">
-              Types
-            </ButtonLink>
+            {/* Sur mobile, ces pages sont dans l'onglet « Plus ». */}
+            <div className="hidden gap-2 lg:flex">
+              <ButtonLink href="/app/evenements/liens" variant="secondary" title="Liens calendrier">
+                Calendriers
+              </ButtonLink>
+              <ButtonLink
+                href="/app/evenements/types"
+                variant="secondary"
+                title="Types d'événements"
+              >
+                Types
+              </ButtonLink>
+            </div>
             <div className="hidden lg:flex">{newEventButton}</div>
           </>
         }
@@ -167,8 +174,8 @@ export default async function EventsPage({ searchParams }: PageProps<"/app/evene
                 placeholder="Événement, lieu, type…"
               />
             </form>
-            {/* Sur mobile, les deux listes déroulantes côte à côte. */}
-            <div className="grid grid-cols-2 gap-3 md:flex md:items-center">
+            {/* Sur mobile, les pilules seules : la recherche couvre aussi les types. */}
+            <div className="flex flex-col gap-3 md:flex-row md:items-center">
               <SegmentedLinks
                 collapse
                 label="Filtrer les événements"
@@ -182,7 +189,7 @@ export default async function EventsPage({ searchParams }: PageProps<"/app/evene
               <FilterSelect
                 param="type"
                 label="Type d'événement"
-                className="md:w-[170px]"
+                className="hidden md:block md:w-[170px]"
                 options={[
                   { value: "", label: "Tous les types" },
                   ...types.map((type) => ({ value: type.id, label: type.name })),
@@ -319,7 +326,7 @@ export default async function EventsPage({ searchParams }: PageProps<"/app/evene
           },
         ]}
       />
-      <FabLink href="/app/evenements/nouveau">Nouvel événement</FabLink>
+      <FabLink href="/app/evenements/nouveau">Nouveau</FabLink>
     </>
   );
 }

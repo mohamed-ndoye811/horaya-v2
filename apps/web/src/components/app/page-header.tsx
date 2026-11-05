@@ -25,6 +25,7 @@ export function PageHeader({
   actionsInCorner = true,
   toolbar,
   leading,
+  mobileEyebrow,
   className,
 }: {
   /** Fil d'Ariane ou contexte (« Tableau de bord / Réservations »). */
@@ -43,6 +44,11 @@ export function PageHeader({
   stickyActions?: "bottom" | "above-tabs";
   /** Actions trop larges pour le coin du notch (sélecteur de vue du calendrier) : `false`. */
   actionsInCorner?: boolean;
+  /**
+   * Sur mobile, le fil d'Ariane laisse la place au lien de retour (maquettes 6.2, 6.3) ; un
+   * sur-titre propre au mobile peut le remplacer (date du tableau de bord).
+   */
+  mobileEyebrow?: ReactNode;
   /** À gauche du titre : avatar de la fiche client. */
   leading?: ReactNode;
   /** Recherche et filtres de la liste : à droite du titre sur grand écran, dessous sinon. */
@@ -61,12 +67,20 @@ export function PageHeader({
         <div className="flex min-w-0 flex-col gap-1.5">
           <p
             data-tour="breadcrumb"
-            className={cn("reveal text-[13px] font-semibold leading-4 text-ink-muted", cornerLeft)}
+            className={cn(
+              "reveal hidden text-[13px] font-semibold leading-4 text-ink-muted lg:block",
+              cornerLeft,
+            )}
           >
             {eyebrow}
           </p>
+          {mobileEyebrow && (
+            <p className="reveal text-[13px] font-semibold leading-4 text-ink-muted lg:hidden">
+              {mobileEyebrow}
+            </p>
+          )}
           <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
-            <h1 className="font-headline text-[34px] leading-[38px] text-ink sm:text-[40px] sm:leading-[44px]">
+            <h1 className="font-headline text-[32px] leading-9 text-ink sm:text-[40px] sm:leading-[44px]">
               <WordsReveal delay={1}>{title}</WordsReveal>
             </h1>
             {titleAside}
@@ -97,7 +111,7 @@ export function PageHeader({
               "lg:static lg:z-auto lg:shrink-0 lg:flex-wrap lg:gap-2 lg:border-0 lg:bg-transparent lg:p-0 lg:backdrop-blur-none lg:*:flex-none",
               stickyActions === "bottom"
                 ? "bottom-0 pb-[calc(12px+env(safe-area-inset-bottom))]"
-                : "bottom-[calc(64px+env(safe-area-inset-bottom))]",
+                : "bottom-[calc(70px+env(safe-area-inset-bottom))]",
             )}
           >
             {actions}

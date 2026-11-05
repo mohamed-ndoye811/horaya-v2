@@ -9,18 +9,20 @@ import {
   listUpcomingEvents,
 } from "@horaya/db";
 import type { Metadata } from "next";
-import { FabLink } from "@/components/app/fab";
+import Link from "next/link";
 import { PageHeader } from "@/components/app/page-header";
 import { ButtonLink } from "@/components/ui/button";
 import { PlusIcon } from "@/components/ui/icons";
 import { SectionHeading } from "@/components/ui/section";
 import { cumulative, dailySeries, percentChange } from "@/lib/dashboard";
 import { addMonths, isoWeek, mondayOf, startOfDay, todayIn } from "@/lib/dates";
+import { initials } from "@/lib/format";
 import { db } from "@/server/db";
 import { getWorkspaceContext } from "@/server/workspace";
 import { VerifyEmailBanner } from "./account-actions";
 import {
   LatestBookings,
+  MobileSummary,
   MonthBand,
   NextDaysCards,
   TodayCard,
@@ -142,6 +144,7 @@ export default async function DashboardPage() {
     <>
       <PageHeader
         eyebrow={`${dateLabel.charAt(0).toUpperCase()}${dateLabel.slice(1)} · Semaine ${isoWeek(today)}`}
+        mobileEyebrow={`${dateLabel.charAt(0).toUpperCase()}${dateLabel.slice(1)}`}
         title={empty ? `Bienvenue, ${firstName}.` : `Bonjour ${firstName}`}
         subtitle={
           empty ? (
@@ -151,10 +154,13 @@ export default async function DashboardPage() {
                 {remaining} étape{remaining > 1 ? "s" : ""} avant tes premières réservations
               </span>
             </>
-          ) : subtitleParts.length > 0 ? (
-            `${subtitleParts.join(". ")}.`
           ) : (
-            `Rien d'urgent dans ${workspace.name}.`
+            // Sur mobile, les compteurs disent déjà l'essentiel (maquette 6.1).
+            <span className="hidden lg:inline">
+              {subtitleParts.length > 0
+                ? `${subtitleParts.join(". ")}.`
+                : `Rien d'urgent dans ${workspace.name}.`}
+            </span>
           )
         }
         actions={
@@ -181,70 +187,90 @@ export default async function DashboardPage() {
       {empty ? (
         <GettingStarted steps={steps} slug={workspace.slug} />
       ) : (
-        <div className="flex flex-1 flex-col">
-          <div className="grid grid-cols-[minmax(0,1fr)] xl:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)]">
-            <section className="flex flex-col">
-              <SectionHeading title="À faire" meta={plural(todoCount, "action")} />
-              <div className="px-4">
-                <TodoCards overview={overview} now={now} timeZone={timeZone} />
-              </div>
-            </section>
-            <section className="flex flex-col">
-              <SectionHeading
-                title="Aujourd'hui"
-                meta={dateLabel}
-                action={{ label: "Ouvrir le comptoir", href: "/app/reservations/nouvelle" }}
-                className="xl:pl-0"
-              />
-              <div className="px-4 xl:pl-0">
-                <TodayCard entries={overview.today} now={now} timeZone={timeZone} />
-              </div>
-            </section>
-          </div>
-
-          {nextDays.length > 0 && (
-            <section className="flex flex-col">
-              <SectionHeading
-                title="7 prochains jours"
-                meta={plural(nextDays.length, "événement")}
-                action={{ label: "Tous les événements", href: "/app/evenements" }}
-              />
-              <div className="px-4">
-                <NextDaysCards events={nextDays.slice(0, 4)} timeZone={timeZone} />
-              </div>
-            </section>
-          )}
-
-          {latest.length > 0 && (
-            <section className="flex flex-col">
-              <SectionHeading
-                title="Dernières réservations"
-                action={{ label: "Toutes les réservations", href: "/app/reservations" }}
-              />
-              <div className="px-4">
-                <LatestBookings bookings={latest} now={now} />
-              </div>
-            </section>
-          )}
-
-          {/* La bande « Ce mois-ci » reste collée au bas du cadre, même sur une page courte. */}
-          <div aria-hidden="true" className="h-6 shrink-0" />
-          <MonthBand
-            period={period}
-            bookings={bookingsThisMonth}
-            bookingsDelta={percentChange(bookingsThisMonth, overview.month.previousBookings)}
-            bookingsCurve={cumulative(bookingsByDay)}
-            collectedCents={collectedThisMonth}
-            collectedDelta={percentChange(
-              collectedThisMonth,
-              overview.month.previousCollectedCents,
-            )}
-            collectedBars={collectedByDay}
-            fillRate={stats.fillRate}
+        <>
+          <MobileSummary
+            pending={overview.pending.count}
+            toCollect={overview.toCollect}
+            today={overview.today}
+            now={now}
+            timeZone={timeZone}
+            month={{
+              bookings: bookingsThisMonth,
+              fillRate: stats.fillRate,
+              collectedCents: collectedThisMonth,
+            }}
           />
-        </div>
+          <div className="hidden flex-1 flex-col lg:flex">
+            <div className="grid grid-cols-[minmax(0,1fr)] xl:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)]">
+              <section className="flex flex-col">
+                <SectionHeading title="À faire" meta={plural(todoCount, "action")} />
+                <div className="px-4">
+                  <TodoCards overview={overview} now={now} timeZone={timeZone} />
+                </div>
+              </section>
+              <section className="flex flex-col">
+                <SectionHeading
+                  title="Aujourd'hui"
+                  meta={dateLabel}
+                  action={{ label: "Ouvrir le comptoir", href: "/app/reservations/nouvelle" }}
+                  className="xl:pl-0"
+                />
+                <div className="px-4 xl:pl-0">
+                  <TodayCard entries={overview.today} now={now} timeZone={timeZone} />
+                </div>
+              </section>
+            </div>
+
+            {nextDays.length > 0 && (
+              <section className="flex flex-col">
+                <SectionHeading
+                  title="7 prochains jours"
+                  meta={plural(nextDays.length, "événement")}
+                  action={{ label: "Tous les événements", href: "/app/evenements" }}
+                />
+                <div className="px-4">
+                  <NextDaysCards events={nextDays.slice(0, 4)} timeZone={timeZone} />
+                </div>
+              </section>
+            )}
+
+            {latest.length > 0 && (
+              <section className="flex flex-col">
+                <SectionHeading
+                  title="Dernières réservations"
+                  action={{ label: "Toutes les réservations", href: "/app/reservations" }}
+                />
+                <div className="px-4">
+                  <LatestBookings bookings={latest} now={now} />
+                </div>
+              </section>
+            )}
+
+            {/* La bande « Ce mois-ci » reste collée au bas du cadre, même sur une page courte. */}
+            <div aria-hidden="true" className="h-6 shrink-0" />
+            <MonthBand
+              period={period}
+              bookings={bookingsThisMonth}
+              bookingsDelta={percentChange(bookingsThisMonth, overview.month.previousBookings)}
+              bookingsCurve={cumulative(bookingsByDay)}
+              collectedCents={collectedThisMonth}
+              collectedDelta={percentChange(
+                collectedThisMonth,
+                overview.month.previousCollectedCents,
+              )}
+              collectedBars={collectedByDay}
+              fillRate={stats.fillRate}
+            />
+          </div>
+        </>
       )}
-      <FabLink href="/app/evenements/nouveau">Nouvel événement</FabLink>
+      <Link
+        href="/app/plus"
+        aria-label="Compte et paramètres"
+        className="absolute top-[30px] right-4 flex size-[38px] items-center justify-center rounded-full bg-linear-135 from-[#f7b27e] to-[#e8743b] text-[13px] font-bold text-white lg:hidden"
+      >
+        {initials(user.name)}
+      </Link>
     </>
   );
 }

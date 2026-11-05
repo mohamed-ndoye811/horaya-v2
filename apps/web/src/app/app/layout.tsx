@@ -7,8 +7,8 @@ import { db } from "@/server/db";
 
 /**
  * Coque de l'admin (DA v4) : sur grand écran, un cadre noir de 6 px autour de l'écran et le
- * notch de navigation en haut, au centre ; le contenu défile dans le cadre. Sur mobile, barre
- * du haut et barre d'onglets en bas.
+ * notch de navigation en haut, au centre ; le contenu défile dans le cadre. Sur mobile, notch en
+ * bas avec les onglets, et un lien de retour en haut des fiches.
  */
 export default async function AppLayout({ children }: LayoutProps<"/app">) {
   const { user, workspace } = await requireWorkspace();
@@ -24,8 +24,8 @@ export default async function AppLayout({ children }: LayoutProps<"/app">) {
         pendingBookings={pendingBookings}
       />
       <div className="flex min-w-0 flex-1 flex-col lg:relative lg:min-h-0 lg:overflow-y-auto lg:rounded-[10px] lg:bg-bg lg:pt-14">
-        <MobileTopBar user={{ name: user.name }} />
-        <main className="flex min-w-0 flex-1 flex-col lg:pb-4">
+        <MobileTopBar />
+        <main className="relative flex min-w-0 flex-1 flex-col lg:pb-4">
           <RouteTransition>{children}</RouteTransition>
         </main>
         <MobileTabBar pendingBookings={pendingBookings} />
