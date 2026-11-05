@@ -286,7 +286,7 @@ export default async function PublicEventPage({
 
       {(state.kind === "open" || state.kind === "waitlist") && (
         <BottomNotch label="Réserver">
-          <p className="flex flex-col gap-px pl-1">
+          <p className="flex flex-col gap-px pl-3">
             <span className="text-lg font-semibold leading-[22px] text-white">{price}</span>
             <span className="text-[11px] leading-[14px] text-notch-idle">
               {state.kind === "waitlist"

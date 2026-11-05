@@ -145,6 +145,7 @@ export default async function DashboardPage() {
       <PageHeader
         eyebrow={`${dateLabel.charAt(0).toUpperCase()}${dateLabel.slice(1)} · Semaine ${isoWeek(today)}`}
         mobileEyebrow={`${dateLabel.charAt(0).toUpperCase()}${dateLabel.slice(1)}`}
+        className="max-lg:pb-2"
         title={empty ? `Bienvenue, ${firstName}.` : `Bonjour ${firstName}`}
         subtitle={
           empty ? (
