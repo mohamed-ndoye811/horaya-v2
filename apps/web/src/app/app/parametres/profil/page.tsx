@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { SettingsShell } from "@/components/app/settings-shell";
+import { Button } from "@/components/ui/button";
 import { ROLE_LABELS } from "@/lib/roles";
 import { getWorkspaceContext } from "@/server/workspace";
 import { PasswordForm, ProfileForm } from "./profile-forms";
@@ -14,9 +15,31 @@ export default async function ProfileSettingsPage() {
     <SettingsShell
       section="profil"
       breadcrumb="Profil"
-      subtitle={`${user.email}${actor.type === "member" ? ` · ${ROLE_LABELS[actor.role]} de ${workspace.name}` : ""}`}
+      subtitle={
+        <>
+          {user.email}
+          {actor.type === "member" && (
+            <span className="text-ink">
+              {" "}
+              · {ROLE_LABELS[actor.role]} de {workspace.name}
+            </span>
+          )}
+        </>
+      }
+      saveBar={{
+        message: (
+          <>
+            <strong>Ton prénom</strong> s'affiche pour ton équipe et sur tes e-mails.
+          </>
+        ),
+        buttons: (
+          <Button type="submit" form="profile-form" variant="inverse">
+            Enregistrer
+          </Button>
+        ),
+      }}
     >
-      <div className="flex max-w-[640px] flex-col gap-10">
+      <div className="flex flex-col gap-4">
         <ProfileForm
           initial={{
             firstName: extra.firstName ?? fallbackFirst,

@@ -17,7 +17,7 @@ import { checkWorkspaceSlug, type SlugCheck, saveOrganizationAction } from "../a
 const PRESETS = ["#528D74", "#264489", "#66537C", "#CF879C", "#B4532A"];
 
 const FONT_CLASSES: Record<string, string> = {
-  display: "font-headline uppercase",
+  display: "font-headline",
   ui: "font-ui font-extrabold",
   mono: "font-mono font-bold",
 };
@@ -76,11 +76,11 @@ export function OrganizationForm({
   const onColor = textOn(color);
 
   return (
-    <div className="flex flex-col gap-10 xl:flex-row">
+    <div className="flex flex-col gap-4 xl:flex-row xl:items-start">
       <form
         id="organization-form"
         onSubmit={onSubmit}
-        className="flex min-w-0 flex-1 flex-col gap-9"
+        className="flex min-w-0 flex-1 flex-col gap-4"
       >
         {state.error && <FormAlert>{state.error}</FormAlert>}
         {state.success && <FormAlert tone="success">{state.success}</FormAlert>}
@@ -89,71 +89,75 @@ export function OrganizationForm({
             Seuls le propriétaire et les admins peuvent modifier ces réglages.
           </FormAlert>
         )}
-        <fieldset disabled={!editable} className="flex min-w-0 flex-col gap-9">
+        <fieldset disabled={!editable} className="flex min-w-0 flex-col gap-4">
           <FormSection number={1} title="Identité">
-            <Field label="Nom de l'organisation" required error={errors.name}>
-              {(field) => (
-                <input
-                  {...field}
-                  name="name"
-                  required
-                  maxLength={80}
-                  value={name}
-                  onChange={(event) => setName(event.target.value)}
-                  className={inputClasses()}
-                />
-              )}
-            </Field>
-            <Field label="Adresse de la page publique" error={errors.slug}>
-              {(field) => (
-                <div
-                  className={cn(
-                    "flex h-12 border-[1.5px] bg-surface focus-within:border-ink",
-                    errors.slug || slugCheck?.state === "taken" || slugCheck?.state === "invalid"
-                      ? "border-danger"
-                      : "border-ink-subtle",
-                  )}
-                >
-                  <span className="flex shrink-0 items-center border-r-[1.5px] border-ink-subtle bg-draft-bg px-3.5 font-mono text-sm font-medium text-ink-muted">
-                    horaya.app/
-                  </span>
-                  <span className="flex min-w-0 flex-1 items-center gap-3 px-3.5">
-                    <input
-                      {...field}
-                      name="slug"
-                      required
-                      maxLength={48}
-                      value={slug}
-                      onChange={(event) =>
-                        setSlug(event.target.value.toLowerCase().replace(/\s+/g, "-"))
-                      }
-                      className="h-full min-w-0 flex-1 bg-transparent font-mono text-sm font-semibold text-ink outline-none"
-                    />
-                    <SlugStatus check={slugCheck} />
-                  </span>
-                </div>
-              )}
-            </Field>
-            <div className="flex flex-col gap-2">
-              <p className="text-sm font-bold text-ink">Logo</p>
-              <div className="flex items-center gap-5">
+            <div className="flex gap-5">
+              <div className="hidden flex-col items-center gap-2 sm:flex">
                 <span
                   aria-hidden="true"
-                  className="flex size-[72px] shrink-0 items-center justify-center font-headline text-[40px] leading-10"
+                  className="flex size-[72px] shrink-0 items-center justify-center rounded-2xl font-headline text-[34px] leading-10"
                   style={{ backgroundColor: color, color: onColor }}
                 >
                   {initial0}
                 </span>
-                <div className="flex flex-col items-start gap-2.5">
-                  <Button variant="secondary" disabled className="h-10 px-4 text-sm">
-                    Changer le logo
-                  </Button>
-                  <p className="text-[13px] font-medium leading-[18px] text-ink-muted">
-                    L'envoi d'un logo arrive bientôt : en attendant, ton initiale s'affiche sur ta
-                    couleur.
-                  </p>
-                </div>
+                <span className="text-xs leading-4 text-ink-subtle">Logo</span>
               </div>
+              <div className="flex min-w-0 flex-1 flex-col gap-4">
+                <Field label="Nom de l'organisation" required error={errors.name}>
+                  {(field) => (
+                    <input
+                      {...field}
+                      name="name"
+                      required
+                      maxLength={80}
+                      value={name}
+                      onChange={(event) => setName(event.target.value)}
+                      className={inputClasses()}
+                    />
+                  )}
+                </Field>
+                <Field label="Adresse de la page publique" error={errors.slug}>
+                  {(field) => (
+                    <div
+                      className={cn(
+                        "flex h-11 overflow-hidden rounded-xl border bg-field focus-within:border-ink",
+                        errors.slug ||
+                          slugCheck?.state === "taken" ||
+                          slugCheck?.state === "invalid"
+                          ? "border-danger"
+                          : "border-line-soft",
+                      )}
+                    >
+                      <span className="flex shrink-0 items-center border-r border-line-soft bg-[#efefec] px-3.5 text-sm text-ink-subtle">
+                        horaya.app/
+                      </span>
+                      <span className="flex min-w-0 flex-1 items-center gap-3 px-3.5">
+                        <input
+                          {...field}
+                          name="slug"
+                          required
+                          maxLength={48}
+                          value={slug}
+                          onChange={(event) =>
+                            setSlug(event.target.value.toLowerCase().replace(/\s+/g, "-"))
+                          }
+                          className="h-full min-w-0 flex-1 bg-transparent font-mono text-sm text-ink outline-none"
+                        />
+                        <SlugStatus check={slugCheck} />
+                      </span>
+                    </div>
+                  )}
+                </Field>
+              </div>
+            </div>
+            <div className="flex flex-wrap items-center gap-3 rounded-2xl bg-field px-3 py-2.5">
+              <Button variant="secondary" disabled className="h-9 px-4 text-[13px]">
+                Changer le logo
+              </Button>
+              <p className="text-xs leading-4 text-ink-subtle">
+                L'envoi d'un logo arrive bientôt : en attendant, ton initiale s'affiche sur ta
+                couleur.
+              </p>
             </div>
             <Field
               label="Présentation"
@@ -181,7 +185,9 @@ export function OrganizationForm({
 
           <FormSection number={2} title="Marque">
             <fieldset className="flex flex-col gap-2.5">
-              <legend className="mb-2.5 text-sm font-bold text-ink">Couleur de marque</legend>
+              <legend className="mb-2.5 text-[13px] font-semibold text-ink">
+                Couleur de marque
+              </legend>
               <div className="flex flex-wrap items-center gap-3">
                 {PRESETS.map((preset) => {
                   const selected = preset.toUpperCase() === color.toUpperCase();
@@ -189,7 +195,7 @@ export function OrganizationForm({
                     <label
                       key={preset}
                       className={cn(
-                        "flex size-11 shrink-0 items-center justify-center",
+                        "flex size-10 shrink-0 items-center justify-center rounded-xl",
                         selected && "outline-2 outline-offset-[3px] outline-ink",
                       )}
                       style={{ backgroundColor: preset, color: textOn(preset) }}
@@ -218,7 +224,7 @@ export function OrganizationForm({
                     setHex(value.toUpperCase());
                     if (/^#[0-9A-Fa-f]{6}$/.test(value)) setColor(value.toUpperCase());
                   }}
-                  className="ml-2 h-11 w-[104px] rounded-xl border border-line-soft bg-field px-3.5 font-mono text-sm font-semibold uppercase text-ink outline-none focus:border-ink"
+                  className="ml-2 h-10 w-[110px] rounded-xl border border-line-soft bg-field px-3.5 font-mono text-sm uppercase text-ink outline-none focus:border-ink"
                 />
                 <input type="hidden" name="brandColor" value={color} />
               </div>
@@ -227,17 +233,20 @@ export function OrganizationForm({
               )}
             </fieldset>
             <fieldset className="flex flex-col gap-2.5">
-              <legend className="mb-2.5 text-sm font-bold text-ink">Police d'affichage</legend>
-              <div className="grid border-2 border-ink sm:grid-cols-3">
-                {DISPLAY_FONTS.map((option, index) => {
+              <legend className="mb-2.5 text-[13px] font-semibold text-ink">
+                Police d'affichage
+              </legend>
+              <div className="grid gap-3 sm:grid-cols-3">
+                {DISPLAY_FONTS.map((option) => {
                   const selected = option.value === font;
                   return (
                     <label
                       key={option.value}
                       className={cn(
-                        "flex flex-col gap-1.5 px-4 py-3.5 has-[:focus-visible]:outline-2 has-[:focus-visible]:-outline-offset-4 has-[:focus-visible]:outline-ink",
-                        index > 0 && "border-t border-line-soft sm:border-t-0 sm:border-l-2",
-                        selected ? "bg-ink text-on-ink" : "text-ink hover:bg-surface",
+                        "flex h-[60px] items-center gap-3 rounded-2xl border px-4 has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-ink",
+                        selected
+                          ? "border-ink bg-ink text-on-ink"
+                          : "border-line-soft text-ink hover:bg-field",
                       )}
                     >
                       <input
@@ -248,10 +257,10 @@ export function OrganizationForm({
                         onChange={() => setFont(option.value)}
                         className="sr-only"
                       />
-                      <span className={cn("text-[32px] leading-8", FONT_CLASSES[option.value])}>
+                      <span className={cn("text-[26px] leading-8", FONT_CLASSES[option.value])}>
                         Aa
                       </span>
-                      <span className="text-sm font-bold">
+                      <span className="text-[13px] font-medium">
                         {option.label} · {option.tone}
                       </span>
                     </label>
@@ -335,60 +344,52 @@ export function OrganizationForm({
         </fieldset>
       </form>
 
-      <aside className="flex w-full shrink-0 flex-col gap-3 xl:w-[290px]">
-        <div className="flex items-center justify-between">
-          <p className="font-mono text-label font-semibold uppercase tracking-[0.055em] text-neutral">
-            Aperçu en direct
-          </p>
-          <span className="flex items-center gap-1.5 font-mono text-[11px] font-semibold uppercase tracking-[0.5px] text-success">
+      <aside className="flex w-full shrink-0 flex-col gap-3 xl:sticky xl:top-4 xl:w-[300px]">
+        <div className="flex items-center justify-between px-1">
+          <p className="text-[13px] font-semibold leading-[17px] text-ink">Aperçu en direct</p>
+          <span className="flex items-center gap-1.5 text-xs font-semibold text-success">
             <span aria-hidden="true" className="size-1.5 rounded-full bg-success" />
             Live
           </span>
         </div>
-        <div className="flex flex-col overflow-hidden border-2 border-ink bg-bg">
+        <div className="flex flex-col overflow-hidden rounded-3xl bg-surface shadow-[0_1px_2px_rgba(0,0,0,0.04),0_16px_40px_rgba(0,0,0,0.06)]">
           <div
-            className="flex flex-col gap-3.5 px-4 pt-3.5 pb-[18px]"
+            className="flex items-center gap-2.5 px-4 py-4"
             style={{ backgroundColor: color, color: onColor }}
           >
-            <div className="flex items-center gap-2">
-              <span
-                className="flex size-5 shrink-0 items-center justify-center bg-on-ink font-headline text-label"
-                style={{ color }}
-              >
-                {initial0}
-              </span>
-              <span className="truncate text-[11px] font-extrabold uppercase tracking-[0.02em]">
-                {name || "Ton espace"}
-              </span>
-            </div>
-            <p className={cn("text-[30px] leading-7", FONT_CLASSES[font])}>Nos événements</p>
-            {description && (
-              <p className="text-[11px] font-medium leading-[15px] opacity-90">{description}</p>
-            )}
+            <span className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-white/20 font-headline text-sm">
+              {initial0}
+            </span>
+            <span className="truncate text-[15px] font-semibold">{name || "Ton espace"}</span>
+          </div>
+          <div className="flex flex-col gap-1 px-4 pt-4 pb-3">
+            <p className={cn("text-2xl leading-7 text-ink", FONT_CLASSES[font])}>Nos événements</p>
+            {description && <p className="text-xs leading-4 text-ink-subtle">{description}</p>}
           </div>
           {events.length === 0 ? (
-            <p className="px-4 py-4 text-[12px] font-medium text-ink-muted">
+            <p className="px-4 pb-4 text-xs text-ink-subtle">
               Aucun événement publié pour l'instant.
             </p>
           ) : (
-            <ul>
+            <ul className="flex flex-col gap-2 px-4 pb-4">
               {events.map((entry) => (
                 <li
                   key={entry.id}
-                  className="flex items-center gap-2.5 border-b border-line-soft px-4 py-2.5 last:border-b-0"
+                  className="flex items-center gap-3 rounded-2xl bg-field px-2 py-2"
                 >
-                  <span className="flex w-7 shrink-0 flex-col items-center">
-                    <span className="font-mono text-[8px] font-semibold uppercase leading-[10px] text-ink-muted">
+                  <span className="flex h-9 w-[34px] shrink-0 flex-col items-center justify-center rounded-lg bg-surface">
+                    <span
+                      className="text-[8px] font-bold uppercase leading-[10px]"
+                      style={{ color }}
+                    >
                       {entry.month}
                     </span>
-                    <span className="text-[15px] font-extrabold leading-4 text-ink">
-                      {entry.day}
-                    </span>
+                    <span className="text-sm font-semibold leading-4 text-ink">{entry.day}</span>
                   </span>
-                  <span className="min-w-0 flex-1 truncate text-[11px] font-bold text-ink">
+                  <span className="min-w-0 flex-1 truncate text-[13px] font-semibold text-ink">
                     {entry.title}
                   </span>
-                  <span className="shrink-0 text-[11px] font-extrabold text-ink">
+                  <span className="shrink-0 pr-1 text-xs font-semibold text-ink">
                     {entry.price}
                   </span>
                 </li>
@@ -400,13 +401,10 @@ export function OrganizationForm({
           href={`/${initial.slug}`}
           target="_blank"
           rel="noreferrer"
-          className="tap-area text-sm font-bold text-ink underline decoration-1 underline-offset-[3px] hover:text-link"
+          className="px-1 text-[13px] font-semibold text-ink hover:underline"
         >
           Ouvrir la page publique →
         </a>
-        <p className="text-[13px] font-medium leading-[18px] text-ink-muted">
-          Les changements s'appliquent à ta page publique et à tes e-mails de confirmation.
-        </p>
       </aside>
     </div>
   );

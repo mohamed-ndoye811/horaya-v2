@@ -2,6 +2,7 @@
 
 import { useRef, useState } from "react";
 import { PasswordMeter } from "@/components/auth/password-strength";
+import { Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Checkbox, Field, inputClasses, PasswordInput } from "@/components/ui/field";
 import { FormAlert } from "@/components/ui/form-alert";
@@ -18,10 +19,24 @@ export function ProfileForm({
   const { state, onSubmit, pending } = useFormAction<FormState>(saveProfileAction, {});
   const errors = state.fieldErrors ?? {};
   return (
-    <form onSubmit={onSubmit} className="flex flex-col gap-5">
+    <form id="profile-form" onSubmit={onSubmit} className="flex flex-col gap-5">
       <FormSection number={1} title="Toi">
         {state.error && <FormAlert>{state.error}</FormAlert>}
         {state.success && <FormAlert tone="success">{state.success}</FormAlert>}
+        <div className="flex items-center gap-4">
+          <Avatar name={`${initial.firstName} ${initial.lastName}`} size="header" />
+          <div className="flex flex-col gap-0.5">
+            <p className="flex items-center gap-2 text-[15px] font-semibold leading-5 text-ink">
+              Photo de profil
+              <span className="rounded-full bg-field px-2 py-0.5 text-[11px] font-bold leading-[14px] text-ink-subtle">
+                À venir
+              </span>
+            </p>
+            <p className="text-[13px] leading-[17px] text-ink-subtle">
+              En attendant, tes initiales s'affichent partout dans l'app.
+            </p>
+          </div>
+        </div>
         <div className="grid gap-4 sm:grid-cols-2">
           <Field label="Prénom" required error={errors.firstName}>
             {(field) => (
@@ -68,11 +83,7 @@ export function ProfileForm({
             />
           )}
         </Field>
-        <div>
-          <Button type="submit" pending={pending}>
-            Enregistrer
-          </Button>
-        </div>
+        {pending && <p className="sr-only">Enregistrement…</p>}
       </FormSection>
     </form>
   );
@@ -95,40 +106,42 @@ export function PasswordForm() {
       <FormSection number={2} title="Mot de passe">
         {state.error && !state.fieldErrors && <FormAlert>{state.error}</FormAlert>}
         {state.success && <FormAlert tone="success">{state.success}</FormAlert>}
-        <Field label="Mot de passe actuel" required>
-          {(field) => (
-            <PasswordInput
-              {...field}
-              name="currentPassword"
-              required
-              autoComplete="current-password"
-            />
-          )}
-        </Field>
-        <Field
-          label="Nouveau mot de passe"
-          required
-          error={errors.newPassword}
-          hint={<PasswordMeter password={password} />}
-        >
-          {(field) => (
-            <PasswordInput
-              {...field}
-              name="newPassword"
-              required
-              autoComplete="new-password"
-              value={password}
-              onChange={(event) => setPassword(event.target.value)}
-            />
-          )}
-        </Field>
-        <Checkbox
-          name="revokeOtherSessions"
-          defaultChecked
-          label="Déconnecter mes autres appareils"
-        />
-        <div>
-          <Button type="submit" variant="secondary" pending={pending}>
+        <div className="grid items-start gap-4 sm:grid-cols-2">
+          <Field label="Mot de passe actuel" required>
+            {(field) => (
+              <PasswordInput
+                {...field}
+                name="currentPassword"
+                required
+                autoComplete="current-password"
+              />
+            )}
+          </Field>
+          <Field
+            label="Nouveau mot de passe"
+            required
+            error={errors.newPassword}
+            hint={<PasswordMeter password={password} />}
+          >
+            {(field) => (
+              <PasswordInput
+                {...field}
+                name="newPassword"
+                required
+                autoComplete="new-password"
+                value={password}
+                onChange={(event) => setPassword(event.target.value)}
+              />
+            )}
+          </Field>
+        </div>
+        <div className="flex flex-wrap items-center justify-between gap-4 border-t border-line-soft pt-5">
+          <Checkbox
+            name="revokeOtherSessions"
+            defaultChecked
+            label="Déconnecter mes autres appareils"
+          />
+          <Button type="submit" pending={pending}>
             Changer le mot de passe
           </Button>
         </div>

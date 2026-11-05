@@ -1,5 +1,7 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
+import { ActionBar } from "@/components/ui/action-bar";
+import { cardShellClasses } from "@/components/ui/section";
 import { cn } from "@/lib/cn";
 import { PageHeader } from "./page-header";
 
@@ -20,24 +22,29 @@ const SECTIONS: Array<{ value: SettingsSection | "notifications"; label: string;
 ];
 
 /**
- * Écrans 24 à 26 : en-tête « Paramètres », sous-navigation à gauche, contenu. Sur mobile
- * (M23 à M25), le titre est celui de la section et la sous-navigation passe par « Plus ».
+ * Paramètres (DA v4, maquettes 3.1 à 3.7) : en-tête « Paramètres », menu des sections dans
+ * une carte à gauche, contenu, et barre noire d'enregistrement en bas (`saveBar`). Les
+ * actions d'en-tête (`actions`) vont dans le coin du notch. Sur mobile, le titre est celui
+ * de la section et le menu passe par « Plus ».
  */
 export function SettingsShell({
   section,
   breadcrumb,
   subtitle,
   actions,
+  saveBar,
   children,
 }: {
   section: SettingsSection;
   breadcrumb: string;
   subtitle?: ReactNode;
   actions?: ReactNode;
+  /** Boutons d'enregistrement (souvent `form="…"`) et phrase de contexte. */
+  saveBar?: { message?: ReactNode; buttons: ReactNode };
   children: ReactNode;
 }) {
   return (
-    <div className="flex min-h-dvh min-w-0 flex-col">
+    <div className="flex min-w-0 flex-col">
       <PageHeader
         eyebrow={`Paramètres / ${breadcrumb}`}
         title={
@@ -48,12 +55,14 @@ export function SettingsShell({
         }
         subtitle={subtitle}
         actions={actions}
-        stickyActions="above-tabs"
       />
-      <div className="flex min-w-0 flex-1 flex-col lg:flex-row">
+      <div className="flex min-w-0 flex-1 flex-col gap-4 px-4 pb-4 lg:flex-row lg:items-start">
         <nav
           aria-label="Sections des paramètres"
-          className="hidden shrink-0 lg:flex lg:w-[232px] lg:flex-col lg:border-r lg:border-line-soft lg:py-6"
+          className={cn(
+            cardShellClasses,
+            "hidden shrink-0 gap-0.5 p-2 lg:sticky lg:top-4 lg:flex lg:w-[232px]",
+          )}
         >
           {SECTIONS.map((entry) => {
             const active = entry.value === section;
@@ -63,22 +72,39 @@ export function SettingsShell({
                 href={entry.href}
                 aria-current={active ? "page" : undefined}
                 className={cn(
-                  "shrink-0 whitespace-nowrap px-4 py-3 text-[15px] leading-5 text-ink transition-colors lg:py-2.5 lg:pr-6",
+                  "flex h-11 items-center justify-between gap-2 rounded-[14px] px-3.5 text-sm leading-[18px] transition-colors",
                   "focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ink",
                   active
-                    ? "border-b-4 border-ink bg-surface font-extrabold lg:border-b-0 lg:border-l-4 lg:pl-9"
-                    : "font-semibold hover:bg-draft-bg lg:pl-10",
+                    ? "bg-ink font-semibold text-white"
+                    : "font-medium text-ink hover:bg-field",
                 )}
               >
                 {entry.label}
+                {entry.value === "integrations" && (
+                  <span
+                    className={cn(
+                      "rounded-full px-2 py-0.5 text-[11px] font-bold leading-[14px]",
+                      active ? "bg-white/15 text-white" : "bg-field text-ink-subtle",
+                    )}
+                  >
+                    Bientôt
+                  </span>
+                )}
               </Link>
             );
           })}
         </nav>
-        <div className="min-w-0 flex-1 px-4 py-8">
+        <div className="flex min-w-0 flex-1 flex-col gap-4">
           {children}
-          {/* Place de la barre d'actions collée en bas sur mobile. */}
-          {actions && <div aria-hidden="true" className="h-20 lg:hidden" />}
+          {saveBar && (
+            <>
+              <ActionBar aboveTabs message={saveBar.message}>
+                {saveBar.buttons}
+              </ActionBar>
+              {/* Place de la barre collée en bas sur mobile. */}
+              <div aria-hidden="true" className="h-20 lg:hidden" />
+            </>
+          )}
         </div>
       </div>
     </div>

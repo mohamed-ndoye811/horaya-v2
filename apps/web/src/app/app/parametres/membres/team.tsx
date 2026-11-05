@@ -102,14 +102,14 @@ export function TeamTable({ rows, manageable }: { rows: TeamRow[]; manageable: b
   };
 
   const memberCell = (row: TeamRow) => (
-    <div className="flex min-w-0 items-center gap-3.5">
-      <Avatar name={row.name} pending={row.kind === "invitation"} />
-      <div className="flex min-w-0 flex-col gap-1">
-        <span className="truncate text-base font-bold text-ink">
+    <div className="flex min-w-0 items-center gap-3">
+      <Avatar name={row.name} size="row" pending={row.kind === "invitation"} />
+      <div className="flex min-w-0 flex-col gap-px">
+        <span className="truncate text-sm font-semibold leading-[18px] text-ink">
           {row.name}
-          {row.isMe && " (toi)"}
+          {row.isMe && <span className="font-normal text-ink-subtle"> (toi)</span>}
         </span>
-        <span className="truncate text-sm font-medium text-ink-muted">
+        <span className="truncate text-xs leading-4 text-ink-subtle">
           {[row.email, row.detail].filter(Boolean).join(" · ")}
         </span>
       </div>
@@ -117,19 +117,14 @@ export function TeamTable({ rows, manageable }: { rows: TeamRow[]; manageable: b
   );
 
   const roleCell = (row: TeamRow) =>
-    !manageable || row.isMe || row.role === "owner" ? (
-      <Select variant="compact" disabled aria-label={`Rôle de ${row.name}`} value={row.role}>
-        <option value={row.role}>{ROLE_LABELS[row.role]}</option>
-      </Select>
-    ) : row.kind === "invitation" ? (
-      <Select
-        variant="compact"
-        disabled
-        aria-label={`Rôle proposé à ${row.email}`}
-        value={row.role}
-      >
-        <option value={row.role}>{ROLE_LABELS[row.role]}</option>
-      </Select>
+    row.role === "owner" ? (
+      <span className="inline-flex h-[30px] items-center rounded-full bg-ink px-3 text-[13px] font-semibold text-white">
+        {ROLE_LABELS[row.role]}
+      </span>
+    ) : !manageable || row.isMe || row.kind === "invitation" ? (
+      <span className="inline-flex h-[30px] items-center rounded-[10px] bg-field px-3 text-[13px] text-ink-muted">
+        {ROLE_LABELS[row.role]}
+      </span>
     ) : (
       <Select
         variant="compact"
@@ -161,6 +156,7 @@ export function TeamTable({ rows, manageable }: { rows: TeamRow[]; manageable: b
         rowKey={(row) => row.id}
         minWidth={720}
         flush
+        rowTone={(row) => (row.kind === "invitation" ? "warning" : undefined)}
         card={(row) => (
           <div className="flex items-center gap-3">
             <div className="min-w-0 flex-1">{memberCell(row)}</div>

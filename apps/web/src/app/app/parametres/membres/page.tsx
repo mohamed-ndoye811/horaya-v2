@@ -1,6 +1,8 @@
 import { getJoinLink, listTeam } from "@horaya/db";
 import type { Metadata } from "next";
 import { SettingsShell } from "@/components/app/settings-shell";
+import { cardClasses } from "@/components/ui/section";
+import { cn } from "@/lib/cn";
 import { formatHour } from "@/lib/format";
 import { canManageTeam } from "@/lib/roles";
 import { db } from "@/server/db";
@@ -95,7 +97,12 @@ export default async function MembersSettingsPage() {
     <SettingsShell
       section="membres"
       breadcrumb="Membres & rôles"
-      subtitle={`${plural(members.length, "membre")} actif${members.length > 1 ? "s" : ""} · ${plural(invitations.length, "invitation")} en attente`}
+      subtitle={
+        <>
+          {plural(members.length, "membre")} actif{members.length > 1 ? "s" : ""}.{" "}
+          <span className="text-ink">{plural(invitations.length, "invitation")} en attente.</span>
+        </>
+      }
       actions={
         manageable ? (
           <>
@@ -105,33 +112,32 @@ export default async function MembersSettingsPage() {
         ) : undefined
       }
     >
-      <div className="flex flex-col gap-8">
+      <div className="flex flex-col gap-4">
         <TeamTable rows={rows} manageable={manageable} />
-        <section className="flex flex-col gap-3.5">
-          <h2 className="border-b border-line-soft pb-2.5 font-section text-section leading-7 text-ink">
+        <section className={cn(cardClasses, "gap-4")}>
+          <h2 className="text-lg font-semibold leading-[22px] text-ink">
             Ce que chaque rôle peut faire
           </h2>
-          <div className="grid border-2 border-ink md:grid-cols-3">
-            {ROLE_RIGHTS.map((entry, index) => (
+          <div className="grid gap-3 md:grid-cols-3">
+            {ROLE_RIGHTS.map((entry) => (
               <div
                 key={entry.role}
-                className={`flex flex-col gap-2.5 px-[18px] py-4 ${index > 0 ? "border-t border-line-soft md:border-t-0 md:border-l-2" : ""}`}
+                className="flex flex-col gap-2.5 rounded-2xl bg-field px-4 py-4"
               >
-                <h3 className="text-base font-extrabold text-ink">{entry.role}</h3>
-                <ul className="flex flex-col gap-2.5">
+                <h3 className="text-base font-semibold text-ink">{entry.role}</h3>
+                <ul className="flex flex-col gap-2">
                   {entry.can.map((line) => (
-                    <li key={line} className="text-sm font-medium leading-5 text-ink">
-                      ✓ {line}
+                    <li key={line} className="text-[13px] leading-[18px] text-ink">
+                      <span className="mr-1 font-bold text-success">✓</span>
+                      {line}
                     </li>
                   ))}
-                  <li className="text-sm font-medium leading-5 text-ink-subtle">
-                    ✕ {entry.cannot}
-                  </li>
+                  <li className="text-[13px] leading-[18px] text-ink-subtle">✕ {entry.cannot}</li>
                 </ul>
               </div>
             ))}
           </div>
-          <p className="text-[13px] font-medium text-ink-muted">
+          <p className="text-xs leading-4 text-ink-subtle">
             Le propriétaire a tous les droits d'un admin, plus l'abonnement, la connexion des
             paiements en ligne et la suppression de l'espace.
           </p>

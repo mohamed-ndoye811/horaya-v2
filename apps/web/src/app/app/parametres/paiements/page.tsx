@@ -112,16 +112,23 @@ export default async function PaymentsSettingsPage({
             ? `Paiements en ligne via Stripe${testPayments ? " (mode test)" : ""} · versements automatiques`
             : "Paiements sur place tant que Stripe n'est pas connecté"
       }
-      actions={
-        <>
-          <ButtonLink href="/app/parametres/paiements" variant="secondary">
-            Annuler
-          </ButtonLink>
-          <Button type="submit" form="payments-form">
-            Enregistrer
-          </Button>
-        </>
-      }
+      saveBar={{
+        message: (
+          <>
+            <strong>Tes réglages de paiement</strong> s'appliquent aux nouvelles réservations.
+          </>
+        ),
+        buttons: (
+          <>
+            <ButtonLink href="/app/parametres/paiements" variant="inverse-outline">
+              Annuler
+            </ButtonLink>
+            <Button type="submit" form="payments-form" variant="inverse">
+              Enregistrer
+            </Button>
+          </>
+        ),
+      }}
     >
       <div className="flex flex-col gap-8">
         {paymentGateway ? (
