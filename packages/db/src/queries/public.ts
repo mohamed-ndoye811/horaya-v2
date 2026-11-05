@@ -40,6 +40,7 @@ export async function getPublicWorkspace(db: Executor, slug: string) {
       brandColor: sql<string>`coalesce(${tenantSettings.brandColor}, '#264489')`,
       displayFont: sql<string>`coalesce(${tenantSettings.displayFont}, 'display')`,
       description: tenantSettings.description,
+      sector: tenantSettings.sector,
       timezone: sql<string>`coalesce(${tenantSettings.timezone}, 'Europe/Paris')`,
       freeCancellationHours: sql<number>`coalesce(${tenantSettings.freeCancellationHours}, 72)`,
       lateCancellationRefundPercent: sql<number>`coalesce(${tenantSettings.lateCancellationRefundPercent}, 50)`,
@@ -77,6 +78,7 @@ const publicEventColumns = {
   requiresApproval: event.requiresApproval,
   highlights: event.highlights,
   paymentLinkUrl: event.paymentLinkUrl,
+  coverImageUrl: event.coverImageUrl,
   typeId: eventType.id,
   typeName: eventType.name,
   typeColor: eventType.color,
@@ -102,6 +104,7 @@ export interface PublicEventRow {
   requiresApproval: boolean;
   highlights: string[];
   paymentLinkUrl: string | null;
+  coverImageUrl: string | null;
   typeId: string;
   typeName: string;
   typeColor: string;

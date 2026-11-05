@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { ArrowLeft } from "@/components/ui/icons";
+import { cn } from "@/lib/cn";
 
 /** Écran 28b : page introuvable, en version admin (global) ou publique (dans un espace). */
 export function NotFoundScreen({
@@ -16,7 +17,12 @@ export function NotFoundScreen({
   wordmark?: boolean;
 }) {
   return (
-    <div className="flex min-h-[640px] flex-1 flex-col bg-ink text-on-ink">
+    <div
+      className={cn(
+        "flex min-h-[640px] flex-1 flex-col bg-ink text-on-ink",
+        !wordmark && "rounded-3xl",
+      )}
+    >
       {wordmark && (
         <div className="flex items-center justify-between gap-4 border-b border-on-ink/25 px-5 py-6 sm:px-16 sm:py-8">
           <Link href="/" className="font-headline text-[36px] leading-9">
@@ -44,7 +50,7 @@ export function NotFoundScreen({
           <div className="flex flex-col gap-3 sm:flex-row">
             <Link
               href={primary.href}
-              className="flex h-[54px] items-center justify-center gap-2.5 bg-on-ink px-6 text-base font-extrabold text-ink transition-opacity hover:opacity-90"
+              className="flex h-[54px] items-center justify-center gap-2.5 rounded-full bg-on-ink px-6 text-base font-extrabold text-ink transition-opacity hover:opacity-90"
             >
               <ArrowLeft />
               {primary.label}
@@ -52,7 +58,7 @@ export function NotFoundScreen({
             {secondary && (
               <Link
                 href={secondary.href}
-                className="flex h-[54px] items-center justify-center border-2 border-on-ink px-[22px] text-base font-bold transition-colors hover:bg-on-ink/10"
+                className="flex h-[54px] items-center justify-center rounded-full border border-on-ink/40 px-[22px] text-base font-bold transition-colors hover:bg-on-ink/10"
               >
                 {secondary.label}
               </Link>
@@ -62,7 +68,7 @@ export function NotFoundScreen({
         <div aria-hidden="true" className="hidden flex-col gap-2.5 sm:flex">
           {["bg-cat-seminaire", "bg-cat-atelier", "bg-cat-reunion", "bg-cat-meetup"].map(
             (color) => (
-              <span key={color} className={`size-6 ${color}`} />
+              <span key={color} className={`size-6 rounded-lg ${color}`} />
             ),
           )}
         </div>

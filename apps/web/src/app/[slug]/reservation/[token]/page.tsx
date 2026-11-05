@@ -11,11 +11,9 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { ReactNode } from "react";
 import { stagger, WordsReveal } from "@/components/motion/words";
-import { BrandBand, PublicNav } from "@/components/public/public-chrome";
+import { brandButtonClasses } from "@/components/public/public-chrome";
 import { NotFoundScreen } from "@/components/public/public-not-found";
-import { StatusBadge } from "@/components/ui/badge";
-import { ArrowRight, Check, DownloadIcon, Envelope } from "@/components/ui/icons";
-import { BOOKING_STATUS_BADGE } from "@/components/ui/status";
+import { ArrowRight } from "@/components/ui/icons";
 import { cn } from "@/lib/cn";
 import { displayFontClass } from "@/lib/fonts";
 import { formatEventRange, formatMoney } from "@/lib/format";
@@ -28,7 +26,7 @@ import { CancelBooking, PayButton, PaymentPending, ResendEmail } from "./manage-
 
 export const metadata: Metadata = { title: "Ta réservation", robots: { index: false } };
 
-/** Écran 19 (juste après la réservation, ?nouvelle=1) et page « Gérer ma réservation ». */
+/** Maquette 5.4 : juste après la réservation (?nouvelle=1) et page « Gérer ma réservation ». */
 export default async function ManagedBookingPage({
   params,
   searchParams,
@@ -79,110 +77,180 @@ export default async function ManagedBookingPage({
   const where =
     [booking.locationName, booking.locationAddress].filter(Boolean).join(", ") ||
     (booking.onlineUrl ? "En ligne" : null);
-  const participants = booking.participants.length
+  const named = booking.participants.length
     ? booking.participants.map((entry) => `${entry.firstName} ${entry.lastName}`).join(", ")
     : `${booking.customerFirstName} ${booking.customerLastName}`;
+  const missing = booking.seats - Math.max(booking.participants.length, 1);
+  const participants =
+    missing > 0 ? `${named} · ${missing} participant${missing > 1 ? "s" : ""} à compléter` : named;
   const manageHref = `/${slug}/reservation/${token}`;
+  const deposit = booking.paymentMode === "deposit";
+  const paymentPill: { label: string; className: string } | null =
+    booking.amountCents === 0
+      ? null
+      : refunded > 0
+        ? { label: `Remboursé ${formatMoney(refunded)}`, className: "bg-draft-bg text-draft" }
+        : paid > 0
+          ? {
+              label: deposit
+                ? `Acompte payé · reste ${formatMoney(booking.amountCents - paid)} sur place`
+                : "Payé",
+              className: "bg-success-bg text-success",
+            }
+          : awaitsPayment
+            ? {
+                label: deposit
+                  ? `Acompte de ${formatMoney(due)} à payer · reste ${formatMoney(booking.amountCents - due)} sur place`
+                  : `${formatMoney(due)} à payer en ligne`,
+                className: "bg-warning-bg text-warning",
+              }
+            : {
+                label:
+                  booking.paymentMode === "on_site"
+                    ? "À régler sur place"
+                    : "À régler auprès de l'organisateur",
+                className: "bg-draft-bg text-draft",
+              };
+  const refund =
+    paid > 0
+      ? refundForCancellation({
+          paidCents: paid,
+          cancelledBy: "customer",
+          startsAt,
+          now: new Date(),
+          policy: workspace,
+        })
+      : null;
 
-  const heading = (() => {
-    if (booking.status === "cancelled")
+  const heading: { title: string; text: string; badge: { label: string; className: string } } =
+    (() => {
+      if (booking.status === "cancelled")
+        return {
+          badge: { label: "Annulée", className: "bg-draft-bg text-draft" },
+          title: "Réservation annulée",
+          text: `Ta réservation de ${places} pour « ${title} » est annulée.`,
+        };
+      if (booking.status === "refused")
+        return {
+          badge: { label: "Non retenue", className: "bg-danger-bg text-danger" },
+          title: "Demande non retenue",
+          text: `${workspace.name} n'a pas pu accepter ta demande pour « ${title} »${booking.refusalReason ? ` (${booking.refusalReason})` : ""}.`,
+        };
+      if (booking.status === "pending")
+        return {
+          badge: { label: "En attente de validation", className: "bg-info-bg text-info" },
+          title: fresh ? "Demande envoyée !" : "En attente de validation",
+          text: `Merci ${booking.customerFirstName}. ${yourPlaces} pour « ${title} » ${agree("est retenue", "sont retenues")} en attendant la validation de ${workspace.name} : tu recevras un e-mail.`,
+        };
+      if (booking.status === "waitlisted")
+        return {
+          badge: { label: "Liste d'attente", className: "bg-warning-bg text-warning" },
+          title: "Sur liste d'attente",
+          text: `Merci ${booking.customerFirstName}. « ${title} » est complet : si une place se libère, ta demande passe automatiquement et tu es prévenu·e par e-mail.`,
+        };
+      if (awaitsPayment)
+        return {
+          badge: {
+            label: "Plus qu'à payer",
+            className:
+              "bg-[color-mix(in_srgb,var(--brand)_20%,transparent)] text-[var(--brand-light)]",
+          },
+          title:
+            channel?.kind === "stripe" && paymentReturn === "ok"
+              ? "Paiement en cours"
+              : several
+                ? "Tes places sont réservées."
+                : "Ta place est réservée.",
+          text:
+            channel?.kind === "link"
+              ? `${fresh ? `Merci ${booking.customerFirstName}. ` : ""}${yourPlaces} pour « ${title} » ${agree("est réservée", "sont réservées")} : règle ${booking.paymentMode === "deposit" ? "l'acompte de " : ""}${formatMoney(due)} via le lien de paiement de ${workspace.name}, qui confirmera la réception par e-mail.`
+              : paymentReturn === "ok"
+                ? "Stripe confirme ton paiement : ça ne prend que quelques secondes."
+                : `${yourPlaces} pour « ${title} » ${agree("est retenue", "sont retenues")} le temps du paiement en ligne (${formatMoney(due)}). Sans paiement, ${agree("elle est libérée", "elles sont libérées")} au bout de 30 minutes.`,
+        };
+      const paidNote =
+        booking.paymentStatus === "paid"
+          ? booking.paymentMode === "deposit"
+            ? ", acompte payé"
+            : agree(" et payée", " et payées")
+          : "";
       return {
-        title: "Réservation annulée",
-        text: `Ta réservation de ${places} pour « ${title} » est annulée.`,
+        badge: { label: "Confirmée", className: "bg-success-bg text-success" },
+        title: fresh ? "C'est réservé !" : "Ta réservation",
+        text: `${fresh ? `Merci ${booking.customerFirstName}. ` : ""}${yourPlaces} pour « ${title} » ${agree("est confirmée", "sont confirmées")}${paidNote}.`,
       };
-    if (booking.status === "refused")
-      return {
-        title: "Demande non retenue",
-        text: `${workspace.name} n'a pas pu accepter ta demande pour « ${title} »${booking.refusalReason ? ` (${booking.refusalReason})` : ""}.`,
-      };
-    if (booking.status === "pending")
-      return {
-        title: fresh ? "Demande envoyée !" : "En attente de validation",
-        text: `Merci ${booking.customerFirstName}. ${yourPlaces} pour « ${title} » ${agree("est retenue", "sont retenues")} en attendant la validation de ${workspace.name} : tu recevras un e-mail.`,
-      };
-    if (booking.status === "waitlisted")
-      return {
-        title: "Sur liste d'attente",
-        text: `Merci ${booking.customerFirstName}. « ${title} » est complet : si une place se libère, ta demande passe automatiquement et tu es prévenu·e par e-mail.`,
-      };
-    if (awaitsPayment)
-      return {
-        title:
-          channel?.kind === "stripe" && paymentReturn === "ok"
-            ? "Paiement en cours"
-            : "Plus qu'à payer",
-        text:
-          channel?.kind === "link"
-            ? `${fresh ? `Merci ${booking.customerFirstName}. ` : ""}${yourPlaces} pour « ${title} » ${agree("est réservée", "sont réservées")} : règle ${formatMoney(due)} via le lien de paiement de ${workspace.name}, qui confirmera la réception par e-mail.`
-            : paymentReturn === "ok"
-              ? "Stripe confirme ton paiement : ça ne prend que quelques secondes."
-              : `${yourPlaces} pour « ${title} » ${agree("est retenue", "sont retenues")} le temps du paiement en ligne (${formatMoney(due)}). Sans paiement, ${agree("elle est libérée", "elles sont libérées")} au bout de 30 minutes.`,
-      };
-    const paidNote =
-      booking.paymentStatus === "paid"
-        ? booking.paymentMode === "deposit"
-          ? ", acompte payé"
-          : agree(" et payée", " et payées")
-        : "";
-    return {
-      title: fresh ? "C'est réservé !" : "Ta réservation",
-      text: `${fresh ? `Merci ${booking.customerFirstName}. ` : ""}${yourPlaces} pour « ${title} » ${agree("est confirmée", "sont confirmées")}${paidNote}.`,
-    };
-  })();
+    })();
 
   return (
-    <>
-      <BrandBand>
-        <PublicNav workspace={workspace} active={fresh ? undefined : "bookings"} />
-        <div className="flex flex-col gap-8 px-5 pt-10 pb-10 sm:flex-row sm:items-end sm:justify-between sm:gap-12 sm:px-16 sm:pt-16 sm:pb-14">
-          <div className="flex flex-col gap-6">
-            {fresh && active && !awaitsPayment && (
-              <span
-                aria-hidden="true"
-                className="flex size-[72px] items-center justify-center bg-[var(--on-brand)] text-[var(--brand)]"
-              >
-                <Check size={36} draw />
-              </span>
-            )}
-            <h1
-              className={cn(
-                "text-[56px] leading-[52px] sm:text-[128px] sm:leading-[112px]",
-                displayFontClass(workspace.displayFont),
-              )}
+    <div className="mx-auto flex w-full max-w-[1000px] flex-col gap-4">
+      <section className="flex flex-col gap-[18px] rounded-3xl bg-ink p-6 text-white sm:p-8">
+        <span
+          className={cn(
+            "w-fit rounded-full px-3 py-[5px] text-xs font-bold leading-[14px]",
+            heading.badge.className,
+          )}
+        >
+          {heading.badge.label}
+        </span>
+        <h1
+          className={cn(
+            "text-[36px] leading-10 tracking-[-0.04em] sm:text-[48px] sm:leading-[52px]",
+            displayFontClass(workspace.displayFont),
+          )}
+        >
+          <WordsReveal>{heading.title}</WordsReveal>
+        </h1>
+        <p
+          className="reveal max-w-[620px] text-[17px] leading-[26px] text-white/75"
+          style={stagger(3)}
+        >
+          {heading.text}
+        </p>
+        <div className="flex flex-col gap-3.5 pt-1 sm:flex-row sm:items-center">
+          {awaitsPayment && channel?.kind === "stripe" && paymentReturn === "ok" && (
+            <PaymentPending />
+          )}
+          {awaitsPayment && channel?.kind === "stripe" && paymentReturn !== "ok" && (
+            <PayButton slug={slug} token={token} label={`Payer ${formatMoney(due)}`} />
+          )}
+          {awaitsPayment && channel?.kind === "link" && (
+            <a
+              href={channel.url}
+              target="_blank"
+              rel="noreferrer"
+              className={cn(brandButtonClasses, "h-[54px] px-[26px] text-base")}
             >
-              <WordsReveal>{heading.title}</WordsReveal>
-            </h1>
-            <p
-              className="reveal max-w-[640px] text-lg font-medium leading-7 sm:text-xl"
-              style={stagger(3)}
+              Payer {formatMoney(due)} ↗
+            </a>
+          )}
+          {fresh && !awaitsPayment && (
+            <Link
+              href={manageHref}
+              className="flex h-[54px] items-center justify-center gap-2 rounded-full bg-white px-[26px] text-base font-semibold text-ink transition-colors hover:bg-field"
             >
-              {heading.text}
+              Gérer ma réservation
+              <ArrowRight />
+            </Link>
+          )}
+          <div className="flex flex-col gap-1 text-sm leading-[18px] text-notch-idle">
+            <p>
+              {fresh ? "Confirmation envoyée à " : "Envoyée à "}
+              <span className="break-all font-semibold text-white">{booking.customerEmail}</span>
             </p>
-          </div>
-          <div className="flex shrink-0 flex-col gap-2 sm:items-end">
-            <p className="font-mono text-label font-semibold uppercase tracking-[0.055em] opacity-85">
-              N° de réservation
-            </p>
-            <p className="flex h-12 items-center border-2 border-[var(--on-brand)] px-4 font-mono text-xl font-bold">
-              {booking.reference}
-            </p>
+            {active && <ResendEmail slug={slug} token={token} />}
           </div>
         </div>
-      </BrandBand>
+      </section>
 
-      <div className="grid lg:grid-cols-[1.3fr_1fr_1fr]">
-        <Column first>
-          <div className="flex items-center justify-between gap-3">
-            <h2 className="font-section text-section leading-7 text-ink">Récapitulatif</h2>
-            {!fresh && (
-              <StatusBadge tone={BOOKING_STATUS_BADGE[booking.status].tone}>
-                {BOOKING_STATUS_BADGE[booking.status].label}
-              </StatusBadge>
-            )}
-          </div>
+      <section className="flex flex-col rounded-3xl bg-surface px-6 py-2">
+        <div className="flex h-14 items-center justify-between gap-4">
+          <h2 className="text-lg font-semibold leading-[22px] text-ink">Récapitulatif</h2>
+          <p className="font-mono text-xs leading-4 text-ink-subtle">Réf. {booking.reference}</p>
+        </div>
+        <dl className="flex flex-col">
           <Fact label="Quoi">
             {booking.eventSlug && booking.eventVisibility === "public" ? (
-              <Link href={`/${slug}/${booking.eventSlug}`} className="hover:underline">
+              <Link href={`/${slug}/${booking.eventSlug}`} className="underline underline-offset-2">
                 {title}
               </Link>
             ) : (
@@ -194,32 +262,30 @@ export default async function ManagedBookingPage({
           )}
           {where && <Fact label="Où">{where}</Fact>}
           <Fact label="Participants">{participants}</Fact>
-          <div className="flex items-center justify-between gap-4 border-t border-line-soft pt-3.5">
-            <span className="text-[15px] font-semibold text-ink-muted">
-              {booking.amountCents === 0
-                ? places
-                : refunded > 0
-                  ? `Remboursé ${formatMoney(refunded)}`
-                  : paid > 0
-                    ? booking.paymentMode === "deposit"
-                      ? `Acompte payé · reste ${formatMoney(booking.amountCents - paid)} sur place`
-                      : "Payé par carte"
-                    : awaitsPayment
-                      ? "À payer en ligne"
-                      : booking.paymentMode === "on_site"
-                        ? "À régler sur place"
-                        : "À régler auprès de l'organisateur"}
-            </span>
-            <span className="text-section font-extrabold leading-[26px] text-ink">
+          <Fact label="Paiement">
+            <span className="flex flex-wrap items-center gap-2.5">
               {booking.amountCents > 0 ? formatMoney(booking.amountCents) : "Gratuit"}
+              {paymentPill && (
+                <span
+                  className={cn(
+                    "rounded-full px-2.5 py-1 text-xs font-bold leading-[14px]",
+                    paymentPill.className,
+                  )}
+                >
+                  {paymentPill.label}
+                </span>
+              )}
             </span>
-          </div>
-        </Column>
+          </Fact>
+        </dl>
+      </section>
 
-        <Column>
-          <h2 className="font-section text-section leading-7 text-ink">Ajouter à ton agenda</h2>
-          {active && startsAt && endsAt ? (
-            <>
+      <div className="flex flex-col gap-4 sm:flex-row">
+        {active && startsAt && endsAt ? (
+          <div className="flex flex-1 flex-wrap items-center justify-between gap-3 rounded-[20px] bg-surface px-5 py-[18px]">
+            <h2 className="text-[15px] font-semibold leading-5 text-ink">Ajouter à ton agenda</h2>
+            <div className="flex gap-1.5">
+              <AgendaLink href={`${manageHref}/agenda.ics`}>Apple</AgendaLink>
               <AgendaLink
                 href={googleCalendarUrl({
                   title,
@@ -230,133 +296,62 @@ export default async function ManagedBookingPage({
                 })}
                 external
               >
-                Google Agenda
+                Google
               </AgendaLink>
-              <AgendaLink href={`${manageHref}/agenda.ics`}>Apple Calendrier</AgendaLink>
               <AgendaLink href={`${manageHref}/agenda.ics`} download>
-                Outlook · fichier .ics
+                Outlook
               </AgendaLink>
-            </>
-          ) : (
-            <p className="text-sm font-medium text-ink-muted">
-              Cette réservation n'est plus active.
-            </p>
-          )}
-        </Column>
-
-        <Column last>
-          <h2 className="font-section text-section leading-7 text-ink">
-            {fresh ? "E-mail envoyé" : "Ta réservation"}
-          </h2>
-          <div className="flex items-center gap-3">
-            <span
-              aria-hidden="true"
-              className="flex size-10 shrink-0 items-center justify-center border-[1.5px] border-success bg-success-bg text-success"
-            >
-              <Envelope size={18} />
-            </span>
-            <p className="min-w-0 break-words text-[15px] font-semibold leading-5 text-ink">
-              {fresh ? "Confirmation envoyée à " : "Envoyée à "}
-              {booking.customerEmail}
-            </p>
+            </div>
           </div>
-          {active && <ResendEmail slug={slug} token={token} />}
-          <div className="mt-auto flex flex-col gap-3 pt-4">
-            {awaitsPayment && channel?.kind === "stripe" && paymentReturn === "ok" && (
-              <PaymentPending />
-            )}
-            {awaitsPayment && channel?.kind === "stripe" && paymentReturn !== "ok" && (
-              <PayButton slug={slug} token={token} label={`Payer ${formatMoney(due)}`} />
-            )}
-            {awaitsPayment && channel?.kind === "link" && (
-              <>
-                <a
-                  href={channel.url}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="flex h-14 items-center justify-center gap-3 bg-ink text-[17px] font-extrabold text-on-ink transition-colors hover:bg-info"
-                >
-                  Payer {formatMoney(due)} ↗
-                </a>
-                <p className="text-[13px] font-medium text-ink-muted">
-                  Le paiement s'ouvre chez le prestataire de {workspace.name}. Tu recevras un reçu
-                  dès qu'il est confirmé.
-                </p>
-              </>
-            )}
-            {fresh && !awaitsPayment ? (
-              <Link
-                href={manageHref}
-                className="flex h-[52px] items-center justify-center gap-2.5 bg-ink text-base font-extrabold text-on-ink transition-colors hover:bg-info"
-              >
-                Gérer ma réservation
-                <ArrowRight />
-              </Link>
-            ) : active && !started ? (
-              <CancelBooking
-                slug={slug}
-                token={token}
-                policy={
-                  paid > 0
-                    ? `${cancellationPolicy(startsAt ?? new Date(), workspace, tz)} Tu seras remboursé·e de ${formatMoney(
-                        refundForCancellation({
-                          paidCents: paid,
-                          cancelledBy: "customer",
-                          startsAt,
-                          now: new Date(),
-                          policy: workspace,
-                        }),
-                      )}.`
-                    : startsAt && booking.amountCents > 0
-                      ? cancellationPolicy(startsAt, workspace, tz)
-                      : null
-                }
-              />
-            ) : (
-              <Link
-                href={`/${slug}`}
-                className="flex h-[52px] items-center justify-center gap-2.5 border-2 border-ink text-base font-bold text-ink hover:bg-surface"
-              >
-                Voir les événements à venir
-              </Link>
-            )}
+        ) : (
+          <Link
+            href={`/${slug}`}
+            className="flex flex-1 items-center justify-between gap-3 rounded-[20px] bg-surface px-5 py-[18px] text-[15px] font-semibold text-ink hover:bg-field"
+          >
+            Voir les événements à venir
+            <ArrowRight />
+          </Link>
+        )}
+        {active && !started && (
+          <div className="flex items-center justify-between gap-3 rounded-[20px] bg-surface px-5 py-[18px] sm:w-[300px]">
+            <h2 className="text-[15px] font-semibold leading-5 text-ink">Un empêchement ?</h2>
+            <CancelBooking
+              slug={slug}
+              token={token}
+              description={`${yourPlaces} pour « ${title} » ${agree("sera libérée", "seront libérées")} pour d'autres participants.`}
+              refund={
+                refund === null
+                  ? null
+                  : {
+                      label:
+                        refund >= paid
+                          ? "Remboursement intégral"
+                          : refund > 0
+                            ? "Remboursement partiel"
+                            : "Pas de remboursement",
+                      amount: formatMoney(refund),
+                      tone: refund >= paid ? "success" : refund > 0 ? "warning" : "draft",
+                      text: cancellationPolicy(startsAt ?? new Date(), workspace, tz),
+                    }
+              }
+              policy={
+                refund === null && startsAt && booking.amountCents > 0
+                  ? cancellationPolicy(startsAt, workspace, tz)
+                  : null
+              }
+            />
           </div>
-        </Column>
+        )}
       </div>
-    </>
-  );
-}
-
-function Column({
-  children,
-  first,
-  last,
-}: {
-  children: ReactNode;
-  first?: boolean;
-  last?: boolean;
-}) {
-  return (
-    <section
-      className={cn(
-        "flex flex-col gap-4 border-ink px-5 py-8 sm:px-12 lg:py-10",
-        first && "lg:pl-16",
-        last && "lg:pr-16",
-        !last && "border-b-2 lg:border-r-2 lg:border-b-0",
-      )}
-    >
-      {children}
-    </section>
+    </div>
   );
 }
 
 function Fact({ label, children }: { label: string; children: ReactNode }) {
   return (
-    <div className="flex flex-col gap-1">
-      <p className="font-mono text-[11px] font-semibold uppercase tracking-[0.66px] text-neutral">
-        {label}
-      </p>
-      <p className="text-[17px] font-bold leading-[22px] text-ink">{children}</p>
+    <div className="flex flex-col gap-1 border-t border-bg py-3.5 sm:min-h-[52px] sm:flex-row sm:items-center sm:py-2">
+      <dt className="text-sm leading-[18px] text-ink-subtle sm:w-40 sm:shrink-0">{label}</dt>
+      <dd className="text-[15px] font-semibold leading-5 text-ink">{children}</dd>
     </div>
   );
 }
@@ -377,10 +372,9 @@ function AgendaLink({
       href={href}
       {...(external ? { target: "_blank", rel: "noreferrer" } : {})}
       {...(download ? { download: "reservation.ics" } : {})}
-      className="flex h-12 items-center justify-between border-2 border-ink px-4 text-[15px] font-bold text-ink transition-colors hover:bg-surface"
+      className="flex h-9 items-center rounded-full bg-bg px-3.5 text-[13px] font-semibold text-ink transition-colors hover:bg-line"
     >
       {children}
-      {download ? <DownloadIcon /> : <ArrowRight />}
     </a>
   );
 }

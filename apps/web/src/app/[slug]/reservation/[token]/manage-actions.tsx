@@ -2,24 +2,26 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useState, useTransition } from "react";
+import { brandButtonClasses } from "@/components/public/public-chrome";
 import { Button } from "@/components/ui/button";
 import { Dialog } from "@/components/ui/dialog";
 import { FormAlert } from "@/components/ui/form-alert";
+import { cn } from "@/lib/cn";
 import {
   cancelManagedBookingAction,
   payManagedBookingAction,
   resendBookingEmailAction,
 } from "../../actions";
 
-/** « Rien reçu ? … renvoie l'e-mail. » */
+/** « Rien reçu ? … renvoie l'e-mail. » (sur le bandeau sombre de la maquette 5.4). */
 export function ResendEmail({ slug, token }: { slug: string; token: string }) {
   const [pending, startTransition] = useTransition();
   const [message, setMessage] = useState<string | null>(null);
   return (
-    <p className="text-sm font-medium leading-5 text-ink-muted">
+    <p>
       Rien reçu ? Vérifie tes spams ou{" "}
       {message ? (
-        <span className="font-bold text-success">{message}</span>
+        <span className="font-semibold text-white">{message}</span>
       ) : (
         <button
           type="button"
@@ -30,7 +32,7 @@ export function ResendEmail({ slug, token }: { slug: string; token: string }) {
               setMessage(result.success ?? result.error ?? null);
             })
           }
-          className="font-bold text-ink underline decoration-1 underline-offset-[3px] disabled:cursor-not-allowed disabled:opacity-60"
+          className="font-semibold text-white underline underline-offset-2 disabled:cursor-not-allowed disabled:opacity-60"
         >
           renvoie l'e-mail
         </button>
@@ -40,14 +42,26 @@ export function ResendEmail({ slug, token }: { slug: string; token: string }) {
   );
 }
 
-/** Annulation par le client, avec la politique d'annulation rappelée. */
+const REFUND_TONES = {
+  success: "bg-success-bg text-success",
+  warning: "bg-warning-bg text-warning",
+  draft: "bg-draft-bg text-draft",
+};
+
+/** Annulation par le client (maquette 5.6) : ce qui est remboursé, puis la confirmation. */
 export function CancelBooking({
   slug,
   token,
+  description,
+  refund,
   policy,
 }: {
   slug: string;
   token: string;
+  description: string;
+  /** Montant remboursé si quelque chose a été payé. */
+  refund: { label: string; amount: string; tone: keyof typeof REFUND_TONES; text: string } | null;
+  /** Politique d'annulation quand rien n'a été payé. */
   policy: string | null;
 }) {
   const router = useRouter();
@@ -56,22 +70,27 @@ export function CancelBooking({
   const [error, setError] = useState<string | null>(null);
   return (
     <>
-      <Button variant="danger" onClick={() => setOpen(true)} className="w-full">
-        Annuler ma réservation
-      </Button>
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        className="shrink-0 text-sm font-bold leading-[18px] text-danger hover:underline"
+      >
+        Annuler
+      </button>
       {open && (
         <Dialog
           open
           onClose={() => setOpen(false)}
           title="Annuler ta réservation ?"
-          description={policy ?? "Tes places seront libérées pour d'autres participants."}
+          description={policy ? `${description} ${policy}` : description}
           footer={
             <>
-              <Button variant="secondary" onClick={() => setOpen(false)}>
+              <Button variant="secondary" onClick={() => setOpen(false)} className="flex-1">
                 Garder ma réservation
               </Button>
               <Button
-                variant="danger"
+                variant="danger-solid"
+                className="flex-1"
                 pending={pending}
                 onClick={() =>
                   startTransition(async () => {
@@ -85,12 +104,27 @@ export function CancelBooking({
                   })
                 }
               >
-                Oui, annuler
+                Annuler la réservation
               </Button>
             </>
           }
         >
-          {error && <FormAlert>{error}</FormAlert>}
+          {refund || error ? (
+            <>
+              {refund && (
+                <div
+                  className={cn("flex flex-col gap-2.5 rounded-2xl p-4", REFUND_TONES[refund.tone])}
+                >
+                  <p className="flex justify-between gap-4 text-sm font-bold leading-[18px]">
+                    <span>{refund.label}</span>
+                    <span>{refund.amount}</span>
+                  </p>
+                  <p className="text-[13px] leading-[19px]">{refund.text}</p>
+                </div>
+              )}
+              {error && <FormAlert>{error}</FormAlert>}
+            </>
+          ) : null}
         </Dialog>
       )}
     </>
@@ -104,11 +138,11 @@ export function PayButton({ slug, token, label }: { slug: string; token: string;
   return (
     <>
       {error && <FormAlert>{error}</FormAlert>}
-      <Button
-        size="lg"
-        arrow
-        pending={pending}
-        className="w-full"
+      <button
+        type="button"
+        disabled={pending}
+        aria-busy={pending}
+        className={cn(brandButtonClasses, "h-[54px] px-[26px] text-base disabled:opacity-70")}
         onClick={() =>
           startTransition(async () => {
             const result = await payManagedBookingAction(slug, token);
@@ -116,8 +150,8 @@ export function PayButton({ slug, token, label }: { slug: string; token: string;
           })
         }
       >
-        {label}
-      </Button>
+        {pending ? "Un instant…" : label}
+      </button>
     </>
   );
 }
@@ -135,7 +169,7 @@ export function PaymentPending() {
     return () => clearTimeout(timer);
   }, [tries, router]);
   return (
-    <p role="status" className="text-sm font-semibold text-ink-muted">
+    <p role="status" className="text-sm font-semibold text-white/75">
       {tries >= 15
         ? "Le paiement met du temps à se confirmer : tu recevras un e-mail dès que c'est fait."
         : "Confirmation du paiement…"}

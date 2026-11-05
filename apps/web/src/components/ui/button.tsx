@@ -9,6 +9,7 @@ type Variant =
   | "secondary"
   | "success"
   | "danger"
+  | "danger-solid"
   | "inverse"
   | "inverse-outline"
   | "inverse-danger";
@@ -38,6 +39,8 @@ const variants: Record<Variant, string> = {
   danger:
     "border border-danger/40 bg-surface font-semibold text-danger hover:bg-danger-bg " +
     "disabled:border-line disabled:text-ink-subtle disabled:hover:bg-surface",
+  /** Confirmer une action destructrice (« Annuler la réservation »). */
+  "danger-solid": "bg-danger font-semibold text-white hover:brightness-95 disabled:opacity-50",
   inverse: "bg-surface font-semibold text-ink hover:bg-field focus-visible:outline-on-ink",
   /** Refuser, sur un bandeau de décision teinté. */
   "inverse-danger": "bg-surface font-semibold text-danger hover:bg-danger-bg",

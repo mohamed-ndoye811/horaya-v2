@@ -2,9 +2,9 @@ import { getPublicEvent } from "@horaya/db";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
-import { BrandBand, PublicNav } from "@/components/public/public-chrome";
+import { eventCover } from "@/components/public/public-events";
 import { NotFoundScreen } from "@/components/public/public-not-found";
-import { Check } from "@/components/ui/icons";
+import { ArrowLeft } from "@/components/ui/icons";
 import { cn } from "@/lib/cn";
 import { displayFontClass } from "@/lib/fonts";
 import { formatEventRange, formatMoney } from "@/lib/format";
@@ -16,7 +16,7 @@ import { BookingForm } from "./booking-form";
 
 export const metadata: Metadata = { title: "Réserver tes places", robots: { index: false } };
 
-/** Écran 18 : coordonnées des participants. */
+/** Maquette 5.3 : coordonnées des participants et paiement. */
 export default async function BookEventPage({
   params,
   searchParams,
@@ -70,52 +70,28 @@ export default async function BookEventPage({
             : `Payer ${formatMoney(dueNow)}`
           : "Confirmer ma réservation";
 
+  const place = event.locationName ?? (event.onlineUrl ? "En ligne" : null);
+  const deposit = depositCents !== null && total > 0;
+
   return (
-    <>
-      <BrandBand>
-        <PublicNav workspace={workspace} />
-        <div className="flex flex-col gap-6 px-5 pt-7 pb-7 sm:flex-row sm:items-end sm:justify-between sm:px-16 sm:pt-9 sm:pb-8">
-          <div className="flex flex-col gap-2.5">
-            <Link
-              href={eventHref}
-              className="tap-area font-mono text-label font-semibold uppercase tracking-[0.055em] opacity-85 hover:underline"
-            >
-              ← Retour à l'événement
-            </Link>
-            <h1
-              className={cn(
-                "text-[40px] leading-10 sm:text-[56px] sm:leading-[52px]",
-                displayFontClass(workspace.displayFont),
-              )}
-            >
-              Réserver tes places
-            </h1>
-          </div>
-          <ol className="flex items-center gap-3 text-sm">
-            <li className="flex items-center gap-2 opacity-85">
-              <span
-                aria-hidden="true"
-                className="flex size-7 items-center justify-center border-[1.5px] border-[var(--on-brand)]"
-              >
-                <Check size={12} />
-              </span>
-              <Link href={eventHref} className="font-semibold hover:underline">
-                Places
-              </Link>
-            </li>
-            <li aria-hidden="true" className="h-[1.5px] w-8 bg-[var(--on-brand)] opacity-50" />
-            <li aria-current="step" className="flex items-center gap-2">
-              <span
-                aria-hidden="true"
-                className="flex size-7 items-center justify-center bg-[var(--on-brand)] font-mono text-[13px] font-bold text-[var(--brand)]"
-              >
-                2
-              </span>
-              <span className="font-extrabold">Coordonnées</span>
-            </li>
-          </ol>
-        </div>
-      </BrandBand>
+    <div className="flex flex-col gap-6">
+      <div className="flex flex-col gap-1.5">
+        <Link
+          href={eventHref}
+          className="flex w-fit items-center gap-1.5 text-sm font-semibold leading-[18px] text-ink-muted hover:text-ink"
+        >
+          <ArrowLeft className="size-3.5" />
+          {event.title}
+        </Link>
+        <h1
+          className={cn(
+            "text-[36px] leading-10 tracking-[-0.035em] text-ink sm:text-kpi sm:leading-[48px]",
+            displayFontClass(workspace.displayFont),
+          )}
+        >
+          Réserve tes places
+        </h1>
+      </div>
 
       <BookingForm
         slug={slug}
@@ -136,63 +112,91 @@ export default async function BookEventPage({
               }
             : null
         }
+        recap={{
+          main: `${seats} place${seats > 1 ? "s" : ""} · ${total > 0 ? formatMoney(total) : "Gratuit"}`,
+          extra:
+            state.kind === "waitlist"
+              ? "liste d'attente"
+              : event.requiresApproval
+                ? "sur validation"
+                : deposit && paysOnline
+                  ? `${formatMoney(dueNow)} d'acompte maintenant`
+                  : undefined,
+        }}
         summary={
           <>
-            <div className="flex flex-col gap-2 bg-[var(--brand)] px-6 py-5 text-[var(--on-brand)]">
-              <p className="font-mono text-[11px] font-semibold uppercase tracking-[0.66px] opacity-85">
-                Ta réservation
-              </p>
-              <p
-                className={cn(
-                  "text-[30px] leading-[30px]",
-                  displayFontClass(workspace.displayFont),
-                )}
-              >
-                {event.title}
-              </p>
-              <p className="text-sm font-semibold">
-                {formatEventRange(event.startsAt, event.endsAt, workspace.timezone)}
-              </p>
+            <div
+              className="h-[150px] shrink-0 bg-cover bg-center"
+              style={eventCover(event.coverImageUrl)}
+            />
+            <div className="flex flex-col gap-3.5 px-[22px] pt-5 pb-[22px]">
+              <div className="flex flex-col gap-1">
+                <p className="text-lg font-semibold leading-[22px] text-ink">{event.title}</p>
+                <p className="text-sm leading-[18px] text-ink-muted">
+                  {[formatEventRange(event.startsAt, event.endsAt, workspace.timezone), place]
+                    .filter(Boolean)
+                    .join(" · ")}
+                </p>
+              </div>
+              <div className="flex flex-col gap-2.5 border-t border-bg pt-3.5">
+                <p className="flex justify-between gap-4 text-sm leading-[18px]">
+                  <span className="text-ink/85">
+                    {seats} place{seats > 1 ? "s" : ""}
+                    {event.priceCents > 0 && ` × ${formatMoney(event.priceCents)}`}
+                    <Link
+                      href={`${eventHref}#reserver`}
+                      className="ml-2 text-[13px] font-semibold text-ink-subtle underline underline-offset-2 hover:text-ink"
+                    >
+                      Modifier
+                    </Link>
+                  </span>
+                  <span className="font-semibold text-ink">
+                    {total > 0 ? formatMoney(total) : "Gratuit"}
+                  </span>
+                </p>
+                <p className="flex items-baseline justify-between gap-4">
+                  <span className="text-[15px] font-bold leading-5 text-ink">Total TTC</span>
+                  <span className="text-xl font-semibold leading-6 text-ink">
+                    {total > 0 ? formatMoney(total) : "Gratuit"}
+                  </span>
+                </p>
+              </div>
+              {deposit ? (
+                <div className="flex flex-col gap-2 rounded-[14px] bg-field p-3.5 text-sm leading-[18px]">
+                  <p className="flex justify-between gap-4 font-bold text-[var(--brand-text)]">
+                    <span>
+                      Acompte {event.depositPercent} %{paysOnline ? " · maintenant" : ""}
+                    </span>
+                    <span>{formatMoney(dueNow)}</span>
+                  </p>
+                  <p className="flex justify-between gap-4">
+                    <span className="text-ink/85">Reste sur place</span>
+                    <span className="font-semibold text-ink">{formatMoney(total - dueNow)}</span>
+                  </p>
+                </div>
+              ) : (
+                total > 0 && (
+                  <p className="rounded-[14px] bg-field p-3.5 text-sm leading-[18px] text-ink/85">
+                    {paymentNote(event.paymentMode, channel, event.depositPercent)}
+                  </p>
+                )
+              )}
+              {(policy || state.kind === "waitlist" || event.requiresApproval) && (
+                <p className="text-xs leading-[17px] text-ink-subtle">
+                  {state.kind === "waitlist"
+                    ? "C'est complet : tu passes en liste d'attente et tu es prévenu·e dès qu'une place se libère."
+                    : [
+                        event.requiresApproval ? "L'organisateur valide chaque demande." : null,
+                        policy,
+                      ]
+                        .filter(Boolean)
+                        .join(" ")}
+                </p>
+              )}
             </div>
-            <div className="flex flex-col gap-3 border-b border-line-soft px-6 py-5">
-              <p className="flex justify-between gap-4 text-[15px] font-semibold text-ink">
-                <span>
-                  {seats} × place
-                  <Link
-                    href={`${eventHref}#reserver`}
-                    className="ml-2 text-[13px] font-bold underline decoration-1 underline-offset-[3px]"
-                  >
-                    Modifier
-                  </Link>
-                </span>
-                <span className="font-mono">{formatMoney(total)}</span>
-              </p>
-              <p className="flex justify-between gap-4 text-sm font-medium text-ink-muted">
-                <span>Paiement</span>
-                <span>{paymentNote(event.paymentMode, channel, event.depositPercent)}</span>
-              </p>
-            </div>
-            <div className="flex items-baseline justify-between px-6 pt-5 pb-1">
-              <span className="text-[15px] font-bold text-ink">Total TTC</span>
-              <span className="font-headline text-[40px] leading-10 text-ink">
-                {total > 0 ? formatMoney(total) : "Gratuit"}
-              </span>
-            </div>
-            {(policy || state.kind === "waitlist" || event.requiresApproval) && (
-              <p className="order-last -mt-3 px-6 pb-6 text-center text-[13px] font-medium leading-[18px] text-ink-muted">
-                {state.kind === "waitlist"
-                  ? "C'est complet : tu passes en liste d'attente et tu es prévenu·e dès qu'une place se libère."
-                  : [
-                      event.requiresApproval ? "L'organisateur valide chaque demande." : null,
-                      policy,
-                    ]
-                      .filter(Boolean)
-                      .join(" ")}
-              </p>
-            )}
           </>
         }
       />
-    </>
+    </div>
   );
 }
