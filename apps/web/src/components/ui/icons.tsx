@@ -92,7 +92,10 @@ export function GoogleLogo() {
   );
 }
 
-/* Icônes de l'admin (traits 1,6 px, couleur héritée du texte). */
+/*
+ * Icônes de l'admin : jeu Lucide des maquettes DA v4 (grille 24, trait 1,75, bouts arrondis),
+ * couleur héritée du texte.
+ */
 
 interface IconProps {
   className?: string;
@@ -101,7 +104,7 @@ interface IconProps {
 
 function Svg({
   size = 18,
-  viewBox = "0 0 18 18",
+  viewBox = "0 0 24 24",
   className,
   children,
 }: IconProps & { viewBox?: string; children: React.ReactNode }) {
@@ -114,7 +117,9 @@ function Svg({
       className={className}
       fill="none"
       stroke="currentColor"
-      strokeWidth="1.6"
+      strokeWidth="1.75"
+      strokeLinecap="round"
+      strokeLinejoin="round"
     >
       {children}
     </svg>
@@ -123,72 +128,68 @@ function Svg({
 
 export const DashboardIcon = (props: IconProps) => (
   <Svg {...props}>
-    <rect x="2" y="2" width="6" height="6" />
-    <rect x="10" y="2" width="6" height="6" />
-    <rect x="2" y="10" width="6" height="6" />
-    <rect x="10" y="10" width="6" height="6" />
+    <rect x="3" y="3" width="7" height="9" rx="1" />
+    <rect x="14" y="3" width="7" height="5" rx="1" />
+    <rect x="14" y="12" width="7" height="9" rx="1" />
+    <rect x="3" y="16" width="7" height="5" rx="1" />
   </Svg>
 );
 
 export const CalendarIcon = (props: IconProps) => (
   <Svg {...props}>
-    <rect x="2" y="3" width="14" height="13" />
-    <path d="M2 7H16M6 1V5M12 1V5" />
+    <rect x="3" y="4" width="18" height="18" rx="2" />
+    <path d="M16 2v4M8 2v4M3 10h18" />
   </Svg>
 );
 
 export const TicketIcon = (props: IconProps) => (
   <Svg {...props}>
-    <path d="M2 4H16V7C14.9 7 14 7.9 14 9C14 10.1 14.9 11 16 11V14H2V11C3.1 11 4 10.1 4 9C4 7.9 3.1 7 2 7V4Z" />
+    <path d="M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z" />
+    <path d="M13 5v2M13 17v2M13 11v2" />
   </Svg>
 );
 
 export const ReceiptIcon = (props: IconProps) => (
   <Svg {...props}>
-    <rect x="3" y="2" width="12" height="14" />
-    <path d="M6 6H12M6 9H12M6 12H10" />
+    <path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z" />
+    <path d="M8 12h5M16 9.5a4 4 0 1 0 0 5.2" />
   </Svg>
 );
 
 export const BoxIcon = (props: IconProps) => (
   <Svg {...props}>
-    <path d="M2 5L9 2L16 5V13L9 16L2 13V5Z" />
-    <path d="M2 5L9 8L16 5M9 8V16" />
+    <path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z" />
+    <path d="m3.3 7 8.7 5 8.7-5M12 22V12" />
   </Svg>
 );
 
-export const UserIcon = (props: IconProps) => (
+export const UsersIcon = (props: IconProps) => (
   <Svg {...props}>
-    <circle cx="9" cy="6" r="3.5" />
-    <path d="M2.5 16C2.5 12.4 5.4 10.5 9 10.5C12.6 10.5 15.5 12.4 15.5 16" />
+    <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+    <circle cx="9" cy="7" r="4" />
+    <path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" />
   </Svg>
 );
 
 export const SettingsIcon = (props: IconProps) => (
   <Svg {...props}>
-    <circle cx="9" cy="9" r="2.5" />
-    <path d="M9 1.5V4M9 14V16.5M1.5 9H4M14 9H16.5M3.7 3.7L5.5 5.5M12.5 12.5L14.3 14.3M3.7 14.3L5.5 12.5M12.5 5.5L14.3 3.7" />
-  </Svg>
-);
-
-/** Onglet « Plus » de la barre mobile : trois traits. */
-export const MoreIcon = (props: IconProps) => (
-  <Svg {...props}>
-    <path d="M2 4.5H16M2 9H16M2 13.5H16" />
+    <path d="M20 7h-9M14 17H5" />
+    <circle cx="17" cy="17" r="3" />
+    <circle cx="7" cy="7" r="3" />
   </Svg>
 );
 
 export const SearchIcon = (props: IconProps) => (
-  <Svg {...props} className={props.className}>
-    <circle cx="8" cy="8" r="5.5" strokeWidth="1.8" />
-    <path d="M12 12L16 16" strokeWidth="1.8" />
+  <Svg {...props}>
+    <circle cx="11" cy="11" r="7" />
+    <path d="m20 20-3.5-3.5" />
   </Svg>
 );
 
 export const PinIcon = (props: IconProps) => (
   <Svg {...props}>
-    <path d="M9 16C9 16 14 11.5 14 7.5C14 4.7 11.8 2.5 9 2.5C6.2 2.5 4 4.7 4 7.5C4 11.5 9 16 9 16Z" />
-    <circle cx="9" cy="7.5" r="1.8" />
+    <path d="M20 10c0 5-5.5 10.2-7.4 11.8a1 1 0 0 1-1.2 0C9.5 20.2 4 15 4 10a8 8 0 0 1 16 0" />
+    <circle cx="12" cy="10" r="3" />
   </Svg>
 );
 
