@@ -60,6 +60,7 @@ export function PageHeader({
         {leading}
         <div className="flex min-w-0 flex-col gap-1.5">
           <p
+            data-tour="breadcrumb"
             className={cn("reveal text-[13px] font-semibold leading-4 text-ink-muted", cornerLeft)}
           >
             {eyebrow}
@@ -103,6 +104,7 @@ export function PageHeader({
           </div>
         ) : (
           <div
+            data-tour="actions"
             className={cn("reveal flex shrink-0 flex-wrap gap-2", actionsInCorner && cornerRight)}
             style={stagger(4)}
           >

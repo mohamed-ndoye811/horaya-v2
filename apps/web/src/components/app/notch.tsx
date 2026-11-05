@@ -57,7 +57,10 @@ export interface NotchProps {
 export function Notch({ user, workspace, pendingBookings }: NotchProps) {
   const pathname = usePathname();
   return (
-    <div className="fixed top-0 left-1/2 z-50 hidden h-14 w-[600px] -translate-x-1/2 lg:block">
+    <div
+      data-tour="notch"
+      className="fixed top-0 left-1/2 z-50 hidden h-14 w-[600px] -translate-x-1/2 lg:block"
+    >
       <svg
         width="600"
         height="56"
