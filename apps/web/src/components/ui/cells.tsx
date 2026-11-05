@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import { cn } from "@/lib/cn";
 import { formatDayNumber, formatMoney, formatMonthShort, formatWeekdayShort } from "@/lib/format";
 import { Avatar, CategorySwatch } from "./avatar";
+import { TicketIcon } from "./icons";
 
 /** Titre (gras 16 px) + sous-titre (14 px), tronqués sur une ligne. Lien si `href`. */
 export function TitleBlock({
@@ -99,6 +100,31 @@ export function EventCell({
   );
 }
 
+/**
+ * Vignette d'événement (DA v4) : la photo de couverture, sinon un carré teinté de la couleur
+ * du type avec un ticket.
+ */
+export function EventThumb({ imageUrl, color }: { imageUrl?: string | null; color: string }) {
+  if (imageUrl) {
+    return (
+      <span
+        aria-hidden="true"
+        className="size-10 shrink-0 rounded-[10px] bg-cover bg-center"
+        style={{ backgroundImage: `url(${imageUrl})` }}
+      />
+    );
+  }
+  return (
+    <span
+      aria-hidden="true"
+      className="flex size-10 shrink-0 items-center justify-center rounded-[10px] text-ink"
+      style={{ backgroundColor: `${color}2e` }}
+    >
+      <TicketIcon size={17} />
+    </span>
+  );
+}
+
 /** Bloc date des listes : « JUIN » en mono au-dessus de « 20 » (ou jour + mois en dessous). */
 export function DateBlock({
   date,
@@ -107,41 +133,23 @@ export function DateBlock({
 }: {
   date: Date;
   timeZone?: string;
+  /** `month-first` : mois au-dessus du jour ; `day-first` : jour de la semaine au-dessus. */
   layout?: "month-first" | "day-first";
 }) {
-  const label = (
-    <span className="font-mono text-label font-semibold uppercase leading-[14px] tracking-[0.055em] text-ink-muted">
-      {layout === "month-first"
-        ? formatMonthShort(date, timeZone)
-        : `${formatWeekdayShort(date, timeZone)} ${formatMonthShort(date, timeZone)}`}
-    </span>
-  );
-  const day = (
-    <span className="text-[28px] font-extrabold leading-7 text-ink tabular-nums">
-      {layout === "day-first"
-        ? formatDayNumber(date, timeZone).padStart(2, "0")
-        : formatDayNumber(date, timeZone)}
-    </span>
-  );
+  // DA v4 : petite pastille grise, libellé court en capitales et numéro du jour.
   return (
     <time
       dateTime={date.toISOString()}
-      className={cn(
-        "flex shrink-0 flex-col gap-1 whitespace-nowrap",
-        layout === "month-first" && "w-14",
-      )}
+      className="flex h-[42px] w-10 shrink-0 flex-col items-center justify-center rounded-[10px] bg-field whitespace-nowrap"
     >
-      {layout === "month-first" ? (
-        <>
-          {label}
-          {day}
-        </>
-      ) : (
-        <>
-          {day}
-          {label}
-        </>
-      )}
+      <span className="text-[9px] font-bold uppercase leading-[11px] text-ink-muted">
+        {layout === "month-first"
+          ? formatMonthShort(date, timeZone)
+          : formatWeekdayShort(date, timeZone)}
+      </span>
+      <span className="text-[15px] font-semibold leading-[18px] text-ink tabular-nums">
+        {formatDayNumber(date, timeZone)}
+      </span>
     </time>
   );
 }
@@ -160,26 +168,18 @@ export function MoneyCell({
     <div className="flex flex-col items-end gap-1">
       <span
         className={cn(
-          "font-extrabold leading-5 text-ink tabular-nums",
-          size === "lg" ? "text-lg" : "text-base",
+          "font-semibold leading-5 text-ink tabular-nums",
+          size === "lg" ? "text-base" : "text-[15px]",
         )}
       >
         {formatMoney(cents)}
       </span>
-      {caption && (
-        <span className="font-mono text-[11px] font-semibold uppercase leading-[14px] tracking-[0.045em] text-ink-muted">
-          {caption}
-        </span>
-      )}
+      {caption && <span className="text-xs leading-4 text-ink-muted">{caption}</span>}
     </div>
   );
 }
 
-/** Texte secondaire en capitales mono (« MER. 17 JUIN · 11H »). */
+/** Texte secondaire discret (« mer. 17 juin · 11h »). */
 export function MonoCaption({ children }: { children: ReactNode }) {
-  return (
-    <span className="font-mono text-[11px] font-semibold uppercase leading-[14px] tracking-[0.045em] text-ink-muted">
-      {children}
-    </span>
-  );
+  return <span className="text-xs leading-4 text-ink-muted">{children}</span>;
 }

@@ -40,7 +40,7 @@ export function SectionHeading({
   );
 }
 
-/** Section numérotée d'un formulaire : pastille noire numérotée et titre (« 1 Informations »). */
+/** Section numérotée d'un formulaire, dans une carte blanche (« 1 Informations »). */
 export function FormSection({
   number,
   title,
@@ -51,7 +51,7 @@ export function FormSection({
   children: ReactNode;
 }) {
   return (
-    <section className="flex flex-col gap-5">
+    <section className="flex flex-col gap-5 rounded-3xl bg-surface p-5 sm:p-6">
       <h2 className="flex items-center gap-2.5">
         <span className="flex size-[26px] shrink-0 items-center justify-center rounded-full bg-ink text-xs font-bold leading-[14px] text-on-ink">
           {number}

@@ -23,6 +23,7 @@ export function PageHeader({
   actions,
   stickyActions,
   actionsInCorner = true,
+  toolbar,
   className,
 }: {
   /** Fil d'Ariane ou contexte (« Tableau de bord / Réservations »). */
@@ -41,6 +42,8 @@ export function PageHeader({
   stickyActions?: "bottom" | "above-tabs";
   /** Actions trop larges pour le coin du notch (sélecteur de vue du calendrier) : `false`. */
   actionsInCorner?: boolean;
+  /** Recherche et filtres de la liste : à droite du titre sur grand écran, dessous sinon. */
+  toolbar?: ReactNode;
   className?: string;
 }) {
   return (
@@ -69,6 +72,14 @@ export function PageHeader({
           </div>
         )}
       </div>
+      {toolbar && (
+        <div
+          className="reveal flex min-w-0 flex-col gap-3 md:flex-row md:items-center xl:ml-auto xl:shrink-0"
+          style={stagger(3)}
+        >
+          {toolbar}
+        </div>
+      )}
       {actions &&
         (stickyActions ? (
           <div

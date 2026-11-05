@@ -3,9 +3,11 @@
 import Link from "next/link";
 import { ActiveIndicator } from "@/components/motion/indicator";
 import { cn } from "@/lib/cn";
-import { CountBadge } from "./badge";
 
-/** Onglets soulignés (fiche événement : Participants, Infos, Matériel…). */
+/**
+ * Onglets d'une fiche (Participants, Matériel, Infos) : rail blanc en pilule, onglet actif
+ * noir avec son compteur (DA v4).
+ */
 export function Tabs({
   tabs,
   value,
@@ -16,7 +18,10 @@ export function Tabs({
   label: string;
 }) {
   return (
-    <nav aria-label={label} className="flex gap-8 overflow-x-auto">
+    <nav
+      aria-label={label}
+      className="flex w-fit max-w-full gap-1 overflow-x-auto rounded-full bg-surface p-1"
+    >
       {tabs.map((tab) => {
         const active = tab.value === value;
         return (
@@ -25,25 +30,24 @@ export function Tabs({
             href={tab.href}
             aria-current={active ? "page" : undefined}
             className={cn(
-              "relative flex shrink-0 items-center gap-2 pt-[18px] pb-[18px] text-[15px] leading-5 transition-colors",
-              active ? "font-extrabold text-ink" : "font-semibold text-ink-muted hover:text-ink",
+              "relative isolate flex h-9 shrink-0 items-center gap-2 rounded-full px-4 text-sm font-semibold leading-[18px] transition-colors",
+              active ? "text-on-ink" : "text-ink hover:bg-field",
             )}
           >
             {active && (
-              <ActiveIndicator
-                id={`tabs-${label}`}
-                className="inset-x-0 bottom-0 h-[3px] rounded-full bg-ink"
-              />
+              <ActiveIndicator id={`tabs-${label}`} className="inset-0 -z-10 rounded-full bg-ink" />
             )}
             {tab.label}
-            {tab.count !== undefined &&
-              (active ? (
-                <CountBadge>{tab.count}</CountBadge>
-              ) : (
-                <span className="font-mono text-label font-semibold text-ink-muted">
-                  {tab.count}
-                </span>
-              ))}
+            {tab.count !== undefined && (
+              <span
+                className={cn(
+                  "font-mono text-label font-semibold",
+                  active ? "text-on-ink/70" : "text-ink-muted",
+                )}
+              >
+                {tab.count}
+              </span>
+            )}
           </Link>
         );
       })}

@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { Fragment, type ReactNode } from "react";
 import { cn } from "@/lib/cn";
 
 export interface Column<T> {
@@ -28,6 +28,8 @@ export function DataTable<T>({
   flush = false,
   empty,
   card,
+  group,
+  rowTone,
 }: {
   label: string;
   columns: Array<Column<T>>;
@@ -44,8 +46,30 @@ export function DataTable<T>({
   card?: (row: T) => ReactNode;
   /** Ancienne option (filet au-dessus des cartes), sans effet depuis la DA v4. */
   cardRule?: boolean;
+  /**
+   * Regroupe les lignes consécutives sous un bandeau (« Cette semaine 4 ») : renvoie le
+   * libellé du groupe de chaque ligne, déjà triée.
+   */
+  group?: (row: T) => string;
+  /** Ligne mise en avant (réservation à valider) : fond ambre pâle. */
+  rowTone?: (row: T) => "warning" | undefined;
 }) {
   const edge = "px-3 first:pl-5 last:pr-5";
+  const groupOf = (index: number) => {
+    if (!group) return null;
+    const row = rows[index] as T;
+    const label = group(row);
+    if (index > 0 && group(rows[index - 1] as T) === label) return null;
+    let count = 0;
+    for (let next = index; next < rows.length && group(rows[next] as T) === label; next++) count++;
+    return { label, count };
+  };
+  const band = (heading: { label: string; count: number }) => (
+    <>
+      {heading.label}
+      <span className="ml-2 font-medium text-ink-subtle">{heading.count}</span>
+    </>
+  );
   // Carte blanche posée à 16 px des bords, ou collée à sa colonne (`flush`).
   const shell = cn("overflow-hidden rounded-3xl bg-surface", !flush && "mx-4");
   return (
@@ -53,14 +77,26 @@ export function DataTable<T>({
       {card && (
         <ul aria-label={label} className={cn("reveal-group flex flex-col lg:hidden", shell)}>
           {rows.length === 0 && empty && <li>{empty}</li>}
-          {rows.map((row) => (
-            <li
-              key={rowKey(row)}
-              className="relative border-t border-line-soft px-4 py-4 first:border-t-0"
-            >
-              {card(row)}
-            </li>
-          ))}
+          {rows.map((row, index) => {
+            const heading = groupOf(index);
+            return (
+              <Fragment key={rowKey(row)}>
+                {heading && (
+                  <li className="border-t border-line-soft bg-band px-4 py-2 text-xs font-bold leading-4 text-ink first:border-t-0">
+                    {band(heading)}
+                  </li>
+                )}
+                <li
+                  className={cn(
+                    "relative border-t border-line-soft px-4 py-4 first:border-t-0",
+                    rowTone?.(row) === "warning" && "bg-warning-bg/50",
+                  )}
+                >
+                  {card(row)}
+                </li>
+              </Fragment>
+            );
+          })}
         </ul>
       )}
       <div className={cn(shell, card ? "hidden lg:block" : undefined)}>
@@ -99,34 +135,52 @@ export function DataTable<T>({
                   <td colSpan={columns.length}>{empty}</td>
                 </tr>
               )}
-              {rows.map((row) => (
-                <tr
-                  key={rowKey(row)}
-                  className="border-t border-line-soft transition-colors hover:bg-band"
-                >
-                  {columns.map((column) => (
-                    <td
-                      key={column.key}
+              {rows.map((row, index) => {
+                const heading = groupOf(index);
+                return (
+                  <Fragment key={rowKey(row)}>
+                    {heading && (
+                      <tr className="border-t border-line-soft bg-band">
+                        <th
+                          scope="rowgroup"
+                          colSpan={columns.length}
+                          className="h-8 px-5 text-left text-xs font-bold leading-4 text-ink"
+                        >
+                          {band(heading)}
+                        </th>
+                      </tr>
+                    )}
+                    <tr
                       className={cn(
-                        "min-w-0 align-middle",
-                        dense ? "py-2.5" : "py-3",
-                        edge,
-                        alignment[column.align ?? "left"],
+                        "border-t border-line-soft transition-colors hover:bg-band",
+                        rowTone?.(row) === "warning" && "bg-warning-bg/50",
                       )}
                     >
-                      <div
-                        className={cn(
-                          "flex min-w-0 items-center",
-                          column.align === "right" && "justify-end",
-                          column.align === "center" && "justify-center",
-                        )}
-                      >
-                        {column.cell(row)}
-                      </div>
-                    </td>
-                  ))}
-                </tr>
-              ))}
+                      {columns.map((column) => (
+                        <td
+                          key={column.key}
+                          className={cn(
+                            "min-w-0 align-middle",
+                            dense ? "py-2" : "py-2.5",
+                            edge,
+                            alignment[column.align ?? "left"],
+                          )}
+                        >
+                          <div
+                            className={cn(
+                              "flex min-w-0 items-center",
+                              column.align === "right" && "justify-end",
+                              column.align === "center" && "justify-center",
+                            )}
+                          >
+                            {column.cell(row)}
+                          </div>
+                        </td>
+                      ))}
+                    </tr>
+                  </Fragment>
+                );
+              })}
             </tbody>
           </table>
         </div>
