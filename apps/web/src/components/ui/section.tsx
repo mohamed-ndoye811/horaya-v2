@@ -3,14 +3,17 @@ import type { ReactNode } from "react";
 import { cn } from "@/lib/cn";
 import { monoLinkClasses } from "./button";
 
-/** Titre de bloc (« À venir ») avec lien discret à droite. */
+/** Titre de bloc (« À venir ») avec précision grise et lien discret à droite. */
 export function SectionHeading({
   title,
+  meta,
   action,
   flush = false,
   className,
 }: {
   title: string;
+  /** Après le titre, en gris (« 10 actions », « lundi 15 juin »). */
+  meta?: string;
   action?: { label: string; href: string };
   /** Sans marges latérales (titre placé dans une colonne déjà espacée). */
   flush?: boolean;
@@ -24,7 +27,10 @@ export function SectionHeading({
         className,
       )}
     >
-      <h2 className="font-headline text-section leading-7 text-ink">{title}</h2>
+      <h2 className="flex items-baseline gap-2.5">
+        <span className="font-headline text-section leading-7 text-ink">{title}</span>
+        {meta && <span className="text-[13px] leading-4 text-ink-muted">{meta}</span>}
+      </h2>
       {action && (
         <Link href={action.href} className={monoLinkClasses}>
           {action.label} →

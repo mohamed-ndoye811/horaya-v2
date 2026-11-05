@@ -1,147 +1,132 @@
 import { addDays } from "@horaya/core";
 import {
   countEventsStartingBetween,
+  getDashboardOverview,
   getDashboardStats,
   listLatestBookings,
   listUpcomingEvents,
 } from "@horaya/db";
 import type { Metadata } from "next";
-import Link from "next/link";
 import { FabLink } from "@/components/app/fab";
 import { PageHeader } from "@/components/app/page-header";
-import { StatusBadge } from "@/components/ui/badge";
 import { ButtonLink } from "@/components/ui/button";
-import { DateBlock, EventCell, MoneyCell, PersonCell } from "@/components/ui/cells";
 import { EmptyState } from "@/components/ui/empty-state";
 import { PlusIcon } from "@/components/ui/icons";
 import { SectionHeading } from "@/components/ui/section";
-import { Stat, StatGrid } from "@/components/ui/stat";
-import { BOOKING_STATUS_BADGE, eventStatusBadge } from "@/components/ui/status";
-import { isoWeek, mondayOf, startOfDay, todayIn } from "@/lib/dates";
-import { formatTimeRange, formatWeekdayShort, PAYMENT_MODE_LABELS } from "@/lib/format";
+import { cumulative, dailySeries, percentChange } from "@/lib/dashboard";
+import { addMonths, isoWeek, mondayOf, startOfDay, todayIn } from "@/lib/dates";
 import { db } from "@/server/db";
 import { getWorkspaceContext } from "@/server/workspace";
 import { VerifyEmailBanner } from "./account-actions";
+import {
+  LatestBookings,
+  MonthBand,
+  NextDaysCards,
+  TodayCard,
+  TodoCards,
+} from "./dashboard-sections";
 
 export const metadata: Metadata = { title: "Tableau de bord · Horaya" };
 
 const plural = (count: number, singular: string, pluralForm = `${singular}s`) =>
   `${count} ${count > 1 ? pluralForm : singular}`;
 
-/** Écran 03 : tableau de bord. */
+const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
+
+/** Écran 03 : tableau de bord (DA v4, maquette Paper 1.1). */
 export default async function DashboardPage() {
   const { user, workspace, timeZone } = await getWorkspaceContext();
   const now = new Date();
   const today = todayIn(timeZone, now);
   const monday = mondayOf(today);
-  const bounds = {
-    now,
-    weekStart: startOfDay(monday, timeZone),
-    weekEnd: startOfDay(addDays(monday, 7), timeZone),
-    previousWeekStart: startOfDay(addDays(monday, -7), timeZone),
-    monthStart: startOfDay({ ...today, day: 1 }, timeZone),
-  };
+  const firstOfMonth = { ...today, day: 1 };
+  const monthStart = startOfDay(firstOfMonth, timeZone);
+  const previousMonthStart = startOfDay(addMonths(today, -1), timeZone);
+  const dayStart = startOfDay(today, timeZone);
+  const dayEnd = startOfDay(addDays(today, 1), timeZone);
 
-  const [stats, upcoming, latest, startingToday] = await Promise.all([
-    getDashboardStats(db, workspace.id, bounds),
+  const [stats, overview, upcoming, latest, startingToday] = await Promise.all([
+    getDashboardStats(db, workspace.id, {
+      now,
+      weekStart: startOfDay(monday, timeZone),
+      weekEnd: startOfDay(addDays(monday, 7), timeZone),
+      previousWeekStart: startOfDay(addDays(monday, -7), timeZone),
+      monthStart,
+    }),
+    getDashboardOverview(db, workspace.id, {
+      now,
+      dayStart,
+      dayEnd,
+      monthStart,
+      previousMonthStart,
+      // Même avancée dans le mois précédent (du 1er au même jour, même heure).
+      previousMonthSameMoment: new Date(
+        previousMonthStart.getTime() + (now.getTime() - monthStart.getTime()),
+      ),
+      timeZone,
+    }),
     listUpcomingEvents(db, workspace.id, now, 8),
-    listLatestBookings(db, workspace.id, 8),
-    countEventsStartingBetween(
-      db,
-      workspace.id,
-      startOfDay(today, timeZone),
-      startOfDay(addDays(today, 1), timeZone),
-    ),
+    listLatestBookings(db, workspace.id, 5),
+    countEventsStartingBetween(db, workspace.id, dayStart, dayEnd),
   ]);
 
+  const nextDays = upcoming.filter((event) => event.startsAt.getTime() < now.getTime() + WEEK_MS);
   const firstName = user.firstName || user.name.split(" ")[0] || "";
-  const dateLabel = new Intl.DateTimeFormat("fr-FR", {
-    weekday: "long",
-    day: "numeric",
-    month: "long",
-    timeZone,
-  }).format(now);
-  const weekDiff = stats.eventsThisWeek - stats.eventsLastWeek;
+  const longDate = (date: Date) =>
+    new Intl.DateTimeFormat("fr-FR", {
+      weekday: "long",
+      day: "numeric",
+      month: "long",
+      timeZone,
+    }).format(date);
+  const dateLabel = longDate(now);
   const subtitleParts = [
+    startingToday > 0 ? `${plural(startingToday, "événement")} aujourd'hui` : null,
     stats.pendingBookings > 0
       ? `${plural(stats.pendingBookings, "réservation")} ${stats.pendingBookings > 1 ? "attendent" : "attend"} ta validation`
       : null,
-    startingToday > 0
-      ? `${plural(startingToday, "événement")} ${startingToday > 1 ? "démarrent" : "démarre"} aujourd'hui`
-      : null,
   ].filter(Boolean);
+  const todoCount =
+    overview.pending.count +
+    overview.toCollect.count +
+    overview.waitlist.count +
+    overview.drafts.count;
+
+  const bookingsByDay = dailySeries(overview.month.bookingsByDay, firstOfMonth, today);
+  const collectedByDay = dailySeries(overview.month.collectedByDay, firstOfMonth, today);
+  const bookingsThisMonth = bookingsByDay.reduce((sum, value) => sum + value, 0);
+  const collectedThisMonth = collectedByDay.reduce((sum, value) => sum + value, 0);
+  const monthName = new Intl.DateTimeFormat("fr-FR", { month: "long", timeZone });
+  const previousMonthName = monthName.format(previousMonthStart);
+  const period = `du 1er au ${today.day} ${monthName.format(now)}, comparé à ${previousMonthName}`;
+
+  const empty = upcoming.length === 0 && latest.length === 0;
 
   return (
     <>
       <PageHeader
-        eyebrow={`${dateLabel} · Semaine ${isoWeek(today)}`}
-        title={`Bonjour, ${firstName}`}
+        eyebrow={`${dateLabel.charAt(0).toUpperCase()}${dateLabel.slice(1)} · Semaine ${isoWeek(today)}`}
+        title={`Bonjour ${firstName}`}
         subtitle={
           subtitleParts.length > 0
-            ? `${subtitleParts.join(" et ")}.`
+            ? `${subtitleParts.join(". ")}.`
             : `Rien d'urgent dans ${workspace.name}.`
         }
         actions={
-          <>
-            <ButtonLink href="/app/calendrier" variant="secondary">
-              Voir le calendrier
+          <div className="hidden lg:flex">
+            <ButtonLink href="/app/evenements/nouveau" icon={<PlusIcon />}>
+              Nouvel événement
             </ButtonLink>
-            <div className="hidden lg:flex">
-              <ButtonLink href="/app/evenements/nouveau" icon={<PlusIcon />}>
-                Nouvel événement
-              </ButtonLink>
-            </div>
-          </>
+          </div>
         }
       />
       {!user.emailVerified && (
-        <div className="border-b border-line-soft px-4 py-6">
+        <div className="px-4 pb-4">
           <VerifyEmailBanner email={user.email} />
         </div>
       )}
 
-      <StatGrid>
-        <Stat
-          label="Événements cette semaine"
-          value={stats.eventsThisWeek}
-          footer={
-            weekDiff === 0
-              ? "Comme la semaine dernière"
-              : `${weekDiff > 0 ? "▲ +" : "▼ "}${weekDiff} vs semaine dernière`
-          }
-          footerTone={weekDiff > 0 ? "success" : weekDiff < 0 ? "danger" : "muted"}
-        />
-        <Stat
-          label="Réservations"
-          value={stats.activeBookings}
-          footer={`▲ +${stats.bookingsThisMonth} ce mois-ci`}
-          footerTone={stats.bookingsThisMonth > 0 ? "success" : "muted"}
-        />
-        <Stat
-          label="Taux de remplissage"
-          value={stats.fillRate === null ? "—" : `${stats.fillRate}%`}
-          footer="Événements publiés à venir"
-        />
-        <Stat
-          label="À valider"
-          value={stats.pendingBookings}
-          highlight={stats.pendingBookings > 0}
-          footer={
-            stats.pendingBookings > 0 ? (
-              <Link
-                href="/app/reservations?statut=pending"
-                className="tap-area font-bold underline decoration-1 underline-offset-[3px]"
-              >
-                Traiter maintenant →
-              </Link>
-            ) : (
-              "Tout est à jour"
-            )
-          }
-        />
-      </StatGrid>
-
-      {upcoming.length === 0 && latest.length === 0 ? (
+      {empty ? (
         <EmptyState
           title="Rien à l'agenda. Pour l'instant."
           description="Crée ton premier événement : il apparaîtra dans ton calendrier et sur ta page publique, prêt à recevoir des réservations."
@@ -153,101 +138,67 @@ export default async function DashboardPage() {
           steps={["Crée un événement", "Partage ta page publique", "Reçois tes réservations"]}
         />
       ) : (
-        <div className="grid flex-1 grid-cols-[minmax(0,1fr)] gap-4 xl:grid-cols-2">
-          {/* Mêmes filets que StatGrid (2 px de fond encre) : la séparation tombe sous celle des indicateurs. */}
-          <section className="bg-bg">
-            <SectionHeading
-              title="À venir"
-              action={{ label: "Tous les événements", href: "/app/evenements" }}
-            />
-            {upcoming.length === 0 ? (
-              <p className="px-4 py-8 text-base font-medium text-ink-muted">
-                Aucun événement à venir.
-              </p>
-            ) : (
-              <ul className="reveal-group">
-                {upcoming.map((event) => {
-                  const badge = eventStatusBadge(event.status, event);
-                  const remaining =
-                    event.capacity === null ? null : Math.max(0, event.capacity - event.seatsHeld);
-                  return (
-                    <li
-                      key={event.id}
-                      className="relative flex items-center gap-5 border-b border-line-soft px-4 py-3.5 hover:bg-surface"
-                    >
-                      <DateBlock date={event.startsAt} timeZone={timeZone} />
-                      <div className="flex min-w-0 flex-1 flex-col gap-2 sm:flex-row sm:items-center sm:gap-5">
-                        <EventCell
-                          title={event.title}
-                          color={event.typeColor}
-                          href={`/app/evenements/${event.id}`}
-                          stretched
-                          detail={[
-                            `${formatWeekdayShort(event.startsAt, timeZone)} ${formatTimeRange(event.startsAt, event.endsAt, timeZone)}`,
-                            event.locationName,
-                            remaining === null
-                              ? null
-                              : `${plural(remaining, "place restante", "places restantes")}`,
-                          ]
-                            .filter(Boolean)
-                            .join(" · ")}
-                        />
-                        <div className="flex shrink-0 sm:w-[140px] sm:justify-end">
-                          <StatusBadge tone={badge.tone}>{badge.label}</StatusBadge>
-                        </div>
-                      </div>
-                    </li>
-                  );
-                })}
-              </ul>
+        <div className="flex flex-1 flex-col">
+          <div className="grid grid-cols-[minmax(0,1fr)] xl:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)]">
+            <section className="flex flex-col">
+              <SectionHeading title="À faire" meta={plural(todoCount, "action")} />
+              <div className="px-4">
+                <TodoCards overview={overview} now={now} timeZone={timeZone} />
+              </div>
+            </section>
+            <section className="flex flex-col">
+              <SectionHeading
+                title="Aujourd'hui"
+                meta={dateLabel}
+                action={{ label: "Ouvrir le comptoir", href: "/app/reservations/nouvelle" }}
+                className="xl:pl-0"
+              />
+              <div className="px-4 xl:pl-0">
+                <TodayCard entries={overview.today} now={now} timeZone={timeZone} />
+              </div>
+            </section>
+          </div>
+
+          {nextDays.length > 0 && (
+            <section className="flex flex-col">
+              <SectionHeading
+                title="7 prochains jours"
+                meta={plural(nextDays.length, "événement")}
+                action={{ label: "Tous les événements", href: "/app/evenements" }}
+              />
+              <div className="px-4">
+                <NextDaysCards events={nextDays.slice(0, 4)} timeZone={timeZone} />
+              </div>
+            </section>
+          )}
+
+          {latest.length > 0 && (
+            <section className="flex flex-col">
+              <SectionHeading
+                title="Dernières réservations"
+                action={{ label: "Toutes les réservations", href: "/app/reservations" }}
+              />
+              <div className="px-4">
+                <LatestBookings bookings={latest} now={now} />
+              </div>
+            </section>
+          )}
+
+          {/* La bande « Ce mois-ci » reste collée au bas du cadre, même sur une page courte. */}
+          <div aria-hidden="true" className="h-6 shrink-0" />
+          <MonthBand
+            period={period}
+            bookings={bookingsThisMonth}
+            bookingsDelta={percentChange(bookingsThisMonth, overview.month.previousBookings)}
+            bookingsCurve={cumulative(bookingsByDay)}
+            collectedCents={collectedThisMonth}
+            collectedDelta={percentChange(
+              collectedThisMonth,
+              overview.month.previousCollectedCents,
             )}
-          </section>
-          <section className="bg-bg">
-            <SectionHeading
-              title="Dernières réservations"
-              action={{ label: "Tout voir", href: "/app/reservations" }}
-            />
-            {latest.length === 0 ? (
-              <p className="px-4 py-8 text-base font-medium text-ink-muted">
-                Aucune réservation pour l'instant.
-              </p>
-            ) : (
-              <ul className="reveal-group">
-                {latest.map((entry) => (
-                  <li
-                    key={entry.id}
-                    className="relative flex items-center gap-4 border-b border-line-soft px-4 py-3.5 hover:bg-surface"
-                  >
-                    <div className="min-w-0 flex-1">
-                      <PersonCell
-                        name={entry.customerName}
-                        href={`/app/reservations/${entry.id}`}
-                        stretched
-                        detail={`${entry.eventTitle ?? "Location"} · ${plural(entry.seats, "place")}`}
-                      />
-                    </div>
-                    <div className="flex shrink-0 flex-col items-end gap-1.5 sm:w-[84px]">
-                      <MoneyCell
-                        cents={entry.amountCents}
-                        caption={PAYMENT_MODE_LABELS[entry.paymentMode]}
-                        size="lg"
-                      />
-                      <div className="sm:hidden">
-                        <StatusBadge tone={BOOKING_STATUS_BADGE[entry.status].tone}>
-                          {BOOKING_STATUS_BADGE[entry.status].label}
-                        </StatusBadge>
-                      </div>
-                    </div>
-                    <div className="hidden w-[130px] shrink-0 justify-end sm:flex">
-                      <StatusBadge tone={BOOKING_STATUS_BADGE[entry.status].tone}>
-                        {BOOKING_STATUS_BADGE[entry.status].label}
-                      </StatusBadge>
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </section>
+            collectedBars={collectedByDay}
+            fillRate={stats.fillRate}
+          />
         </div>
       )}
       <FabLink href="/app/evenements/nouveau">Nouvel événement</FabLink>

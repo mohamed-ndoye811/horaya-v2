@@ -10,6 +10,7 @@ import {
 import { afterAll, beforeEach, describe, expect, it } from "vitest";
 import {
   countEventsByTab,
+  getDashboardOverview,
   getDashboardStats,
   getEventDetail,
   listEvents,
@@ -139,5 +140,26 @@ describe("requêtes de lecture", () => {
     expect((await listLatestBookings(db, organizationId)).map((row) => row.status)).toContain(
       "cancelled",
     );
+  });
+
+  it("prépare le tableau de bord v4 : à faire, programme du jour et mois", async () => {
+    const { annual } = await seed();
+    const overview = await getDashboardOverview(db, organizationId, {
+      now: NOW,
+      dayStart: new Date("2026-10-15T00:00:00Z"),
+      dayEnd: new Date("2026-10-16T00:00:00Z"),
+      monthStart: new Date("2026-10-01T00:00:00Z"),
+      previousMonthStart: new Date("2026-09-01T00:00:00Z"),
+      previousMonthSameMoment: new Date("2026-09-01T08:00:00Z"),
+      timeZone: "Europe/Paris",
+    });
+    // Deux réservations actives à 120 € la place, à régler sur place, rien d'encaissé.
+    expect(overview.toCollect).toEqual({ count: 2, amountCents: 60000, link: 0, onSite: 2 });
+    expect(overview.drafts.count).toBe(1);
+    expect(overview.drafts.next?.title).toBe("Atelier poterie");
+    expect(overview.today.map((entry) => [entry.kind, entry.id, entry.seatsHeld])).toEqual([
+      ["event", annual.id, 5],
+    ]);
+    expect(overview.waitlist.count).toBe(0);
   });
 });
