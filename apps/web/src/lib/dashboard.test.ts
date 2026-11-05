@@ -1,12 +1,5 @@
 import { describe, expect, it } from "vitest";
-import {
-  cumulative,
-  dailySeries,
-  elapsed,
-  joinNames,
-  percentChange,
-  sparklinePoints,
-} from "./dashboard";
+import { dailySeries, elapsed, joinNames, percentChange } from "./dashboard";
 
 describe("tableau de bord", () => {
   it("calcule une variation, sauf sans point de comparaison", () => {
@@ -15,19 +8,13 @@ describe("tableau de bord", () => {
     expect(percentChange(5, 0)).toBeNull();
   });
 
-  it("remplit les jours vides d'une série et la cumule", () => {
+  it("remplit les jours vides d'une série", () => {
     const series = dailySeries(
       { "2026-11-01": 2, "2026-11-03": 1 },
       { year: 2026, month: 11, day: 1 },
       { year: 2026, month: 11, day: 4 },
     );
     expect(series).toEqual([2, 0, 1, 0]);
-    expect(cumulative(series)).toEqual([2, 2, 3, 3]);
-  });
-
-  it("place la courbe dans sa boîte, le maximum en haut", () => {
-    expect(sparklinePoints([0, 5, 10], 100, 20)).toBe("0,20 50,10 100,0");
-    expect(sparklinePoints([], 100, 20)).toBe("");
   });
 
   it("écrit les durées et les prénoms comme on les dit", () => {

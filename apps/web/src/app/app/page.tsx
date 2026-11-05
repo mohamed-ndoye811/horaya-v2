@@ -1,4 +1,4 @@
-import { addDays } from "@horaya/core";
+import { addDays, daysInMonth } from "@horaya/core";
 import {
   countEventsStartingBetween,
   getDashboardOverview,
@@ -14,7 +14,7 @@ import { PageHeader } from "@/components/app/page-header";
 import { ButtonLink } from "@/components/ui/button";
 import { PlusIcon } from "@/components/ui/icons";
 import { SectionHeading } from "@/components/ui/section";
-import { cumulative, dailySeries, percentChange } from "@/lib/dashboard";
+import { dailySeries } from "@/lib/dashboard";
 import { addMonths, isoWeek, mondayOf, startOfDay, todayIn } from "@/lib/dates";
 import { initials } from "@/lib/format";
 import { db } from "@/server/db";
@@ -104,7 +104,10 @@ export default async function DashboardPage() {
   const collectedThisMonth = collectedByDay.reduce((sum, value) => sum + value, 0);
   const monthName = new Intl.DateTimeFormat("fr-FR", { month: "long", timeZone });
   const previousMonthName = monthName.format(previousMonthStart);
-  const period = `du 1er au ${today.day} ${monthName.format(now)}, comparé à ${previousMonthName}`;
+  const period = `du 1er au ${today.day} ${monthName.format(now)}`;
+  const lastOfMonth = { ...today, day: daysInMonth(today.year, today.month) };
+  const monthBookingsByDay = dailySeries(overview.month.bookingsByDay, firstOfMonth, lastOfMonth);
+  const monthCollectedByDay = dailySeries(overview.month.collectedByDay, firstOfMonth, lastOfMonth);
 
   const empty = upcoming.length === 0 && latest.length === 0;
   const steps: StartStep[] = [
@@ -251,15 +254,12 @@ export default async function DashboardPage() {
             <div aria-hidden="true" className="h-6 shrink-0" />
             <MonthBand
               period={period}
-              bookings={bookingsThisMonth}
-              bookingsDelta={percentChange(bookingsThisMonth, overview.month.previousBookings)}
-              bookingsCurve={cumulative(bookingsByDay)}
-              collectedCents={collectedThisMonth}
-              collectedDelta={percentChange(
-                collectedThisMonth,
-                overview.month.previousCollectedCents,
-              )}
-              collectedBars={collectedByDay}
+              previousMonth={previousMonthName}
+              today={today.day}
+              bookingsByDay={monthBookingsByDay}
+              previousBookings={overview.month.previousBookings}
+              collectedByDay={monthCollectedByDay}
+              previousCollectedCents={overview.month.previousCollectedCents}
               fillRate={stats.fillRate}
             />
           </div>

@@ -20,29 +20,6 @@ export function dailySeries(
   return values;
 }
 
-/** Cumul d'une série (la courbe des réservations monte au fil du mois). */
-export function cumulative(values: number[]): number[] {
-  let total = 0;
-  return values.map((value) => {
-    total += value;
-    return total;
-  });
-}
-
-/** Points d'une petite courbe SVG (« x,y x,y… ») qui remplit la boîte donnée. */
-export function sparklinePoints(values: number[], width: number, height: number): string {
-  if (values.length === 0) return "";
-  const max = Math.max(...values, 1);
-  const step = values.length > 1 ? width / (values.length - 1) : 0;
-  return values
-    .map((value, index) => {
-      const x = Math.round(index * step * 10) / 10;
-      const y = Math.round((height - (value / max) * height) * 10) / 10;
-      return `${x},${y}`;
-    })
-    .join(" ");
-}
-
 /** Durée écoulée courte : « 12 min », « 2 h », « 3 j ». */
 export function elapsed(since: Date, now: Date): string {
   const minutes = Math.max(0, Math.floor((now.getTime() - since.getTime()) / 60_000));
