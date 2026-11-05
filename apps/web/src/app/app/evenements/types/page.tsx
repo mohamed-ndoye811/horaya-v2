@@ -69,7 +69,12 @@ export default async function EventTypesPage({ searchParams }: PageProps<"/app/e
       <PageHeader
         eyebrow="Événements / Types"
         title="Types d'événements"
-        subtitle="Un type définit la couleur, les réglages par défaut et les infos demandées à la réservation."
+        subtitle={
+          <>
+            {types.length} type{types.length > 1 ? "s" : ""} ·{" "}
+            <span className="text-ink">ils pré-remplissent tes nouveaux événements.</span>
+          </>
+        }
         actions={
           <div className="hidden lg:flex">
             <ButtonLink href="/app/evenements/types?type=nouveau" icon={<PlusIcon />}>
@@ -78,7 +83,7 @@ export default async function EventTypesPage({ searchParams }: PageProps<"/app/e
           </div>
         }
       />
-      <div className="flex flex-1 flex-col lg:flex-row">
+      <div className="flex flex-1 flex-col gap-4 px-4 pb-4 lg:flex-row lg:items-start">
         {/* Sur mobile (M10), le formulaire d'un type remplace la liste. */}
         <div className={cn("min-w-0 flex-1", panelValues && "hidden lg:block")}>
           {types.length === 0 && !panelValues ? (
@@ -93,7 +98,10 @@ export default async function EventTypesPage({ searchParams }: PageProps<"/app/e
             />
           ) : (
             <>
-              <ul aria-label="Types d'événements" className="flex flex-col lg:hidden">
+              <ul
+                aria-label="Types d'événements"
+                className="flex flex-col overflow-hidden rounded-3xl bg-surface lg:hidden"
+              >
                 {types.map((type) => (
                   <li key={type.id} className="border-b border-line-soft">
                     <Link
@@ -101,7 +109,7 @@ export default async function EventTypesPage({ searchParams }: PageProps<"/app/e
                       className="flex items-center gap-3.5 px-4 py-4 text-ink hover:bg-surface"
                     >
                       <span
-                        className="size-7 shrink-0"
+                        className="size-2.5 shrink-0 rounded-[3px]"
                         style={{ backgroundColor: type.color }}
                         aria-hidden="true"
                       />
@@ -117,7 +125,7 @@ export default async function EventTypesPage({ searchParams }: PageProps<"/app/e
                         <span className="text-base font-extrabold leading-5">
                           {type.defaultPriceCents ? formatMoney(type.defaultPriceCents) : "Gratuit"}
                         </span>
-                        <span className="font-mono text-[11px] font-semibold uppercase leading-[14px] tracking-[0.045em] text-ink-muted">
+                        <span className="text-xs leading-4 text-ink-subtle">
                           {type.eventCount} évén.
                         </span>
                       </span>
@@ -126,23 +134,23 @@ export default async function EventTypesPage({ searchParams }: PageProps<"/app/e
                   </li>
                 ))}
               </ul>
-              <div className="hidden overflow-x-auto lg:block">
+              <div className="hidden overflow-hidden rounded-3xl bg-surface shadow-[0_1px_2px_rgba(0,0,0,0.04),0_16px_40px_rgba(0,0,0,0.06)] lg:block">
                 <table className="w-full min-w-[640px] table-fixed border-collapse">
                   <colgroup>
                     <col />
-                    <col style={{ width: 120 }} />
                     <col style={{ width: 110 }} />
                     <col style={{ width: 130 }} />
+                    <col style={{ width: 120 }} />
                   </colgroup>
                   <thead>
-                    <tr className="border-b border-line-soft">
+                    <tr className="h-10 bg-band">
                       {["Type", "Durée", "Prix", "Événements"].map((label, index) => (
                         <th
                           key={label}
                           scope="col"
                           className={cn(
-                            "px-3 py-4 font-mono text-label font-semibold uppercase tracking-[0.055em] text-ink first:pl-4 last:pr-4 sm:first:pl-10 sm:last:pr-8",
-                            index >= 2 ? "text-right" : "text-left",
+                            "px-3 text-xs font-bold text-ink-muted first:pl-5 last:pr-5",
+                            index === 3 ? "text-right" : "text-left",
                           )}
                         >
                           {label}
@@ -157,39 +165,39 @@ export default async function EventTypesPage({ searchParams }: PageProps<"/app/e
                         <tr
                           key={type.id}
                           className={cn(
-                            "border-b border-line-soft",
-                            active && "bg-surface shadow-[inset_4px_0_0_var(--color-ink)]",
+                            "relative h-[60px] border-t border-[#f4f4f2] hover:bg-band",
+                            active && "bg-band shadow-[inset_3px_0_0_var(--color-ink)]",
                           )}
                         >
-                          <td className="px-3 py-4 pl-4">
-                            <div className="flex items-center gap-3.5">
+                          <td className="px-3 pl-5">
+                            <div className="flex items-center gap-3">
                               <span
-                                className="size-7 shrink-0"
+                                className="size-2.5 shrink-0 rounded-[3px]"
                                 style={{ backgroundColor: type.color }}
                                 aria-hidden="true"
                               />
-                              <div className="flex min-w-0 flex-col gap-1">
-                                <Link
-                                  href={`/app/evenements/types?type=${type.id}`}
-                                  className="truncate text-base font-bold text-ink hover:underline"
-                                >
-                                  {type.name}
-                                </Link>
-                                <span className="truncate text-sm font-medium text-ink-muted">
-                                  {summary(type)}
-                                </span>
-                              </div>
+                              <Link
+                                href={`/app/evenements/types?type=${type.id}`}
+                                className="truncate text-[15px] font-semibold text-ink after:absolute after:inset-0"
+                              >
+                                {type.name}
+                              </Link>
                             </div>
                           </td>
-                          <td className="px-3 font-mono text-sm font-semibold text-ink">
+                          <td className="px-3 text-[13px] text-[#4a4a4a]">
                             {formatDuration(type.defaultDurationMinutes)}
                           </td>
-                          <td className="px-3 text-right text-[15px] font-extrabold text-ink">
+                          <td className="px-3 text-[13px] text-[#4a4a4a]">
                             {type.defaultPriceCents
                               ? formatMoney(type.defaultPriceCents)
                               : "Gratuit"}
                           </td>
-                          <td className="px-3 pr-4 text-right font-mono text-sm font-semibold text-ink">
+                          <td
+                            className={cn(
+                              "px-3 pr-5 text-right text-sm font-semibold",
+                              type.eventCount === 0 ? "text-[#ababa6]" : "text-ink",
+                            )}
+                          >
                             {type.eventCount}
                           </td>
                         </tr>
@@ -202,7 +210,7 @@ export default async function EventTypesPage({ searchParams }: PageProps<"/app/e
           )}
         </div>
         {panelValues && (
-          <aside className="border-t border-line-soft bg-surface lg:sticky lg:top-0 lg:h-dvh lg:w-[440px] lg:shrink-0 lg:border-t-0 lg:border-l-2">
+          <aside className="overflow-hidden rounded-3xl bg-surface shadow-[0_1px_2px_rgba(0,0,0,0.04),0_16px_40px_rgba(0,0,0,0.06)] lg:sticky lg:top-4 lg:w-[460px] lg:shrink-0">
             <EventTypeForm key={panelValues.id ?? "nouveau"} initial={panelValues} />
           </aside>
         )}

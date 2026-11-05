@@ -7,9 +7,10 @@ import {
 } from "@horaya/core";
 import { AffixInput, Field, inputClasses } from "@/components/ui/field";
 import { FormAlert } from "@/components/ui/form-alert";
-import { FormSection } from "@/components/ui/section";
+import { cardClasses, FormSection } from "@/components/ui/section";
 import { Select } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
+import { cn } from "@/lib/cn";
 import { useFormAction } from "@/lib/use-form-action";
 import type { FormState } from "@/server/form-state";
 import { savePaymentsAction } from "../actions";
@@ -53,18 +54,18 @@ export function PaymentsForm({
     : [...REFUND_OPTIONS, initial.lateCancellationRefundPercent].sort((a, b) => a - b);
 
   return (
-    <form id="payments-form" onSubmit={onSubmit} className="flex flex-col gap-6">
+    <form id="payments-form" onSubmit={onSubmit} className="flex flex-col gap-4">
       {state.error && <FormAlert>{state.error}</FormAlert>}
       {state.success && <FormAlert tone="success">{state.success}</FormAlert>}
-      <div className="grid gap-10 xl:grid-cols-2 xl:gap-8">
+      <div className="flex flex-col gap-4">
         <fieldset disabled={!editable} className="min-w-0">
           <FormSection number={1} title="Réglages">
             {!editable && (
-              <p className="text-[13px] font-medium text-ink-muted">
+              <p className="text-xs leading-4 text-ink-subtle">
                 Seuls le propriétaire et les admins peuvent modifier ces réglages.
               </p>
             )}
-            <div className="grid gap-3 sm:grid-cols-2">
+            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
               <Field label="Devise">
                 {(field) => (
                   <Select {...field} disabled defaultValue="EUR">
@@ -81,68 +82,68 @@ export function PaymentsForm({
                     required
                     defaultValue={initial.vatRate}
                     suffix="%"
-                    mono
+                  />
+                )}
+              </Field>
+              <Field
+                label="Acompte par défaut"
+                error={errors.defaultDepositPercent}
+                hint={
+                  <p className="text-xs leading-4 text-ink-subtle">
+                    Proposé quand un événement demande un acompte.
+                  </p>
+                }
+              >
+                {(field) => (
+                  <AffixInput
+                    {...field}
+                    name="defaultDepositPercent"
+                    inputMode="numeric"
+                    required
+                    defaultValue={initial.defaultDepositPercent}
+                    suffix="% du total"
                   />
                 )}
               </Field>
             </div>
-            <Field
-              label="Acompte par défaut"
-              error={errors.defaultDepositPercent}
-              hint={
-                <p className="text-[13px] font-medium text-ink-muted">
-                  Proposé quand un événement demande un acompte.
-                </p>
-              }
-            >
-              {(field) => (
-                <AffixInput
-                  {...field}
-                  name="defaultDepositPercent"
-                  inputMode="numeric"
-                  required
-                  defaultValue={initial.defaultDepositPercent}
-                  suffix="% du total"
-                  mono
-                />
-              )}
-            </Field>
-            <Field label="Politique d'annulation" error={errors.freeCancellationHours}>
-              {(field) => (
-                <Select
-                  {...field}
-                  name="freeCancellationHours"
-                  defaultValue={String(initial.freeCancellationHours)}
-                >
-                  {hours.map((value) => (
-                    <option key={value} value={value}>
-                      {freeCancellationLabel(value)}
-                    </option>
-                  ))}
-                </Select>
-              )}
-            </Field>
-            <Field label="Annulation plus tardive" error={errors.lateCancellationRefundPercent}>
-              {(field) => (
-                <Select
-                  {...field}
-                  name="lateCancellationRefundPercent"
-                  defaultValue={String(initial.lateCancellationRefundPercent)}
-                >
-                  {refunds.map((value) => (
-                    <option key={value} value={value}>
-                      {value === 0 ? "Aucun remboursement" : `Remboursement de ${value} %`}
-                    </option>
-                  ))}
-                </Select>
-              )}
-            </Field>
+            <div className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_280px]">
+              <Field label="Politique d'annulation" error={errors.freeCancellationHours}>
+                {(field) => (
+                  <Select
+                    {...field}
+                    name="freeCancellationHours"
+                    defaultValue={String(initial.freeCancellationHours)}
+                  >
+                    {hours.map((value) => (
+                      <option key={value} value={value}>
+                        {freeCancellationLabel(value)}
+                      </option>
+                    ))}
+                  </Select>
+                )}
+              </Field>
+              <Field label="Annulation plus tardive" error={errors.lateCancellationRefundPercent}>
+                {(field) => (
+                  <Select
+                    {...field}
+                    name="lateCancellationRefundPercent"
+                    defaultValue={String(initial.lateCancellationRefundPercent)}
+                  >
+                    {refunds.map((value) => (
+                      <option key={value} value={value}>
+                        {value === 0 ? "Aucun remboursement" : `Remboursement de ${value} %`}
+                      </option>
+                    ))}
+                  </Select>
+                )}
+              </Field>
+            </div>
             {showPaymentLink && (
               <Field
                 label="Lien de paiement par défaut"
                 error={errors.paymentLinkUrl}
                 hint={
-                  <p className="text-[13px] font-medium text-ink-muted">
+                  <p className="text-xs leading-4 text-ink-subtle">
                     Pour les événements payés en ligne ou par acompte qui n'ont pas leur propre
                     lien.
                   </p>
@@ -167,22 +168,22 @@ export function PaymentsForm({
         <section
           id="notifications"
           aria-labelledby="notifications-title"
-          className="flex min-w-0 scroll-mt-6 flex-col"
+          className={cn(cardClasses, "min-w-0 scroll-mt-6 sm:p-6")}
         >
-          <div className="flex items-baseline gap-3 border-b border-line-soft pb-2.5">
-            <span className="font-mono text-label font-semibold tracking-[0.055em] text-ink-muted">
-              02
+          <div className="flex items-center gap-2.5 pb-3">
+            <span className="flex size-[26px] shrink-0 items-center justify-center rounded-full bg-ink text-xs font-bold leading-[14px] text-on-ink">
+              2
             </span>
             <h2
               id="notifications-title"
-              className="grow font-section text-section leading-7 text-ink"
+              className="grow text-lg font-semibold leading-[22px] text-ink"
             >
               Notifications
             </h2>
-            <span className="w-14 shrink-0 text-center font-mono text-[11px] font-semibold uppercase tracking-[0.5px] text-ink">
+            <span className="w-14 shrink-0 text-center text-xs font-semibold text-ink-subtle">
               E-mail
             </span>
-            <span className="w-14 shrink-0 text-center font-mono text-[11px] font-semibold uppercase tracking-[0.5px] text-ink">
+            <span className="w-14 shrink-0 text-center text-xs font-semibold text-ink-subtle">
               In-app
             </span>
           </div>
@@ -192,9 +193,9 @@ export function PaymentsForm({
               return (
                 <li
                   key={type.value}
-                  className="flex items-center gap-3 border-b border-line-soft py-3 last:border-b-0"
+                  className="flex items-center gap-3 border-t border-[#f4f4f2] py-3"
                 >
-                  <span className="min-w-0 grow truncate text-[15px] font-semibold text-ink">
+                  <span className="min-w-0 grow truncate text-sm leading-[18px] text-ink">
                     {type.label}
                   </span>
                   <span className="flex w-14 shrink-0 justify-center">
@@ -217,7 +218,7 @@ export function PaymentsForm({
               );
             })}
           </ul>
-          <p className="mt-3 text-[13px] font-medium text-ink-muted">
+          <p className="pt-2 text-xs leading-4 text-ink-subtle">
             Tes préférences personnelles : chaque membre règle les siennes.
           </p>
         </section>
