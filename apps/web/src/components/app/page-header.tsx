@@ -111,7 +111,7 @@ export function PageHeader({
               "lg:static lg:z-auto lg:shrink-0 lg:flex-wrap lg:gap-2 lg:border-0 lg:bg-transparent lg:p-0 lg:backdrop-blur-none lg:*:flex-none",
               stickyActions === "bottom"
                 ? "bottom-0 pb-[calc(12px+env(safe-area-inset-bottom))]"
-                : "bottom-[calc(70px+env(safe-area-inset-bottom))]",
+                : "bottom-[calc(76px+env(safe-area-inset-bottom))]",
             )}
           >
             {actions}

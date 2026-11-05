@@ -613,10 +613,15 @@ export function MobileSummary({
       <section className="flex flex-col overflow-hidden rounded-[22px] bg-surface">
         <h2 className="flex h-11 items-center justify-between bg-band px-4">
           <span className="text-[13px] font-bold leading-4 text-ink">Aujourd'hui</span>
-          <span className="text-xs leading-4 text-ink-subtle">
-            {today.length === 0 ? "Rien au programme" : `${today.length} au programme`}
-          </span>
+          {today.length > 0 && (
+            <span className="text-xs leading-4 text-ink-subtle">{today.length} au programme</span>
+          )}
         </h2>
+        {today.length === 0 && (
+          <p className="border-t border-[#f4f4f2] px-4 py-4 text-sm leading-[18px] text-ink-subtle">
+            Rien au programme aujourd'hui.
+          </p>
+        )}
         {today.map((entry) => {
           const href =
             entry.kind === "event"
