@@ -99,18 +99,18 @@ export default async function EventsPage({ searchParams }: PageProps<"/app/evene
         subtitle={`${counts.all} événement${counts.all > 1 ? "s" : ""} · ${counts.published} à venir · ${counts.draft} brouillon${counts.draft > 1 ? "s" : ""}`}
         actions={
           <>
-            <ButtonLink href="/app/evenements/liens" variant="secondary">
-              Liens calendrier
+            <ButtonLink href="/app/evenements/liens" variant="secondary" title="Liens calendrier">
+              Calendriers
             </ButtonLink>
-            <ButtonLink href="/app/evenements/types" variant="secondary">
-              Types d'événements
+            <ButtonLink href="/app/evenements/types" variant="secondary" title="Types d'événements">
+              Types
             </ButtonLink>
             <div className="hidden lg:flex">{newEventButton}</div>
           </>
         }
       />
 
-      <div className="flex flex-col gap-4 px-4 py-6 sm:px-10 xl:flex-row xl:items-center">
+      <div className="flex flex-col gap-4 px-4 py-6 xl:flex-row xl:items-center">
         <form action="/app/evenements" className="xl:flex-1">
           {tab !== "all" && <input type="hidden" name="onglet" value={tab} />}
           {typeId && <input type="hidden" name="type" value={typeId} />}
@@ -151,7 +151,7 @@ export default async function EventsPage({ searchParams }: PageProps<"/app/evene
         rowKey={(row) => row.id}
         minWidth={1000}
         empty={
-          <p className="px-4 py-10 text-center text-base font-medium text-ink-muted sm:px-10">
+          <p className="px-4 py-10 text-center text-base font-medium text-ink-muted">
             Aucun événement ne correspond à ces filtres.
           </p>
         }

@@ -6,11 +6,11 @@ const sizes = {
   sm: "size-8 text-label",
   md: "size-9 text-sm",
   lg: "size-10 text-sm",
-  /** En-tête de fiche client (96 px, initiales en Archivo). */
+  /** En-tête de fiche client (96 px). */
   xl: "size-24 font-headline text-[40px]",
 };
 
-/** Avatar carré à initiales ; la couleur est stable pour un même nom. */
+/** Avatar rond à initiales ; la couleur est stable pour un même nom. */
 export function Avatar({
   name,
   color,
@@ -29,7 +29,7 @@ export function Avatar({
     <span
       aria-hidden="true"
       className={cn(
-        "flex shrink-0 items-center justify-center font-bold leading-4",
+        "flex shrink-0 items-center justify-center rounded-full font-bold leading-4",
         sizes[size],
         pending && "border-[1.5px] border-dashed border-ink-subtle bg-draft-bg text-ink-muted",
       )}
@@ -45,7 +45,7 @@ export function CategorySwatch({ color, size = 10 }: { color: string; size?: 10 
   return (
     <span
       aria-hidden="true"
-      className="inline-block shrink-0"
+      className="inline-block shrink-0 rounded-[3px]"
       style={{ backgroundColor: color, width: size, height: size }}
     />
   );

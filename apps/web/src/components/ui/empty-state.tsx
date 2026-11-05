@@ -38,7 +38,7 @@ export function EmptyState({
       <p className="max-w-[560px] text-lg font-medium leading-7 text-ink-muted">{description}</p>
       {actions && <div className="flex flex-wrap gap-3">{actions}</div>}
       {steps && (
-        <ol className="mt-4 grid border-t-2 border-ink sm:grid-cols-3">
+        <ol className="mt-4 grid border-t border-line-soft sm:grid-cols-3">
           {steps.map((step, index) => (
             <li
               key={step}

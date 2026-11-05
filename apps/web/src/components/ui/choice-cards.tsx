@@ -21,11 +21,7 @@ export function ChoiceCards({
 }) {
   const id = useId();
   return (
-    <div
-      role="radiogroup"
-      aria-label={label}
-      className="grid grid-cols-2 border-2 border-ink bg-ink gap-0.5 md:flex md:gap-0"
-    >
+    <div role="radiogroup" aria-label={label} className="grid grid-cols-2 gap-2 md:flex">
       {options.map((option) => {
         const inputId = `${id}-${option.value}`;
         return (
@@ -33,9 +29,8 @@ export function ChoiceCards({
             key={option.value}
             htmlFor={inputId}
             className={cn(
-              "group flex flex-1 basis-0 flex-col gap-0.5 bg-bg px-3.5 py-3 transition-colors hover:bg-surface",
-              "md:[&:not(:first-child)]:border-l-2 md:[&:not(:first-child)]:border-ink",
-              "has-checked:bg-ink has-focus-visible:outline-2 has-focus-visible:-outline-offset-4 has-focus-visible:outline-on-ink",
+              "group flex flex-1 basis-0 flex-col gap-0.5 rounded-2xl border border-line bg-surface px-3.5 py-3 transition-colors hover:bg-field",
+              "has-checked:border-ink has-checked:bg-ink has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-ink",
             )}
           >
             <input

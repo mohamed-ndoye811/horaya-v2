@@ -140,9 +140,9 @@ export default async function BookingDetailPage({ params }: PageProps<"/app/rese
         }
       />
       <div className="flex flex-1 flex-col lg:flex-row">
-        <div className="flex min-w-0 flex-1 flex-col gap-8 px-4 py-8 sm:px-10">
+        <div className="flex min-w-0 flex-1 flex-col gap-8 px-4 py-8">
           {booking.event?.id && (
-            <section className="border-2 border-ink bg-surface">
+            <section className="overflow-hidden rounded-3xl bg-surface">
               <div className="flex flex-wrap items-center gap-x-3 gap-y-1 border-b border-line-soft px-5 py-4">
                 {booking.typeColor && <CategorySwatch color={booking.typeColor} size={12} />}
                 <Link
@@ -223,7 +223,7 @@ export default async function BookingDetailPage({ params }: PageProps<"/app/rese
           )}
 
           {booking.kind === "rental" && booking.rentalStartsAt && booking.rentalEndsAt && (
-            <section className="border-2 border-ink bg-surface">
+            <section className="overflow-hidden rounded-3xl bg-surface">
               <div className="flex flex-wrap items-center gap-x-3 gap-y-1 border-b border-line-soft px-5 py-4">
                 <span className="text-lg font-extrabold text-ink">Location de matériel</span>
                 <span className="text-sm font-medium text-ink-muted">
@@ -406,7 +406,7 @@ export default async function BookingDetailPage({ params }: PageProps<"/app/rese
           )}
         </div>
 
-        <aside className="flex flex-col border-t-2 border-ink bg-surface lg:w-[400px] lg:shrink-0 lg:border-t-0 lg:border-l-2">
+        <aside className="flex flex-col border-t border-line-soft bg-surface lg:w-[400px] lg:shrink-0 lg:border-t-0 lg:border-l-2">
           <section className="flex flex-col gap-4 border-b border-line-soft px-7 py-6">
             <Eyebrow>Client</Eyebrow>
             <div className="flex items-center gap-3.5">

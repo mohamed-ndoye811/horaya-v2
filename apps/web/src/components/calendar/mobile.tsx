@@ -95,7 +95,7 @@ export function MonthCompact({
   const selectedKey = civilKey(selected);
 
   return (
-    <div className="border-b-2 border-ink lg:hidden">
+    <div className="border-b border-line-soft lg:hidden">
       <div aria-hidden="true" className="grid grid-cols-7 border-b border-line-soft">
         {LETTERS.map((letter, index) => (
           <span
@@ -167,7 +167,7 @@ export function WeekStrip({
   const byDay = groupByDay(events, timeZone);
   const todayKey = civilKey(today);
   return (
-    <div className="grid grid-cols-7 border-b-2 border-ink lg:hidden">
+    <div className="grid grid-cols-7 border-b border-line-soft lg:hidden">
       {days.map((day, index) => {
         const key = civilKey(day);
         const timed = (byDay.get(key) ?? []).filter((event) => !isAllDay(event, timeZone));
@@ -277,7 +277,7 @@ export function DayAgenda({
       aria-label={`Agenda du ${dayLabel(day)}`}
       className="flex flex-col gap-2.5 px-4 pt-5 lg:hidden"
     >
-      <div className="flex items-baseline justify-between gap-3 border-b-2 border-ink pb-2.5">
+      <div className="flex items-baseline justify-between gap-3 border-b border-line-soft pb-2.5">
         <h2 className="font-section text-section uppercase leading-7 text-ink">{dayLabel(day)}</h2>
         <span className="font-mono text-label font-semibold uppercase tracking-[0.055em] text-ink-muted">
           {list.length} événement{list.length > 1 ? "s" : ""}
@@ -350,7 +350,7 @@ export function WeekAgenda({
           const list = eventsOf(day, timed, timeZone);
           return (
             <section key={civilKey(day)} aria-label={dayLabel(day)} className="flex flex-col gap-2">
-              <h2 className="flex items-center gap-2.5 border-b-2 border-ink pb-2 font-mono text-label font-semibold uppercase tracking-[0.055em] text-ink">
+              <h2 className="flex items-center gap-2.5 border-b border-line-soft pb-2 font-mono text-label font-semibold uppercase tracking-[0.055em] text-ink">
                 {dayLabel(day, true)}
                 {civilKey(day) === todayKey && (
                   <span className="bg-ink px-1.5 py-0.5 text-[10px] leading-[13px] text-on-ink">

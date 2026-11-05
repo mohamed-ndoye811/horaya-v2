@@ -51,7 +51,7 @@ export default async function CustomerDetailPage({ params }: PageProps<"/app/cli
 
   return (
     <>
-      <header className="flex flex-col gap-6 border-b-2 border-ink px-4 pt-6 pb-6 sm:px-10 sm:pt-8 xl:flex-row xl:items-end xl:justify-between">
+      <header className="flex flex-col gap-6 border-b border-line-soft px-4 pt-6 pb-6 sm:pt-8 xl:flex-row xl:items-end xl:justify-between">
         <div className="flex items-end gap-6">
           <div className="hidden sm:block">
             <Avatar name={name} size="xl" />
@@ -100,10 +100,10 @@ export default async function CustomerDetailPage({ params }: PageProps<"/app/cli
         />
       </StatGrid>
 
-      <div className="grid gap-10 px-4 py-8 sm:px-10 xl:grid-cols-[340px_minmax(0,1fr)]">
+      <div className="grid gap-10 px-4 py-8 xl:grid-cols-[340px_minmax(0,1fr)]">
         <div className="flex flex-col gap-10">
           <section className="flex flex-col">
-            <div className="flex items-center justify-between border-b-2 border-ink pb-3">
+            <div className="flex items-center justify-between border-b border-line-soft pb-3">
               <h2 className="font-section text-section leading-7 text-ink">Coordonnées</h2>
               <Link
                 href={`/app/clients/${customer.id}/modifier`}
@@ -131,7 +131,7 @@ export default async function CustomerDetailPage({ params }: PageProps<"/app/cli
           </section>
 
           <section className="flex flex-col gap-4">
-            <div className="flex items-center justify-between border-b-2 border-ink pb-3">
+            <div className="flex items-center justify-between border-b border-line-soft pb-3">
               <h2 className="font-section text-section leading-7 text-ink">Notes internes</h2>
             </div>
             <NoteForm customerId={customer.id} />

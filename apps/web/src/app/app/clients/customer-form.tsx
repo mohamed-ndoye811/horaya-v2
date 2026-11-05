@@ -32,7 +32,7 @@ export function CustomerForm({
   );
   const errors = state.fieldErrors ?? {};
   return (
-    <form onSubmit={onSubmit} className="flex max-w-[768px] flex-col gap-10 px-4 py-8 sm:px-10">
+    <form onSubmit={onSubmit} className="flex max-w-[768px] flex-col gap-10 px-4 py-8">
       {state.error && <FormAlert>{state.error}</FormAlert>}
       <FormSection number={1} title="Coordonnées">
         <div className="grid gap-4 sm:grid-cols-2">

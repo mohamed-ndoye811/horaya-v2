@@ -51,10 +51,10 @@ function Demo({
   flush?: boolean;
 }) {
   return (
-    <section className="border-b-2 border-ink">
+    <section className="border-b border-line-soft">
       <SectionHeading title={title} />
-      {note && <p className="px-4 pt-5 text-sm font-medium text-ink-muted sm:px-10">{note}</p>}
-      <div className={flush ? "pt-5" : "px-4 py-8 sm:px-10"}>{children}</div>
+      {note && <p className="px-4 pt-5 text-sm font-medium text-ink-muted">{note}</p>}
+      <div className={flush ? "pt-5" : "px-4 py-8"}>{children}</div>
     </section>
   );
 }
@@ -228,7 +228,7 @@ export default function DesignSystemPage() {
         </StatGrid>
       </Demo>
 
-      <section id="reservations" className="border-b-2 border-ink">
+      <section id="reservations" className="border-b border-line-soft">
         <SectionHeading title="Liste avec filtres" />
         <Banner
           action={
@@ -240,7 +240,7 @@ export default function DesignSystemPage() {
           3 réservations attendent ta validation. Les clients sont prévenus par e-mail dès que tu
           réponds.
         </Banner>
-        <div className="flex flex-col gap-4 px-4 py-6 sm:px-10 xl:flex-row xl:items-center">
+        <div className="flex flex-col gap-4 px-4 py-6 xl:flex-row xl:items-center">
           <SearchInput
             label="Rechercher"
             placeholder="Rechercher un client, un e-mail, un événement…"
@@ -339,7 +339,7 @@ export default function DesignSystemPage() {
         />
       </section>
 
-      <section className="border-b-2 border-ink">
+      <section className="border-b border-line-soft">
         <SectionHeading
           title="À venir"
           action={{ label: "Tous les événements", href: "#reservations" }}
@@ -350,7 +350,7 @@ export default function DesignSystemPage() {
             return (
               <li
                 key={event.id}
-                className="flex items-center gap-5 border-b border-line-soft px-4 py-3.5 sm:pr-8 sm:pl-10"
+                className="flex items-center gap-5 border-b border-line-soft px-4 py-3.5"
               >
                 <DateBlock date={event.date} timeZone={TZ} />
                 <EventCell
@@ -378,7 +378,7 @@ export default function DesignSystemPage() {
 
       <Demo title="Onglets & historique">
         <div className="grid gap-10 lg:grid-cols-[1fr_320px]">
-          <div className="border-b-2 border-ink">
+          <div className="border-b border-line-soft">
             <Tabs
               label="Sections de l'événement"
               value="participants"
@@ -412,14 +412,14 @@ export default function DesignSystemPage() {
         <InteractionDemo />
       </Demo>
 
-      <section id="form" className="border-b-2 border-ink">
+      <section id="form" className="border-b border-line-soft">
         <SectionHeading title="Formulaire" />
-        <div className="px-4 py-8 sm:px-10">
+        <div className="px-4 py-8">
           <FormDemo />
         </div>
       </section>
 
-      <section className="border-b-2 border-ink">
+      <section className="border-b border-line-soft">
         <SectionHeading title="Calendrier — mois" />
         <CalendarLegend
           categories={CATEGORIES}
@@ -432,7 +432,7 @@ export default function DesignSystemPage() {
         <MonthCalendar year={2026} month={6} events={CALENDAR_EVENTS} timeZone={TZ} today={TODAY} />
       </section>
 
-      <section className="border-b-2 border-ink">
+      <section className="border-b border-line-soft">
         <SectionHeading title="Calendrier — semaine" />
         <TimeGridCalendar
           days={week}
@@ -445,7 +445,7 @@ export default function DesignSystemPage() {
         />
       </section>
 
-      <section className="border-b-2 border-ink">
+      <section className="border-b border-line-soft">
         <SectionHeading title="Calendrier — jour" />
         <TimeGridCalendar
           days={[TODAY]}

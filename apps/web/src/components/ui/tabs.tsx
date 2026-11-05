@@ -30,7 +30,10 @@ export function Tabs({
             )}
           >
             {active && (
-              <ActiveIndicator id={`tabs-${label}`} className="inset-x-0 bottom-0 h-1 bg-ink" />
+              <ActiveIndicator
+                id={`tabs-${label}`}
+                className="inset-x-0 bottom-0 h-[3px] rounded-full bg-ink"
+              />
             )}
             {tab.label}
             {tab.count !== undefined &&

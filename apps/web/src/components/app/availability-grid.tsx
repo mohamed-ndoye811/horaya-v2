@@ -126,9 +126,9 @@ export function AvailabilityGrid({
     <div className="overflow-x-auto">
       <figure
         aria-label="Disponibilité par exemplaire"
-        className="m-0 min-w-[720px] border-2 border-ink bg-surface"
+        className="m-0 min-w-[720px] overflow-hidden rounded-3xl bg-surface"
       >
-        <div className="grid border-b-2 border-ink" style={{ gridTemplateColumns: columns }}>
+        <div className="grid border-b border-line-soft" style={{ gridTemplateColumns: columns }}>
           <span aria-hidden="true" />
           {days.map((day) => {
             const isToday = civilKey(day) === todayKey;

@@ -4,16 +4,17 @@ import { type ComponentProps, type ReactNode, useId, useState } from "react";
 import { cn } from "@/lib/cn";
 import { useInvalidMessage } from "@/lib/use-invalid-message";
 
+// DA v4 : champ gris clair arrondi, qui blanchit et prend un contour noir au focus.
 const inputBase =
-  "w-full min-w-0 border-[1.5px] border-ink-subtle bg-surface font-medium text-ink outline-none " +
-  "placeholder:text-ink-subtle transition-[border-color,box-shadow] " +
-  "focus:border-ink focus:shadow-[0_0_0_0.5px_var(--color-ink)] " +
+  "w-full min-w-0 rounded-xl border border-line-soft bg-field font-medium text-ink outline-none " +
+  "placeholder:text-ink-subtle transition-[border-color,background-color,box-shadow] " +
+  "focus:border-ink focus:bg-surface " +
   "aria-invalid:border-danger aria-invalid:focus:shadow-[0_0_0_0.5px_var(--color-danger)] " +
   "data-[valid=true]:border-success";
 
 const sizes = {
-  md: "h-12 pl-3.5 text-base",
-  lg: "h-[52px] pl-4 text-[17px]",
+  md: "h-11 pl-3.5 text-[15px]",
+  lg: "h-[52px] pl-4 text-base",
 };
 
 /** Marge droite : normale, ou réservée à une icône / un bouton placé dans le champ. */
@@ -80,7 +81,7 @@ export function Field({
               )}
             </>
           );
-          const className = "text-sm font-bold leading-[18px] text-ink";
+          const className = "text-[13px] font-semibold leading-[17px] text-ink";
           return group ? (
             <span className={className}>{content}</span>
           ) : (
@@ -129,8 +130,8 @@ export function AffixInput({ leading, suffix, mono = false, ...props }: AffixInp
   return (
     <div
       className={cn(
-        "flex h-12 min-w-0 items-center gap-2.5 border-[1.5px] border-ink-subtle bg-surface px-3.5 transition-[border-color,box-shadow]",
-        "focus-within:border-ink focus-within:shadow-[0_0_0_0.5px_var(--color-ink)]",
+        "flex h-11 min-w-0 items-center gap-2.5 rounded-xl border border-line-soft bg-field px-3.5 transition-[border-color,background-color]",
+        "focus-within:border-ink focus-within:bg-surface",
         "has-aria-invalid:border-danger",
       )}
     >
@@ -177,7 +178,7 @@ interface CheckboxProps extends Omit<ComponentProps<"input">, "type"> {
   label: ReactNode;
 }
 
-/** Case à cocher carrée (pas d'arrondis dans le système Horaya). */
+/** Case à cocher aux coins doux (DA v4). */
 export function Checkbox({ label, className, ...props }: CheckboxProps) {
   const invalid = useInvalidMessage();
   const messageId = useId();
@@ -186,7 +187,7 @@ export function Checkbox({ label, className, ...props }: CheckboxProps) {
       <span className="relative mt-px flex size-5 shrink-0">
         <input
           type="checkbox"
-          className="peer size-5 appearance-none border-2 border-ink-subtle bg-surface checked:border-ink checked:bg-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink aria-invalid:border-danger"
+          className="peer size-5 appearance-none rounded-md border-[1.5px] border-line bg-surface checked:border-ink checked:bg-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink aria-invalid:border-danger"
           {...(invalid.message ? { "aria-invalid": true, "aria-describedby": messageId } : {})}
           {...props}
         />

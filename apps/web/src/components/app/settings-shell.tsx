@@ -75,7 +75,7 @@ export function SettingsShell({
             );
           })}
         </nav>
-        <div className="min-w-0 flex-1 px-4 py-8 sm:px-10">
+        <div className="min-w-0 flex-1 px-4 py-8">
           {children}
           {/* Place de la barre d'actions collée en bas sur mobile. */}
           {actions && <div aria-hidden="true" className="h-20 lg:hidden" />}

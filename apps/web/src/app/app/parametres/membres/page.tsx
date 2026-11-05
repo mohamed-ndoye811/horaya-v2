@@ -108,14 +108,14 @@ export default async function MembersSettingsPage() {
       <div className="flex flex-col gap-8">
         <TeamTable rows={rows} manageable={manageable} />
         <section className="flex flex-col gap-3.5">
-          <h2 className="border-b-2 border-ink pb-2.5 font-section text-section leading-7 text-ink">
+          <h2 className="border-b border-line-soft pb-2.5 font-section text-section leading-7 text-ink">
             Ce que chaque rôle peut faire
           </h2>
           <div className="grid border-2 border-ink md:grid-cols-3">
             {ROLE_RIGHTS.map((entry, index) => (
               <div
                 key={entry.role}
-                className={`flex flex-col gap-2.5 px-[18px] py-4 ${index > 0 ? "border-t-2 border-ink md:border-t-0 md:border-l-2" : ""}`}
+                className={`flex flex-col gap-2.5 px-[18px] py-4 ${index > 0 ? "border-t border-line-soft md:border-t-0 md:border-l-2" : ""}`}
               >
                 <h3 className="text-base font-extrabold text-ink">{entry.role}</h3>
                 <ul className="flex flex-col gap-2.5">

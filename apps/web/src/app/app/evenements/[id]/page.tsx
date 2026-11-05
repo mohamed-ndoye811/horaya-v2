@@ -155,7 +155,7 @@ export default async function EventDetailPage({
         )}
       </StatGrid>
 
-      <div className="border-b-2 border-ink px-4 sm:px-10">
+      <div className="border-b border-line-soft px-4">
         <Tabs
           label="Sections de l'événement"
           value={tab}
@@ -244,7 +244,7 @@ export default async function EventDetailPage({
               </div>
             )}
             empty={
-              <p className="px-4 py-10 text-center text-base font-medium text-ink-muted sm:px-10">
+              <p className="px-4 py-10 text-center text-base font-medium text-ink-muted">
                 {event.status === "draft"
                   ? "Publie l'événement pour recevoir des réservations."
                   : "Aucune réservation pour l'instant."}
@@ -350,7 +350,7 @@ export default async function EventDetailPage({
           candidates={await listItemsAvailableBetween(db, workspace.id, event, event.id)}
         />
       ) : (
-        <div className="grid gap-10 px-4 py-8 sm:px-10 lg:grid-cols-[minmax(0,1fr)_340px]">
+        <div className="grid gap-10 px-4 py-8 lg:grid-cols-[minmax(0,1fr)_340px]">
           <div className="flex flex-col gap-4">
             <Eyebrow>Description</Eyebrow>
             <p className="whitespace-pre-line text-base font-medium leading-7 text-ink">
@@ -359,7 +359,7 @@ export default async function EventDetailPage({
               )}
             </p>
           </div>
-          <dl className="flex flex-col border-2 border-ink bg-surface">
+          <dl className="flex flex-col overflow-hidden rounded-3xl bg-surface">
             {[
               ["Type", event.typeName],
               ["Quand", formatEventRange(event.startsAt, event.endsAt, timeZone)],

@@ -177,7 +177,7 @@ export function EventForm({
     <form
       id={formId}
       onSubmit={onSubmit}
-      className="grid gap-10 px-4 py-8 sm:px-10 xl:grid-cols-[minmax(0,1fr)_320px]"
+      className="grid gap-10 px-4 py-8 xl:grid-cols-[minmax(0,1fr)_320px]"
     >
       <div className="flex min-w-0 flex-col gap-10">
         {state.error && <FormAlert>{state.error}</FormAlert>}
@@ -321,7 +321,7 @@ export function EventForm({
           </div>
 
           {!eventId && (
-            <div className="flex flex-wrap items-center justify-between gap-4 border-[1.5px] border-ink-subtle bg-surface px-4 py-4">
+            <div className="flex flex-wrap items-center justify-between gap-4 rounded-xl border border-line-soft bg-field px-4 py-4">
               <Switch
                 name="recurring"
                 checked={recurring}
@@ -504,7 +504,7 @@ export function EventForm({
       </div>
 
       <aside className="flex flex-col gap-6 xl:sticky xl:top-6 xl:self-start">
-        <div className="flex flex-col border-2 border-ink bg-surface">
+        <div className="flex flex-col overflow-hidden rounded-3xl bg-surface">
           <div
             className="flex h-[150px] flex-col justify-between p-4"
             style={{ backgroundColor: type?.color ?? "#264489" }}

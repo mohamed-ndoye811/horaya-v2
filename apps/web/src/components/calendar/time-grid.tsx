@@ -80,7 +80,7 @@ export function TimeGridCalendar({
         </div>
 
         {/* Ligne « Jour » */}
-        <div className="grid border-b-2 border-ink" style={{ gridTemplateColumns: columns }}>
+        <div className="grid border-b border-line-soft" style={{ gridTemplateColumns: columns }}>
           <span className="flex justify-end pt-2.5 pr-2 font-mono text-[10px] font-semibold uppercase tracking-[0.04em] text-neutral">
             Jour
           </span>

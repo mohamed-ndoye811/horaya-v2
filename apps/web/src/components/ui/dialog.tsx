@@ -46,14 +46,14 @@ export function Dialog({
         if (event.target === event.currentTarget) onClose();
       }}
       className={cn(
-        "m-auto w-[calc(100%-32px)] border-2 border-ink bg-bg p-0 text-left text-ink backdrop:bg-ink/45",
+        "m-auto w-[calc(100%-32px)] rounded-[28px] bg-surface p-0 text-left text-ink shadow-[0_24px_80px_rgba(0,0,0,0.22)] backdrop:bg-ink/35",
         size === "md" ? "max-w-[520px]" : "max-w-[720px]",
       )}
     >
       <div className="flex flex-col">
-        <header className="flex items-start justify-between gap-4 border-b-2 border-ink px-6 py-5">
-          <div className="flex flex-col gap-1.5">
-            <h2 id={titleId} className="font-section text-section leading-7">
+        <header className="flex items-start justify-between gap-4 px-6 pt-6 pb-2">
+          <div className="flex flex-col gap-1">
+            <h2 id={titleId} className="font-headline text-2xl leading-7">
               {title}
             </h2>
             {description && (
@@ -64,16 +64,14 @@ export function Dialog({
             type="button"
             onClick={onClose}
             aria-label="Fermer"
-            className="flex size-9 shrink-0 items-center justify-center hover:bg-draft-bg"
+            className="flex size-9 shrink-0 items-center justify-center rounded-full bg-field hover:bg-line-soft"
           >
             <CloseIcon />
           </button>
         </header>
-        {children && <div className="px-6 py-5">{children}</div>}
+        {children && <div className="px-6 py-4">{children}</div>}
         {footer && (
-          <footer className="flex flex-wrap justify-end gap-3 border-t border-line-soft px-6 py-4">
-            {footer}
-          </footer>
+          <footer className="flex flex-wrap justify-end gap-2 px-6 pt-2 pb-6">{footer}</footer>
         )}
       </div>
     </dialog>

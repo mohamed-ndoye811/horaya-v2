@@ -143,7 +143,7 @@ export default async function BookingsPage({ searchParams }: PageProps<"/app/res
         />
       ) : (
         <>
-          <div className="flex flex-col gap-4 px-4 py-6 sm:px-10 xl:flex-row xl:items-center">
+          <div className="flex flex-col gap-4 px-4 py-6 xl:flex-row xl:items-center">
             <form action="/app/reservations" className="xl:flex-1">
               {tab !== "all" && <input type="hidden" name="statut" value={tab} />}
               {eventId && <input type="hidden" name="evenement" value={eventId} />}
@@ -183,7 +183,7 @@ export default async function BookingsPage({ searchParams }: PageProps<"/app/res
             rowKey={(row) => row.id}
             minWidth={1060}
             empty={
-              <p className="px-4 py-10 text-center text-base font-medium text-ink-muted sm:px-10">
+              <p className="px-4 py-10 text-center text-base font-medium text-ink-muted">
                 Aucune réservation ne correspond à ces filtres.
               </p>
             }

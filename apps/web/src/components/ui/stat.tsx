@@ -3,15 +3,11 @@ import { CountUp } from "@/components/motion/count-up";
 import { cn } from "@/lib/cn";
 
 /**
- * Bandeau d'indicateurs (tableau de bord, fiche événement). Les filets de 2 px sont
- * l'espace entre les cases, sur fond encre : 2 colonnes sur mobile, 4 sur grand écran.
+ * Indicateurs (tableau de bord, fiche événement) : une carte blanche par chiffre,
+ * 2 colonnes sur mobile, 4 sur grand écran.
  */
 export function StatGrid({ children }: { children: ReactNode }) {
-  return (
-    <div className="grid grid-cols-2 gap-0.5 border-b-2 border-ink bg-ink xl:grid-cols-4">
-      {children}
-    </div>
-  );
+  return <div className="grid grid-cols-2 gap-3 px-4 xl:grid-cols-4">{children}</div>;
 }
 
 interface StatProps {
@@ -30,14 +26,14 @@ export function Stat({ label, value, suffix, footer, footerTone = "muted", highl
   return (
     <div
       className={cn(
-        "reveal-group flex min-w-0 flex-col gap-2.5 px-4 py-5 sm:px-10 sm:py-6",
-        highlight === "warning" ? "bg-warning-bg" : highlight ? "bg-danger-bg" : "bg-bg",
+        "reveal-group flex min-w-0 flex-col gap-2 rounded-3xl px-4 py-4 sm:px-5 sm:py-5",
+        highlight === "warning" ? "bg-warning-bg" : highlight ? "bg-danger-bg" : "bg-surface",
       )}
     >
       <p
         className={cn(
-          "font-mono text-label font-semibold uppercase leading-4 tracking-[0.055em]",
-          highlight === "warning" ? "text-warning" : highlight ? "text-danger" : "text-neutral",
+          "text-[13px] font-semibold leading-4",
+          highlight === "warning" ? "text-warning" : highlight ? "text-danger" : "text-ink-muted",
         )}
       >
         {label}
@@ -45,7 +41,7 @@ export function Stat({ label, value, suffix, footer, footerTone = "muted", highl
       <p className="flex items-baseline gap-1.5">
         <span
           className={cn(
-            "font-headline text-[36px] leading-9 normal-case sm:text-kpi sm:leading-[44px]",
+            "font-headline text-[34px] leading-9 sm:text-[40px] sm:leading-[44px]",
             highlight === "warning" ? "text-warning" : highlight ? "text-danger" : "text-ink",
           )}
         >

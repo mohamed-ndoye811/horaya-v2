@@ -129,10 +129,10 @@ export function ActionMenu({
 
   const itemClasses = (tone?: "danger") =>
     cn(
-      "block w-full px-4 py-2.5 text-left text-sm font-semibold transition-colors focus:outline-none disabled:opacity-50",
+      "block w-full rounded-xl px-3 py-2.5 text-left text-sm font-semibold transition-colors focus:outline-none disabled:opacity-50",
       tone === "danger"
         ? "text-danger hover:bg-danger-bg focus:bg-danger-bg"
-        : "text-ink hover:bg-draft-bg focus:bg-draft-bg",
+        : "text-ink hover:bg-field focus:bg-field",
     );
 
   return (
@@ -158,7 +158,7 @@ export function ActionMenu({
             tabIndex={-1}
             onKeyDown={onMenuKey}
             className={cn(
-              "fixed z-50 min-w-52 max-w-[calc(100vw-16px)] origin-top-right animate-pop border-2 border-ink bg-surface py-1 shadow-[4px_4px_0_var(--color-ink)]",
+              "fixed z-50 min-w-52 max-w-[calc(100vw-16px)] origin-top-right animate-pop overflow-hidden rounded-3xl bg-surface py-1 shadow-[4px_4px_0_var(--color-ink)]",
               !position && "invisible",
             )}
             style={position ?? { top: 0, left: 0 }}
