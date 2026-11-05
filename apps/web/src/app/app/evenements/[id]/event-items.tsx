@@ -65,7 +65,7 @@ export function EventItems({
     });
 
   return (
-    <div className="flex flex-col gap-6 px-4 py-8 sm:px-10">
+    <div className="flex flex-col gap-6 px-4 py-8">
       {error && <FormAlert>{error}</FormAlert>}
       {reserved.length === 0 ? (
         <p className="border-2 border-dashed border-ink-subtle px-5 py-8 text-center text-sm font-medium text-ink-muted">
@@ -73,7 +73,7 @@ export function EventItems({
           dates et suivent l'événement s'il change d'horaire.
         </p>
       ) : (
-        <ul className="flex flex-col border-t-2 border-ink">
+        <ul className="flex flex-col border-t border-line-soft">
           {reserved.map((entry) => (
             <li
               key={entry.itemId}

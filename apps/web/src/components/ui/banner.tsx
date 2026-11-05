@@ -9,8 +9,8 @@ const tones = {
 };
 
 /**
- * Bandeau pleine largeur sous l'en-tête de page (« 3 réservations attendent ta validation »),
- * avec un carré « ! » et une action à droite (sous le texte sur mobile).
+ * Bandeau teinté sous l'en-tête de page (« 3 réservations attendent ta validation »),
+ * avec une pastille « ! » et une action à droite (sous le texte sur mobile).
  */
 export function Banner({
   tone = "warning",
@@ -25,14 +25,14 @@ export function Banner({
     <div
       role={tone === "danger" ? "alert" : "status"}
       className={cn(
-        "flex animate-drop flex-wrap items-center gap-x-4 gap-y-2 border-b-2 border-ink px-4 py-4 sm:px-10",
+        "mx-4 flex animate-drop flex-wrap items-center gap-x-4 gap-y-2 rounded-2xl px-4 py-3.5",
         tones[tone].box,
       )}
     >
       <span
         aria-hidden="true"
         className={cn(
-          "flex size-7 shrink-0 items-center justify-center text-base font-extrabold leading-4 text-white",
+          "flex size-6 shrink-0 items-center justify-center rounded-full text-sm font-extrabold leading-4 text-white",
           tones[tone].mark,
         )}
       >
@@ -40,7 +40,7 @@ export function Banner({
       </span>
       <p className="min-w-0 flex-1 text-[15px] font-semibold leading-5">{children}</p>
       {action && (
-        <div className="shrink-0 basis-full pl-11 text-[15px] font-bold leading-5 sm:basis-auto sm:pl-0">
+        <div className="shrink-0 basis-full pl-10 text-[15px] font-bold leading-5 sm:basis-auto sm:pl-0">
           {action}
         </div>
       )}

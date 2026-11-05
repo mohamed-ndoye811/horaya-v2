@@ -19,7 +19,7 @@ export function Chip({
   removeLabel?: string;
 }) {
   return (
-    <span className="inline-flex h-10 items-center gap-2.5 border-[1.5px] border-ink bg-surface pl-3 pr-1">
+    <span className="inline-flex h-10 items-center gap-2.5 rounded-full border border-line bg-surface pl-3.5 pr-1">
       <span className="text-sm font-semibold leading-[18px] text-ink">{children}</span>
       {meta && (
         <span
@@ -40,7 +40,7 @@ export function Chip({
           type="button"
           onClick={onRemove}
           aria-label={removeLabel ?? "Retirer"}
-          className="flex size-8 items-center justify-center text-ink hover:bg-draft-bg"
+          className="flex size-8 items-center justify-center rounded-full text-ink hover:bg-field"
         >
           <CloseIcon size={10} />
         </button>
@@ -57,7 +57,7 @@ export function AddButton({ children, onClick }: { children: ReactNode; onClick?
     <button
       type="button"
       onClick={onClick}
-      className="inline-flex h-10 items-center gap-2 border-[1.5px] border-dashed border-ink-subtle px-3.5 text-sm font-bold text-ink hover:border-ink hover:bg-surface"
+      className="inline-flex h-10 items-center gap-2 rounded-full border-[1.5px] border-dashed border-line px-3.5 text-sm font-semibold text-ink hover:border-ink hover:bg-surface"
     >
       <PlusIcon size={12} />
       {children}
@@ -88,7 +88,7 @@ export function ChoiceChips({
         <label
           key={option}
           className={cn(
-            "flex h-8 items-center border-[1.5px] px-3 text-[13px] font-bold transition-colors",
+            "flex h-8 items-center rounded-full border px-3 text-[13px] font-semibold transition-colors",
             "has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-ink",
             tone === "danger"
               ? "border-danger text-danger hover:bg-danger-bg has-checked:bg-danger has-checked:text-white"

@@ -111,7 +111,7 @@ export function EventTypeForm({ initial }: { initial: EventTypeFormValues }) {
 
   return (
     <form onSubmit={onSubmit} className="flex h-full flex-col">
-      <div className="flex items-center justify-between border-b-2 border-ink px-6 py-5">
+      <div className="flex items-center justify-between border-b border-line-soft px-6 py-5">
         <h2 className="font-section text-section leading-7 text-ink">
           {initial.id ? "Modifier le type" : "Nouveau type"}
         </h2>
@@ -228,7 +228,7 @@ export function EventTypeForm({ initial }: { initial: EventTypeFormValues }) {
             {fields.map((field) => (
               <li
                 key={field.key}
-                className="flex items-center justify-between gap-3 border-[1.5px] border-ink-subtle bg-surface px-3.5 py-2.5"
+                className="flex items-center justify-between gap-3 rounded-xl border border-line-soft bg-field px-3.5 py-2.5"
               >
                 <span className="min-w-0 truncate text-sm font-semibold text-ink">
                   {field.label}
@@ -349,7 +349,7 @@ export function EventTypeForm({ initial }: { initial: EventTypeFormValues }) {
         </div>
       </div>
 
-      <div className="flex flex-wrap items-center justify-between gap-3 border-t-2 border-ink px-6 py-5">
+      <div className="flex flex-wrap items-center justify-between gap-3 border-t border-line-soft px-6 py-5">
         {initial.id ? (
           <button
             type="button"

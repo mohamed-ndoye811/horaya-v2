@@ -417,7 +417,7 @@ function LinkDialog({
                   : "Aucun événement à venir pour l'instant."}
               </p>
             ) : (
-              <ul className="flex max-h-72 flex-col overflow-y-auto border-[1.5px] border-ink-subtle bg-surface">
+              <ul className="flex max-h-72 flex-col overflow-y-auto rounded-xl border border-line-soft bg-field">
                 {options.map((option) => (
                   <li
                     key={option.id}

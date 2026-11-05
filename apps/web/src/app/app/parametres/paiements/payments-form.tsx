@@ -169,7 +169,7 @@ export function PaymentsForm({
           aria-labelledby="notifications-title"
           className="flex min-w-0 scroll-mt-6 flex-col"
         >
-          <div className="flex items-baseline gap-3 border-b-2 border-ink pb-2.5">
+          <div className="flex items-baseline gap-3 border-b border-line-soft pb-2.5">
             <span className="font-mono text-label font-semibold tracking-[0.055em] text-ink-muted">
               02
             </span>

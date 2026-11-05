@@ -189,6 +189,7 @@ export default async function CalendarPage({ searchParams }: PageProps<"/app/cal
   return (
     <>
       <PageHeader
+        actionsInCorner={false}
         eyebrow={
           <>
             <span className="lg:hidden">{mobileEyebrow}</span>
@@ -304,7 +305,7 @@ export default async function CalendarPage({ searchParams }: PageProps<"/app/cal
                 />
               )}
               {selected && (
-                <aside className="fixed inset-x-0 bottom-0 z-50 flex max-h-[85dvh] animate-[rise_380ms_cubic-bezier(0.2,0,0,1)_both] lg:animate-none flex-col overflow-y-auto border-t-2 border-ink bg-surface pb-[env(safe-area-inset-bottom)] lg:static lg:z-auto lg:max-h-none lg:w-[380px] lg:shrink-0 lg:overflow-visible lg:border-t-0 lg:border-l-2 lg:pb-0">
+                <aside className="fixed inset-x-0 bottom-0 z-50 flex max-h-[85dvh] animate-[rise_380ms_cubic-bezier(0.2,0,0,1)_both] lg:animate-none flex-col overflow-y-auto border-t border-line-soft bg-surface pb-[env(safe-area-inset-bottom)] lg:static lg:z-auto lg:max-h-none lg:w-[380px] lg:shrink-0 lg:overflow-visible lg:border-t-0 lg:border-l-2 lg:pb-0">
                   <div aria-hidden="true" className="flex justify-center pt-2.5 lg:hidden">
                     <span className="h-1 w-10 bg-ink-subtle" />
                   </div>

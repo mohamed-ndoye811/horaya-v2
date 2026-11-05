@@ -127,7 +127,7 @@ export default async function PaymentsSettingsPage({
         {paymentGateway ? (
           <section
             aria-label="Paiements en ligne"
-            className="flex flex-col border-2 border-ink bg-surface"
+            className="flex flex-col overflow-hidden rounded-3xl bg-surface"
           >
             <div className="flex flex-wrap items-center justify-between gap-4 border-b border-line-soft px-5 py-4">
               <div className="flex min-w-0 items-center gap-3.5">
@@ -206,7 +206,7 @@ export default async function PaymentsSettingsPage({
         ) : (
           <section
             aria-label="Paiement par lien"
-            className="flex flex-col border-2 border-ink bg-surface"
+            className="flex flex-col overflow-hidden rounded-3xl bg-surface"
           >
             <div className="flex flex-col gap-1 border-b border-line-soft px-5 py-4">
               <p className="text-base font-extrabold text-ink">Paiement en ligne par lien</p>

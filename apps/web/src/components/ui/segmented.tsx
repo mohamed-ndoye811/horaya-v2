@@ -14,20 +14,24 @@ interface Segment {
   count?: number;
 }
 
+// DA v4 : rail blanc en pilule, segment actif noir.
 const groupClasses = (size: "sm" | "md", fill: boolean) =>
-  cn("flex border-2 border-ink", size === "md" ? "h-12" : "h-10", fill ? "w-full" : "w-fit");
+  cn(
+    "flex gap-1 rounded-full bg-surface p-1",
+    size === "md" ? "h-11" : "h-10",
+    fill ? "w-full" : "w-fit",
+  );
 
 // Le fond du segment actif est un repère qui glisse d'un segment à l'autre (ActiveIndicator).
 const segmentClasses = (active: boolean, fill: boolean) =>
   cn(
-    "relative isolate flex items-center justify-center gap-2 whitespace-nowrap text-sm font-bold leading-[18px] transition-colors",
-    "[&:not(:first-child)]:border-l-2 [&:not(:first-child)]:border-ink",
+    "relative isolate flex items-center justify-center gap-2 whitespace-nowrap rounded-full text-sm font-semibold leading-[18px] transition-colors",
     // Pleine largeur : segments égaux, marge réduite pour tenir sur un petit écran.
-    fill ? "flex-1 basis-0 px-2" : "px-[18px]",
-    active ? "text-on-ink" : "text-ink hover:bg-surface",
+    fill ? "flex-1 basis-0 px-2" : "px-4",
+    active ? "text-on-ink" : "text-ink hover:bg-field",
   );
 
-const indicator = "inset-0 -z-10 bg-ink";
+const indicator = "inset-0 -z-10 rounded-full bg-ink";
 
 function SegmentContent({ segment, active }: { segment: Segment; active: boolean }) {
   return (

@@ -98,7 +98,7 @@ export default async function EventTypesPage({ searchParams }: PageProps<"/app/e
                   <li key={type.id} className="border-b border-line-soft">
                     <Link
                       href={`/app/evenements/types?type=${type.id}`}
-                      className="flex items-center gap-3.5 px-4 py-4 text-ink hover:bg-surface sm:px-10"
+                      className="flex items-center gap-3.5 px-4 py-4 text-ink hover:bg-surface"
                     >
                       <span
                         className="size-7 shrink-0"
@@ -135,7 +135,7 @@ export default async function EventTypesPage({ searchParams }: PageProps<"/app/e
                     <col style={{ width: 130 }} />
                   </colgroup>
                   <thead>
-                    <tr className="border-b-2 border-ink">
+                    <tr className="border-b border-line-soft">
                       {["Type", "Durée", "Prix", "Événements"].map((label, index) => (
                         <th
                           key={label}
@@ -161,7 +161,7 @@ export default async function EventTypesPage({ searchParams }: PageProps<"/app/e
                             active && "bg-surface shadow-[inset_4px_0_0_var(--color-ink)]",
                           )}
                         >
-                          <td className="px-3 py-4 pl-4 sm:pl-10">
+                          <td className="px-3 py-4 pl-4">
                             <div className="flex items-center gap-3.5">
                               <span
                                 className="size-7 shrink-0"
@@ -189,7 +189,7 @@ export default async function EventTypesPage({ searchParams }: PageProps<"/app/e
                               ? formatMoney(type.defaultPriceCents)
                               : "Gratuit"}
                           </td>
-                          <td className="px-3 pr-4 text-right font-mono text-sm font-semibold text-ink sm:pr-8">
+                          <td className="px-3 pr-4 text-right font-mono text-sm font-semibold text-ink">
                             {type.eventCount}
                           </td>
                         </tr>
@@ -202,7 +202,7 @@ export default async function EventTypesPage({ searchParams }: PageProps<"/app/e
           )}
         </div>
         {panelValues && (
-          <aside className="border-t-2 border-ink bg-surface lg:sticky lg:top-0 lg:h-dvh lg:w-[440px] lg:shrink-0 lg:border-t-0 lg:border-l-2">
+          <aside className="border-t border-line-soft bg-surface lg:sticky lg:top-0 lg:h-dvh lg:w-[440px] lg:shrink-0 lg:border-t-0 lg:border-l-2">
             <EventTypeForm key={panelValues.id ?? "nouveau"} initial={panelValues} />
           </aside>
         )}

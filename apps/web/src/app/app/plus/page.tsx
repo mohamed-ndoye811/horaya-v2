@@ -40,7 +40,7 @@ export default async function MorePage() {
 
   return (
     <div className="flex flex-col pb-6">
-      <div className="flex items-center gap-3.5 border-b-2 border-ink px-5 pt-4 pb-5">
+      <div className="flex items-center gap-3.5 border-b border-line-soft px-5 pt-4 pb-5">
         <Avatar name={user.name} size="lg" color="#66537C" />
         <div className="flex min-w-0 flex-col gap-0.5">
           <p className="truncate text-lg font-extrabold leading-[22px] text-ink">{user.name}</p>
@@ -52,7 +52,7 @@ export default async function MorePage() {
       </div>
 
       <section aria-labelledby="gerer" className="flex flex-col px-5 pt-6">
-        <h2 id="gerer" className="border-b-2 border-ink pb-2.5">
+        <h2 id="gerer" className="border-b border-line-soft pb-2.5">
           <Eyebrow>Gérer</Eyebrow>
         </h2>
         <BigRow
@@ -83,7 +83,7 @@ export default async function MorePage() {
       </section>
 
       <section aria-labelledby="parametres" className="flex flex-col px-5 pt-7">
-        <h2 id="parametres" className="border-b-2 border-ink pb-2.5">
+        <h2 id="parametres" className="border-b border-line-soft pb-2.5">
           <Eyebrow>Paramètres</Eyebrow>
         </h2>
         <SmallRow href="/app/parametres/profil">Profil</SmallRow>

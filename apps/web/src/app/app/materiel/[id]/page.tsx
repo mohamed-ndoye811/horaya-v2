@@ -211,7 +211,7 @@ export default async function ItemDetailPage({
         }
       />
 
-      <div className="grid gap-10 px-4 py-8 sm:px-10 lg:grid-cols-[340px_minmax(0,1fr)]">
+      <div className="grid gap-10 px-4 py-8 lg:grid-cols-[340px_minmax(0,1fr)]">
         <aside className="flex flex-col gap-6">
           <div
             className="flex aspect-[17/10] items-center justify-center border-2 border-ink bg-info-bg text-ink"
@@ -219,7 +219,7 @@ export default async function ItemDetailPage({
           >
             <BoxIcon size={64} />
           </div>
-          <dl className="flex flex-col border-t-2 border-ink">
+          <dl className="flex flex-col border-t border-line-soft">
             {facts.map(([label, value, money]) => (
               <div
                 key={label}
@@ -312,7 +312,7 @@ export default async function ItemDetailPage({
           </section>
 
           <section id="maintenance" className="flex flex-col">
-            <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 border-b-2 border-ink pb-3">
+            <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 border-b border-line-soft pb-3">
               <h2 className="font-section text-section leading-7 text-ink">
                 Historique de maintenance
               </h2>

@@ -3,37 +3,37 @@ import type { ComponentProps, ReactNode } from "react";
 import { cn } from "@/lib/cn";
 import { ArrowRight } from "./icons";
 
-/** `inverse` et `inverse-outline` : versions pour fond bleu encre. */
+/** `inverse` et `inverse-outline` : versions pour fond noir (barres d'action, cartes noires). */
 type Variant = "primary" | "secondary" | "success" | "danger" | "inverse" | "inverse-outline";
 
-/** `md` : boutons de l'admin (48 px). `lg` : formulaires des écrans de compte (54 px). */
+/** `md` : boutons de l'admin (44 px). `lg` : formulaires des écrans de compte (52 px). */
 type Size = "md" | "lg";
 
-// Appui : léger enfoncement (120 ms) ; survol : la flèche avance de 3 px (`group`).
+// Pilules de la DA v4. Appui : léger enfoncement (120 ms) ; survol : la flèche avance de 3 px.
 const base =
-  "group inline-flex shrink-0 items-center justify-center gap-2.5 whitespace-nowrap " +
+  "group inline-flex shrink-0 items-center justify-center gap-2 whitespace-nowrap rounded-full " +
   "transition-[color,background-color,border-color,scale] active:scale-[0.97] active:duration-[120ms] " +
   "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink";
 
 const arrowClasses = "transition-transform group-hover:translate-x-[3px]";
 
 const sizes: Record<Size, string> = {
-  md: "h-12 px-5 text-[15px] leading-5",
-  lg: "h-[54px] px-6 text-base",
+  md: "h-11 px-5 text-[15px] leading-5",
+  lg: "h-[52px] px-6 text-base",
 };
 
 const variants: Record<Variant, string> = {
-  primary: "bg-ink font-extrabold text-on-ink hover:bg-info disabled:bg-ink-subtle",
+  primary: "bg-ink font-semibold text-on-ink hover:bg-[#2c2c2c] disabled:bg-ink-subtle",
   secondary:
-    "border-2 border-ink font-bold text-ink hover:bg-surface " +
-    "disabled:border-ink-subtle disabled:text-ink-subtle disabled:hover:bg-transparent",
-  success: "bg-success font-extrabold text-white hover:brightness-95 disabled:opacity-50",
+    "border border-line bg-surface font-semibold text-ink hover:bg-field " +
+    "disabled:text-ink-subtle disabled:hover:bg-surface",
+  success: "bg-success font-semibold text-white hover:brightness-95 disabled:opacity-50",
   danger:
-    "border-2 border-danger font-bold text-danger hover:bg-danger-bg " +
-    "disabled:border-ink-subtle disabled:text-ink-subtle disabled:hover:bg-transparent",
-  inverse: "bg-on-ink font-extrabold text-ink hover:bg-surface focus-visible:outline-on-ink",
+    "border border-danger/40 bg-surface font-semibold text-danger hover:bg-danger-bg " +
+    "disabled:border-line disabled:text-ink-subtle disabled:hover:bg-surface",
+  inverse: "bg-surface font-semibold text-ink hover:bg-field focus-visible:outline-on-ink",
   "inverse-outline":
-    "border-2 border-on-ink font-bold text-on-ink hover:bg-on-ink hover:text-ink " +
+    "border border-[#3a3a3a] font-semibold text-on-ink hover:bg-white/10 " +
     "focus-visible:outline-on-ink",
 };
 
@@ -120,9 +120,9 @@ type IconButtonVariant = "approve" | "refuse" | "outline" | "ghost";
 
 const iconButtonVariants: Record<IconButtonVariant, string> = {
   approve: "bg-success text-white hover:brightness-95",
-  refuse: "border-2 border-danger text-danger hover:bg-danger-bg",
-  outline: "border-2 border-ink text-ink hover:bg-surface",
-  ghost: "text-ink hover:bg-draft-bg",
+  refuse: "border border-danger/40 bg-surface text-danger hover:bg-danger-bg",
+  outline: "border border-line bg-surface text-ink hover:bg-field",
+  ghost: "text-ink hover:bg-field",
 };
 
 interface IconButtonProps extends ComponentProps<"button"> {
@@ -148,7 +148,7 @@ export function IconButton({
       aria-label={label}
       title={label}
       className={cn(
-        "inline-flex shrink-0 items-center justify-center transition-[color,background-color,border-color,scale] active:scale-[0.94] disabled:opacity-50",
+        "inline-flex shrink-0 items-center justify-center rounded-full transition-[color,background-color,border-color,scale] active:scale-[0.94] disabled:opacity-50",
         "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink",
         size === "sm" ? "size-6" : size === "md" ? "size-9" : "size-10",
         iconButtonVariants[variant],
@@ -173,7 +173,7 @@ export function IconLink({
       aria-label={label}
       title={label}
       className={cn(
-        "inline-flex size-10 shrink-0 items-center justify-center border-2 border-ink text-ink transition-[background-color,scale] hover:bg-surface active:scale-[0.94]",
+        "inline-flex size-10 shrink-0 items-center justify-center rounded-full border border-line bg-surface text-ink transition-[background-color,scale] hover:bg-field active:scale-[0.94]",
         "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink",
         className,
       )}
@@ -191,7 +191,7 @@ export const textLinkClasses =
   "transition-[color,text-underline-offset] hover:underline-offset-[5px] " +
   "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink";
 
-/** Lien en capitales mono des en-têtes de section (« TOUS LES ÉVÉNEMENTS → »). */
+/** Lien discret des en-têtes de section (« Tous les événements → »). */
 export const monoLinkClasses =
-  "transition-colors tap-area font-mono text-label font-semibold uppercase tracking-[0.055em] text-ink hover:text-link " +
+  "transition-colors tap-area text-[13px] font-semibold text-ink hover:text-ink-muted " +
   "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink";

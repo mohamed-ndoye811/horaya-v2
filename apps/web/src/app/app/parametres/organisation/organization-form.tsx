@@ -218,7 +218,7 @@ export function OrganizationForm({
                     setHex(value.toUpperCase());
                     if (/^#[0-9A-Fa-f]{6}$/.test(value)) setColor(value.toUpperCase());
                   }}
-                  className="ml-2 h-11 w-[104px] border-[1.5px] border-ink-subtle bg-surface px-3.5 font-mono text-sm font-semibold uppercase text-ink outline-none focus:border-ink"
+                  className="ml-2 h-11 w-[104px] rounded-xl border border-line-soft bg-field px-3.5 font-mono text-sm font-semibold uppercase text-ink outline-none focus:border-ink"
                 />
                 <input type="hidden" name="brandColor" value={color} />
               </div>
@@ -236,7 +236,7 @@ export function OrganizationForm({
                       key={option.value}
                       className={cn(
                         "flex flex-col gap-1.5 px-4 py-3.5 has-[:focus-visible]:outline-2 has-[:focus-visible]:-outline-offset-4 has-[:focus-visible]:outline-ink",
-                        index > 0 && "border-t-2 border-ink sm:border-t-0 sm:border-l-2",
+                        index > 0 && "border-t border-line-soft sm:border-t-0 sm:border-l-2",
                         selected ? "bg-ink text-on-ink" : "text-ink hover:bg-surface",
                       )}
                     >

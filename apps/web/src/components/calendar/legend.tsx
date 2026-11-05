@@ -9,7 +9,7 @@ export function CalendarLegend({
   aside?: ReactNode;
 }) {
   return (
-    <div className="flex flex-wrap items-center justify-between gap-4 border-b-2 border-ink px-4 py-3.5 sm:px-10">
+    <div className="flex flex-wrap items-center justify-between gap-4 border-b border-line-soft px-4 py-3.5">
       <ul className="flex flex-wrap gap-x-6 gap-y-2">
         {categories.map((category) => (
           <li key={category.name} className="flex items-center gap-2">

@@ -35,7 +35,7 @@ export function ItemForm({
   const { state, onSubmit, pending } = useFormAction<FormState>(saveItem.bind(null, itemId), {});
   const errors = state.fieldErrors ?? {};
   return (
-    <form onSubmit={onSubmit} className="flex max-w-[768px] flex-col gap-10 px-4 py-8 sm:px-10">
+    <form onSubmit={onSubmit} className="flex max-w-[768px] flex-col gap-10 px-4 py-8">
       {state.error && <FormAlert>{state.error}</FormAlert>}
       <FormSection number={1} title="Article">
         <Field label="Nom" required error={errors.name}>

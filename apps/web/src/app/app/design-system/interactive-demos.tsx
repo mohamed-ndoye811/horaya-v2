@@ -117,7 +117,7 @@ export function FormDemo() {
             {(field) => <AffixInput {...field} type="time" defaultValue="16:30" mono />}
           </Field>
         </div>
-        <div className="flex flex-wrap items-center justify-between gap-4 border-[1.5px] border-ink-subtle bg-surface px-4 py-4">
+        <div className="flex flex-wrap items-center justify-between gap-4 rounded-xl border border-line-soft bg-field px-4 py-4">
           <Switch
             checked={recurring}
             onChange={(event) => setRecurring(event.target.checked)}

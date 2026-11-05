@@ -2,7 +2,7 @@ import type { ComponentProps } from "react";
 import { cn } from "@/lib/cn";
 import { SearchIcon } from "./icons";
 
-/** Champ de recherche : cadre encre 2 px (listes) ou fin (recherche secondaire). */
+/** Champ de recherche : carte blanche (listes) ou champ gris (recherche secondaire). */
 export function SearchInput({
   label,
   size = "md",
@@ -12,11 +12,10 @@ export function SearchInput({
   return (
     <label
       className={cn(
-        "flex min-w-0 items-center gap-3 bg-surface transition-[border-color,box-shadow]",
-        "focus-within:shadow-[0_0_0_0.5px_var(--color-ink)]",
+        "flex min-w-0 items-center gap-3 transition-[border-color,background-color,box-shadow]",
         size === "md"
-          ? "h-12 border-2 border-ink px-4"
-          : "h-10 border-[1.5px] border-ink-subtle px-3.5 focus-within:border-ink",
+          ? "h-11 rounded-2xl bg-surface px-4 focus-within:shadow-[0_0_0_1.5px_var(--color-ink)]"
+          : "h-10 rounded-xl border border-line-soft bg-field px-3.5 focus-within:border-ink focus-within:bg-surface",
         className,
       )}
     >

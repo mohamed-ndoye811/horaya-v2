@@ -1,19 +1,28 @@
 @import "tailwindcss";
 
 /*
- * Tokens issus du fichier Paper « HORAYA ».
- * À garder synchronisés : mcp get_tokens (format tailwind) sur le fichier de design.
+ * Tokens de la DA v4 « notch » (fichier Paper « HORAYA », pages « v4 · 0 Fondations » à
+ * « v4 · 6 Mobile ») : fond gris clair, cartes blanches, encre presque noire, accent orange.
  */
 @theme {
-  --color-bg: #f2f0ef;
-  --color-surface: #faf9f8;
-  --color-line-soft: #dcd8d4;
-  --color-neutral: #595959;
-  --color-ink: #264489;
-  --color-ink-muted: #4e669d;
-  --color-ink-subtle: #8c9ac0;
+  --color-bg: #ededeb;
+  --color-surface: #ffffff;
+  /* Fond des champs de saisie et survol des éléments blancs. */
+  --color-field: #f6f6f4;
+  /* Bandeaux de groupe dans les listes (« Cette semaine »). */
+  --color-band: #fafaf8;
+  /* Contour des boutons secondaires et des cases. */
+  --color-line: #e0e0dc;
+  --color-line-soft: #eeeeec;
+  --color-neutral: #6b6b6b;
+  --color-ink: #111111;
+  --color-ink-muted: #6b6b6b;
+  --color-ink-subtle: #8a8a8a;
   --color-on-ink: #f7f5f3;
   --color-link: #1f63b8;
+  --color-accent: #f0975f;
+  /* Icônes inactives du notch. */
+  --color-notch-idle: #8b8f99;
 
   --color-success: #397a5c;
   --color-success-bg: #e4efe9;
@@ -32,8 +41,8 @@
   --color-cat-meetup: #66537c;
 
   /* Calendrier (maquettes 06–08) : jour courant et week-end. */
-  --color-today: #e6eaf4;
-  --color-weekend: #ece9e6;
+  --color-today: #f6efe8;
+  --color-weekend: #f4f4f2;
 
   --text-label: 12px;
   --text-sm: 14px;
@@ -120,23 +129,18 @@
   }
 }
 
-/* Gros titres (équivalent Sztos Bold des maquettes). */
+/* Gros titres de la DA v4 : Urbanist 500 en minuscules, serré. */
 @utility font-headline {
-  font-family: var(--font-display);
-  font-weight: 900;
-  font-variation-settings: "wdth" 66;
-  text-transform: uppercase;
-  letter-spacing: -0.04em;
-  /* Compense le resserrement : sans ça les espaces entre mots disparaissent. */
-  word-spacing: 0.12em;
+  font-family: var(--font-ui);
+  font-weight: 500;
+  letter-spacing: -0.035em;
 }
 
-/* En-têtes de section (équivalent Sztos Regular élargi). */
+/* En-têtes de section. */
 @utility font-section {
-  font-family: var(--font-display);
-  font-weight: 500;
-  font-variation-settings: "wdth" 76;
-  text-transform: uppercase;
+  font-family: var(--font-ui);
+  font-weight: 600;
+  letter-spacing: -0.01em;
 }
 
 /*

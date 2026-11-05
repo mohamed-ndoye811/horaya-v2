@@ -95,7 +95,7 @@ export default async function DashboardPage() {
         }
       />
       {!user.emailVerified && (
-        <div className="border-b-2 border-ink px-4 py-6 sm:px-10">
+        <div className="border-b border-line-soft px-4 py-6">
           <VerifyEmailBanner email={user.email} />
         </div>
       )}
@@ -153,7 +153,7 @@ export default async function DashboardPage() {
           steps={["Crée un événement", "Partage ta page publique", "Reçois tes réservations"]}
         />
       ) : (
-        <div className="grid flex-1 grid-cols-[minmax(0,1fr)] gap-0.5 bg-ink xl:grid-cols-2">
+        <div className="grid flex-1 grid-cols-[minmax(0,1fr)] gap-4 xl:grid-cols-2">
           {/* Mêmes filets que StatGrid (2 px de fond encre) : la séparation tombe sous celle des indicateurs. */}
           <section className="bg-bg">
             <SectionHeading
@@ -161,7 +161,7 @@ export default async function DashboardPage() {
               action={{ label: "Tous les événements", href: "/app/evenements" }}
             />
             {upcoming.length === 0 ? (
-              <p className="px-4 py-8 text-base font-medium text-ink-muted sm:px-10">
+              <p className="px-4 py-8 text-base font-medium text-ink-muted">
                 Aucun événement à venir.
               </p>
             ) : (
@@ -173,7 +173,7 @@ export default async function DashboardPage() {
                   return (
                     <li
                       key={event.id}
-                      className="relative flex items-center gap-5 border-b border-line-soft px-4 py-3.5 hover:bg-surface sm:pr-8 sm:pl-10"
+                      className="relative flex items-center gap-5 border-b border-line-soft px-4 py-3.5 hover:bg-surface"
                     >
                       <DateBlock date={event.startsAt} timeZone={timeZone} />
                       <div className="flex min-w-0 flex-1 flex-col gap-2 sm:flex-row sm:items-center sm:gap-5">
@@ -208,7 +208,7 @@ export default async function DashboardPage() {
               action={{ label: "Tout voir", href: "/app/reservations" }}
             />
             {latest.length === 0 ? (
-              <p className="px-4 py-8 text-base font-medium text-ink-muted sm:px-10">
+              <p className="px-4 py-8 text-base font-medium text-ink-muted">
                 Aucune réservation pour l'instant.
               </p>
             ) : (
@@ -216,7 +216,7 @@ export default async function DashboardPage() {
                 {latest.map((entry) => (
                   <li
                     key={entry.id}
-                    className="relative flex items-center gap-4 border-b border-line-soft px-4 py-3.5 hover:bg-surface sm:pr-8 sm:pl-10"
+                    className="relative flex items-center gap-4 border-b border-line-soft px-4 py-3.5 hover:bg-surface"
                   >
                     <div className="min-w-0 flex-1">
                       <PersonCell

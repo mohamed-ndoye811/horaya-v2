@@ -49,7 +49,7 @@ export function MonthCalendar({
         className="w-full min-w-[840px] table-fixed border-collapse"
       >
         <thead>
-          <tr className="border-b-2 border-ink">
+          <tr className="border-b border-line-soft">
             {WEEKDAY_LABELS.map((label) => (
               <th
                 key={label}

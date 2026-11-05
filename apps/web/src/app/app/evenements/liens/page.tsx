@@ -82,7 +82,7 @@ export default async function CalendarLinksPage() {
           <CalendarLinksTable links={rows} choices={choices} canDelete={canDelete} />
         </div>
       ) : (
-        <ul className="flex flex-col px-4 sm:px-10">
+        <ul className="flex flex-col px-4">
           {rows.map((row) => (
             <li key={row.id} className="flex flex-col gap-1 border-b border-line-soft py-4">
               <span className="text-base font-bold text-ink">{row.name}</span>

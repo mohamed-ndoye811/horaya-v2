@@ -13,9 +13,9 @@ export interface Column<T> {
 const alignment = { left: "text-left", right: "text-right", center: "text-center" } as const;
 
 /**
- * Tableau des listes de l'admin : en-têtes mono soulignés d'encre, lignes séparées
- * d'un filet clair. `table-fixed` : chaque colonne garde la même largeur d'une ligne
- * à l'autre ; défilement horizontal sur petit écran plutôt qu'un tableau écrasé.
+ * Tableau des listes de l'admin (DA v4) : une carte blanche arrondie, en-têtes gris sur
+ * bandeau clair, lignes séparées d'un filet. `table-fixed` : chaque colonne garde la même
+ * largeur d'une ligne à l'autre ; défilement horizontal plutôt qu'un tableau écrasé.
  * Avec `card`, le tableau devient une liste de cartes sous `lg` (maquettes mobiles).
  */
 export function DataTable<T>({
@@ -28,7 +28,6 @@ export function DataTable<T>({
   flush = false,
   empty,
   card,
-  cardRule = true,
 }: {
   label: string;
   columns: Array<Column<T>>;
@@ -43,98 +42,94 @@ export function DataTable<T>({
   empty?: ReactNode;
   /** Version mobile d'une ligne : remplace le tableau sous `lg`. */
   card?: (row: T) => ReactNode;
-  /** Filet encre au-dessus des cartes (sous une barre de filtres) ; sans, juste sous l'en-tête. */
+  /** Ancienne option (filet au-dessus des cartes), sans effet depuis la DA v4. */
   cardRule?: boolean;
 }) {
-  const edge = flush
-    ? "px-2.5 first:pl-0 last:pr-0"
-    : "px-3 first:pl-4 last:pr-4 sm:first:pl-10 sm:last:pr-10";
+  const edge = "px-3 first:pl-5 last:pr-5";
+  // Carte blanche posée à 16 px des bords, ou collée à sa colonne (`flush`).
+  const shell = cn("overflow-hidden rounded-3xl bg-surface", !flush && "mx-4");
   return (
     <>
       {card && (
-        <ul
-          aria-label={label}
-          className={cn(
-            "reveal-group flex flex-col lg:hidden",
-            cardRule && !flush && "border-t-2 border-ink",
-          )}
-        >
+        <ul aria-label={label} className={cn("reveal-group flex flex-col lg:hidden", shell)}>
           {rows.length === 0 && empty && <li>{empty}</li>}
           {rows.map((row) => (
             <li
               key={rowKey(row)}
-              className={cn("relative border-b border-line-soft py-4", !flush && "px-4 sm:px-10")}
+              className="relative border-t border-line-soft px-4 py-4 first:border-t-0"
             >
               {card(row)}
             </li>
           ))}
         </ul>
       )}
-      <div className={card ? "hidden overflow-x-auto lg:block" : "overflow-x-auto"}>
-        <table
-          aria-label={label}
-          className="w-full table-fixed border-collapse"
-          style={{ minWidth }}
-        >
-          <colgroup>
-            {columns.map((column) => (
-              <col key={column.key} style={column.width ? { width: column.width } : undefined} />
-            ))}
-          </colgroup>
-          <thead>
-            <tr className="border-b-2 border-ink">
+      <div className={cn(shell, card ? "hidden lg:block" : undefined)}>
+        <div className="overflow-x-auto">
+          <table
+            aria-label={label}
+            className="w-full table-fixed border-collapse"
+            style={{ minWidth }}
+          >
+            <colgroup>
               {columns.map((column) => (
-                <th
-                  key={column.key}
-                  scope="col"
-                  className={cn(
-                    "pb-3 font-mono text-label font-semibold uppercase leading-4 tracking-[0.055em] text-ink",
-                    edge,
-                    alignment[column.align ?? "left"],
-                  )}
-                >
-                  {column.header}
-                </th>
+                <col key={column.key} style={column.width ? { width: column.width } : undefined} />
               ))}
-            </tr>
-          </thead>
-          {/* Les lignes arrivent l'une après l'autre au premier affichage. */}
-          <tbody className="reveal-group">
-            {rows.length === 0 && empty && (
-              <tr>
-                <td colSpan={columns.length}>{empty}</td>
-              </tr>
-            )}
-            {rows.map((row) => (
-              <tr
-                key={rowKey(row)}
-                className="border-b border-line-soft transition-colors hover:bg-surface/60"
-              >
+            </colgroup>
+            <thead>
+              <tr className="bg-band">
                 {columns.map((column) => (
-                  <td
+                  <th
                     key={column.key}
+                    scope="col"
                     className={cn(
-                      "min-w-0 align-middle",
-                      dense ? "py-3" : "py-3.5",
+                      "h-10 text-xs font-bold leading-4 text-ink-muted",
                       edge,
                       alignment[column.align ?? "left"],
                     )}
                   >
-                    <div
-                      className={cn(
-                        "flex min-w-0 items-center",
-                        column.align === "right" && "justify-end",
-                        column.align === "center" && "justify-center",
-                      )}
-                    >
-                      {column.cell(row)}
-                    </div>
-                  </td>
+                    {column.header}
+                  </th>
                 ))}
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            {/* Les lignes arrivent l'une après l'autre au premier affichage. */}
+            <tbody className="reveal-group">
+              {rows.length === 0 && empty && (
+                <tr>
+                  <td colSpan={columns.length}>{empty}</td>
+                </tr>
+              )}
+              {rows.map((row) => (
+                <tr
+                  key={rowKey(row)}
+                  className="border-t border-line-soft transition-colors hover:bg-band"
+                >
+                  {columns.map((column) => (
+                    <td
+                      key={column.key}
+                      className={cn(
+                        "min-w-0 align-middle",
+                        dense ? "py-2.5" : "py-3",
+                        edge,
+                        alignment[column.align ?? "left"],
+                      )}
+                    >
+                      <div
+                        className={cn(
+                          "flex min-w-0 items-center",
+                          column.align === "right" && "justify-end",
+                          column.align === "center" && "justify-center",
+                        )}
+                      >
+                        {column.cell(row)}
+                      </div>
+                    </td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
     </>
   );

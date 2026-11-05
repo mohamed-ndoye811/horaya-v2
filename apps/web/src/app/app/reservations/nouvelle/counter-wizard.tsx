@@ -213,7 +213,7 @@ export function CounterWizard({
 
   return (
     <form onSubmit={submit} className="flex flex-1 flex-col lg:flex-row">
-      <div className="flex min-w-0 flex-1 flex-col gap-7 px-4 pt-6 pb-10 sm:px-10 sm:pt-7">
+      <div className="flex min-w-0 flex-1 flex-col gap-7 px-4 pt-6 pb-10 sm:pt-7">
         <Stepper
           step={step}
           summaries={{
@@ -261,7 +261,7 @@ export function CounterWizard({
               )}
             </div>
             {event && (
-              <div className="flex items-center justify-between gap-4 border-t-2 border-ink pt-4">
+              <div className="flex items-center justify-between gap-4 border-t border-line-soft pt-4">
                 <div className="flex flex-col gap-0.5">
                   <span className="text-base font-bold leading-5 text-ink">Places</span>
                   <span className="text-[13px] font-medium leading-[18px] text-ink-muted">
@@ -335,7 +335,7 @@ export function CounterWizard({
               </div>
             )}
             {!customer && (
-              <fieldset className="flex flex-col gap-3 border-t-2 border-ink pt-4">
+              <fieldset className="flex flex-col gap-3 border-t border-line-soft pt-4">
                 <legend className="sr-only">Nouveau client</legend>
                 <div className="flex items-baseline justify-between gap-3">
                   <span className="text-base font-bold leading-5 text-ink">+ Nouveau client</span>
@@ -434,7 +434,7 @@ export function CounterWizard({
             </section>
 
             {total > 0 && (
-              <section className="flex flex-col gap-2.5 border-t-2 border-ink pt-4">
+              <section className="flex flex-col gap-2.5 border-t border-line-soft pt-4">
                 <div className="flex items-baseline justify-between gap-3">
                   <h3 className="font-mono text-label font-semibold uppercase leading-4 tracking-[0.055em] text-neutral">
                     Paiement
@@ -490,7 +490,7 @@ export function CounterWizard({
         )}
       </div>
 
-      <aside className="sticky bottom-0 z-30 flex flex-col border-t-2 border-ink bg-bg pb-[env(safe-area-inset-bottom)] lg:static lg:w-[360px] lg:shrink-0 lg:border-t-0 lg:border-l-2 lg:bg-surface lg:pb-0">
+      <aside className="sticky bottom-0 z-30 flex flex-col border-t border-line-soft bg-bg pb-[env(safe-area-inset-bottom)] lg:static lg:w-[360px] lg:shrink-0 lg:border-t-0 lg:border-l-2 lg:bg-surface lg:pb-0">
         <div className="hidden flex-1 flex-col gap-[18px] px-7 pt-7 pb-6 lg:flex">
           <p className="font-mono text-label font-semibold uppercase leading-4 tracking-[0.055em] text-neutral">
             Ta saisie
@@ -528,7 +528,7 @@ export function CounterWizard({
               placeholder="à l'étape 3"
             />
           </dl>
-          <div className="flex items-baseline justify-between border-t-2 border-ink pt-3.5">
+          <div className="flex items-baseline justify-between border-t border-line-soft pt-3.5">
             <span className="text-[15px] font-bold leading-5 text-ink">Total</span>
             <span className="font-mono text-[22px] font-semibold leading-7 text-ink">
               {total > 0 ? formatMoney(total) : event ? "Gratuit" : "—"}
@@ -932,7 +932,7 @@ function CounterDone({
         ? `Payé · ${METHODS.find((entry) => entry.value === method)?.label.toLowerCase() ?? "noté"}`
         : "À payer";
   return (
-    <div className="flex max-w-[640px] flex-col gap-6 px-4 pt-6 pb-10 sm:px-10 sm:pt-7">
+    <div className="flex max-w-[640px] flex-col gap-6 px-4 pt-6 pb-10 sm:pt-7">
       <div className="flex flex-col gap-3">
         <span className="flex size-14 items-center justify-center bg-success text-on-ink">
           {/* La coche se dessine (classe `draw`). */}

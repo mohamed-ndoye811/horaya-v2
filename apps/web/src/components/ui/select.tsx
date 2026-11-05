@@ -7,12 +7,12 @@ type SelectVariant = "field" | "filter" | "compact";
 const variants: Record<SelectVariant, string> = {
   /** Dans un formulaire : comme un champ texte. */
   field:
-    "h-12 border-[1.5px] border-ink-subtle bg-surface pl-3.5 pr-10 text-base font-medium focus:border-ink focus:shadow-[0_0_0_0.5px_var(--color-ink)]",
-  /** Filtre de liste : cadre encre 2 px, texte gras. */
-  filter: "h-12 border-2 border-ink bg-transparent pl-4 pr-10 text-sm font-bold hover:bg-surface",
+    "h-11 rounded-xl border border-line-soft bg-field pl-3.5 pr-10 text-[15px] font-medium focus:border-ink focus:bg-surface",
+  /** Filtre de liste : pilule blanche, texte gras. */
+  filter: "h-10 rounded-full bg-surface pl-4 pr-10 text-sm font-semibold hover:bg-field",
   /** Dans une ligne de tableau (rôle d'un membre) ou une carte. */
   compact:
-    "h-10 border-[1.5px] border-ink-subtle bg-surface pl-3.5 pr-10 text-sm font-bold focus:border-ink",
+    "h-10 rounded-xl border border-line-soft bg-field pl-3.5 pr-10 text-sm font-semibold focus:border-ink focus:bg-surface",
 };
 
 /**

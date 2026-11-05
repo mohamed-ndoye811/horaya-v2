@@ -3,7 +3,7 @@ import type { ReactNode } from "react";
 import { cn } from "@/lib/cn";
 import { monoLinkClasses } from "./button";
 
-/** Titre de bloc (« À VENIR ») avec lien mono à droite. */
+/** Titre de bloc (« À venir ») avec lien discret à droite. */
 export function SectionHeading({
   title,
   action,
@@ -19,12 +19,12 @@ export function SectionHeading({
   return (
     <div
       className={cn(
-        "flex items-center justify-between gap-4 border-b-2 border-ink py-5",
-        flush ? "px-0" : "px-4 sm:pr-8 sm:pl-10",
+        "flex items-center justify-between gap-4 pt-5 pb-3",
+        flush ? "px-0" : "px-4",
         className,
       )}
     >
-      <h2 className="font-section text-section leading-7 text-ink">{title}</h2>
+      <h2 className="font-headline text-section leading-7 text-ink">{title}</h2>
       {action && (
         <Link href={action.href} className={monoLinkClasses}>
           {action.label} →
@@ -34,7 +34,7 @@ export function SectionHeading({
   );
 }
 
-/** Section numérotée d'un formulaire (« 01 INFORMATIONS »). */
+/** Section numérotée d'un formulaire : pastille noire numérotée et titre (« 1 Informations »). */
 export function FormSection({
   number,
   title,
@@ -46,27 +46,18 @@ export function FormSection({
 }) {
   return (
     <section className="flex flex-col gap-5">
-      <h2 className="flex items-baseline gap-3 border-b-2 border-ink pb-2.5">
-        <span className="font-mono text-label font-semibold tracking-[0.055em] text-ink-muted">
-          {String(number).padStart(2, "0")}
+      <h2 className="flex items-center gap-2.5">
+        <span className="flex size-[26px] shrink-0 items-center justify-center rounded-full bg-ink text-xs font-bold leading-[14px] text-on-ink">
+          {number}
         </span>
-        <span className="font-section text-section leading-7 text-ink">{title}</span>
+        <span className="text-lg font-semibold leading-[22px] text-ink">{title}</span>
       </h2>
       {children}
     </section>
   );
 }
 
-/** Petit titre mono au-dessus d'un bloc (« MESSAGE DE LA CLIENTE », « HISTORIQUE »). */
+/** Petit titre au-dessus d'un bloc (« Message de la cliente », « Historique »). */
 export function Eyebrow({ children, className }: { children: ReactNode; className?: string }) {
-  return (
-    <p
-      className={cn(
-        "font-mono text-label font-semibold uppercase leading-4 tracking-[0.055em] text-neutral",
-        className,
-      )}
-    >
-      {children}
-    </p>
-  );
+  return <p className={cn("text-xs font-bold leading-4 text-ink-muted", className)}>{children}</p>;
 }
