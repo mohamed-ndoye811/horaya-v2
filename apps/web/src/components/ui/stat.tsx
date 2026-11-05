@@ -129,9 +129,15 @@ export function MiniStat({
   value,
   unit,
   aside,
+  badge,
   dark = false,
+  warning = false,
 }: {
   label: string;
+  /** Pastille à droite du libellé (« +12 % »). */
+  badge?: ReactNode;
+  /** Carte ambre : quelque chose à faire (« À réviser »). */
+  warning?: boolean;
   value: ReactNode;
   /** « € », « % » : en petit après la valeur. */
   unit?: ReactNode;
@@ -145,11 +151,23 @@ export function MiniStat({
         "flex min-w-0 items-end justify-between gap-3 rounded-[20px] px-5 py-4",
         dark
           ? "bg-ink"
-          : "bg-surface shadow-[0_1px_2px_rgba(0,0,0,0.04),0_16px_40px_rgba(0,0,0,0.05)]",
+          : warning
+            ? "bg-warning-bg"
+            : "bg-surface shadow-[0_1px_2px_rgba(0,0,0,0.04),0_16px_40px_rgba(0,0,0,0.05)]",
       )}
     >
       <div className="flex min-w-0 flex-col gap-1.5">
-        <p className="text-[13px] font-semibold leading-[17px] text-ink-subtle">{label}</p>
+        <div className="flex items-center gap-2">
+          <p
+            className={cn(
+              "text-[13px] font-semibold leading-[17px]",
+              warning ? "text-warning" : "text-ink-subtle",
+            )}
+          >
+            {label}
+          </p>
+          {badge}
+        </div>
         <p
           className={cn(
             "truncate font-headline text-[32px] leading-9 tracking-[-0.03em]",
@@ -161,7 +179,14 @@ export function MiniStat({
         </p>
       </div>
       {aside && (
-        <div className="shrink-0 text-right text-xs leading-4 text-ink-subtle">{aside}</div>
+        <div
+          className={cn(
+            "shrink-0 text-right text-xs leading-4",
+            warning ? "text-warning" : "text-ink-subtle",
+          )}
+        >
+          {aside}
+        </div>
       )}
     </div>
   );

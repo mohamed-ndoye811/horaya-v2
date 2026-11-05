@@ -1,6 +1,7 @@
 import { addDays } from "@horaya/core";
 import { getItemDetail, type ItemAllocationRow } from "@horaya/db";
 import type { Metadata } from "next";
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import {
   AvailabilityGrid,
@@ -8,10 +9,10 @@ import {
   RENTAL_COLOR,
 } from "@/components/app/availability-grid";
 import { PageHeader } from "@/components/app/page-header";
-import { CategorySwatch } from "@/components/ui/avatar";
 import { StatusBadge, type Tone } from "@/components/ui/badge";
-import { ButtonLink, IconLink } from "@/components/ui/button";
+import { ButtonLink } from "@/components/ui/button";
 import { BoxIcon, ChevronLeft, ChevronRight, PlusIcon } from "@/components/ui/icons";
+import { cardClasses, cardShellClasses } from "@/components/ui/section";
 import { type CivilDate, civilDateOf, civilKey, daysCovered } from "@/lib/calendar";
 import { cn } from "@/lib/cn";
 import { parseCivilDate, startOfDay, todayIn } from "@/lib/dates";
@@ -183,21 +184,21 @@ export default async function ItemDetailPage({
       <PageHeader
         eyebrow={`Matériel / Réf. ${item.reference}`}
         title={item.name}
+        titleAside={
+          <StatusBadge tone={badgeTone}>
+            {available} sur {item.units} disponible{available > 1 ? "s" : ""}
+          </StatusBadge>
+        }
         subtitle={
-          <span className="flex flex-wrap items-center gap-x-3 gap-y-2">
-            <StatusBadge tone={badgeTone}>
-              {available} sur {item.units} disponible{available > 1 ? "s" : ""}
-            </StatusBadge>
-            <span>
-              {[
-                item.typeName,
-                `${item.units} exemplaire${item.units > 1 ? "s" : ""}`,
-                `${outings} sortie${outings > 1 ? "s" : ""} depuis l'achat`,
-              ]
-                .filter(Boolean)
-                .join(" · ")}
+          <>
+            {[item.typeName, `${item.units} exemplaire${item.units > 1 ? "s" : ""}`]
+              .filter(Boolean)
+              .join(" · ")}
+            .{" "}
+            <span className="text-ink">
+              {outings} sortie{outings > 1 ? "s" : ""} depuis l'achat.
             </span>
-          </span>
+          </>
         }
         actions={
           <>
@@ -211,59 +212,73 @@ export default async function ItemDetailPage({
         }
       />
 
-      <div className="grid gap-10 px-4 py-8 lg:grid-cols-[340px_minmax(0,1fr)]">
-        <aside className="flex flex-col gap-6">
-          <div
-            className="flex aspect-[17/10] items-center justify-center border-2 border-ink bg-info-bg text-ink"
-            aria-hidden="true"
-          >
-            <BoxIcon size={64} />
-          </div>
-          <dl className="flex flex-col border-t border-line-soft">
-            {facts.map(([label, value, money]) => (
-              <div
-                key={label}
-                className="flex items-baseline justify-between gap-4 border-b border-line-soft py-3.5"
-              >
-                <dt className="font-mono text-label font-semibold uppercase tracking-[0.055em] text-neutral">
-                  {label}
-                </dt>
-                <dd
+      <div className="grid items-start gap-4 px-4 pb-4 lg:grid-cols-[340px_minmax(0,1fr)]">
+        <aside className="flex flex-col gap-4">
+          <section className={cn(cardShellClasses, "gap-2 p-2")}>
+            <div
+              aria-hidden="true"
+              className="flex aspect-[324/220] items-center justify-center rounded-[18px] bg-field text-ink-subtle"
+            >
+              <BoxIcon size={56} />
+            </div>
+            <p className="px-2 pb-1 text-xs leading-4 text-ink-subtle">Photos · à venir</p>
+          </section>
+          <section className={cn(cardShellClasses, "px-5 py-2")}>
+            <dl className="flex flex-col">
+              {facts.map(([label, value, money], index) => (
+                <div
+                  key={label}
                   className={cn(
-                    "text-right text-[15px] font-bold",
-                    money ? "text-success" : "text-ink",
+                    "flex min-h-10 items-center justify-between gap-4 py-2",
+                    index > 0 && "border-t border-[#f4f4f2]",
                   )}
                 >
-                  {value}
-                </dd>
-              </div>
-            ))}
-          </dl>
-          {item.description && (
-            <p className="whitespace-pre-line text-sm font-medium leading-6 text-ink-muted">
-              {item.description}
-            </p>
-          )}
+                  <dt className="text-[13px] leading-[17px] text-ink-subtle">{label}</dt>
+                  <dd
+                    className={cn(
+                      "text-right text-sm font-semibold leading-[18px]",
+                      money ? "text-success" : value === "—" ? "text-[#ababa6]" : "text-ink",
+                    )}
+                  >
+                    {value}
+                  </dd>
+                </div>
+              ))}
+            </dl>
+            {item.description && (
+              <p className="whitespace-pre-line border-t border-[#f4f4f2] py-3 text-[13px] leading-5 text-ink-muted">
+                {item.description}
+              </p>
+            )}
+          </section>
         </aside>
 
-        <div className="flex min-w-0 flex-col gap-10">
-          <section className="flex flex-col gap-4">
+        <div className="flex min-w-0 flex-col gap-4">
+          <section className={cn(cardClasses, "gap-3.5")}>
             <div className="flex items-center justify-between gap-4">
-              <h2 className="font-section text-section leading-7 text-ink">Disponibilité</h2>
-              <div className="flex items-center gap-3">
-                <span className="font-mono text-label font-semibold uppercase tracking-[0.055em] text-ink">
+              <h2 className="text-base font-semibold leading-5 text-ink">Disponibilité</h2>
+              <div className="flex items-center gap-2">
+                <Link
+                  href={navHref(-DAYS)}
+                  aria-label="Quinzaine précédente"
+                  className="flex size-[30px] items-center justify-center rounded-full border border-[#e2e2df] text-ink hover:bg-field"
+                >
+                  <ChevronLeft />
+                </Link>
+                <span className="text-sm font-semibold leading-[18px] text-ink">
                   {rangeLabel(first, last)}
                 </span>
-                <IconLink href={navHref(-DAYS)} label="Quinzaine précédente">
-                  <ChevronLeft />
-                </IconLink>
-                <IconLink href={navHref(DAYS)} label="Quinzaine suivante">
+                <Link
+                  href={navHref(DAYS)}
+                  aria-label="Quinzaine suivante"
+                  className="flex size-[30px] items-center justify-center rounded-full border border-[#e2e2df] text-ink hover:bg-field"
+                >
                   <ChevronRight />
-                </IconLink>
+                </Link>
               </div>
             </div>
             {activeUnits.length === 0 ? (
-              <p className="border-2 border-dashed border-ink-subtle px-5 py-8 text-center text-sm font-medium text-ink-muted">
+              <p className="rounded-2xl border-[1.5px] border-dashed border-[#e2e2df] px-5 py-8 text-center text-sm text-ink-subtle">
                 Aucun exemplaire en service.
               </p>
             ) : (
@@ -276,44 +291,45 @@ export default async function ItemDetailPage({
               />
             )}
             {legend.size > 0 ? (
-              <ul className="flex flex-wrap gap-x-5 gap-y-2">
+              <ul className="flex flex-wrap gap-x-[18px] gap-y-2 border-t border-[#f0f0ee] pt-3.5">
                 {[...legend.values()].map((allocation) => (
                   <li
                     key={allocation.id}
-                    className="flex items-center gap-2 text-[13px] font-semibold text-ink"
+                    className="flex items-center gap-1.5 text-xs leading-4 text-[#4a4a4a]"
                   >
-                    {allocation.kind === "maintenance" ? (
-                      <span
-                        aria-hidden="true"
-                        className="size-3 shrink-0 border-[1.5px] border-dashed border-warning bg-warning-bg"
-                      />
-                    ) : (
-                      <CategorySwatch
-                        color={
-                          allocation.kind === "rental"
-                            ? RENTAL_COLOR
-                            : (allocation.eventColor ?? RENTAL_COLOR)
-                        }
-                        size={12}
-                      />
-                    )}
+                    <span
+                      aria-hidden="true"
+                      className={cn(
+                        "size-2 shrink-0 rounded-[3px]",
+                        allocation.kind === "maintenance" &&
+                          "border-[1.5px] border-dashed border-[#d9a441]",
+                      )}
+                      style={
+                        allocation.kind === "maintenance"
+                          ? undefined
+                          : {
+                              backgroundColor:
+                                allocation.kind === "rental"
+                                  ? RENTAL_COLOR
+                                  : (allocation.eventColor ?? RENTAL_COLOR),
+                            }
+                      }
+                    />
                     {allocationLabel(allocation)}
-                    <span className="font-mono text-label text-ink-muted">
-                      {dayRange(allocation, timeZone)}
-                    </span>
+                    <span className="text-ink-subtle">{dayRange(allocation, timeZone)}</span>
                   </li>
                 ))}
               </ul>
             ) : (
-              <p className="text-sm font-medium text-ink-muted">
+              <p className="border-t border-[#f0f0ee] pt-3.5 text-[13px] text-ink-subtle">
                 Aucune sortie sur ces deux semaines : tous les exemplaires sont libres.
               </p>
             )}
           </section>
 
-          <section id="maintenance" className="flex flex-col">
-            <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 border-b border-line-soft pb-3">
-              <h2 className="font-section text-section leading-7 text-ink">
+          <section id="maintenance" className={cn(cardShellClasses, "px-5 pt-4 pb-2")}>
+            <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-2 pb-2.5">
+              <h2 className="text-base font-semibold leading-5 text-ink">
                 Historique de maintenance
               </h2>
               {activeUnits.length > 0 && (
@@ -321,7 +337,7 @@ export default async function ItemDetailPage({
               )}
             </div>
             {interventions.length === 0 ? (
-              <p className="py-6 text-sm font-medium text-ink-muted">
+              <p className="border-t border-[#f4f4f2] py-4 text-[13px] text-ink-subtle">
                 Aucune intervention pour l'instant.
               </p>
             ) : (
@@ -343,18 +359,18 @@ export default async function ItemDetailPage({
                     <li
                       key={intervention.key}
                       className={cn(
-                        "grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4 gap-y-1.5 border-b border-line-soft py-4 sm:grid-cols-[96px_minmax(0,1fr)_auto]",
+                        "flex min-h-14 flex-wrap items-center gap-x-3.5 gap-y-1 border-t border-[#f4f4f2] py-2",
                         intervention.cancelled && "opacity-60",
                       )}
                     >
-                      <span className="col-span-2 font-mono text-label font-semibold uppercase tracking-[0.055em] text-ink-muted sm:col-span-1">
+                      <span className="w-[72px] shrink-0 text-[13px] font-semibold leading-[17px] text-ink">
                         {civil(start, start.year !== today.year)}
                       </span>
-                      <div className="flex min-w-0 flex-col gap-1">
-                        <p className="text-base font-bold text-ink">
+                      <div className="flex min-w-0 flex-1 flex-col gap-px">
+                        <p className="text-sm font-semibold leading-[18px] text-ink">
                           {intervention.title} · {unitsLabel}
                         </p>
-                        <p className="text-[13px] font-medium text-ink-muted">
+                        <p className="text-xs leading-4 text-ink-subtle">
                           {[
                             intervention.provider,
                             `${span} jour${span > 1 ? "s" : ""} d'immobilisation`,
@@ -366,7 +382,7 @@ export default async function ItemDetailPage({
                             .join(" · ")}
                         </p>
                       </div>
-                      <div className="flex flex-col-reverse items-end gap-2 sm:flex-row sm:items-center sm:gap-4">
+                      <div className="flex items-center gap-4">
                         {status.label === "Planifiée" && (
                           <CancelMaintenance allocationIds={intervention.ids} />
                         )}

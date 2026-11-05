@@ -35,10 +35,16 @@ export default async function RentItemPage({
       <PageHeader
         eyebrow={`Matériel / Réf. ${item.reference} / Louer`}
         title="Louer"
-        subtitle={`${item.name} · location seule, hors événement.`}
+        subtitle={
+          <>
+            {item.name}. <span className="text-ink">Location seule, hors événement.</span>
+          </>
+        }
       />
       <RentalForm
         itemId={id}
+        name={item.name}
+        reference={item.reference}
         units={item.units}
         dailyRateCents={item.dailyRateCents}
         depositCents={item.depositCents}
