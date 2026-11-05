@@ -11,7 +11,7 @@ import {
   ReceiptIcon,
   SettingsIcon,
   TicketIcon,
-  UserIcon,
+  UsersIcon,
 } from "@/components/ui/icons";
 import { authClient } from "@/lib/auth-client";
 import { cn } from "@/lib/cn";
@@ -30,7 +30,7 @@ const NAV: NavItem[] = [
   { href: "/app/evenements", label: "Événements", icon: TicketIcon },
   { href: "/app/reservations", label: "Réservations", icon: ReceiptIcon },
   { href: "/app/materiel", label: "Matériel", icon: BoxIcon },
-  { href: "/app/clients", label: "Clients", icon: UserIcon },
+  { href: "/app/clients", label: "Clients", icon: UsersIcon },
   { href: "/app/parametres", label: "Paramètres", icon: SettingsIcon },
 ];
 
@@ -76,7 +76,7 @@ export function Notch({ user, workspace, pendingBookings }: NotchProps) {
           aria-label="Horaya, tableau de bord"
           className="flex size-9 items-center justify-center text-on-ink"
         >
-          <HorayaMark size={22} />
+          <HorayaMark size={18} />
         </Link>
         <span aria-hidden="true" className="mx-1 h-5 w-px bg-[#3a3a3a]" />
         <nav aria-label="Navigation principale" className="flex items-center gap-1.5">
