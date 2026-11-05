@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { Fragment, type ReactNode } from "react";
 import { cn } from "@/lib/cn";
 
@@ -30,6 +31,7 @@ export function DataTable<T>({
   card,
   group,
   rowTone,
+  rowHref,
 }: {
   label: string;
   columns: Array<Column<T>>;
@@ -53,6 +55,11 @@ export function DataTable<T>({
   group?: (row: T) => string;
   /** Ligne mise en avant (réservation à valider) : fond ambre pâle ; `muted` : annulée, grisée. */
   rowTone?: (row: T) => "warning" | "muted" | undefined;
+  /**
+   * Fiche de la ligne : un clic n'importe où sur la ligne y mène. Les liens et boutons des
+   * cellules gardent leur propre action.
+   */
+  rowHref?: (row: T) => string;
 }) {
   const edge = "px-3 first:pl-5 last:pr-5";
   const groupOf = (index: number) => {
@@ -154,11 +161,12 @@ export function DataTable<T>({
                     <tr
                       className={cn(
                         "border-t border-line-soft transition-colors hover:bg-band",
+                        rowHref && "relative cursor-pointer",
                         rowTone?.(row) === "warning" && "bg-warning-bg/50",
                         rowTone?.(row) === "muted" && "opacity-60",
                       )}
                     >
-                      {columns.map((column) => (
+                      {columns.map((column, columnIndex) => (
                         <td
                           key={column.key}
                           className={cn(
@@ -168,9 +176,21 @@ export function DataTable<T>({
                             alignment[column.align ?? "left"],
                           )}
                         >
+                          {rowHref && columnIndex === 0 && (
+                            // Lien qui couvre la ligne ; le lien principal de la cellule reste
+                            // celui qu'on atteint au clavier.
+                            <Link
+                              href={rowHref(row)}
+                              tabIndex={-1}
+                              aria-hidden="true"
+                              className="absolute inset-0"
+                            />
+                          )}
                           <div
                             className={cn(
                               "flex min-w-0 items-center",
+                              rowHref &&
+                                "pointer-events-none relative [&_a]:pointer-events-auto [&_button]:pointer-events-auto [&_input]:pointer-events-auto",
                               column.align === "right" && "justify-end",
                               column.align === "center" && "justify-center",
                             )}

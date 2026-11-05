@@ -21,16 +21,19 @@ import { BottomNotch } from "./bottom-notch";
  * Masqués à partir de `lg`, où le notch du haut prend le relais.
  */
 
-/** Retour vers la liste ou la fiche parente (« ← Réservations »), seulement hors onglets. */
+/**
+ * Retour vers la liste ou la fiche parente (« ← Réservations »), hors onglets. Aussi sur grand
+ * écran, sauf quand il mène à l'onglet Plus, propre au mobile.
+ */
 export function MobileTopBar() {
   const pathname = usePathname();
   const back = backLink(pathname);
   if (!back) return null;
   return (
-    <div className="px-4 pt-4 lg:hidden">
+    <div className={cn("px-4 pt-4", back.href === "/app/plus" && "lg:hidden")}>
       <Link
         href={back.href}
-        className="flex w-fit items-center gap-1.5 text-[13px] font-semibold leading-4 text-ink-muted"
+        className="flex w-fit items-center gap-1.5 text-[13px] font-semibold leading-4 text-ink-muted transition-colors hover:text-ink"
       >
         <ArrowLeft className="size-3" />
         {back.label}
