@@ -32,5 +32,14 @@ export function CountUp({ value }: { value: string }) {
     return () => controls.stop();
   }, [value, reduced]);
 
-  return <span ref={ref}>{value}</span>;
+  // La valeur finale, invisible, réserve la largeur : Urbanist n'a pas de chiffres à chasse fixe,
+  // le texte autour ne bouge donc pas pendant le défilement.
+  return (
+    <span className="relative inline-block">
+      <span className="invisible">{value}</span>
+      <span ref={ref} className="absolute inset-0 whitespace-nowrap">
+        {value}
+      </span>
+    </span>
+  );
 }

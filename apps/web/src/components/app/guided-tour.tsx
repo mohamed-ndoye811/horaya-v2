@@ -1,5 +1,6 @@
 "use client";
 
+import { motion, useReducedMotion } from "motion/react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/cn";
@@ -55,6 +56,7 @@ export function GuidedTour({ onClose }: { onClose: () => void }) {
   const [rect, setRect] = useState<DOMRect | null>(null);
   const dialogRef = useRef<HTMLDivElement>(null);
   const step = STEPS[index] ?? STEPS[0];
+  const reduced = useReducedMotion();
   const last = index === STEPS.length - 1;
 
   const close = useCallback(() => {
@@ -97,14 +99,19 @@ export function GuidedTour({ onClose }: { onClose: () => void }) {
       {/* Bloque les clics sur la page pendant la visite. */}
       <div aria-hidden="true" className="absolute inset-0" onClick={close} />
       {rect ? (
-        <div
+        // Le repère glisse d'une cible à l'autre : position en transformations, seule la taille passe par la mise en page.
+        <motion.div
           aria-hidden="true"
-          className="pointer-events-none absolute rounded-full ring-2 ring-accent transition-all duration-300"
-          style={{
-            top: rect.top - pad,
-            left: rect.left - pad,
+          className="pointer-events-none absolute top-0 left-0 rounded-full ring-2 ring-accent"
+          initial={false}
+          animate={{
+            x: rect.left - pad,
+            y: rect.top - pad,
             width: rect.width + pad * 2,
             height: rect.height + pad * 2,
+          }}
+          transition={reduced ? { duration: 0 } : undefined}
+          style={{
             boxShadow: "0 0 0 4px rgba(240,151,95,0.25), 0 0 0 9999px rgba(17,17,17,0.45)",
           }}
         />

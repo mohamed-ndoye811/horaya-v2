@@ -2,12 +2,12 @@ import type { ReactNode } from "react";
 import { cn } from "@/lib/cn";
 
 const tones = {
-  danger: "border-danger bg-danger-bg text-danger",
-  success: "border-success bg-success-bg text-success",
-  info: "border-info bg-info-bg text-info",
+  danger: "bg-danger-bg text-danger",
+  success: "bg-success-bg text-success",
+  info: "bg-info-bg text-info",
 };
 
-/** Message en tête de formulaire (erreur globale, confirmation…). */
+/** Message en tête de formulaire (erreur globale, confirmation…) : encadré teinté arrondi (DA v4). */
 export function FormAlert({
   tone = "danger",
   icon,
@@ -21,7 +21,7 @@ export function FormAlert({
     <div
       role={tone === "danger" ? "alert" : "status"}
       className={cn(
-        "flex animate-drop items-center gap-3 border-[1.5px] px-3.5 py-3 text-sm font-semibold leading-[18px]",
+        "flex animate-drop items-center gap-3 rounded-xl px-3.5 py-3 text-sm font-semibold leading-[18px]",
         tones[tone],
       )}
     >
