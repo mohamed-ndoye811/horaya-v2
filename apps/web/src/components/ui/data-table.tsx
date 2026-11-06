@@ -1,5 +1,5 @@
-import { motion } from "motion/react";
-import { type ReactNode, useEffect, useRef, useState } from "react";
+import { animate } from "motion/react";
+import { type ReactNode, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { cn } from "@/lib/cn";
 import { Link } from "@/lib/navigation";
 
@@ -15,19 +15,11 @@ export interface Column<T> {
 const alignment = { left: "text-left", right: "text-right", center: "text-center" } as const;
 
 /*
- * Filtre, recherche, tri : la liste se met à jour sans rien plier (une hauteur animée recalcule
- * la page à chaque image, cellule par cellule).
- * - Les lignes qui restent glissent jusqu'à leur nouvelle place (layout de Motion, en
- *   transformations), pour une liste courte seulement : chaque ligne animée est mesurée.
- * - Les lignes qui arrivent apparaissent en fondu CSS, en cascade entre elles, quel que soit leur
- *   nombre ; celles qui partent disparaissent aussitôt, les autres prennent leur place.
- * - Au premier affichage, fondu échelonné (reveal-group).
+ * Filtre, recherche, tri : la nouvelle liste apparaît d'un bloc, en fondu (une seule animation
+ * d'opacité, quel que soit le nombre de lignes). Au premier affichage, fondu échelonné des
+ * lignes (reveal-group).
  */
-const LAYOUT_ROWS_MAX = 40;
-const SLIDE = { type: "spring", visualDuration: 0.3, bounce: 0 } as const;
-/** Décalage entre deux lignes qui arrivent, plafonné à 10 lignes. */
-const STAGGER_MS = 35;
-const STAGGER_MAX = 10;
+const SWAP = { duration: 0.2, ease: [0.2, 0, 0, 1] } as const;
 /** Fin du fondu échelonné de la première arrivée (500 ms + 8 décalages de 40 ms). */
 const FIRST_REVEAL_MS = 1000;
 
@@ -97,8 +89,7 @@ export function DataTable<T>({
   );
   // Carte blanche posée à 16 px des bords, ou collée à sa colonne (`flush`).
   const shell = cn("overflow-hidden rounded-3xl bg-surface", !flush && "mx-4");
-  // Après la première arrivée, plus de décalage par position : une ligne qui change de rang ne
-  // relance pas son fondu.
+  // Fondu échelonné à la première arrivée seulement : ensuite, la liste change d'un bloc.
   const [arrived, setArrived] = useState(false);
   useEffect(() => {
     const timer = setTimeout(() => setArrived(true), FIRST_REVEAL_MS);
@@ -112,52 +103,40 @@ export function DataTable<T>({
     entries.push({ key: rowKey(row), row });
   });
 
-  // Rang de chaque ligne qui arrive, de haut en bas, recalculé seulement quand la liste change.
-  const keys = entries.map((entry) => entry.key);
-  const signature = keys.join("\n");
-  const order = useRef({ signature, keys, entering: new Map<string, number>() });
-  if (order.current.signature !== signature) {
-    const before = new Set(order.current.keys);
-    const entering = new Map<string, number>();
-    for (const key of keys) if (!before.has(key)) entering.set(key, entering.size);
-    order.current = { signature, keys, entering };
-  }
-  const arrival = (key: string) => {
-    const rank = order.current.entering.get(key);
-    return rank === undefined
-      ? undefined
-      : { animationDelay: `${Math.min(rank, STAGGER_MAX) * STAGGER_MS}ms` };
-  };
-  // Liste courte : lignes Motion qui glissent, mesurées seulement quand la liste change. Longue :
-  // lignes HTML simples, rien à mesurer ni à suivre.
-  const slide = entries.length <= LAYOUT_ROWS_MAX;
-  const Tr = (slide ? motion.tr : "tr") as typeof motion.tr;
-  const Li = (slide ? motion.li : "li") as typeof motion.li;
-  const rowMotion = slide
-    ? ({ layout: "position", layoutDependency: signature, transition: SLIDE } as const)
-    : {};
-  const reveal = cn("reveal-group", arrived && "[--stagger:0ms]");
+  // La liste a changé : fondu posé avant la première image, pour ne jamais la voir surgir.
+  const signature = entries.map((entry) => entry.key).join("\n");
+  const shown = useRef(signature);
+  const listRef = useRef<HTMLUListElement>(null);
+  const bodyRef = useRef<HTMLTableSectionElement>(null);
+  useLayoutEffect(() => {
+    if (shown.current === signature) return;
+    shown.current = signature;
+    for (const node of [listRef.current, bodyRef.current]) {
+      if (node) animate(node, { opacity: [0, 1] }, SWAP);
+    }
+  }, [signature]);
+  const reveal = !arrived && "reveal-group";
 
   return (
     <>
       {card && (
-        <ul aria-label={label} className={cn("flex flex-col lg:hidden", reveal, shell)}>
+        <ul
+          ref={listRef}
+          aria-label={label}
+          className={cn("flex flex-col lg:hidden", reveal, shell)}
+        >
           {rows.length === 0 && empty && <li>{empty}</li>}
           {entries.map((entry) =>
             entry.heading ? (
-              <Li
+              <li
                 key={entry.key}
-                {...rowMotion}
-                style={arrival(entry.key)}
                 className="border-t border-line-soft bg-band px-4 py-2 text-xs font-bold leading-4 text-ink first:border-t-0"
               >
                 {band(entry.heading)}
-              </Li>
+              </li>
             ) : (
-              <Li
+              <li
                 key={entry.key}
-                {...rowMotion}
-                style={arrival(entry.key)}
                 className={cn(
                   "relative border-t border-line-soft px-4 py-4 first:border-t-0",
                   rowTone?.(entry.row as T) === "warning" && "bg-warning-bg/50",
@@ -165,7 +144,7 @@ export function DataTable<T>({
                 )}
               >
                 {card(entry.row as T)}
-              </Li>
+              </li>
             ),
           )}
         </ul>
@@ -201,7 +180,7 @@ export function DataTable<T>({
                 ))}
               </tr>
             </thead>
-            <tbody className={cn(reveal, "[--reveal:var(--animate-fade)]")}>
+            <tbody ref={bodyRef} className={cn(reveal, "[--reveal:var(--animate-fade)]")}>
               {rows.length === 0 && empty && (
                 <tr>
                   <td colSpan={columns.length}>{empty}</td>
@@ -209,7 +188,7 @@ export function DataTable<T>({
               )}
               {entries.map((entry) =>
                 entry.heading ? (
-                  <Tr key={entry.key} {...rowMotion} style={arrival(entry.key)} className="bg-band">
+                  <tr key={entry.key} className="bg-band">
                     <th
                       scope="rowgroup"
                       colSpan={columns.length}
@@ -217,12 +196,10 @@ export function DataTable<T>({
                     >
                       {band(entry.heading)}
                     </th>
-                  </Tr>
+                  </tr>
                 ) : (
-                  <Tr
+                  <tr
                     key={entry.key}
-                    {...rowMotion}
-                    style={arrival(entry.key)}
                     className={cn(
                       "transition-colors hover:bg-band",
                       rowHref && "relative cursor-pointer",
@@ -263,7 +240,7 @@ export function DataTable<T>({
                         </div>
                       </td>
                     ))}
-                  </Tr>
+                  </tr>
                 ),
               )}
             </tbody>

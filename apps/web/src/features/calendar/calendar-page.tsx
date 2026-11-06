@@ -259,7 +259,7 @@ export function CalendarPage({
       />
 
       {/* Changement de vue ou de date : transition de page du routeur (voir router.tsx). */}
-      <div className="flex flex-col">
+      <div className="flex flex-1 flex-col">
         {view === "mois" && (
           <>
             <MonthCompact
@@ -272,7 +272,8 @@ export function CalendarPage({
               dayHref={(day) => href({ date: day })}
             />
             <DayAgenda day={date} events={events} timeZone={timeZone} />
-            <div className="hidden lg:block">
+            {/* Le mois occupe toute la hauteur de l'écran ; ses semaines se partagent la place. */}
+            <div className="hidden lg:flex lg:flex-1 lg:flex-col">
               <MonthCalendar
                 year={date.year}
                 month={date.month}

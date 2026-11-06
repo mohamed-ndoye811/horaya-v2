@@ -44,11 +44,12 @@ export function MonthCalendar({
   const todayKey = civilKey(today);
 
   return (
-    <div className={calendarCard}>
-      <div className="overflow-x-auto">
+    <div className={cn(calendarCard, "flex flex-1 flex-col")}>
+      <div className="flex-1 overflow-x-auto">
+        {/* Plus haut que ses lignes : la hauteur en trop va aux semaines (124 px au moins). */}
         <table
           aria-label="Calendrier du mois"
-          className="w-full min-w-[840px] table-fixed border-collapse"
+          className="h-full w-full min-w-[840px] table-fixed border-collapse"
         >
           <thead>
             <tr className="h-12 border-b border-line-soft">
