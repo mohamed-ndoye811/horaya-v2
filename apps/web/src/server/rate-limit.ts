@@ -1,10 +1,10 @@
 import { consumeRateLimit } from "@horaya/db";
-import { headers } from "next/headers";
+import { requestHeaders } from "./auth";
 import { db } from "./db";
 
 /** Adresse du visiteur (derrière le tunnel Cloudflare puis ingress-nginx). */
 export async function clientIp(): Promise<string> {
-  const list = await headers();
+  const list = requestHeaders();
   return (
     list.get("cf-connecting-ip") ??
     list.get("x-forwarded-for")?.split(",")[0]?.trim() ??

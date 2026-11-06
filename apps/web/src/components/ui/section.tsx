@@ -1,6 +1,6 @@
-import Link from "next/link";
 import type { ReactNode } from "react";
 import { cn } from "@/lib/cn";
+import { Link } from "@/lib/navigation";
 
 /** Carte blanche des fiches (DA v4) sans marge intérieure : coins de 24 px, ombre douce. */
 export const cardShellClasses =

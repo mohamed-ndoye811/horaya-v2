@@ -1,9 +1,7 @@
 import { type Actor, type Deps, MEMBER_ROLES, type MemberRole } from "@horaya/core";
 import { createDeps } from "@horaya/db";
-import { headers } from "next/headers";
-import { redirect } from "next/navigation";
-import { cache } from "react";
-import { auth, requireSession } from "./auth";
+import { redirect } from "@tanstack/react-router";
+import { auth, requestHeaders, requireSession } from "./auth";
 import { notifyFromActivity } from "./booking-emails";
 import { db } from "./db";
 
@@ -23,10 +21,10 @@ export const deps: Deps = createDeps(db, {
 export type MemberActor = Extract<Actor, { type: "member" }>;
 
 /** Membre connecté dans son espace actif, prêt à être passé aux cas d'usage. */
-export const requireMember = cache(async (): Promise<MemberActor> => {
+export async function requireMember(): Promise<MemberActor> {
   const session = await requireSession();
-  const member = await auth.api.getActiveMember({ headers: await headers() });
-  if (!member) redirect("/inscription/espace");
+  const member = await auth.api.getActiveMember({ headers: requestHeaders() });
+  if (!member) throw redirect({ href: "/inscription/espace" });
 
   const role = (MEMBER_ROLES as readonly string[]).includes(member.role)
     ? (member.role as MemberRole)
@@ -38,4 +36,4 @@ export const requireMember = cache(async (): Promise<MemberActor> => {
     memberId: member.id,
     role,
   };
-});
+}

@@ -1,9 +1,9 @@
 import { weekdayOf } from "@horaya/core";
-import Link from "next/link";
 import { type CivilDate, civilKey, groupByDay, isAllDay, monthGrid } from "@/lib/calendar";
 import { cn } from "@/lib/cn";
 import { textOn } from "@/lib/colors";
 import { formatEventRange, formatHour, formatTimeRange, formatWeekdayShort } from "@/lib/format";
+import { Link } from "@/lib/navigation";
 import type { CalendarEvent } from "./types";
 
 /*

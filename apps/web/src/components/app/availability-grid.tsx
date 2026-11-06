@@ -1,9 +1,9 @@
 import { weekdayOf } from "@horaya/core";
 import type { ItemAllocationRow } from "@horaya/db";
-import Link from "next/link";
 import { type CivilDate, civilKey, layoutSpans } from "@/lib/calendar";
 import { cn } from "@/lib/cn";
 import { textOn } from "@/lib/colors";
+import { Link } from "@/lib/navigation";
 
 const DAY_LETTERS = ["L", "M", "M", "J", "V", "S", "D"];
 /** Couleur des locations (pas de type d'événement) : rose des maquettes. */

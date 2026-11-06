@@ -1,8 +1,8 @@
-import Link from "next/link";
 import type { ReactNode } from "react";
 import { ActionBar } from "@/components/ui/action-bar";
 import { cardShellClasses } from "@/components/ui/section";
 import { cn } from "@/lib/cn";
+import { Link } from "@/lib/navigation";
 import { PageHeader } from "./page-header";
 
 export type SettingsSection = "profil" | "organisation" | "membres" | "paiements" | "integrations";

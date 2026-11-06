@@ -7,7 +7,7 @@
   },
   "files": {
     "ignoreUnknown": true,
-    "includes": ["**", "!**/migrations/meta", "!designs"]
+    "includes": ["**", "!**/migrations/meta", "!designs", "!**/routeTree.gen.ts"]
   },
   "formatter": {
     "enabled": true,

@@ -1,7 +1,7 @@
 "use client";
 
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Select } from "@/components/ui/select";
+import { usePathname, useRouter, useSearchParams } from "@/lib/navigation";
 
 /** Liste déroulante de filtre : change le paramètre d'URL dès qu'on choisit. */
 export function FilterSelect({

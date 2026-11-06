@@ -1,6 +1,6 @@
-import Link from "next/link";
 import type { ComponentProps, ReactNode } from "react";
 import { cn } from "@/lib/cn";
+import { Link } from "@/lib/navigation";
 import { ArrowRight } from "./icons";
 
 /** `inverse` et `inverse-outline` : versions pour fond noir (barres d'action, cartes noires). */

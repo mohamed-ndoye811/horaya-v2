@@ -1,7 +1,7 @@
-import Link from "next/link";
 import type { CSSProperties, ReactNode } from "react";
 import { cn } from "@/lib/cn";
 import { shadeOf, tintOf } from "@/lib/colors";
+import { Link } from "@/lib/navigation";
 
 /**
  * Pastille d'événement de la vue Mois.

@@ -1,6 +1,6 @@
-import Link from "next/link";
 import type { ReactNode } from "react";
 import { PlusIcon } from "@/components/ui/icons";
+import { Link } from "@/lib/navigation";
 
 /**
  * Action principale d'une liste sur mobile (maquette 6.2 : « + Nouveau ») : bouton noir en

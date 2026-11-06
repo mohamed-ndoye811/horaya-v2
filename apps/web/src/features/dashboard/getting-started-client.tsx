@@ -1,0 +1,83 @@
+import { useEffect, useState } from "react";
+import { GuidedTour, rememberTour, tourDismissed } from "@/components/app/guided-tour";
+import { Button } from "@/components/ui/button";
+
+/** Carte « Fais le tour en 1 minute » (maquette 4.7) ; se masque après la visite ou « Plus tard ». */
+export function TourCard() {
+  const [hidden, setHidden] = useState(true);
+  const [touring, setTouring] = useState(false);
+  // Lu après le premier rendu : le stockage n'existe que dans le navigateur.
+  useEffect(() => setHidden(tourDismissed()), []);
+  if (hidden && !touring) return null;
+  return (
+    <section className="hidden flex-col gap-3.5 rounded-3xl bg-surface p-6 shadow-[0_1px_2px_rgba(0,0,0,0.04),0_16px_40px_rgba(0,0,0,0.06)] lg:flex">
+      <div className="flex items-center gap-2.5">
+        <span
+          aria-hidden="true"
+          className="flex size-9 items-center justify-center rounded-xl bg-accent/15 text-[#c8692f]"
+        >
+          <svg
+            aria-hidden="true"
+            width="18"
+            height="18"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.75"
+            strokeLinejoin="round"
+          >
+            <circle cx="12" cy="12" r="9" />
+            <path d="m15.5 8.5-2 5-5 2 2-5 5-2z" />
+          </svg>
+        </span>
+        <h2 className="text-[17px] font-semibold leading-[22px] text-ink">
+          Fais le tour en 1 minute
+        </h2>
+      </div>
+      <p className="text-sm leading-5 text-ink-muted">
+        Le notch, les actions de chaque page, l'enregistrement : 4 étapes pour prendre tes repères.
+      </p>
+      <div className="flex gap-2">
+        <Button className="h-10 px-[18px] text-sm" onClick={() => setTouring(true)}>
+          Lancer la visite
+        </Button>
+        <button
+          type="button"
+          onClick={() => {
+            rememberTour("plus-tard");
+            setHidden(true);
+          }}
+          className="h-10 px-3.5 text-sm font-semibold text-ink-subtle hover:text-ink"
+        >
+          Plus tard
+        </button>
+      </div>
+      {touring && (
+        <GuidedTour
+          onClose={() => {
+            setTouring(false);
+            setHidden(true);
+          }}
+        />
+      )}
+    </section>
+  );
+}
+
+/** « Copier » l'adresse de la page publique. */
+export function CopyPublicLink({ slug }: { slug: string }) {
+  const [copied, setCopied] = useState(false);
+  return (
+    <button
+      type="button"
+      onClick={async () => {
+        await navigator.clipboard.writeText(`${window.location.origin}/${slug}`);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+      }}
+      className="flex h-8 items-center rounded-full border border-[#e4e4e1] bg-surface px-3 text-[13px] font-semibold text-ink hover:bg-field"
+    >
+      {copied ? "Copié" : "Copier"}
+    </button>
+  );
+}

@@ -1,6 +1,6 @@
-import Link from "next/link";
 import { Fragment, type ReactNode } from "react";
 import { cn } from "@/lib/cn";
+import { Link } from "@/lib/navigation";
 
 export interface Column<T> {
   key: string;

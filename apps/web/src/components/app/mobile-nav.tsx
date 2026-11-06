@@ -1,7 +1,5 @@
 "use client";
 
-import Link from "next/link";
-import { usePathname } from "next/navigation";
 import type { ComponentType } from "react";
 import { ActiveIndicator } from "@/components/motion/indicator";
 import {
@@ -13,6 +11,7 @@ import {
 } from "@/components/ui/icons";
 import { cn } from "@/lib/cn";
 import { backLink, isFormPage } from "@/lib/mobile-nav";
+import { Link, usePathname } from "@/lib/navigation";
 import { BottomNotch } from "./bottom-notch";
 
 /*

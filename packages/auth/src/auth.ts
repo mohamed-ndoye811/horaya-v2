@@ -14,9 +14,8 @@ import {
   type Mailer,
   passwordResetEmail,
 } from "@horaya/mail";
-import { betterAuth } from "better-auth";
+import { type BetterAuthPlugin, betterAuth } from "better-auth";
 import { APIError, createAuthMiddleware } from "better-auth/api";
-import { nextCookies } from "better-auth/next-js";
 import { organization } from "better-auth/plugins";
 import { asc, eq } from "drizzle-orm";
 import { ac, roles } from "./permissions";
@@ -30,6 +29,11 @@ export interface AuthOptions {
   google?: { clientId: string; clientSecret: string } | undefined;
   /** Préfixe des cookies (défaut Better Auth) : isole les sessions de plusieurs apps sur localhost. */
   cookiePrefix?: string | undefined;
+  /**
+   * Plugin qui pose les cookies depuis le framework de l'app (`tanstackStartCookies()` pour
+   * l'app web) ; sans lui, rien (tests, scripts). Toujours placé en dernier.
+   */
+  cookies?: BetterAuthPlugin | undefined;
 }
 
 /** Les champs additionnels ne sont pas typés dans les callbacks d'e-mail. */
@@ -158,8 +162,8 @@ export function createAuth(db: Db, options: AuthOptions) {
           },
         },
       }),
-      // Doit rester le dernier plugin : pose les cookies depuis les Server Actions Next.js.
-      nextCookies(),
+      // Doit rester le dernier plugin : pose les cookies depuis les fonctions serveur de l'app.
+      ...(options.cookies ? [options.cookies] : []),
     ],
     advanced: {
       ...(options.cookiePrefix ? { cookiePrefix: options.cookiePrefix } : {}),
