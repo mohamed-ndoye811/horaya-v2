@@ -6,6 +6,7 @@ import { Avatar } from "@/components/ui/avatar";
 import { Button, ButtonLink } from "@/components/ui/button";
 import { Field, inputClasses } from "@/components/ui/field";
 import { FormAlert } from "@/components/ui/form-alert";
+import { BoxIcon } from "@/components/ui/icons";
 import { SearchInput } from "@/components/ui/search-input";
 import {
   type CounterResult,
@@ -436,16 +437,26 @@ export function CounterWizard({
             </button>
           </div>
           {pickingItems && items && items.length > 0 && (
-            <div className="flex flex-col overflow-hidden rounded-[14px] border border-bg">
+            // Cartes du matériel (photo à venir) : choisies, elles prennent le contour noir des séances.
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 xl:grid-cols-4">
               {items.map((item) => {
                 const quantity = quantities[item.id] ?? 0;
                 return (
                   <div
                     key={item.id}
-                    className="flex items-center gap-3 border-t border-bg py-2 pr-2 pl-3.5 first:border-t-0"
+                    className={cn(
+                      "flex flex-col gap-3 rounded-[18px] border-[1.5px] p-2 pb-3",
+                      quantity > 0 ? "border-ink" : "border-bg",
+                    )}
                   >
-                    <span className="flex min-w-0 flex-1 flex-col gap-px">
-                      <span className="text-sm font-semibold leading-[18px] text-ink">
+                    <div
+                      aria-hidden="true"
+                      className="flex aspect-[4/3] items-center justify-center rounded-xl bg-field text-ink-subtle"
+                    >
+                      <BoxIcon size={32} />
+                    </div>
+                    <span className="flex min-w-0 flex-1 flex-col gap-px px-1.5">
+                      <span className="line-clamp-2 text-sm font-semibold leading-[18px] text-ink">
                         {item.name}
                       </span>
                       <span
@@ -457,13 +468,15 @@ export function CounterWizard({
                         {item.free - quantity} libre{item.free - quantity > 1 ? "s" : ""}
                       </span>
                     </span>
-                    <QuantityStepper
-                      value={quantity}
-                      min={0}
-                      max={item.free}
-                      label={item.name}
-                      onChange={(next) => setQuantities({ ...quantities, [item.id]: next })}
-                    />
+                    <div className="px-1">
+                      <QuantityStepper
+                        value={quantity}
+                        min={0}
+                        max={item.free}
+                        label={item.name}
+                        onChange={(next) => setQuantities({ ...quantities, [item.id]: next })}
+                      />
+                    </div>
                   </div>
                 );
               })}
@@ -547,7 +560,7 @@ export function CounterWizard({
         </Section>
       </div>
 
-      <aside className="flex w-full shrink-0 flex-col justify-between gap-6 rounded-3xl bg-ink p-[22px] lg:sticky lg:top-[62px] lg:w-[360px] lg:self-start lg:min-h-[calc(100dvh-180px)]">
+      <aside className="flex w-full shrink-0 flex-col justify-between gap-6 rounded-3xl bg-ink p-[22px] lg:sticky lg:top-[62px] lg:w-[360px] lg:self-start">
         <div className="flex flex-col gap-4">
           <div className="flex items-center justify-between">
             <p className="font-mono text-[11px] font-semibold leading-[14px] tracking-[0.06em] text-ink-subtle">
