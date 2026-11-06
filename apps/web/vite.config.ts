@@ -17,7 +17,8 @@ try {
 const port = Number(process.env.PORT ?? 3100);
 
 export default defineConfig({
-  server: { port, strictPort: true },
+  // Toutes les interfaces, comme l'ancien serveur Next : localhost répond en IPv4 et en IPv6.
+  server: { port, strictPort: true, host: true },
   resolve: { tsconfigPaths: true },
   plugins: [tailwindcss(), tanstackStart(), viteReact(), nitro()],
 });
