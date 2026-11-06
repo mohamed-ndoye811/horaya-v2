@@ -5,6 +5,7 @@ import {
   type NotificationType,
 } from "@horaya/core";
 import {
+  createNotifications,
   getBookingDetail,
   getWorkspaceSettings,
   listNotificationRecipients,
@@ -163,9 +164,20 @@ export async function sendBookingLinkEmail(
   );
 }
 
-async function notifyTeam(organizationId: string, type: NotificationType, content: EmailContent) {
+/** Prévient l'équipe par e-mail et dans l'app (cloche du notch), selon les préférences de chacun. */
+async function notifyTeam(
+  organizationId: string,
+  type: NotificationType,
+  content: EmailContent,
+  inApp: { title: string; body: string; link: string },
+) {
   const recipients = await listNotificationRecipients(db, organizationId, type);
   await Promise.all(recipients.map((email) => send(email, content)));
+  try {
+    await createNotifications(db, organizationId, type, inApp);
+  } catch (error) {
+    console.error("Notification non enregistrée", type, error);
+  }
 }
 
 /** Branché sur la fin des transactions (createDeps) : chaque changement de statut prévient qui de droit. */
@@ -177,7 +189,9 @@ export async function notifyFromActivity(entries: ActivityEntry[]) {
     const { booking, workspace, mail, eventsUrl, linkRequestUrl, title } = loaded;
     const to = booking.customer.email;
     const customerName = `${booking.customer.firstName} ${booking.customer.lastName}`;
-    const adminUrl = absoluteUrl(`/app/reservations/${booking.id}`);
+    const adminPath = `/app/reservations/${booking.id}`;
+    const adminUrl = absoluteUrl(adminPath);
+    const summary = `${customerName} · ${title} · ${booking.seats} place${booking.seats > 1 ? "s" : ""}`;
     const reason = typeof entry.data?.reason === "string" ? entry.data.reason : null;
 
     switch (entry.action) {
@@ -196,6 +210,16 @@ export async function notifyFromActivity(entries: ActivityEntry[]) {
               status: STATUS_LABELS[booking.status] ?? booking.status,
               url: adminUrl,
             }),
+            {
+              title:
+                booking.status === "pending"
+                  ? "Réservation à valider"
+                  : booking.status === "waitlisted"
+                    ? "Inscription en liste d'attente"
+                    : "Nouvelle réservation",
+              body: summary,
+              link: adminPath,
+            },
           );
         }
         break;
@@ -222,6 +246,7 @@ export async function notifyFromActivity(entries: ActivityEntry[]) {
             status: formatMoney(paid),
             url: adminUrl,
           }),
+          { title: `Paiement reçu · ${formatMoney(paid)}`, body: summary, link: adminPath },
         );
         break;
       }
@@ -293,6 +318,7 @@ export async function notifyFromActivity(entries: ActivityEntry[]) {
               status: "annulée",
               url: adminUrl,
             }),
+            { title: "Réservation annulée par le client", body: summary, link: adminPath },
           );
         }
         break;
