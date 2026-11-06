@@ -3,6 +3,7 @@ import { motion } from "motion/react";
 import { type FormEvent, type ReactNode, useEffect, useRef, useState, useTransition } from "react";
 import { WordsReveal } from "@/components/motion/words";
 import { Avatar } from "@/components/ui/avatar";
+import { StatusBadge } from "@/components/ui/badge";
 import { Button, ButtonLink } from "@/components/ui/button";
 import { Field, inputClasses } from "@/components/ui/field";
 import { FormAlert } from "@/components/ui/form-alert";
@@ -438,43 +439,38 @@ export function CounterWizard({
           </div>
           {pickingItems && items && items.length > 0 && (
             // Cartes du matériel (photo à venir) : choisies, elles prennent le contour noir des séances.
-            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-5">
+            <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
               {items.map((item) => {
                 const quantity = quantities[item.id] ?? 0;
+                const left = item.free - quantity;
                 return (
                   <div
                     key={item.id}
                     className={cn(
-                      "flex flex-col gap-2 rounded-2xl border-[1.5px] p-1.5",
+                      "flex flex-col gap-3 rounded-2xl border-[1.5px] p-3",
                       quantity > 0 ? "border-ink" : "border-bg",
                     )}
                   >
-                    <div
-                      aria-hidden="true"
-                      className="flex h-14 items-center justify-center rounded-[10px] bg-field text-ink-subtle"
-                    >
-                      <BoxIcon size={22} />
+                    <div className="flex items-start justify-between gap-2">
+                      <span
+                        aria-hidden="true"
+                        className="flex size-9 items-center justify-center rounded-[10px] bg-field text-ink-subtle"
+                      >
+                        <BoxIcon size={18} />
+                      </span>
+                      <StatusBadge tone={left <= 1 ? "warning" : "success"}>
+                        {left} libre{left > 1 ? "s" : ""}
+                      </StatusBadge>
                     </div>
-                    <span className="flex min-w-0 flex-1 flex-col gap-px px-1">
-                      <span className="line-clamp-2 text-sm font-semibold leading-[18px] text-ink">
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="line-clamp-2 min-w-0 text-sm font-semibold leading-[18px] text-ink">
                         {item.name}
                       </span>
-                      <span
-                        className={cn(
-                          "text-xs leading-4",
-                          item.free - quantity <= 1 ? "text-warning" : "text-success",
-                        )}
-                      >
-                        {item.free - quantity} libre{item.free - quantity > 1 ? "s" : ""}
-                      </span>
-                    </span>
-                    <div>
                       <QuantityStepper
                         value={quantity}
                         min={0}
                         max={item.free}
                         label={item.name}
-                        fill
                         onChange={(next) => setQuantities({ ...quantities, [item.id]: next })}
                       />
                     </div>
@@ -794,15 +790,12 @@ function QuantityStepper({
   min,
   max,
   label = "Places",
-  fill = false,
 }: {
   value: number;
   onChange: (value: number) => void;
   min: number;
   max: number;
   label?: string;
-  /** Toute la largeur, − et + aux deux bouts (cartes du matériel). */
-  fill?: boolean;
 }) {
   // Le chiffre roule : il arrive par le bas quand on ajoute, par le haut quand on retire.
   const previous = useRef(value);
@@ -813,12 +806,7 @@ function QuantityStepper({
   const round =
     "flex size-8 items-center justify-center rounded-full text-lg leading-[18px] transition-[color,background-color,scale] active:scale-90";
   return (
-    <div
-      className={cn(
-        "flex shrink-0 items-center gap-2.5 rounded-full border border-bg bg-surface p-1",
-        fill && "justify-between",
-      )}
-    >
+    <div className="flex shrink-0 items-center gap-2.5 rounded-full border border-bg bg-surface p-1">
       <button
         type="button"
         aria-label={`Moins (${label})`}
