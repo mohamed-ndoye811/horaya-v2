@@ -46,7 +46,7 @@ export function MonthCalendar({
   return (
     <div className={cn(calendarCard, "flex flex-1 flex-col")}>
       <div className="flex-1 overflow-x-auto">
-        {/* Plus haut que ses lignes : la hauteur en trop va aux semaines (124 px au moins). */}
+        {/* Plus haut que ses lignes : les semaines se partagent la hauteur (124 px au moins). */}
         <table
           aria-label="Calendrier du mois"
           className="h-full w-full min-w-[840px] table-fixed border-collapse"
@@ -71,6 +71,8 @@ export function MonthCalendar({
             {weeks.map((week) => (
               <tr
                 key={civilKey(week[0] ?? today)}
+                // Part égale de la hauteur : sinon la semaine la plus remplie prend le surplus.
+                style={{ height: `${100 / weeks.length}%` }}
                 className="border-b border-[#f4f4f2] last:border-b-0"
               >
                 {week.map((day, index) => {
