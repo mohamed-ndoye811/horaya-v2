@@ -474,6 +474,7 @@ export function CounterWizard({
                         min={0}
                         max={item.free}
                         label={item.name}
+                        fill
                         onChange={(next) => setQuantities({ ...quantities, [item.id]: next })}
                       />
                     </div>
@@ -793,12 +794,15 @@ function QuantityStepper({
   min,
   max,
   label = "Places",
+  fill = false,
 }: {
   value: number;
   onChange: (value: number) => void;
   min: number;
   max: number;
   label?: string;
+  /** Toute la largeur, − et + aux deux bouts (cartes du matériel). */
+  fill?: boolean;
 }) {
   // Le chiffre roule : il arrive par le bas quand on ajoute, par le haut quand on retire.
   const previous = useRef(value);
@@ -809,7 +813,12 @@ function QuantityStepper({
   const round =
     "flex size-8 items-center justify-center rounded-full text-lg leading-[18px] transition-[color,background-color,scale] active:scale-90";
   return (
-    <div className="flex shrink-0 items-center gap-2.5 rounded-full border border-bg bg-surface p-1">
+    <div
+      className={cn(
+        "flex shrink-0 items-center gap-2.5 rounded-full border border-bg bg-surface p-1",
+        fill && "justify-between",
+      )}
+    >
       <button
         type="button"
         aria-label={`Moins (${label})`}
