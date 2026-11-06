@@ -318,6 +318,12 @@ export function Notch({ user, workspace, pendingBookings, unreadNotifications }:
     };
   }, [draw, progress, shown]);
 
+  /**
+   * Après un clic dans le notch, plus de libellé tant que la souris n'a pas vraiment bougé : en se
+   * repliant, le notch déplace ses icônes sous le curseur immobile, et le navigateur signale alors
+   * un survol qui ferait réapparaître un libellé.
+   */
+  const muted = useRef(false);
   const hideHint = useCallback(
     () => setHint((current) => current && { ...current, visible: false }),
     [],
@@ -340,7 +346,7 @@ export function Notch({ user, workspace, pendingBookings, unreadNotifications }:
    * bougent pas, la languette glisse de l'une à l'autre. Les espaces entre icônes la gardent.
    */
   function pointAt(target: EventTarget, root: HTMLElement) {
-    if (!(target instanceof Element) || panel) return;
+    if (!(target instanceof Element) || panel || muted.current) return;
     const item = target.closest<HTMLElement>("[data-notch-label]");
     if (!item) {
       if (target.closest("a, button")) hideHint();
@@ -395,8 +401,25 @@ export function Notch({ user, workspace, pendingBookings, unreadNotifications }:
         className="fixed top-0 left-1/2 z-50 hidden -translate-x-1/2 [view-transition-name:notch] lg:block"
         style={{ width: closedWidth, height: NOTCH_BAR_HEIGHT }}
         onMouseOver={(event) => pointAt(event.target, event.currentTarget)}
-        onMouseLeave={hideHint}
-        onFocus={(event) => pointAt(event.target, event.currentTarget)}
+        onPointerMove={(event) => {
+          if (!muted.current || panel || (!event.movementX && !event.movementY)) return;
+          muted.current = false;
+          pointAt(event.target, event.currentTarget);
+        }}
+        onClickCapture={() => {
+          muted.current = true;
+          hideHint();
+        }}
+        onMouseLeave={() => {
+          muted.current = false;
+          hideHint();
+        }}
+        onFocus={(event) => {
+          // Focus rendu par le code (fermeture d'un panneau) : pas de libellé ; au clavier, si.
+          if (!(event.target instanceof Element) || !event.target.matches(":focus-visible")) return;
+          muted.current = false;
+          pointAt(event.target, event.currentTarget);
+        }}
         onBlur={(event) => {
           if (!event.currentTarget.contains(event.relatedTarget)) hideHint();
         }}
