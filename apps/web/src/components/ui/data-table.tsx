@@ -112,7 +112,10 @@ export function DataTable<T>({
     if (shown.current === signature) return;
     shown.current = signature;
     for (const node of [listRef.current, bodyRef.current]) {
-      if (node) animate(node, { opacity: [0, 1] }, SWAP);
+      if (!node) continue;
+      // Posé tout de suite : Motion ne démarre qu'à l'image suivante.
+      node.style.opacity = "0";
+      animate(node, { opacity: [0, 1] }, SWAP);
     }
   }, [signature]);
   const reveal = !arrived && "reveal-group";
