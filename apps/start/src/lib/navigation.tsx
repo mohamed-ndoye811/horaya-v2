@@ -33,8 +33,14 @@ export const Link = forwardRef<HTMLAnchorElement, LinkProps>(function Link(
   { href, prefetch, replace, scroll: _scroll, ...rest },
   ref,
 ) {
-  // Liens externes, mailto:, tel:, téléchargements : une simple balise <a>.
-  if (/^[a-z][a-z0-9+.-]*:/i.test(href) || rest.download !== undefined) {
+  // Liens externes, mailto:, tel:, ancres de la page, téléchargements et routes serveur (exports, modèles :
+  // `prefetch={false}` dans l'ancienne app) : une simple balise <a>, hors du routeur.
+  if (
+    /^[a-z][a-z0-9+.-]*:/i.test(href) ||
+    href.startsWith("#") ||
+    rest.download !== undefined ||
+    prefetch === false
+  ) {
     return <a ref={ref} href={href} {...rest} />;
   }
   const { to, search, hash } = splitHref(href);
@@ -47,7 +53,6 @@ export const Link = forwardRef<HTMLAnchorElement, LinkProps>(function Link(
       search={search as never}
       hash={hash}
       replace={replace}
-      preload={prefetch === false ? false : undefined}
     />
   );
 });

@@ -9,17 +9,106 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as IndexRouteImport } from './routes/index'
+import { Route as SlugRouteImport } from './routes/$slug'
 import { Route as AppRouteImport } from './routes/app'
+import { Route as SlugIndexRouteImport } from './routes/$slug/index'
+import { Route as SlugMentionsLegalesRouteImport } from './routes/$slug/mentions-legales'
+import { Route as SlugMesReservationsRouteImport } from './routes/$slug/mes-reservations'
+import { Route as authConnexionRouteImport } from './routes/(auth)/connexion'
+import { Route as authMotDePasseOublieRouteImport } from './routes/(auth)/mot-de-passe-oublie'
+import { Route as authNouveauMotDePasseRouteImport } from './routes/(auth)/nouveau-mot-de-passe'
 import { Route as ApiHealthRouteImport } from './routes/api/health'
 import { Route as AppIndexRouteImport } from './routes/app/index'
+import { Route as AppCalendrierRouteImport } from './routes/app/calendrier'
+import { Route as AppDesignSystemRouteImport } from './routes/app/design-system'
+import { Route as AppPlusRouteImport } from './routes/app/plus'
+import { Route as InvitationIdRouteImport } from './routes/invitation/$id'
+import { Route as PaiementTestCheckoutRouteImport } from './routes/paiement-test/$checkout'
+import { Route as PaiementTestCompteRouteImport } from './routes/paiement-test/compte'
+import { Route as RejoindreTokenRouteImport } from './routes/rejoindre/$token'
+import { Route as SlugEventIndexRouteImport } from './routes/$slug/$event/index'
+import { Route as SlugEventReserverRouteImport } from './routes/$slug/$event/reserver'
+import { Route as SlugCalendrierLienRouteImport } from './routes/$slug/calendrier/$lien'
+import { Route as authInscriptionIndexRouteImport } from './routes/(auth)/inscription/index'
+import { Route as authInscriptionEspaceRouteImport } from './routes/(auth)/inscription/espace'
+import { Route as authInscriptionPaiementsRouteImport } from './routes/(auth)/inscription/paiements'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
+import { Route as ApiStripeWebhookRouteImport } from './routes/api/stripe/webhook'
+import { Route as AppClientsIndexRouteImport } from './routes/app/clients/index'
+import { Route as AppClientsExportRouteImport } from './routes/app/clients/export'
 import { Route as AppClientsNouveauRouteImport } from './routes/app/clients/nouveau'
+import { Route as AppEvenementsIndexRouteImport } from './routes/app/evenements/index'
+import { Route as AppEvenementsLiensRouteImport } from './routes/app/evenements/liens'
+import { Route as AppEvenementsNouveauRouteImport } from './routes/app/evenements/nouveau'
+import { Route as AppEvenementsTypesRouteImport } from './routes/app/evenements/types'
+import { Route as AppMaterielIndexRouteImport } from './routes/app/materiel/index'
+import { Route as AppMaterielModeleImportRouteImport } from './routes/app/materiel/modele-import'
+import { Route as AppMaterielNouveauRouteImport } from './routes/app/materiel/nouveau'
+import { Route as AppParametresIndexRouteImport } from './routes/app/parametres/index'
+import { Route as AppParametresIntegrationsRouteImport } from './routes/app/parametres/integrations'
+import { Route as AppParametresMembresRouteImport } from './routes/app/parametres/membres'
+import { Route as AppParametresOrganisationRouteImport } from './routes/app/parametres/organisation'
+import { Route as AppParametresProfilRouteImport } from './routes/app/parametres/profil'
 import { Route as AppReservationsIndexRouteImport } from './routes/app/reservations/index'
 import { Route as AppReservationsIdRouteImport } from './routes/app/reservations/$id'
+import { Route as AppReservationsExportRouteImport } from './routes/app/reservations/export'
+import { Route as AppReservationsNouvelleRouteImport } from './routes/app/reservations/nouvelle'
+import { Route as SlugReservationTokenIndexRouteImport } from './routes/$slug/reservation/$token/index'
+import { Route as SlugReservationTokenAgendaDoticsRouteImport } from './routes/$slug/reservation/$token/agenda[.]ics'
+import { Route as AppClientsIdIndexRouteImport } from './routes/app/clients/$id/index'
+import { Route as AppClientsIdModifierRouteImport } from './routes/app/clients/$id/modifier'
+import { Route as AppEvenementsIdIndexRouteImport } from './routes/app/evenements/$id/index'
+import { Route as AppEvenementsIdModifierRouteImport } from './routes/app/evenements/$id/modifier'
+import { Route as AppMaterielIdIndexRouteImport } from './routes/app/materiel/$id/index'
+import { Route as AppMaterielIdLouerRouteImport } from './routes/app/materiel/$id/louer'
+import { Route as AppMaterielIdModifierRouteImport } from './routes/app/materiel/$id/modifier'
+import { Route as AppParametresPaiementsIndexRouteImport } from './routes/app/parametres/paiements/index'
+import { Route as AppParametresPaiementsStripeRouteImport } from './routes/app/parametres/paiements/stripe'
 
+const IndexRoute = IndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SlugRoute = SlugRouteImport.update({
+  id: '/$slug',
+  path: '/$slug',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AppRoute = AppRouteImport.update({
   id: '/app',
   path: '/app',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SlugIndexRoute = SlugIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => SlugRoute,
+} as any)
+const SlugMentionsLegalesRoute = SlugMentionsLegalesRouteImport.update({
+  id: '/mentions-legales',
+  path: '/mentions-legales',
+  getParentRoute: () => SlugRoute,
+} as any)
+const SlugMesReservationsRoute = SlugMesReservationsRouteImport.update({
+  id: '/mes-reservations',
+  path: '/mes-reservations',
+  getParentRoute: () => SlugRoute,
+} as any)
+const authConnexionRoute = authConnexionRouteImport.update({
+  id: '/(auth)/connexion',
+  path: '/connexion',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const authMotDePasseOublieRoute = authMotDePasseOublieRouteImport.update({
+  id: '/(auth)/mot-de-passe-oublie',
+  path: '/mot-de-passe-oublie',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const authNouveauMotDePasseRoute = authNouveauMotDePasseRouteImport.update({
+  id: '/(auth)/nouveau-mot-de-passe',
+  path: '/nouveau-mot-de-passe',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiHealthRoute = ApiHealthRouteImport.update({
@@ -32,14 +121,157 @@ const AppIndexRoute = AppIndexRouteImport.update({
   path: '/',
   getParentRoute: () => AppRoute,
 } as any)
+const AppCalendrierRoute = AppCalendrierRouteImport.update({
+  id: '/calendrier',
+  path: '/calendrier',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppDesignSystemRoute = AppDesignSystemRouteImport.update({
+  id: '/design-system',
+  path: '/design-system',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppPlusRoute = AppPlusRouteImport.update({
+  id: '/plus',
+  path: '/plus',
+  getParentRoute: () => AppRoute,
+} as any)
+const InvitationIdRoute = InvitationIdRouteImport.update({
+  id: '/invitation/$id',
+  path: '/invitation/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PaiementTestCheckoutRoute = PaiementTestCheckoutRouteImport.update({
+  id: '/paiement-test/$checkout',
+  path: '/paiement-test/$checkout',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PaiementTestCompteRoute = PaiementTestCompteRouteImport.update({
+  id: '/paiement-test/compte',
+  path: '/paiement-test/compte',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RejoindreTokenRoute = RejoindreTokenRouteImport.update({
+  id: '/rejoindre/$token',
+  path: '/rejoindre/$token',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SlugEventIndexRoute = SlugEventIndexRouteImport.update({
+  id: '/$event/',
+  path: '/$event/',
+  getParentRoute: () => SlugRoute,
+} as any)
+const SlugEventReserverRoute = SlugEventReserverRouteImport.update({
+  id: '/$event/reserver',
+  path: '/$event/reserver',
+  getParentRoute: () => SlugRoute,
+} as any)
+const SlugCalendrierLienRoute = SlugCalendrierLienRouteImport.update({
+  id: '/calendrier/$lien',
+  path: '/calendrier/$lien',
+  getParentRoute: () => SlugRoute,
+} as any)
+const authInscriptionIndexRoute = authInscriptionIndexRouteImport.update({
+  id: '/(auth)/inscription/',
+  path: '/inscription/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const authInscriptionEspaceRoute = authInscriptionEspaceRouteImport.update({
+  id: '/(auth)/inscription/espace',
+  path: '/inscription/espace',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const authInscriptionPaiementsRoute =
+  authInscriptionPaiementsRouteImport.update({
+    id: '/(auth)/inscription/paiements',
+    path: '/inscription/paiements',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
   id: '/api/auth/$',
   path: '/api/auth/$',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiStripeWebhookRoute = ApiStripeWebhookRouteImport.update({
+  id: '/api/stripe/webhook',
+  path: '/api/stripe/webhook',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AppClientsIndexRoute = AppClientsIndexRouteImport.update({
+  id: '/clients/',
+  path: '/clients/',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppClientsExportRoute = AppClientsExportRouteImport.update({
+  id: '/clients/export',
+  path: '/clients/export',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppClientsNouveauRoute = AppClientsNouveauRouteImport.update({
   id: '/clients/nouveau',
   path: '/clients/nouveau',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppEvenementsIndexRoute = AppEvenementsIndexRouteImport.update({
+  id: '/evenements/',
+  path: '/evenements/',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppEvenementsLiensRoute = AppEvenementsLiensRouteImport.update({
+  id: '/evenements/liens',
+  path: '/evenements/liens',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppEvenementsNouveauRoute = AppEvenementsNouveauRouteImport.update({
+  id: '/evenements/nouveau',
+  path: '/evenements/nouveau',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppEvenementsTypesRoute = AppEvenementsTypesRouteImport.update({
+  id: '/evenements/types',
+  path: '/evenements/types',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppMaterielIndexRoute = AppMaterielIndexRouteImport.update({
+  id: '/materiel/',
+  path: '/materiel/',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppMaterielModeleImportRoute = AppMaterielModeleImportRouteImport.update({
+  id: '/materiel/modele-import',
+  path: '/materiel/modele-import',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppMaterielNouveauRoute = AppMaterielNouveauRouteImport.update({
+  id: '/materiel/nouveau',
+  path: '/materiel/nouveau',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppParametresIndexRoute = AppParametresIndexRouteImport.update({
+  id: '/parametres/',
+  path: '/parametres/',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppParametresIntegrationsRoute =
+  AppParametresIntegrationsRouteImport.update({
+    id: '/parametres/integrations',
+    path: '/parametres/integrations',
+    getParentRoute: () => AppRoute,
+  } as any)
+const AppParametresMembresRoute = AppParametresMembresRouteImport.update({
+  id: '/parametres/membres',
+  path: '/parametres/membres',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppParametresOrganisationRoute =
+  AppParametresOrganisationRouteImport.update({
+    id: '/parametres/organisation',
+    path: '/parametres/organisation',
+    getParentRoute: () => AppRoute,
+  } as any)
+const AppParametresProfilRoute = AppParametresProfilRouteImport.update({
+  id: '/parametres/profil',
+  path: '/parametres/profil',
   getParentRoute: () => AppRoute,
 } as any)
 const AppReservationsIndexRoute = AppReservationsIndexRouteImport.update({
@@ -52,76 +284,506 @@ const AppReservationsIdRoute = AppReservationsIdRouteImport.update({
   path: '/reservations/$id',
   getParentRoute: () => AppRoute,
 } as any)
+const AppReservationsExportRoute = AppReservationsExportRouteImport.update({
+  id: '/reservations/export',
+  path: '/reservations/export',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppReservationsNouvelleRoute = AppReservationsNouvelleRouteImport.update({
+  id: '/reservations/nouvelle',
+  path: '/reservations/nouvelle',
+  getParentRoute: () => AppRoute,
+} as any)
+const SlugReservationTokenIndexRoute =
+  SlugReservationTokenIndexRouteImport.update({
+    id: '/reservation/$token/',
+    path: '/reservation/$token/',
+    getParentRoute: () => SlugRoute,
+  } as any)
+const SlugReservationTokenAgendaDoticsRoute =
+  SlugReservationTokenAgendaDoticsRouteImport.update({
+    id: '/reservation/$token/agenda.ics',
+    path: '/reservation/$token/agenda.ics',
+    getParentRoute: () => SlugRoute,
+  } as any)
+const AppClientsIdIndexRoute = AppClientsIdIndexRouteImport.update({
+  id: '/clients/$id/',
+  path: '/clients/$id/',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppClientsIdModifierRoute = AppClientsIdModifierRouteImport.update({
+  id: '/clients/$id/modifier',
+  path: '/clients/$id/modifier',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppEvenementsIdIndexRoute = AppEvenementsIdIndexRouteImport.update({
+  id: '/evenements/$id/',
+  path: '/evenements/$id/',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppEvenementsIdModifierRoute = AppEvenementsIdModifierRouteImport.update({
+  id: '/evenements/$id/modifier',
+  path: '/evenements/$id/modifier',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppMaterielIdIndexRoute = AppMaterielIdIndexRouteImport.update({
+  id: '/materiel/$id/',
+  path: '/materiel/$id/',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppMaterielIdLouerRoute = AppMaterielIdLouerRouteImport.update({
+  id: '/materiel/$id/louer',
+  path: '/materiel/$id/louer',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppMaterielIdModifierRoute = AppMaterielIdModifierRouteImport.update({
+  id: '/materiel/$id/modifier',
+  path: '/materiel/$id/modifier',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppParametresPaiementsIndexRoute =
+  AppParametresPaiementsIndexRouteImport.update({
+    id: '/parametres/paiements/',
+    path: '/parametres/paiements/',
+    getParentRoute: () => AppRoute,
+  } as any)
+const AppParametresPaiementsStripeRoute =
+  AppParametresPaiementsStripeRouteImport.update({
+    id: '/parametres/paiements/stripe',
+    path: '/parametres/paiements/stripe',
+    getParentRoute: () => AppRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
+  '/': typeof IndexRoute
+  '/$slug': typeof SlugRouteWithChildren
   '/app': typeof AppRouteWithChildren
+  '/$slug/mentions-legales': typeof SlugMentionsLegalesRoute
+  '/$slug/mes-reservations': typeof SlugMesReservationsRoute
+  '/connexion': typeof authConnexionRoute
+  '/mot-de-passe-oublie': typeof authMotDePasseOublieRoute
+  '/nouveau-mot-de-passe': typeof authNouveauMotDePasseRoute
   '/api/health': typeof ApiHealthRoute
+  '/app/calendrier': typeof AppCalendrierRoute
+  '/app/design-system': typeof AppDesignSystemRoute
+  '/app/plus': typeof AppPlusRoute
+  '/invitation/$id': typeof InvitationIdRoute
+  '/paiement-test/$checkout': typeof PaiementTestCheckoutRoute
+  '/paiement-test/compte': typeof PaiementTestCompteRoute
+  '/rejoindre/$token': typeof RejoindreTokenRoute
+  '/$slug/': typeof SlugIndexRoute
   '/app/': typeof AppIndexRoute
+  '/$slug/$event/reserver': typeof SlugEventReserverRoute
+  '/$slug/calendrier/$lien': typeof SlugCalendrierLienRoute
+  '/inscription/espace': typeof authInscriptionEspaceRoute
+  '/inscription/paiements': typeof authInscriptionPaiementsRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/api/stripe/webhook': typeof ApiStripeWebhookRoute
+  '/app/clients/export': typeof AppClientsExportRoute
   '/app/clients/nouveau': typeof AppClientsNouveauRoute
+  '/app/evenements/liens': typeof AppEvenementsLiensRoute
+  '/app/evenements/nouveau': typeof AppEvenementsNouveauRoute
+  '/app/evenements/types': typeof AppEvenementsTypesRoute
+  '/app/materiel/modele-import': typeof AppMaterielModeleImportRoute
+  '/app/materiel/nouveau': typeof AppMaterielNouveauRoute
+  '/app/parametres/integrations': typeof AppParametresIntegrationsRoute
+  '/app/parametres/membres': typeof AppParametresMembresRoute
+  '/app/parametres/organisation': typeof AppParametresOrganisationRoute
+  '/app/parametres/profil': typeof AppParametresProfilRoute
   '/app/reservations/$id': typeof AppReservationsIdRoute
+  '/app/reservations/export': typeof AppReservationsExportRoute
+  '/app/reservations/nouvelle': typeof AppReservationsNouvelleRoute
+  '/$slug/$event/': typeof SlugEventIndexRoute
+  '/inscription/': typeof authInscriptionIndexRoute
+  '/app/clients/': typeof AppClientsIndexRoute
+  '/app/evenements/': typeof AppEvenementsIndexRoute
+  '/app/materiel/': typeof AppMaterielIndexRoute
+  '/app/parametres/': typeof AppParametresIndexRoute
   '/app/reservations/': typeof AppReservationsIndexRoute
+  '/$slug/reservation/$token/agenda.ics': typeof SlugReservationTokenAgendaDoticsRoute
+  '/app/clients/$id/modifier': typeof AppClientsIdModifierRoute
+  '/app/evenements/$id/modifier': typeof AppEvenementsIdModifierRoute
+  '/app/materiel/$id/louer': typeof AppMaterielIdLouerRoute
+  '/app/materiel/$id/modifier': typeof AppMaterielIdModifierRoute
+  '/app/parametres/paiements/stripe': typeof AppParametresPaiementsStripeRoute
+  '/$slug/reservation/$token/': typeof SlugReservationTokenIndexRoute
+  '/app/clients/$id/': typeof AppClientsIdIndexRoute
+  '/app/evenements/$id/': typeof AppEvenementsIdIndexRoute
+  '/app/materiel/$id/': typeof AppMaterielIdIndexRoute
+  '/app/parametres/paiements/': typeof AppParametresPaiementsIndexRoute
 }
 export interface FileRoutesByTo {
+  '/': typeof IndexRoute
+  '/$slug/mentions-legales': typeof SlugMentionsLegalesRoute
+  '/$slug/mes-reservations': typeof SlugMesReservationsRoute
+  '/connexion': typeof authConnexionRoute
+  '/mot-de-passe-oublie': typeof authMotDePasseOublieRoute
+  '/nouveau-mot-de-passe': typeof authNouveauMotDePasseRoute
   '/api/health': typeof ApiHealthRoute
+  '/app/calendrier': typeof AppCalendrierRoute
+  '/app/design-system': typeof AppDesignSystemRoute
+  '/app/plus': typeof AppPlusRoute
+  '/invitation/$id': typeof InvitationIdRoute
+  '/paiement-test/$checkout': typeof PaiementTestCheckoutRoute
+  '/paiement-test/compte': typeof PaiementTestCompteRoute
+  '/rejoindre/$token': typeof RejoindreTokenRoute
+  '/$slug': typeof SlugIndexRoute
   '/app': typeof AppIndexRoute
+  '/$slug/$event/reserver': typeof SlugEventReserverRoute
+  '/$slug/calendrier/$lien': typeof SlugCalendrierLienRoute
+  '/inscription/espace': typeof authInscriptionEspaceRoute
+  '/inscription/paiements': typeof authInscriptionPaiementsRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/api/stripe/webhook': typeof ApiStripeWebhookRoute
+  '/app/clients/export': typeof AppClientsExportRoute
   '/app/clients/nouveau': typeof AppClientsNouveauRoute
+  '/app/evenements/liens': typeof AppEvenementsLiensRoute
+  '/app/evenements/nouveau': typeof AppEvenementsNouveauRoute
+  '/app/evenements/types': typeof AppEvenementsTypesRoute
+  '/app/materiel/modele-import': typeof AppMaterielModeleImportRoute
+  '/app/materiel/nouveau': typeof AppMaterielNouveauRoute
+  '/app/parametres/integrations': typeof AppParametresIntegrationsRoute
+  '/app/parametres/membres': typeof AppParametresMembresRoute
+  '/app/parametres/organisation': typeof AppParametresOrganisationRoute
+  '/app/parametres/profil': typeof AppParametresProfilRoute
   '/app/reservations/$id': typeof AppReservationsIdRoute
+  '/app/reservations/export': typeof AppReservationsExportRoute
+  '/app/reservations/nouvelle': typeof AppReservationsNouvelleRoute
+  '/$slug/$event': typeof SlugEventIndexRoute
+  '/inscription': typeof authInscriptionIndexRoute
+  '/app/clients': typeof AppClientsIndexRoute
+  '/app/evenements': typeof AppEvenementsIndexRoute
+  '/app/materiel': typeof AppMaterielIndexRoute
+  '/app/parametres': typeof AppParametresIndexRoute
   '/app/reservations': typeof AppReservationsIndexRoute
+  '/$slug/reservation/$token/agenda.ics': typeof SlugReservationTokenAgendaDoticsRoute
+  '/app/clients/$id/modifier': typeof AppClientsIdModifierRoute
+  '/app/evenements/$id/modifier': typeof AppEvenementsIdModifierRoute
+  '/app/materiel/$id/louer': typeof AppMaterielIdLouerRoute
+  '/app/materiel/$id/modifier': typeof AppMaterielIdModifierRoute
+  '/app/parametres/paiements/stripe': typeof AppParametresPaiementsStripeRoute
+  '/$slug/reservation/$token': typeof SlugReservationTokenIndexRoute
+  '/app/clients/$id': typeof AppClientsIdIndexRoute
+  '/app/evenements/$id': typeof AppEvenementsIdIndexRoute
+  '/app/materiel/$id': typeof AppMaterielIdIndexRoute
+  '/app/parametres/paiements': typeof AppParametresPaiementsIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
+  '/': typeof IndexRoute
+  '/$slug': typeof SlugRouteWithChildren
   '/app': typeof AppRouteWithChildren
+  '/$slug/mentions-legales': typeof SlugMentionsLegalesRoute
+  '/$slug/mes-reservations': typeof SlugMesReservationsRoute
+  '/(auth)/connexion': typeof authConnexionRoute
+  '/(auth)/mot-de-passe-oublie': typeof authMotDePasseOublieRoute
+  '/(auth)/nouveau-mot-de-passe': typeof authNouveauMotDePasseRoute
   '/api/health': typeof ApiHealthRoute
+  '/app/calendrier': typeof AppCalendrierRoute
+  '/app/design-system': typeof AppDesignSystemRoute
+  '/app/plus': typeof AppPlusRoute
+  '/invitation/$id': typeof InvitationIdRoute
+  '/paiement-test/$checkout': typeof PaiementTestCheckoutRoute
+  '/paiement-test/compte': typeof PaiementTestCompteRoute
+  '/rejoindre/$token': typeof RejoindreTokenRoute
+  '/$slug/': typeof SlugIndexRoute
   '/app/': typeof AppIndexRoute
+  '/$slug/$event/reserver': typeof SlugEventReserverRoute
+  '/$slug/calendrier/$lien': typeof SlugCalendrierLienRoute
+  '/(auth)/inscription/espace': typeof authInscriptionEspaceRoute
+  '/(auth)/inscription/paiements': typeof authInscriptionPaiementsRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/api/stripe/webhook': typeof ApiStripeWebhookRoute
+  '/app/clients/export': typeof AppClientsExportRoute
   '/app/clients/nouveau': typeof AppClientsNouveauRoute
+  '/app/evenements/liens': typeof AppEvenementsLiensRoute
+  '/app/evenements/nouveau': typeof AppEvenementsNouveauRoute
+  '/app/evenements/types': typeof AppEvenementsTypesRoute
+  '/app/materiel/modele-import': typeof AppMaterielModeleImportRoute
+  '/app/materiel/nouveau': typeof AppMaterielNouveauRoute
+  '/app/parametres/integrations': typeof AppParametresIntegrationsRoute
+  '/app/parametres/membres': typeof AppParametresMembresRoute
+  '/app/parametres/organisation': typeof AppParametresOrganisationRoute
+  '/app/parametres/profil': typeof AppParametresProfilRoute
   '/app/reservations/$id': typeof AppReservationsIdRoute
+  '/app/reservations/export': typeof AppReservationsExportRoute
+  '/app/reservations/nouvelle': typeof AppReservationsNouvelleRoute
+  '/$slug/$event/': typeof SlugEventIndexRoute
+  '/(auth)/inscription/': typeof authInscriptionIndexRoute
+  '/app/clients/': typeof AppClientsIndexRoute
+  '/app/evenements/': typeof AppEvenementsIndexRoute
+  '/app/materiel/': typeof AppMaterielIndexRoute
+  '/app/parametres/': typeof AppParametresIndexRoute
   '/app/reservations/': typeof AppReservationsIndexRoute
+  '/$slug/reservation/$token/agenda.ics': typeof SlugReservationTokenAgendaDoticsRoute
+  '/app/clients/$id/modifier': typeof AppClientsIdModifierRoute
+  '/app/evenements/$id/modifier': typeof AppEvenementsIdModifierRoute
+  '/app/materiel/$id/louer': typeof AppMaterielIdLouerRoute
+  '/app/materiel/$id/modifier': typeof AppMaterielIdModifierRoute
+  '/app/parametres/paiements/stripe': typeof AppParametresPaiementsStripeRoute
+  '/$slug/reservation/$token/': typeof SlugReservationTokenIndexRoute
+  '/app/clients/$id/': typeof AppClientsIdIndexRoute
+  '/app/evenements/$id/': typeof AppEvenementsIdIndexRoute
+  '/app/materiel/$id/': typeof AppMaterielIdIndexRoute
+  '/app/parametres/paiements/': typeof AppParametresPaiementsIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
+    | '/'
+    | '/$slug'
     | '/app'
+    | '/$slug/mentions-legales'
+    | '/$slug/mes-reservations'
+    | '/connexion'
+    | '/mot-de-passe-oublie'
+    | '/nouveau-mot-de-passe'
     | '/api/health'
+    | '/app/calendrier'
+    | '/app/design-system'
+    | '/app/plus'
+    | '/invitation/$id'
+    | '/paiement-test/$checkout'
+    | '/paiement-test/compte'
+    | '/rejoindre/$token'
+    | '/$slug/'
     | '/app/'
+    | '/$slug/$event/reserver'
+    | '/$slug/calendrier/$lien'
+    | '/inscription/espace'
+    | '/inscription/paiements'
     | '/api/auth/$'
+    | '/api/stripe/webhook'
+    | '/app/clients/export'
     | '/app/clients/nouveau'
+    | '/app/evenements/liens'
+    | '/app/evenements/nouveau'
+    | '/app/evenements/types'
+    | '/app/materiel/modele-import'
+    | '/app/materiel/nouveau'
+    | '/app/parametres/integrations'
+    | '/app/parametres/membres'
+    | '/app/parametres/organisation'
+    | '/app/parametres/profil'
     | '/app/reservations/$id'
+    | '/app/reservations/export'
+    | '/app/reservations/nouvelle'
+    | '/$slug/$event/'
+    | '/inscription/'
+    | '/app/clients/'
+    | '/app/evenements/'
+    | '/app/materiel/'
+    | '/app/parametres/'
     | '/app/reservations/'
+    | '/$slug/reservation/$token/agenda.ics'
+    | '/app/clients/$id/modifier'
+    | '/app/evenements/$id/modifier'
+    | '/app/materiel/$id/louer'
+    | '/app/materiel/$id/modifier'
+    | '/app/parametres/paiements/stripe'
+    | '/$slug/reservation/$token/'
+    | '/app/clients/$id/'
+    | '/app/evenements/$id/'
+    | '/app/materiel/$id/'
+    | '/app/parametres/paiements/'
   fileRoutesByTo: FileRoutesByTo
   to:
+    | '/'
+    | '/$slug/mentions-legales'
+    | '/$slug/mes-reservations'
+    | '/connexion'
+    | '/mot-de-passe-oublie'
+    | '/nouveau-mot-de-passe'
     | '/api/health'
+    | '/app/calendrier'
+    | '/app/design-system'
+    | '/app/plus'
+    | '/invitation/$id'
+    | '/paiement-test/$checkout'
+    | '/paiement-test/compte'
+    | '/rejoindre/$token'
+    | '/$slug'
     | '/app'
+    | '/$slug/$event/reserver'
+    | '/$slug/calendrier/$lien'
+    | '/inscription/espace'
+    | '/inscription/paiements'
     | '/api/auth/$'
+    | '/api/stripe/webhook'
+    | '/app/clients/export'
     | '/app/clients/nouveau'
+    | '/app/evenements/liens'
+    | '/app/evenements/nouveau'
+    | '/app/evenements/types'
+    | '/app/materiel/modele-import'
+    | '/app/materiel/nouveau'
+    | '/app/parametres/integrations'
+    | '/app/parametres/membres'
+    | '/app/parametres/organisation'
+    | '/app/parametres/profil'
     | '/app/reservations/$id'
+    | '/app/reservations/export'
+    | '/app/reservations/nouvelle'
+    | '/$slug/$event'
+    | '/inscription'
+    | '/app/clients'
+    | '/app/evenements'
+    | '/app/materiel'
+    | '/app/parametres'
     | '/app/reservations'
+    | '/$slug/reservation/$token/agenda.ics'
+    | '/app/clients/$id/modifier'
+    | '/app/evenements/$id/modifier'
+    | '/app/materiel/$id/louer'
+    | '/app/materiel/$id/modifier'
+    | '/app/parametres/paiements/stripe'
+    | '/$slug/reservation/$token'
+    | '/app/clients/$id'
+    | '/app/evenements/$id'
+    | '/app/materiel/$id'
+    | '/app/parametres/paiements'
   id:
     | '__root__'
+    | '/'
+    | '/$slug'
     | '/app'
+    | '/$slug/mentions-legales'
+    | '/$slug/mes-reservations'
+    | '/(auth)/connexion'
+    | '/(auth)/mot-de-passe-oublie'
+    | '/(auth)/nouveau-mot-de-passe'
     | '/api/health'
+    | '/app/calendrier'
+    | '/app/design-system'
+    | '/app/plus'
+    | '/invitation/$id'
+    | '/paiement-test/$checkout'
+    | '/paiement-test/compte'
+    | '/rejoindre/$token'
+    | '/$slug/'
     | '/app/'
+    | '/$slug/$event/reserver'
+    | '/$slug/calendrier/$lien'
+    | '/(auth)/inscription/espace'
+    | '/(auth)/inscription/paiements'
     | '/api/auth/$'
+    | '/api/stripe/webhook'
+    | '/app/clients/export'
     | '/app/clients/nouveau'
+    | '/app/evenements/liens'
+    | '/app/evenements/nouveau'
+    | '/app/evenements/types'
+    | '/app/materiel/modele-import'
+    | '/app/materiel/nouveau'
+    | '/app/parametres/integrations'
+    | '/app/parametres/membres'
+    | '/app/parametres/organisation'
+    | '/app/parametres/profil'
     | '/app/reservations/$id'
+    | '/app/reservations/export'
+    | '/app/reservations/nouvelle'
+    | '/$slug/$event/'
+    | '/(auth)/inscription/'
+    | '/app/clients/'
+    | '/app/evenements/'
+    | '/app/materiel/'
+    | '/app/parametres/'
     | '/app/reservations/'
+    | '/$slug/reservation/$token/agenda.ics'
+    | '/app/clients/$id/modifier'
+    | '/app/evenements/$id/modifier'
+    | '/app/materiel/$id/louer'
+    | '/app/materiel/$id/modifier'
+    | '/app/parametres/paiements/stripe'
+    | '/$slug/reservation/$token/'
+    | '/app/clients/$id/'
+    | '/app/evenements/$id/'
+    | '/app/materiel/$id/'
+    | '/app/parametres/paiements/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
+  IndexRoute: typeof IndexRoute
+  SlugRoute: typeof SlugRouteWithChildren
   AppRoute: typeof AppRouteWithChildren
+  authConnexionRoute: typeof authConnexionRoute
+  authMotDePasseOublieRoute: typeof authMotDePasseOublieRoute
+  authNouveauMotDePasseRoute: typeof authNouveauMotDePasseRoute
   ApiHealthRoute: typeof ApiHealthRoute
+  InvitationIdRoute: typeof InvitationIdRoute
+  PaiementTestCheckoutRoute: typeof PaiementTestCheckoutRoute
+  PaiementTestCompteRoute: typeof PaiementTestCompteRoute
+  RejoindreTokenRoute: typeof RejoindreTokenRoute
+  authInscriptionEspaceRoute: typeof authInscriptionEspaceRoute
+  authInscriptionPaiementsRoute: typeof authInscriptionPaiementsRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
+  ApiStripeWebhookRoute: typeof ApiStripeWebhookRoute
+  authInscriptionIndexRoute: typeof authInscriptionIndexRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/$slug': {
+      id: '/$slug'
+      path: '/$slug'
+      fullPath: '/$slug'
+      preLoaderRoute: typeof SlugRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/app': {
       id: '/app'
       path: '/app'
       fullPath: '/app'
       preLoaderRoute: typeof AppRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/$slug/': {
+      id: '/$slug/'
+      path: '/'
+      fullPath: '/$slug/'
+      preLoaderRoute: typeof SlugIndexRouteImport
+      parentRoute: typeof SlugRoute
+    }
+    '/$slug/mentions-legales': {
+      id: '/$slug/mentions-legales'
+      path: '/mentions-legales'
+      fullPath: '/$slug/mentions-legales'
+      preLoaderRoute: typeof SlugMentionsLegalesRouteImport
+      parentRoute: typeof SlugRoute
+    }
+    '/$slug/mes-reservations': {
+      id: '/$slug/mes-reservations'
+      path: '/mes-reservations'
+      fullPath: '/$slug/mes-reservations'
+      preLoaderRoute: typeof SlugMesReservationsRouteImport
+      parentRoute: typeof SlugRoute
+    }
+    '/(auth)/connexion': {
+      id: '/(auth)/connexion'
+      path: '/connexion'
+      fullPath: '/connexion'
+      preLoaderRoute: typeof authConnexionRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/(auth)/mot-de-passe-oublie': {
+      id: '/(auth)/mot-de-passe-oublie'
+      path: '/mot-de-passe-oublie'
+      fullPath: '/mot-de-passe-oublie'
+      preLoaderRoute: typeof authMotDePasseOublieRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/(auth)/nouveau-mot-de-passe': {
+      id: '/(auth)/nouveau-mot-de-passe'
+      path: '/nouveau-mot-de-passe'
+      fullPath: '/nouveau-mot-de-passe'
+      preLoaderRoute: typeof authNouveauMotDePasseRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/health': {
@@ -138,6 +800,97 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppIndexRouteImport
       parentRoute: typeof AppRoute
     }
+    '/app/calendrier': {
+      id: '/app/calendrier'
+      path: '/calendrier'
+      fullPath: '/app/calendrier'
+      preLoaderRoute: typeof AppCalendrierRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/design-system': {
+      id: '/app/design-system'
+      path: '/design-system'
+      fullPath: '/app/design-system'
+      preLoaderRoute: typeof AppDesignSystemRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/plus': {
+      id: '/app/plus'
+      path: '/plus'
+      fullPath: '/app/plus'
+      preLoaderRoute: typeof AppPlusRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/invitation/$id': {
+      id: '/invitation/$id'
+      path: '/invitation/$id'
+      fullPath: '/invitation/$id'
+      preLoaderRoute: typeof InvitationIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/paiement-test/$checkout': {
+      id: '/paiement-test/$checkout'
+      path: '/paiement-test/$checkout'
+      fullPath: '/paiement-test/$checkout'
+      preLoaderRoute: typeof PaiementTestCheckoutRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/paiement-test/compte': {
+      id: '/paiement-test/compte'
+      path: '/paiement-test/compte'
+      fullPath: '/paiement-test/compte'
+      preLoaderRoute: typeof PaiementTestCompteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/rejoindre/$token': {
+      id: '/rejoindre/$token'
+      path: '/rejoindre/$token'
+      fullPath: '/rejoindre/$token'
+      preLoaderRoute: typeof RejoindreTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/$slug/$event/': {
+      id: '/$slug/$event/'
+      path: '/$event'
+      fullPath: '/$slug/$event/'
+      preLoaderRoute: typeof SlugEventIndexRouteImport
+      parentRoute: typeof SlugRoute
+    }
+    '/$slug/$event/reserver': {
+      id: '/$slug/$event/reserver'
+      path: '/$event/reserver'
+      fullPath: '/$slug/$event/reserver'
+      preLoaderRoute: typeof SlugEventReserverRouteImport
+      parentRoute: typeof SlugRoute
+    }
+    '/$slug/calendrier/$lien': {
+      id: '/$slug/calendrier/$lien'
+      path: '/calendrier/$lien'
+      fullPath: '/$slug/calendrier/$lien'
+      preLoaderRoute: typeof SlugCalendrierLienRouteImport
+      parentRoute: typeof SlugRoute
+    }
+    '/(auth)/inscription/': {
+      id: '/(auth)/inscription/'
+      path: '/inscription'
+      fullPath: '/inscription/'
+      preLoaderRoute: typeof authInscriptionIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/(auth)/inscription/espace': {
+      id: '/(auth)/inscription/espace'
+      path: '/inscription/espace'
+      fullPath: '/inscription/espace'
+      preLoaderRoute: typeof authInscriptionEspaceRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/(auth)/inscription/paiements': {
+      id: '/(auth)/inscription/paiements'
+      path: '/inscription/paiements'
+      fullPath: '/inscription/paiements'
+      preLoaderRoute: typeof authInscriptionPaiementsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/auth/$': {
       id: '/api/auth/$'
       path: '/api/auth/$'
@@ -145,11 +898,116 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiAuthSplatRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/stripe/webhook': {
+      id: '/api/stripe/webhook'
+      path: '/api/stripe/webhook'
+      fullPath: '/api/stripe/webhook'
+      preLoaderRoute: typeof ApiStripeWebhookRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/app/clients/': {
+      id: '/app/clients/'
+      path: '/clients'
+      fullPath: '/app/clients/'
+      preLoaderRoute: typeof AppClientsIndexRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/clients/export': {
+      id: '/app/clients/export'
+      path: '/clients/export'
+      fullPath: '/app/clients/export'
+      preLoaderRoute: typeof AppClientsExportRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/app/clients/nouveau': {
       id: '/app/clients/nouveau'
       path: '/clients/nouveau'
       fullPath: '/app/clients/nouveau'
       preLoaderRoute: typeof AppClientsNouveauRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/evenements/': {
+      id: '/app/evenements/'
+      path: '/evenements'
+      fullPath: '/app/evenements/'
+      preLoaderRoute: typeof AppEvenementsIndexRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/evenements/liens': {
+      id: '/app/evenements/liens'
+      path: '/evenements/liens'
+      fullPath: '/app/evenements/liens'
+      preLoaderRoute: typeof AppEvenementsLiensRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/evenements/nouveau': {
+      id: '/app/evenements/nouveau'
+      path: '/evenements/nouveau'
+      fullPath: '/app/evenements/nouveau'
+      preLoaderRoute: typeof AppEvenementsNouveauRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/evenements/types': {
+      id: '/app/evenements/types'
+      path: '/evenements/types'
+      fullPath: '/app/evenements/types'
+      preLoaderRoute: typeof AppEvenementsTypesRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/materiel/': {
+      id: '/app/materiel/'
+      path: '/materiel'
+      fullPath: '/app/materiel/'
+      preLoaderRoute: typeof AppMaterielIndexRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/materiel/modele-import': {
+      id: '/app/materiel/modele-import'
+      path: '/materiel/modele-import'
+      fullPath: '/app/materiel/modele-import'
+      preLoaderRoute: typeof AppMaterielModeleImportRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/materiel/nouveau': {
+      id: '/app/materiel/nouveau'
+      path: '/materiel/nouveau'
+      fullPath: '/app/materiel/nouveau'
+      preLoaderRoute: typeof AppMaterielNouveauRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/parametres/': {
+      id: '/app/parametres/'
+      path: '/parametres'
+      fullPath: '/app/parametres/'
+      preLoaderRoute: typeof AppParametresIndexRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/parametres/integrations': {
+      id: '/app/parametres/integrations'
+      path: '/parametres/integrations'
+      fullPath: '/app/parametres/integrations'
+      preLoaderRoute: typeof AppParametresIntegrationsRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/parametres/membres': {
+      id: '/app/parametres/membres'
+      path: '/parametres/membres'
+      fullPath: '/app/parametres/membres'
+      preLoaderRoute: typeof AppParametresMembresRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/parametres/organisation': {
+      id: '/app/parametres/organisation'
+      path: '/parametres/organisation'
+      fullPath: '/app/parametres/organisation'
+      preLoaderRoute: typeof AppParametresOrganisationRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/parametres/profil': {
+      id: '/app/parametres/profil'
+      path: '/parametres/profil'
+      fullPath: '/app/parametres/profil'
+      preLoaderRoute: typeof AppParametresProfilRouteImport
       parentRoute: typeof AppRoute
     }
     '/app/reservations/': {
@@ -166,29 +1024,213 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppReservationsIdRouteImport
       parentRoute: typeof AppRoute
     }
+    '/app/reservations/export': {
+      id: '/app/reservations/export'
+      path: '/reservations/export'
+      fullPath: '/app/reservations/export'
+      preLoaderRoute: typeof AppReservationsExportRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/reservations/nouvelle': {
+      id: '/app/reservations/nouvelle'
+      path: '/reservations/nouvelle'
+      fullPath: '/app/reservations/nouvelle'
+      preLoaderRoute: typeof AppReservationsNouvelleRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/$slug/reservation/$token/': {
+      id: '/$slug/reservation/$token/'
+      path: '/reservation/$token'
+      fullPath: '/$slug/reservation/$token/'
+      preLoaderRoute: typeof SlugReservationTokenIndexRouteImport
+      parentRoute: typeof SlugRoute
+    }
+    '/$slug/reservation/$token/agenda.ics': {
+      id: '/$slug/reservation/$token/agenda.ics'
+      path: '/reservation/$token/agenda.ics'
+      fullPath: '/$slug/reservation/$token/agenda.ics'
+      preLoaderRoute: typeof SlugReservationTokenAgendaDoticsRouteImport
+      parentRoute: typeof SlugRoute
+    }
+    '/app/clients/$id/': {
+      id: '/app/clients/$id/'
+      path: '/clients/$id'
+      fullPath: '/app/clients/$id/'
+      preLoaderRoute: typeof AppClientsIdIndexRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/clients/$id/modifier': {
+      id: '/app/clients/$id/modifier'
+      path: '/clients/$id/modifier'
+      fullPath: '/app/clients/$id/modifier'
+      preLoaderRoute: typeof AppClientsIdModifierRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/evenements/$id/': {
+      id: '/app/evenements/$id/'
+      path: '/evenements/$id'
+      fullPath: '/app/evenements/$id/'
+      preLoaderRoute: typeof AppEvenementsIdIndexRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/evenements/$id/modifier': {
+      id: '/app/evenements/$id/modifier'
+      path: '/evenements/$id/modifier'
+      fullPath: '/app/evenements/$id/modifier'
+      preLoaderRoute: typeof AppEvenementsIdModifierRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/materiel/$id/': {
+      id: '/app/materiel/$id/'
+      path: '/materiel/$id'
+      fullPath: '/app/materiel/$id/'
+      preLoaderRoute: typeof AppMaterielIdIndexRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/materiel/$id/louer': {
+      id: '/app/materiel/$id/louer'
+      path: '/materiel/$id/louer'
+      fullPath: '/app/materiel/$id/louer'
+      preLoaderRoute: typeof AppMaterielIdLouerRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/materiel/$id/modifier': {
+      id: '/app/materiel/$id/modifier'
+      path: '/materiel/$id/modifier'
+      fullPath: '/app/materiel/$id/modifier'
+      preLoaderRoute: typeof AppMaterielIdModifierRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/parametres/paiements/': {
+      id: '/app/parametres/paiements/'
+      path: '/parametres/paiements'
+      fullPath: '/app/parametres/paiements/'
+      preLoaderRoute: typeof AppParametresPaiementsIndexRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/parametres/paiements/stripe': {
+      id: '/app/parametres/paiements/stripe'
+      path: '/parametres/paiements/stripe'
+      fullPath: '/app/parametres/paiements/stripe'
+      preLoaderRoute: typeof AppParametresPaiementsStripeRouteImport
+      parentRoute: typeof AppRoute
+    }
   }
 }
 
+interface SlugRouteChildren {
+  SlugMentionsLegalesRoute: typeof SlugMentionsLegalesRoute
+  SlugMesReservationsRoute: typeof SlugMesReservationsRoute
+  SlugIndexRoute: typeof SlugIndexRoute
+  SlugEventReserverRoute: typeof SlugEventReserverRoute
+  SlugCalendrierLienRoute: typeof SlugCalendrierLienRoute
+  SlugEventIndexRoute: typeof SlugEventIndexRoute
+  SlugReservationTokenAgendaDoticsRoute: typeof SlugReservationTokenAgendaDoticsRoute
+  SlugReservationTokenIndexRoute: typeof SlugReservationTokenIndexRoute
+}
+
+const SlugRouteChildren: SlugRouteChildren = {
+  SlugMentionsLegalesRoute: SlugMentionsLegalesRoute,
+  SlugMesReservationsRoute: SlugMesReservationsRoute,
+  SlugIndexRoute: SlugIndexRoute,
+  SlugEventReserverRoute: SlugEventReserverRoute,
+  SlugCalendrierLienRoute: SlugCalendrierLienRoute,
+  SlugEventIndexRoute: SlugEventIndexRoute,
+  SlugReservationTokenAgendaDoticsRoute: SlugReservationTokenAgendaDoticsRoute,
+  SlugReservationTokenIndexRoute: SlugReservationTokenIndexRoute,
+}
+
+const SlugRouteWithChildren = SlugRoute._addFileChildren(SlugRouteChildren)
+
 interface AppRouteChildren {
+  AppCalendrierRoute: typeof AppCalendrierRoute
+  AppDesignSystemRoute: typeof AppDesignSystemRoute
+  AppPlusRoute: typeof AppPlusRoute
   AppIndexRoute: typeof AppIndexRoute
+  AppClientsExportRoute: typeof AppClientsExportRoute
   AppClientsNouveauRoute: typeof AppClientsNouveauRoute
+  AppEvenementsLiensRoute: typeof AppEvenementsLiensRoute
+  AppEvenementsNouveauRoute: typeof AppEvenementsNouveauRoute
+  AppEvenementsTypesRoute: typeof AppEvenementsTypesRoute
+  AppMaterielModeleImportRoute: typeof AppMaterielModeleImportRoute
+  AppMaterielNouveauRoute: typeof AppMaterielNouveauRoute
+  AppParametresIntegrationsRoute: typeof AppParametresIntegrationsRoute
+  AppParametresMembresRoute: typeof AppParametresMembresRoute
+  AppParametresOrganisationRoute: typeof AppParametresOrganisationRoute
+  AppParametresProfilRoute: typeof AppParametresProfilRoute
   AppReservationsIdRoute: typeof AppReservationsIdRoute
+  AppReservationsExportRoute: typeof AppReservationsExportRoute
+  AppReservationsNouvelleRoute: typeof AppReservationsNouvelleRoute
+  AppClientsIndexRoute: typeof AppClientsIndexRoute
+  AppEvenementsIndexRoute: typeof AppEvenementsIndexRoute
+  AppMaterielIndexRoute: typeof AppMaterielIndexRoute
+  AppParametresIndexRoute: typeof AppParametresIndexRoute
   AppReservationsIndexRoute: typeof AppReservationsIndexRoute
+  AppClientsIdModifierRoute: typeof AppClientsIdModifierRoute
+  AppEvenementsIdModifierRoute: typeof AppEvenementsIdModifierRoute
+  AppMaterielIdLouerRoute: typeof AppMaterielIdLouerRoute
+  AppMaterielIdModifierRoute: typeof AppMaterielIdModifierRoute
+  AppParametresPaiementsStripeRoute: typeof AppParametresPaiementsStripeRoute
+  AppClientsIdIndexRoute: typeof AppClientsIdIndexRoute
+  AppEvenementsIdIndexRoute: typeof AppEvenementsIdIndexRoute
+  AppMaterielIdIndexRoute: typeof AppMaterielIdIndexRoute
+  AppParametresPaiementsIndexRoute: typeof AppParametresPaiementsIndexRoute
 }
 
 const AppRouteChildren: AppRouteChildren = {
+  AppCalendrierRoute: AppCalendrierRoute,
+  AppDesignSystemRoute: AppDesignSystemRoute,
+  AppPlusRoute: AppPlusRoute,
   AppIndexRoute: AppIndexRoute,
+  AppClientsExportRoute: AppClientsExportRoute,
   AppClientsNouveauRoute: AppClientsNouveauRoute,
+  AppEvenementsLiensRoute: AppEvenementsLiensRoute,
+  AppEvenementsNouveauRoute: AppEvenementsNouveauRoute,
+  AppEvenementsTypesRoute: AppEvenementsTypesRoute,
+  AppMaterielModeleImportRoute: AppMaterielModeleImportRoute,
+  AppMaterielNouveauRoute: AppMaterielNouveauRoute,
+  AppParametresIntegrationsRoute: AppParametresIntegrationsRoute,
+  AppParametresMembresRoute: AppParametresMembresRoute,
+  AppParametresOrganisationRoute: AppParametresOrganisationRoute,
+  AppParametresProfilRoute: AppParametresProfilRoute,
   AppReservationsIdRoute: AppReservationsIdRoute,
+  AppReservationsExportRoute: AppReservationsExportRoute,
+  AppReservationsNouvelleRoute: AppReservationsNouvelleRoute,
+  AppClientsIndexRoute: AppClientsIndexRoute,
+  AppEvenementsIndexRoute: AppEvenementsIndexRoute,
+  AppMaterielIndexRoute: AppMaterielIndexRoute,
+  AppParametresIndexRoute: AppParametresIndexRoute,
   AppReservationsIndexRoute: AppReservationsIndexRoute,
+  AppClientsIdModifierRoute: AppClientsIdModifierRoute,
+  AppEvenementsIdModifierRoute: AppEvenementsIdModifierRoute,
+  AppMaterielIdLouerRoute: AppMaterielIdLouerRoute,
+  AppMaterielIdModifierRoute: AppMaterielIdModifierRoute,
+  AppParametresPaiementsStripeRoute: AppParametresPaiementsStripeRoute,
+  AppClientsIdIndexRoute: AppClientsIdIndexRoute,
+  AppEvenementsIdIndexRoute: AppEvenementsIdIndexRoute,
+  AppMaterielIdIndexRoute: AppMaterielIdIndexRoute,
+  AppParametresPaiementsIndexRoute: AppParametresPaiementsIndexRoute,
 }
 
 const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)
 
 const rootRouteChildren: RootRouteChildren = {
+  IndexRoute: IndexRoute,
+  SlugRoute: SlugRouteWithChildren,
   AppRoute: AppRouteWithChildren,
+  authConnexionRoute: authConnexionRoute,
+  authMotDePasseOublieRoute: authMotDePasseOublieRoute,
+  authNouveauMotDePasseRoute: authNouveauMotDePasseRoute,
   ApiHealthRoute: ApiHealthRoute,
+  InvitationIdRoute: InvitationIdRoute,
+  PaiementTestCheckoutRoute: PaiementTestCheckoutRoute,
+  PaiementTestCompteRoute: PaiementTestCompteRoute,
+  RejoindreTokenRoute: RejoindreTokenRoute,
+  authInscriptionEspaceRoute: authInscriptionEspaceRoute,
+  authInscriptionPaiementsRoute: authInscriptionPaiementsRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
+  ApiStripeWebhookRoute: ApiStripeWebhookRoute,
+  authInscriptionIndexRoute: authInscriptionIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

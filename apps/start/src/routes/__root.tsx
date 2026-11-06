@@ -5,6 +5,8 @@ import "@fontsource-variable/geist-mono";
 import { createRootRoute, HeadContent, Outlet, Scripts } from "@tanstack/react-router";
 import type { ReactNode } from "react";
 import { MotionProvider } from "@/components/motion/indicator";
+import { NotFoundScreen } from "@/components/public/public-not-found";
+import { authClient } from "@/lib/auth-client";
 import appCss from "@/styles/app.css?url";
 
 export const Route = createRootRoute({
@@ -42,19 +44,24 @@ function RootDocument({ children }: { children: ReactNode }) {
   );
 }
 
-/** Page introuvable (et, le temps de la migration, écrans pas encore portés). */
+/** Écran 28b. Le tableau de bord n'est proposé qu'à une personne connectée. */
 function NotFound() {
+  // shortcut: session lue dans le navigateur (pas de loader ici), la version « connecté »
+  // s'affiche après un court instant ; passer par le loader racine si ça gêne.
+  const { data: session } = authClient.useSession();
   return (
-    <main className="flex flex-1 flex-col items-center justify-center gap-3 p-8 text-center">
-      <p className="font-headline text-[56px] leading-[58px] tracking-headline text-ink">
-        Page introuvable
-      </p>
-      <p className="text-base text-ink-muted">
-        Cette page n'existe pas, ou n'est pas encore portée sur la nouvelle app.
-      </p>
-      <a href="/app" className="text-sm font-semibold text-ink underline">
-        Retour au tableau de bord
-      </a>
-    </main>
+    <div className="flex min-h-dvh flex-col">
+      {session ? (
+        <NotFoundScreen
+          primary={{ label: "Retour au tableau de bord", href: "/app" }}
+          secondary={{ label: "Voir les événements à venir", href: "/app/evenements" }}
+        />
+      ) : (
+        <NotFoundScreen
+          primary={{ label: "Retour à l'accueil", href: "/" }}
+          secondary={{ label: "Se connecter", href: "/connexion" }}
+        />
+      )}
+    </div>
   );
 }

@@ -1,0 +1,346 @@
+import type { ReactNode } from "react";
+import { stagger, WordsReveal } from "@/components/motion/words";
+import { brandButtonClasses } from "@/components/public/public-chrome";
+import { NotFoundScreen } from "@/components/public/public-not-found";
+import { ArrowRight } from "@/components/ui/icons";
+import type { getManagedBookingPage } from "@/functions/public";
+import { cn } from "@/lib/cn";
+import { displayFontClass } from "@/lib/fonts";
+import { formatEventRange, formatMoney } from "@/lib/format";
+import { googleCalendarUrl } from "@/lib/ics";
+import { Link } from "@/lib/navigation";
+import { cancellationPolicy } from "@/lib/public-booking";
+import { CancelBooking, PayButton, PaymentPending, ResendEmail } from "./manage-actions";
+
+/** Maquette 5.4 : juste après la réservation (?nouvelle=1) et page « Gérer ma réservation ». */
+export function ManagedBookingPage({
+  token,
+  search,
+  data,
+}: {
+  token: string;
+  search: { nouvelle?: string; paiement?: string };
+  data: Awaited<ReturnType<typeof getManagedBookingPage>>;
+}) {
+  const { workspace, now } = data;
+  const slug = workspace.slug;
+  if (!data.booking) {
+    return (
+      <NotFoundScreen
+        wordmark={false}
+        title="Ce lien de réservation n'est plus valable."
+        text="Un lien plus récent t'a peut-être été envoyé. Demande-en un nouveau avec ton adresse e-mail."
+        primary={{ label: "Retrouver mes réservations", href: `/${slug}/mes-reservations` }}
+      />
+    );
+  }
+  const { booking, channel, paid, refunded, awaitsPayment, due, refund } = data;
+  const fresh = search.nouvelle === "1";
+  const paymentReturn = search.paiement;
+  const tz = workspace.timezone;
+  const startsAt = booking.eventStartsAt ?? booking.rentalStartsAt;
+  const endsAt = booking.eventEndsAt ?? booking.rentalEndsAt;
+  const title = booking.eventTitle ?? "Location de matériel";
+  const active =
+    booking.status === "pending" ||
+    booking.status === "confirmed" ||
+    booking.status === "waitlisted";
+  const started = startsAt ? startsAt <= now : false;
+  const places = `${booking.seats} place${booking.seats > 1 ? "s" : ""}`;
+  const several = booking.seats > 1;
+  // « Tes 2 places … sont confirmées » / « Ta place … est confirmée ».
+  const yourPlaces = several ? `Tes ${places}` : "Ta place";
+  const agree = (singular: string, plural: string) => (several ? plural : singular);
+  const where =
+    [booking.locationName, booking.locationAddress].filter(Boolean).join(", ") ||
+    (booking.onlineUrl ? "En ligne" : null);
+  const named = booking.participants.length
+    ? booking.participants.map((entry) => `${entry.firstName} ${entry.lastName}`).join(", ")
+    : `${booking.customerFirstName} ${booking.customerLastName}`;
+  const missing = booking.seats - Math.max(booking.participants.length, 1);
+  const participants =
+    missing > 0 ? `${named} · ${missing} participant${missing > 1 ? "s" : ""} à compléter` : named;
+  const manageHref = `/${slug}/reservation/${token}`;
+  const deposit = booking.paymentMode === "deposit";
+  const paymentPill: { label: string; className: string } | null =
+    booking.amountCents === 0
+      ? null
+      : refunded > 0
+        ? { label: `Remboursé ${formatMoney(refunded)}`, className: "bg-draft-bg text-draft" }
+        : paid > 0
+          ? {
+              label: deposit
+                ? `Acompte payé · reste ${formatMoney(booking.amountCents - paid)} sur place`
+                : "Payé",
+              className: "bg-success-bg text-success",
+            }
+          : awaitsPayment
+            ? {
+                label: deposit
+                  ? `Acompte de ${formatMoney(due)} à payer · reste ${formatMoney(booking.amountCents - due)} sur place`
+                  : `${formatMoney(due)} à payer en ligne`,
+                className: "bg-warning-bg text-warning",
+              }
+            : {
+                label:
+                  booking.paymentMode === "on_site"
+                    ? "À régler sur place"
+                    : "À régler auprès de l'organisateur",
+                className: "bg-draft-bg text-draft",
+              };
+  const heading: { title: string; text: string; badge: { label: string; className: string } } =
+    (() => {
+      if (booking.status === "cancelled")
+        return {
+          badge: { label: "Annulée", className: "bg-draft-bg text-draft" },
+          title: "Réservation annulée",
+          text: `Ta réservation de ${places} pour « ${title} » est annulée.`,
+        };
+      if (booking.status === "refused")
+        return {
+          badge: { label: "Non retenue", className: "bg-danger-bg text-danger" },
+          title: "Demande non retenue",
+          text: `${workspace.name} n'a pas pu accepter ta demande pour « ${title} »${booking.refusalReason ? ` (${booking.refusalReason})` : ""}.`,
+        };
+      if (booking.status === "pending")
+        return {
+          badge: { label: "En attente de validation", className: "bg-info-bg text-info" },
+          title: fresh ? "Demande envoyée !" : "En attente de validation",
+          text: `Merci ${booking.customerFirstName}. ${yourPlaces} pour « ${title} » ${agree("est retenue", "sont retenues")} en attendant la validation de ${workspace.name} : tu recevras un e-mail.`,
+        };
+      if (booking.status === "waitlisted")
+        return {
+          badge: { label: "Liste d'attente", className: "bg-warning-bg text-warning" },
+          title: "Sur liste d'attente",
+          text: `Merci ${booking.customerFirstName}. « ${title} » est complet : si une place se libère, ta demande passe automatiquement et tu es prévenu·e par e-mail.`,
+        };
+      if (awaitsPayment)
+        return {
+          badge: {
+            label: "Plus qu'à payer",
+            className:
+              "bg-[color-mix(in_srgb,var(--brand)_20%,transparent)] text-[var(--brand-light)]",
+          },
+          title:
+            channel?.kind === "stripe" && paymentReturn === "ok"
+              ? "Paiement en cours"
+              : several
+                ? "Tes places sont réservées."
+                : "Ta place est réservée.",
+          text:
+            channel?.kind === "link"
+              ? `${fresh ? `Merci ${booking.customerFirstName}. ` : ""}${yourPlaces} pour « ${title} » ${agree("est réservée", "sont réservées")} : règle ${booking.paymentMode === "deposit" ? "l'acompte de " : ""}${formatMoney(due)} via le lien de paiement de ${workspace.name}, qui confirmera la réception par e-mail.`
+              : paymentReturn === "ok"
+                ? "Stripe confirme ton paiement : ça ne prend que quelques secondes."
+                : `${yourPlaces} pour « ${title} » ${agree("est retenue", "sont retenues")} le temps du paiement en ligne (${formatMoney(due)}). Sans paiement, ${agree("elle est libérée", "elles sont libérées")} au bout de 30 minutes.`,
+        };
+      const paidNote =
+        booking.paymentStatus === "paid"
+          ? booking.paymentMode === "deposit"
+            ? ", acompte payé"
+            : agree(" et payée", " et payées")
+          : "";
+      return {
+        badge: { label: "Confirmée", className: "bg-success-bg text-success" },
+        title: fresh ? "C'est réservé !" : "Ta réservation",
+        text: `${fresh ? `Merci ${booking.customerFirstName}. ` : ""}${yourPlaces} pour « ${title} » ${agree("est confirmée", "sont confirmées")}${paidNote}.`,
+      };
+    })();
+
+  return (
+    <div className="mx-auto flex w-full max-w-[1000px] flex-col gap-4">
+      <section className="flex flex-col gap-[18px] rounded-3xl bg-ink p-6 text-white sm:p-8">
+        <span
+          className={cn(
+            "w-fit rounded-full px-3 py-[5px] text-xs font-bold leading-[14px]",
+            heading.badge.className,
+          )}
+        >
+          {heading.badge.label}
+        </span>
+        <h1
+          className={cn(
+            "text-[36px] leading-10 tracking-[-0.04em] sm:text-[48px] sm:leading-[52px]",
+            displayFontClass(workspace.displayFont),
+          )}
+        >
+          <WordsReveal>{heading.title}</WordsReveal>
+        </h1>
+        <p
+          className="reveal max-w-[620px] text-[17px] leading-[26px] text-white/75"
+          style={stagger(3)}
+        >
+          {heading.text}
+        </p>
+        <div className="flex flex-col gap-3.5 pt-1 sm:flex-row sm:items-center">
+          {awaitsPayment && channel?.kind === "stripe" && paymentReturn === "ok" && (
+            <PaymentPending />
+          )}
+          {awaitsPayment && channel?.kind === "stripe" && paymentReturn !== "ok" && (
+            <PayButton slug={slug} token={token} label={`Payer ${formatMoney(due)}`} />
+          )}
+          {awaitsPayment && channel?.kind === "link" && (
+            <a
+              href={channel.url}
+              target="_blank"
+              rel="noreferrer"
+              className={cn(brandButtonClasses, "h-[54px] px-[26px] text-base")}
+            >
+              Payer {formatMoney(due)} ↗
+            </a>
+          )}
+          {fresh && !awaitsPayment && (
+            <Link
+              href={manageHref}
+              className="flex h-[54px] items-center justify-center gap-2 rounded-full bg-white px-[26px] text-base font-semibold text-ink transition-colors hover:bg-field"
+            >
+              Gérer ma réservation
+              <ArrowRight />
+            </Link>
+          )}
+          <div className="flex flex-col gap-1 text-sm leading-[18px] text-notch-idle">
+            <p>
+              {fresh ? "Confirmation envoyée à " : "Envoyée à "}
+              <span className="break-all font-semibold text-white">{booking.customerEmail}</span>
+            </p>
+            {active && <ResendEmail slug={slug} token={token} />}
+          </div>
+        </div>
+      </section>
+
+      <section className="flex flex-col rounded-3xl bg-surface px-6 py-2">
+        <div className="flex h-14 items-center justify-between gap-4">
+          <h2 className="text-lg font-semibold leading-[22px] text-ink">Récapitulatif</h2>
+          <p className="font-mono text-xs leading-4 text-ink-subtle">Réf. {booking.reference}</p>
+        </div>
+        <dl className="flex flex-col">
+          <Fact label="Quoi">
+            {booking.eventSlug && booking.eventVisibility === "public" ? (
+              <Link href={`/${slug}/${booking.eventSlug}`} className="underline underline-offset-2">
+                {title}
+              </Link>
+            ) : (
+              title
+            )}
+          </Fact>
+          {startsAt && endsAt && (
+            <Fact label="Quand">{formatEventRange(startsAt, endsAt, tz)}</Fact>
+          )}
+          {where && <Fact label="Où">{where}</Fact>}
+          <Fact label="Participants">{participants}</Fact>
+          <Fact label="Paiement">
+            <span className="flex flex-wrap items-center gap-2.5">
+              {booking.amountCents > 0 ? formatMoney(booking.amountCents) : "Gratuit"}
+              {paymentPill && (
+                <span
+                  className={cn(
+                    "rounded-full px-2.5 py-1 text-xs font-bold leading-[14px]",
+                    paymentPill.className,
+                  )}
+                >
+                  {paymentPill.label}
+                </span>
+              )}
+            </span>
+          </Fact>
+        </dl>
+      </section>
+
+      <div className="flex flex-col gap-4 sm:flex-row">
+        {active && startsAt && endsAt ? (
+          <div className="flex flex-1 flex-wrap items-center justify-between gap-3 rounded-[20px] bg-surface px-5 py-[18px]">
+            <h2 className="text-[15px] font-semibold leading-5 text-ink">Ajouter à ton agenda</h2>
+            <div className="flex gap-1.5">
+              <AgendaLink href={`${manageHref}/agenda.ics`}>Apple</AgendaLink>
+              <AgendaLink
+                href={googleCalendarUrl({
+                  title,
+                  startsAt,
+                  endsAt,
+                  location: where,
+                  details: `Réservation ${booking.reference} · ${workspace.name}`,
+                })}
+                external
+              >
+                Google
+              </AgendaLink>
+              <AgendaLink href={`${manageHref}/agenda.ics`} download>
+                Outlook
+              </AgendaLink>
+            </div>
+          </div>
+        ) : (
+          <Link
+            href={`/${slug}`}
+            className="flex flex-1 items-center justify-between gap-3 rounded-[20px] bg-surface px-5 py-[18px] text-[15px] font-semibold text-ink hover:bg-field"
+          >
+            Voir les événements à venir
+            <ArrowRight />
+          </Link>
+        )}
+        {active && !started && (
+          <div className="flex items-center justify-between gap-3 rounded-[20px] bg-surface px-5 py-[18px] sm:w-[300px]">
+            <h2 className="text-[15px] font-semibold leading-5 text-ink">Un empêchement ?</h2>
+            <CancelBooking
+              slug={slug}
+              token={token}
+              description={`${yourPlaces} pour « ${title} » ${agree("sera libérée", "seront libérées")} pour d'autres participants.`}
+              refund={
+                refund === null
+                  ? null
+                  : {
+                      label:
+                        refund >= paid
+                          ? "Remboursement intégral"
+                          : refund > 0
+                            ? "Remboursement partiel"
+                            : "Pas de remboursement",
+                      amount: formatMoney(refund),
+                      tone: refund >= paid ? "success" : refund > 0 ? "warning" : "draft",
+                      text: cancellationPolicy(startsAt ?? now, workspace, tz),
+                    }
+              }
+              policy={
+                refund === null && startsAt && booking.amountCents > 0
+                  ? cancellationPolicy(startsAt, workspace, tz)
+                  : null
+              }
+            />
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function Fact({ label, children }: { label: string; children: ReactNode }) {
+  return (
+    <div className="flex flex-col gap-1 border-t border-bg py-3.5 sm:min-h-[52px] sm:flex-row sm:items-center sm:py-2">
+      <dt className="text-sm leading-[18px] text-ink-subtle sm:w-40 sm:shrink-0">{label}</dt>
+      <dd className="text-[15px] font-semibold leading-5 text-ink">{children}</dd>
+    </div>
+  );
+}
+
+function AgendaLink({
+  href,
+  children,
+  external,
+  download,
+}: {
+  href: string;
+  children: ReactNode;
+  external?: boolean;
+  download?: boolean;
+}) {
+  return (
+    <a
+      href={href}
+      {...(external ? { target: "_blank", rel: "noreferrer" } : {})}
+      {...(download ? { download: "reservation.ics" } : {})}
+      className="flex h-9 items-center rounded-full bg-bg px-3.5 text-[13px] font-semibold text-ink transition-colors hover:bg-line"
+    >
+      {children}
+    </a>
+  );
+}
