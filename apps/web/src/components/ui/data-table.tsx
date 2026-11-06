@@ -127,7 +127,9 @@ export function DataTable<T>({
         <div className="overflow-x-auto">
           <table
             aria-label={label}
-            className="w-full table-fixed border-collapse"
+            // Bordures séparées : le filet de chaque ligne est porté par ses cellules, il glisse
+            // et apparaît avec la ligne (en bordures fusionnées, il appartiendrait au tableau).
+            className="w-full table-fixed border-separate border-spacing-0"
             style={{ minWidth }}
           >
             <colgroup>
@@ -152,8 +154,8 @@ export function DataTable<T>({
                 ))}
               </tr>
             </thead>
-            {/* Les lignes arrivent l'une après l'autre, en fondu sur place : un glissement ferait
-                déborder le tableau pendant l'animation. */}
+            {/* Les lignes arrivent l'une après l'autre, en fondu sur place, filet compris ; un
+                glissement ferait déborder le tableau pendant l'animation. */}
             <tbody className="reveal-group [--reveal:var(--animate-fade)]">
               {rows.length === 0 && empty && (
                 <tr>
@@ -165,15 +167,11 @@ export function DataTable<T>({
                 return (
                   <Fragment key={rowKey(row)}>
                     {heading && (
-                      <motion.tr
-                        layout={layout}
-                        transition={layoutTransition}
-                        className="border-t border-line-soft bg-band"
-                      >
+                      <motion.tr layout={layout} transition={layoutTransition} className="bg-band">
                         <th
                           scope="rowgroup"
                           colSpan={columns.length}
-                          className="h-8 px-5 text-left text-xs font-bold leading-4 text-ink"
+                          className="h-8 border-t border-line-soft px-5 text-left text-xs font-bold leading-4 text-ink"
                         >
                           {band(heading)}
                         </th>
@@ -183,7 +181,7 @@ export function DataTable<T>({
                       layout={layout}
                       transition={layoutTransition}
                       className={cn(
-                        "border-t border-line-soft transition-colors hover:bg-band",
+                        "transition-colors hover:bg-band",
                         rowHref && "relative cursor-pointer",
                         rowTone?.(row) === "warning" && "bg-warning-bg/50",
                         rowTone?.(row) === "muted" && "opacity-60",
@@ -193,7 +191,7 @@ export function DataTable<T>({
                         <td
                           key={column.key}
                           className={cn(
-                            "min-w-0 align-middle",
+                            "min-w-0 border-t border-line-soft align-middle",
                             dense ? "py-2" : "py-2.5",
                             edge,
                             alignment[column.align ?? "left"],
