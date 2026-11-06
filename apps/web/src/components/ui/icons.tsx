@@ -186,6 +186,19 @@ export const SearchIcon = (props: IconProps) => (
   </Svg>
 );
 
+export const BellIcon = (props: IconProps) => (
+  <Svg {...props}>
+    <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9M10.3 21a1.94 1.94 0 0 0 3.4 0" />
+  </Svg>
+);
+
+/** Touche Entrée (corner-down-left). */
+export const EnterIcon = (props: IconProps) => (
+  <Svg {...props}>
+    <path d="M9 10 4 15l5 5M20 4v7a4 4 0 0 1-4 4H4" />
+  </Svg>
+);
+
 export const PinIcon = (props: IconProps) => (
   <Svg {...props}>
     <path d="M20 10c0 5-5.5 10.2-7.4 11.8a1 1 0 0 1-1.2 0C9.5 20.2 4 15 4 10a8 8 0 0 1 16 0" />

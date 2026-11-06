@@ -48,7 +48,7 @@ export default async function NewEventPage({ searchParams }: PageProps<"/app/eve
         eventId={null}
         types={types}
         timeZone={timeZone}
-        initial={emptyEventValues(timeZone, day)}
+        initial={{ ...emptyEventValues(timeZone, day), title: param(query.titre) ?? "" }}
         actions={
           <>
             <Button
