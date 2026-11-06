@@ -55,7 +55,7 @@ export function PublicNotch({
 
   return (
     <>
-      <div className="fixed top-0 left-1/2 z-50 hidden h-14 w-[600px] -translate-x-1/2 lg:block">
+      <div className="fixed top-0 left-1/2 z-50 hidden h-14 w-[600px] -translate-x-1/2 [view-transition-name:notch] lg:block">
         <svg
           aria-hidden="true"
           width="600"

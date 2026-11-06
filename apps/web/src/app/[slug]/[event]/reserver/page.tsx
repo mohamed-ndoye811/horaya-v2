@@ -127,7 +127,7 @@ export default async function BookEventPage({
           <>
             <div
               className="h-[150px] shrink-0 bg-cover bg-center"
-              style={eventCover(event.coverImageUrl)}
+              style={eventCover(event.coverImageUrl, event.id)}
             />
             <div className="flex flex-col gap-3.5 px-[22px] pt-5 pb-[22px]">
               <div className="flex flex-col gap-1">

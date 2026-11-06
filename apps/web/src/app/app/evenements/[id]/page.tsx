@@ -14,6 +14,7 @@ import { Eyebrow } from "@/components/ui/section";
 import { Stat } from "@/components/ui/stat";
 import { BOOKING_STATUS_BADGE, eventStatusBadge } from "@/components/ui/status";
 import { Tabs } from "@/components/ui/tabs";
+import { meshCover } from "@/lib/cover";
 import {
   formatEventRange,
   formatHour,
@@ -101,7 +102,7 @@ export default async function EventDetailPage({
           style={
             event.coverImageUrl
               ? { backgroundImage: `url(${event.coverImageUrl})` }
-              : { background: `linear-gradient(150deg, ${event.typeColor} 0%, #1a1a1a 120%)` }
+              : meshCover(event.typeColor, event.id)
           }
         >
           {!event.coverImageUrl && (
