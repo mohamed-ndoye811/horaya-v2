@@ -6,7 +6,7 @@ import { getPaymentsSettings } from "@/functions/settings";
 export const Route = createFileRoute("/app/parametres/paiements/")({
   validateSearch: z.object({ stripe: z.string().optional() }),
   loader: () => getPaymentsSettings(),
-  head: () => ({ meta: [{ title: "Paiements & notifications · Horaya" }] }),
+  head: () => ({ meta: [{ title: "Paiements · Horaya" }] }),
   component: () => (
     <PaymentsSettingsPage
       data={Route.useLoaderData()}

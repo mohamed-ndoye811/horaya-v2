@@ -22,6 +22,14 @@ function splitHref(href: string) {
   };
 }
 
+/** Lien du routeur ; sur la même page (filtre, onglet en paramètre), le défilement reste en place. */
+const SameOrNewPageLink = forwardRef<HTMLAnchorElement, LinkComponentProps<"a">>(
+  function SameOrNewPageLink(props, ref) {
+    const pathname = useLocation({ select: (location) => location.pathname });
+    return <RouterLink ref={ref} resetScroll={props.to !== pathname} {...props} />;
+  },
+);
+
 type LinkProps = Omit<ComponentProps<"a">, "href"> & {
   href: string;
   prefetch?: boolean;
@@ -45,7 +53,7 @@ export const Link = forwardRef<HTMLAnchorElement, LinkProps>(function Link(
   }
   const { to, search, hash } = splitHref(href);
   return (
-    <RouterLink
+    <SameOrNewPageLink
       ref={ref}
       {...(rest as Omit<LinkComponentProps<"a">, "to">)}
       // Routes typées : les chemins viennent de chaînes construites dans les composants.
@@ -70,10 +78,15 @@ export function useSearchParams() {
 export function useRouter() {
   const router = useTanstackRouter();
   const navigate = useNavigate();
+  const withScroll = <T extends { to: string }>(target: T) => ({
+    ...target,
+    resetScroll: target.to !== router.state.location.pathname,
+  });
   return {
-    // Chemins construits à la main : pas de vérification de type des routes ici.
-    push: (href: string) => navigate(splitHref(href) as never),
-    replace: (href: string) => navigate({ ...splitHref(href), replace: true } as never),
+    // Chemins construits à la main : pas de vérification de type des routes ici. Sur la même
+    // page (filtres, recherche), le défilement reste en place.
+    push: (href: string) => navigate(withScroll(splitHref(href)) as never),
+    replace: (href: string) => navigate({ ...withScroll(splitHref(href)), replace: true } as never),
     /** Recharge les données de la page (équivalent de router.refresh). */
     refresh: () => router.invalidate(),
     back: () => router.history.back(),

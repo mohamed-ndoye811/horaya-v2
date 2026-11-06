@@ -25,7 +25,10 @@ function AppLayout() {
         pendingBookings={pendingBookings}
         unreadNotifications={unreadNotifications}
       />
-      <div className="flex min-w-0 flex-1 flex-col lg:relative lg:min-h-0 lg:overflow-y-auto lg:rounded-[10px] lg:bg-bg lg:pt-14">
+      <div
+        data-scroll-zone
+        className="flex min-w-0 flex-1 flex-col lg:relative lg:min-h-0 lg:overflow-y-auto lg:rounded-[10px] lg:bg-bg lg:pt-14"
+      >
         <MobileTopBar />
         <main className="relative flex min-w-0 flex-1 flex-col lg:pb-4">
           <RouteTransition>
