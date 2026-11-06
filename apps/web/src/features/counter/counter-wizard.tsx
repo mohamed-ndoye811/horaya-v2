@@ -65,11 +65,11 @@ const METHODS: Array<{ value: PaymentMethod; label: string }> = [
   { value: "transfer", label: "Virement" },
 ];
 
-/** Chiffre qui roule : `custom` vaut 1 quand on ajoute (il monte), -1 quand on retire (il descend). */
+/** Chiffre qui roule d'une hauteur entière (jamais deux chiffres superposés) : `custom` vaut 1 quand on ajoute, -1 quand on retire. */
 const ROLL: Variants = {
-  enter: (rise: number) => ({ y: `${60 * rise}%`, opacity: 0 }),
+  enter: (rise: number) => ({ y: `${100 * rise}%`, opacity: 0 }),
   center: { y: 0, opacity: 1 },
-  exit: (rise: number) => ({ y: `${-60 * rise}%`, opacity: 0 }),
+  exit: (rise: number) => ({ y: `${-100 * rise}%`, opacity: 0 }),
 };
 
 const EMPTY_CONTACT = { firstName: "", lastName: "", phone: "", email: "" };
