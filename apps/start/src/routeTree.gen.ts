@@ -13,6 +13,7 @@ import { Route as AppRouteImport } from './routes/app'
 import { Route as ApiHealthRouteImport } from './routes/api/health'
 import { Route as AppIndexRouteImport } from './routes/app/index'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
+import { Route as AppClientsNouveauRouteImport } from './routes/app/clients/nouveau'
 import { Route as AppReservationsIndexRouteImport } from './routes/app/reservations/index'
 import { Route as AppReservationsIdRouteImport } from './routes/app/reservations/$id'
 
@@ -36,6 +37,11 @@ const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
   path: '/api/auth/$',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AppClientsNouveauRoute = AppClientsNouveauRouteImport.update({
+  id: '/clients/nouveau',
+  path: '/clients/nouveau',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppReservationsIndexRoute = AppReservationsIndexRouteImport.update({
   id: '/reservations/',
   path: '/reservations/',
@@ -52,6 +58,7 @@ export interface FileRoutesByFullPath {
   '/api/health': typeof ApiHealthRoute
   '/app/': typeof AppIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/app/clients/nouveau': typeof AppClientsNouveauRoute
   '/app/reservations/$id': typeof AppReservationsIdRoute
   '/app/reservations/': typeof AppReservationsIndexRoute
 }
@@ -59,6 +66,7 @@ export interface FileRoutesByTo {
   '/api/health': typeof ApiHealthRoute
   '/app': typeof AppIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/app/clients/nouveau': typeof AppClientsNouveauRoute
   '/app/reservations/$id': typeof AppReservationsIdRoute
   '/app/reservations': typeof AppReservationsIndexRoute
 }
@@ -68,6 +76,7 @@ export interface FileRoutesById {
   '/api/health': typeof ApiHealthRoute
   '/app/': typeof AppIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/app/clients/nouveau': typeof AppClientsNouveauRoute
   '/app/reservations/$id': typeof AppReservationsIdRoute
   '/app/reservations/': typeof AppReservationsIndexRoute
 }
@@ -78,6 +87,7 @@ export interface FileRouteTypes {
     | '/api/health'
     | '/app/'
     | '/api/auth/$'
+    | '/app/clients/nouveau'
     | '/app/reservations/$id'
     | '/app/reservations/'
   fileRoutesByTo: FileRoutesByTo
@@ -85,6 +95,7 @@ export interface FileRouteTypes {
     | '/api/health'
     | '/app'
     | '/api/auth/$'
+    | '/app/clients/nouveau'
     | '/app/reservations/$id'
     | '/app/reservations'
   id:
@@ -93,6 +104,7 @@ export interface FileRouteTypes {
     | '/api/health'
     | '/app/'
     | '/api/auth/$'
+    | '/app/clients/nouveau'
     | '/app/reservations/$id'
     | '/app/reservations/'
   fileRoutesById: FileRoutesById
@@ -133,6 +145,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiAuthSplatRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/app/clients/nouveau': {
+      id: '/app/clients/nouveau'
+      path: '/clients/nouveau'
+      fullPath: '/app/clients/nouveau'
+      preLoaderRoute: typeof AppClientsNouveauRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/app/reservations/': {
       id: '/app/reservations/'
       path: '/reservations'
@@ -152,12 +171,14 @@ declare module '@tanstack/react-router' {
 
 interface AppRouteChildren {
   AppIndexRoute: typeof AppIndexRoute
+  AppClientsNouveauRoute: typeof AppClientsNouveauRoute
   AppReservationsIdRoute: typeof AppReservationsIdRoute
   AppReservationsIndexRoute: typeof AppReservationsIndexRoute
 }
 
 const AppRouteChildren: AppRouteChildren = {
   AppIndexRoute: AppIndexRoute,
+  AppClientsNouveauRoute: AppClientsNouveauRoute,
   AppReservationsIdRoute: AppReservationsIdRoute,
   AppReservationsIndexRoute: AppReservationsIndexRoute,
 }
