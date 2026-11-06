@@ -68,11 +68,6 @@ const PANEL_EAR_RIGHT = "M29 0 L29 6 C7 6 1 14 1 36 L0 36 L0 0 Z";
 
 /** Libellés au survol seulement si le notch déplié tient dans l'écran. */
 const EXPAND_MIN_WIDTH = 1280;
-/** Survol bref (souris qui traverse vers un bouton d'en-tête) : on ne déplie pas. */
-const EXPAND_DELAY = 250;
-/** Repli après 1 s hors du notch (maquette). */
-const COLLAPSE_DELAY = 1000;
-
 type Panel = "search" | "notifications" | null;
 
 export interface NotchProps {
@@ -90,8 +85,6 @@ export function Notch({ user, workspace, pendingBookings, unreadNotifications }:
   const [expanded, setExpanded] = useState(false);
   const [panel, setPanel] = useState<Panel>(null);
   const [unread, setUnread] = useState(unreadNotifications);
-  const timer = useRef<ReturnType<typeof setTimeout>>(undefined);
-
   useEffect(() => setUnread(unreadNotifications), [unreadNotifications]);
 
   // ⌘K / Ctrl K ouvre ou ferme la recherche, où que l'on soit.
@@ -113,15 +106,14 @@ export function Notch({ user, workspace, pendingBookings, unreadNotifications }:
     setExpanded(false);
   }, [pathname]);
 
-  function expand(delay: number) {
-    clearTimeout(timer.current);
-    if (window.innerWidth < EXPAND_MIN_WIDTH) return;
-    timer.current = setTimeout(() => setExpanded(true), delay);
-  }
-  function scheduleCollapse() {
-    clearTimeout(timer.current);
-    timer.current = setTimeout(() => setExpanded(false), expanded ? COLLAPSE_DELAY : 0);
-  }
+  // Un panneau s'ouvre depuis le notch replié.
+  useEffect(() => {
+    if (panel) setExpanded(false);
+  }, [panel]);
+
+  /** Libellés révélés tant que la souris (ou le focus) est dans le notch. */
+  const expand = () => setExpanded(window.innerWidth >= EXPAND_MIN_WIDTH);
+  const collapse = () => setExpanded(false);
   const close = useCallback(() => setPanel(null), []);
   const markRead = useCallback(() => setUnread(0), []);
 
@@ -145,10 +137,13 @@ export function Notch({ user, workspace, pendingBookings, unreadNotifications }:
       <div
         data-tour="notch"
         className="fixed top-0 left-1/2 z-50 hidden -translate-x-1/2 lg:block"
-        onMouseEnter={() => expand(EXPAND_DELAY)}
-        onMouseLeave={scheduleCollapse}
-        onFocus={() => expand(0)}
-        onBlur={scheduleCollapse}
+        onMouseEnter={expand}
+        onMouseLeave={collapse}
+        onFocus={expand}
+        onBlur={(event) => {
+          // Focus qui passe d'un onglet à l'autre : on reste déplié.
+          if (!event.currentTarget.contains(event.relatedTarget)) collapse();
+        }}
       >
         <div
           className={cn(
@@ -377,32 +372,44 @@ function SearchPanel({ onClose }: { onClose: () => void }) {
   const listRef = useRef<HTMLDivElement>(null);
   const trimmed = query.trim();
 
+  const searching = trimmed.length >= 2;
+
+  // Sans recherche : raccourcis (à valider, prochains événements), chargés aussitôt.
+  const request = searching ? trimmed : "";
   useEffect(() => {
-    if (trimmed.length < 2) {
-      setResults(NO_RESULTS);
-      setLoading(false);
-      return;
-    }
     let stale = false;
     setLoading(true);
-    const timer = setTimeout(async () => {
-      const found = await searchWorkspace(trimmed);
-      if (stale) return;
-      setResults(found);
-      setLoading(false);
-      setActive(0);
-    }, 150);
+    const timer = setTimeout(
+      async () => {
+        const found = await searchWorkspace(request);
+        if (stale) return;
+        setResults(found);
+        setLoading(false);
+        setActive(0);
+      },
+      request ? 150 : 0,
+    );
     return () => {
       stale = true;
       clearTimeout(timer);
     };
-  }, [trimmed]);
+  }, [request]);
 
   const choices: Choice[] = [
+    ...(searching
+      ? []
+      : results.bookings.map((hit) => ({
+          key: hit.href,
+          href: hit.href,
+          group: "À valider",
+          hit,
+          kind: "booking" as const,
+          label: hit.title,
+        }))),
     ...results.events.map((hit) => ({
       key: hit.href,
       href: hit.href,
-      group: "Événements",
+      group: searching ? "Événements" : "Prochains événements",
       hit,
       kind: "event" as const,
       label: <Highlight text={hit.title} query={trimmed} />,
@@ -415,15 +422,17 @@ function SearchPanel({ onClose }: { onClose: () => void }) {
       kind: "customer" as const,
       label: <Highlight text={hit.title} query={trimmed} />,
     })),
-    ...results.bookings.map((hit) => ({
-      key: hit.href,
-      href: hit.href,
-      group: "Réservations",
-      hit,
-      kind: "booking" as const,
-      label: <Highlight text={hit.title} query={trimmed} />,
-    })),
-    ...(trimmed.length >= 2
+    ...(searching
+      ? results.bookings.map((hit) => ({
+          key: hit.href,
+          href: hit.href,
+          group: "Réservations",
+          hit,
+          kind: "booking" as const,
+          label: <Highlight text={hit.title} query={trimmed} />,
+        }))
+      : []),
+    ...(searching
       ? [
           {
             key: "create-event",
@@ -441,23 +450,23 @@ function SearchPanel({ onClose }: { onClose: () => void }) {
           {
             key: "new-booking",
             href: "/app/reservations/nouvelle",
-            group: "Actions",
+            group: CREATE_GROUP,
             kind: "action" as const,
-            label: "Nouvelle réservation",
+            label: "Réservation",
           },
           {
             key: "new-event",
             href: "/app/evenements/nouveau",
-            group: "Actions",
+            group: CREATE_GROUP,
             kind: "action" as const,
-            label: "Nouvel événement",
+            label: "Événement",
           },
           {
             key: "new-customer",
             href: "/app/clients/nouveau",
-            group: "Actions",
+            group: CREATE_GROUP,
             kind: "action" as const,
-            label: "Nouveau client",
+            label: "Client",
           },
         ]),
   ];
@@ -484,7 +493,7 @@ function SearchPanel({ onClose }: { onClose: () => void }) {
   }
 
   const groups = [...new Set(choices.map((choice) => choice.group))];
-  const empty = trimmed.length >= 2 && !loading && choices.length === 1;
+  const empty = searching && !loading && choices.length === 1;
 
   return (
     <NotchPanel label="Recherche" onClose={onClose}>
@@ -517,25 +526,103 @@ function SearchPanel({ onClose }: { onClose: () => void }) {
             Rien ne correspond à « {trimmed} ».
           </p>
         )}
-        {groups.map((group) => (
-          <div key={group} className="flex flex-col gap-1">
-            <GroupLabel>{group}</GroupLabel>
-            {choices.map((choice, index) =>
-              choice.group === group ? (
-                <SearchRow
-                  key={choice.key}
-                  choice={choice}
-                  index={index}
-                  active={index === active}
-                  onHover={() => setActive(index)}
-                  onPick={() => go(choice)}
-                />
-              ) : null,
-            )}
-          </div>
-        ))}
+        {groups.map((group) =>
+          group === CREATE_GROUP ? (
+            <div key={group} className="flex flex-col gap-1">
+              <GroupLabel>{group}</GroupLabel>
+              <div className="flex gap-2 px-2">
+                {choices.map((choice, index) =>
+                  choice.group === group ? (
+                    <CreateChip
+                      key={choice.key}
+                      choice={choice}
+                      index={index}
+                      active={index === active}
+                      onHover={() => setActive(index)}
+                      onPick={() => go(choice)}
+                    />
+                  ) : null,
+                )}
+              </div>
+            </div>
+          ) : (
+            <div key={group} className="flex flex-col gap-1">
+              <GroupLabel>{group}</GroupLabel>
+              {choices.map((choice, index) =>
+                choice.group === group ? (
+                  <SearchRow
+                    key={choice.key}
+                    choice={choice}
+                    index={index}
+                    active={index === active}
+                    onHover={() => setActive(index)}
+                    onPick={() => go(choice)}
+                  />
+                ) : null,
+              )}
+            </div>
+          ),
+        )}
       </div>
+      {!searching && (
+        <p className="-mx-4 -mb-1 flex items-center gap-4 border-t border-white/8 px-6 pt-3 text-[13px] leading-4 text-[#6e727c]">
+          <span>
+            <Kbd>↑</Kbd> <Kbd>↓</Kbd> pour choisir
+          </span>
+          <span>
+            <Kbd>Entrée</Kbd> pour ouvrir
+          </span>
+          <span>
+            <Kbd>⌘</Kbd> <Kbd>K</Kbd> pour rouvrir d'où tu veux
+          </span>
+        </p>
+      )}
     </NotchPanel>
+  );
+}
+
+const CREATE_GROUP = "Créer";
+
+function Kbd({ children }: { children: ReactNode }) {
+  return (
+    <kbd className="inline-flex h-5 min-w-5 items-center justify-center rounded-md border border-white/15 px-1 font-sans text-xs font-semibold text-notch-idle">
+      {children}
+    </kbd>
+  );
+}
+
+/** Raccourci de création, en pastille (recherche vide). */
+function CreateChip({
+  choice,
+  index,
+  active,
+  onHover,
+  onPick,
+}: {
+  choice: Choice;
+  index: number;
+  active: boolean;
+  onHover: () => void;
+  onPick: () => void;
+}) {
+  return (
+    // biome-ignore lint/a11y/useKeyWithClickEvents: le clavier passe par le champ (flèches, Entrée)
+    <div
+      id={`notch-choice-${index}`}
+      data-index={index}
+      role="option"
+      aria-selected={active}
+      tabIndex={-1}
+      onMouseMove={onHover}
+      onClick={onPick}
+      className={cn(
+        "flex h-10 cursor-pointer items-center gap-2 rounded-xl px-3.5 text-sm font-semibold leading-[18px] transition-colors",
+        active ? "bg-white/16 text-white" : "bg-white/8 text-[#c9cbd1]",
+      )}
+    >
+      <PlusIcon size={16} className="text-accent" />
+      {choice.label}
+    </div>
   );
 }
 
