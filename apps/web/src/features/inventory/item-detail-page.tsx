@@ -5,9 +5,10 @@ import {
   allocationLabel,
   RENTAL_COLOR,
 } from "@/components/app/availability-grid";
+import { useImageUpload } from "@/components/app/image-upload";
 import { PageHeader } from "@/components/app/page-header";
 import { StatusBadge, type Tone } from "@/components/ui/badge";
-import { ButtonLink } from "@/components/ui/button";
+import { Button, ButtonLink } from "@/components/ui/button";
 import { BoxIcon, ChevronLeft, ChevronRight, PlusIcon } from "@/components/ui/icons";
 import { cardClasses, cardShellClasses } from "@/components/ui/section";
 import type { getItem } from "@/functions/inventory";
@@ -197,15 +198,7 @@ export function ItemDetailPage({ data }: { data: Awaited<ReturnType<typeof getIt
 
       <div className="grid items-start gap-4 px-4 pb-4 lg:grid-cols-[340px_minmax(0,1fr)]">
         <aside className="flex flex-col gap-4">
-          <section className={cn(cardShellClasses, "gap-2 p-2")}>
-            <div
-              aria-hidden="true"
-              className="flex aspect-[324/220] items-center justify-center rounded-[18px] bg-field text-ink-subtle"
-            >
-              <BoxIcon size={56} />
-            </div>
-            <p className="px-2 pb-1 text-xs leading-4 text-ink-subtle">Photos · à venir</p>
-          </section>
+          <ItemPhoto id={item.id} photoUrl={item.photoUrl} />
           <section className={cn(cardShellClasses, "px-5 py-2")}>
             <dl className="flex flex-col">
               {facts.map(([label, value, money], index) => (
@@ -380,5 +373,43 @@ export function ItemDetailPage({ data }: { data: Awaited<ReturnType<typeof getIt
         </div>
       </div>
     </>
+  );
+}
+
+/** Photo de l'article : ajout, remplacement, retrait (réduite avant l'envoi). */
+function ItemPhoto({ id, photoUrl }: { id: string; photoUrl: string | null }) {
+  const { pick, remove, pending, error, fileInput } = useImageUpload("article", id);
+  return (
+    <section className={cn(cardShellClasses, "gap-2 p-2")}>
+      <div className="relative flex aspect-[324/220] items-center justify-center overflow-hidden rounded-[18px] bg-field text-ink-subtle">
+        {photoUrl ? (
+          <img src={photoUrl} alt="" className="absolute inset-0 size-full object-cover" />
+        ) : (
+          <BoxIcon size={56} />
+        )}
+      </div>
+      <div className="flex flex-wrap items-center gap-2 px-1 pb-1">
+        <Button
+          variant="secondary"
+          pending={pending}
+          onClick={pick}
+          className="h-9 px-4 text-[13px]"
+        >
+          {photoUrl ? "Changer la photo" : "Ajouter une photo"}
+        </Button>
+        {photoUrl && (
+          <Button
+            variant="secondary"
+            disabled={pending}
+            onClick={remove}
+            className="h-9 px-4 text-[13px]"
+          >
+            Retirer
+          </Button>
+        )}
+      </div>
+      {error && <p className="px-2 pb-1 text-xs font-semibold leading-4 text-danger">{error}</p>}
+      {fileInput}
+    </section>
   );
 }

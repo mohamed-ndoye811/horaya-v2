@@ -1,4 +1,5 @@
 import { useRef, useState } from "react";
+import { useImageUpload } from "@/components/app/image-upload";
 import { PasswordMeter } from "@/components/auth/password-strength";
 import { Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -12,7 +13,7 @@ import type { FormState } from "@/server/form-state";
 export function ProfileForm({
   initial,
 }: {
-  initial: { firstName: string; lastName: string; email: string };
+  initial: { firstName: string; lastName: string; email: string; image: string | null };
 }) {
   const { state, onSubmit, pending } = useFormAction<FormState>(saveProfileAction, {});
   const errors = state.fieldErrors ?? {};
@@ -21,20 +22,7 @@ export function ProfileForm({
       <FormSection number={1} title="Toi">
         {state.error && <FormAlert>{state.error}</FormAlert>}
         {state.success && <FormAlert tone="success">{state.success}</FormAlert>}
-        <div className="flex items-center gap-4">
-          <Avatar name={`${initial.firstName} ${initial.lastName}`} size="header" />
-          <div className="flex flex-col gap-0.5">
-            <p className="flex items-center gap-2 text-[15px] font-semibold leading-5 text-ink">
-              Photo de profil
-              <span className="rounded-full bg-field px-2 py-0.5 text-[11px] font-bold leading-[14px] text-ink-subtle">
-                À venir
-              </span>
-            </p>
-            <p className="text-[13px] leading-[17px] text-ink-subtle">
-              En attendant, tes initiales s'affichent partout dans l'app.
-            </p>
-          </div>
-        </div>
+        <ProfilePhoto name={`${initial.firstName} ${initial.lastName}`} image={initial.image} />
         <div className="grid gap-4 sm:grid-cols-2">
           <Field label="Prénom" required error={errors.firstName}>
             {(field) => (
@@ -145,5 +133,40 @@ export function PasswordForm() {
         </div>
       </FormSection>
     </form>
+  );
+}
+
+/** Photo de profil (512 px suffisent pour un avatar) ; sans photo, les initiales. */
+function ProfilePhoto({ name, image }: { name: string; image: string | null }) {
+  const { pick, remove, pending, error, fileInput } = useImageUpload("profil", undefined, 512);
+  return (
+    <div className="flex items-center gap-4">
+      <Avatar name={name} image={image} size="header" />
+      <div className="flex flex-col gap-2">
+        <p className="text-[15px] font-semibold leading-5 text-ink">Photo de profil</p>
+        <div className="flex flex-wrap gap-2">
+          <Button
+            variant="secondary"
+            pending={pending}
+            onClick={pick}
+            className="h-9 px-4 text-[13px]"
+          >
+            {image ? "Changer" : "Ajouter une photo"}
+          </Button>
+          {image && (
+            <Button
+              variant="secondary"
+              disabled={pending}
+              onClick={remove}
+              className="h-9 px-4 text-[13px]"
+            >
+              Retirer
+            </Button>
+          )}
+        </div>
+        {error && <p className="text-xs font-semibold leading-4 text-danger">{error}</p>}
+      </div>
+      {fileInput}
+    </div>
   );
 }

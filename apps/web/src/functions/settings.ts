@@ -54,6 +54,7 @@ export const getOrganizationSettings = createServerFn({ method: "GET" }).handler
     initial: {
       name: settings.name,
       slug: settings.slug,
+      logo: settings.logo ?? null,
       brandColor: settings.brandColor,
       displayFont: settings.displayFont,
       description: settings.description ?? "",
@@ -82,6 +83,7 @@ export const getProfileSettings = createServerFn({ method: "GET" }).handler(asyn
     workspaceName: workspace.name,
     firstName: user.firstName ?? fallbackFirst,
     lastName: user.lastName ?? rest.join(" "),
+    image: user.image ?? null,
   };
 });
 

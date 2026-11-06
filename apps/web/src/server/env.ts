@@ -14,6 +14,12 @@ const schema = z.object({
   MAIL_FROM: z.string().default("Horaya <bonjour@horaya.app>"),
   GOOGLE_CLIENT_ID: optional,
   GOOGLE_CLIENT_SECRET: optional,
+  /** Envoi de fichiers : bucket Backblaze B2 privé (API S3) ; sans clés, l'envoi est désactivé. */
+  STORAGE_ENDPOINT: optional,
+  STORAGE_REGION: optional,
+  STORAGE_BUCKET: optional,
+  STORAGE_ACCESS_KEY_ID: optional,
+  STORAGE_SECRET_ACCESS_KEY: optional,
   /** Clés de la plateforme Stripe Connect (Horaya) ; sans elles, passerelle de test. */
   STRIPE_SECRET_KEY: optional,
   STRIPE_WEBHOOK_SECRET: optional,

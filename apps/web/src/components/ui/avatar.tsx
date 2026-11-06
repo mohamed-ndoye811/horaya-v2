@@ -24,8 +24,11 @@ export function Avatar({
   color,
   size = "lg",
   pending = false,
+  image,
 }: {
   name: string;
+  /** Photo de la personne ; sinon ses initiales. */
+  image?: string | null;
   /** Couleur imposée (sinon dérivée du nom). */
   color?: string;
   size?: keyof typeof sizes;
@@ -33,6 +36,11 @@ export function Avatar({
   pending?: boolean;
 }) {
   const background = color ?? colorFor(name);
+  if (image) {
+    return (
+      <img src={image} alt="" className={cn("shrink-0 rounded-full object-cover", sizes[size])} />
+    );
+  }
   return (
     <span
       aria-hidden="true"

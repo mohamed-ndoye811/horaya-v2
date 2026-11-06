@@ -240,6 +240,29 @@ export async function setItemQuantity(
   });
 }
 
+/** Photo de l'article (adresse de l'image, `null` pour la retirer). Renvoie l'ancienne adresse. */
+export async function setItemPhoto(
+  deps: Deps,
+  actor: Actor,
+  itemId: string,
+  photoUrl: string | null,
+): Promise<string | null> {
+  assertMemberCan(actor, "inventory", "update");
+  return deps.uow.run(async (repositories) => {
+    const { item } = await lockItemOrThrow(repositories, actor.organizationId, itemId);
+    await repositories.inventory.updateItem(actor.organizationId, itemId, { photoUrl });
+    await repositories.activity.record({
+      organizationId: actor.organizationId,
+      entityType: "item",
+      entityId: itemId,
+      action: "item.updated",
+      ...actorRef(actor),
+      data: { fields: ["photoUrl"] },
+    });
+    return item.photoUrl;
+  });
+}
+
 /** Exemplaires libres sur une période ; ConflictError s'il n'y en a pas assez. */
 async function pickFreeUnits(
   repositories: Repositories,

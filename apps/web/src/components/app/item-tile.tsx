@@ -7,13 +7,27 @@ export function ItemTile({
   reference,
   maintenance = false,
   size = "md",
+  photoUrl,
 }: {
   name: string;
   reference?: string;
   maintenance?: boolean;
   size?: "md" | "xl";
+  photoUrl?: string | null;
 }) {
   const prefix = reference?.split("-")[0]?.slice(0, 3);
+  if (photoUrl) {
+    return (
+      <img
+        src={photoUrl}
+        alt=""
+        className={cn(
+          "shrink-0 object-cover",
+          size === "md" ? "size-11 rounded-xl" : "size-24 rounded-2xl",
+        )}
+      />
+    );
+  }
   return (
     <span
       aria-hidden="true"

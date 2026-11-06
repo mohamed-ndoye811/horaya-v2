@@ -34,8 +34,11 @@ export function brandStyle(color: string): CSSProperties {
 export const brandButtonClasses =
   "flex items-center justify-center gap-2 rounded-full bg-[var(--brand)] font-semibold text-[var(--on-brand)] transition-[filter] hover:brightness-110";
 
-/** Pastille carrée arrondie à l'initiale de l'espace (notch, en-tête mobile). */
-export function WorkspaceMark({ name }: { name: string }) {
+/** Logo de l'espace, sinon pastille carrée arrondie à son initiale (notch, en-tête mobile). */
+export function WorkspaceMark({ name, logo }: { name: string; logo?: string | null }) {
+  if (logo) {
+    return <img src={logo} alt="" className="size-7 shrink-0 rounded-lg object-cover" />;
+  }
   return (
     <span
       aria-hidden="true"

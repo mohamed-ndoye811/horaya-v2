@@ -271,6 +271,30 @@ export async function publishEvent(deps: Deps, actor: Actor, eventId: string): P
   });
 }
 
+/** Image de couverture de l'événement (`null` pour la retirer). Renvoie l'ancienne adresse. */
+export async function setEventCover(
+  deps: Deps,
+  actor: Actor,
+  eventId: string,
+  coverImageUrl: string | null,
+): Promise<string | null> {
+  assertMemberCan(actor, "event", "update");
+  return deps.uow.run(async (repositories) => {
+    const existing = await repositories.events.find(actor.organizationId, eventId);
+    if (!existing) throw new NotFoundError("Événement", eventId);
+    await repositories.events.update(actor.organizationId, eventId, { coverImageUrl });
+    await repositories.activity.record({
+      organizationId: actor.organizationId,
+      entityType: "event",
+      entityId: eventId,
+      action: "event.updated",
+      ...actorRef(actor),
+      data: { fields: ["coverImageUrl"] },
+    });
+    return existing.coverImageUrl;
+  });
+}
+
 /**
  * Annule un événement et toutes ses réservations actives.
  * (Les remboursements et e-mails aux participants arrivent avec les paiements.)
