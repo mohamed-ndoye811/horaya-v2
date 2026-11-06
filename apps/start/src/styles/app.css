@@ -1,0 +1,403 @@
+@import "tailwindcss";
+
+/* Polices auto-hébergées (Fontsource, importées dans __root.tsx). */
+:root {
+  --font-archivo: "Archivo Variable";
+  --font-urbanist: "Urbanist Variable";
+  --font-geist-mono: "Geist Mono Variable";
+}
+
+/*
+ * Tokens de la DA v4 « notch » (fichier Paper « HORAYA », pages « v4 · 0 Fondations » à
+ * « v4 · 6 Mobile ») : fond gris clair, cartes blanches, encre presque noire, accent orange.
+ */
+@theme {
+  --color-bg: #ededeb;
+  --color-surface: #ffffff;
+  /* Fond des champs de saisie et survol des éléments blancs. */
+  --color-field: #f6f6f4;
+  /* Bandeaux de groupe dans les listes (« Cette semaine »). */
+  --color-band: #fafaf8;
+  /* Contour des boutons secondaires et des cases. */
+  --color-line: #e0e0dc;
+  --color-line-soft: #eeeeec;
+  --color-neutral: #6b6b6b;
+  --color-ink: #111111;
+  --color-ink-muted: #6b6b6b;
+  --color-ink-subtle: #8a8a8a;
+  --color-on-ink: #f7f5f3;
+  --color-link: #1f63b8;
+  --color-accent: #f0975f;
+  /* Icônes inactives du notch. */
+  --color-notch-idle: #8b8f99;
+
+  --color-success: #397a5c;
+  --color-success-bg: #e4efe9;
+  --color-warning: #9a6b12;
+  --color-warning-bg: #f6ebd3;
+  --color-danger: #9e3a3a;
+  --color-danger-bg: #f2e3e3;
+  --color-info: #213f7c;
+  --color-info-bg: #dce4f5;
+  --color-draft: #3a3a3a;
+  --color-draft-bg: #e8e5e2;
+
+  --color-cat-seminaire: #528d74;
+  --color-cat-atelier: #d8bc66;
+  --color-cat-reunion: #cf879c;
+  --color-cat-meetup: #66537c;
+
+  /* Calendrier (maquettes 06–08) : jour courant et week-end. */
+  --color-today: #f6efe8;
+  --color-weekend: #f4f4f2;
+
+  --text-label: 12px;
+  --text-sm: 14px;
+  --text-base: 16px;
+  --text-lg: 18px;
+  --text-section: 22px;
+  --text-kpi: 44px;
+  --text-display: 64px;
+
+  --radius-dot: 999px;
+
+  /*
+   * Mouvement (repensé après le lot 19) : une seule courbe, douce à l'arrivée.
+   * Micro-interactions 120–200 ms, arrivées 500 ms sur 10 px, 40 ms entre deux éléments.
+   * Les arrivées sont en `backwards` : une fois finies, elles ne laissent rien sur
+   * l'élément (pas de contexte d'empilement ni de bloc conteneur pour un `fixed`).
+   */
+  --ease-out-soft: cubic-bezier(0.2, 0, 0, 1);
+  --default-transition-duration: 200ms;
+  --default-transition-timing-function: cubic-bezier(0.2, 0, 0, 1);
+  --animate-rise: rise 500ms cubic-bezier(0.2, 0, 0, 1) backwards;
+  --animate-drop: drop 320ms cubic-bezier(0.2, 0, 0, 1) backwards;
+  --animate-pop: pop 180ms cubic-bezier(0.2, 0, 0, 1) backwards;
+  --animate-grow-x: grow-x 700ms cubic-bezier(0.2, 0, 0, 1) backwards;
+  --animate-fade: fade 200ms cubic-bezier(0.2, 0, 0, 1) backwards;
+
+  @keyframes rise {
+    from {
+      opacity: 0;
+      translate: 0 10px;
+    }
+  }
+  @keyframes drop {
+    from {
+      opacity: 0;
+      translate: 0 -8px;
+    }
+  }
+  @keyframes pop {
+    from {
+      opacity: 0;
+      scale: 0.96;
+    }
+  }
+  @keyframes grow-x {
+    from {
+      scale: 0 1;
+    }
+  }
+  @keyframes fade {
+    from {
+      opacity: 0;
+    }
+  }
+  @keyframes draw {
+    from {
+      stroke-dashoffset: 1;
+    }
+  }
+}
+
+:root {
+  --dur-1: 120ms;
+  --dur-2: 200ms;
+  --dur-3: 380ms;
+  --dur-reveal: 500ms;
+  --stagger: 40ms;
+}
+
+@theme inline {
+  /* Archivo remplace Sztos (maquettes Paper) : même famille de grotesque condensée, libre de droits. */
+  --font-display: var(--font-archivo), sans-serif;
+  --font-ui: var(--font-urbanist), system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
+}
+
+/*
+ * Lien texte : zone tactile agrandie (au moins 32 px de haut) sans changer son aspect.
+ * Pas sur un lien « étiré » sur toute une carte, qui a déjà son propre ::after.
+ */
+@utility tap-area {
+  position: relative;
+  &::after {
+    content: "";
+    position: absolute;
+    inset: -8px -4px;
+  }
+}
+
+/* Gros titres de la DA v4 : Urbanist 500 en minuscules, serré. */
+@utility font-headline {
+  font-family: var(--font-ui);
+  font-weight: 500;
+  letter-spacing: -0.035em;
+}
+
+/* En-têtes de section. */
+@utility font-section {
+  font-family: var(--font-ui);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+/*
+ * Tout ce qui est cliquable affiche la main (Tailwind v4 l'a retiré des boutons).
+ * Les éléments désactivés affichent l'interdiction.
+ */
+@layer base {
+  button,
+  [role="button"],
+  select,
+  summary,
+  label:has(input:not(:disabled)),
+  input:is([type="checkbox"], [type="radio"], [type="submit"], [type="button"], [type="file"]) {
+    cursor: pointer;
+  }
+
+  :is(button, select, input, label:has(input)):disabled,
+  label:has(input:disabled) {
+    cursor: not-allowed;
+  }
+}
+
+body {
+  background-color: var(--color-bg);
+  color: var(--color-ink);
+  font-family: var(--font-ui);
+}
+
+/* Points du mot de passe lisibles (la puce d'Urbanist est minuscule). */
+input[type="password"] {
+  font-family: var(--font-mono);
+  font-size: 20px;
+  letter-spacing: 0.05em;
+}
+
+/* ── Mouvement ─────────────────────────────────────────────────────────────── */
+
+/* Élément qui arrive au premier affichage ; `--i` décale (40 ms par rang). */
+@utility reveal {
+  animation: var(--animate-rise);
+  animation-delay: calc(var(--i, 0) * var(--stagger));
+}
+
+/* Les enfants arrivent l'un après l'autre (listes, cartes, lignes de tableau). */
+@utility reveal-group {
+  & > * {
+    animation: var(--animate-rise);
+    animation-delay: calc(min(var(--i, 0), 8) * var(--stagger));
+  }
+  & > :nth-child(2) {
+    --i: 1;
+  }
+  & > :nth-child(3) {
+    --i: 2;
+  }
+  & > :nth-child(4) {
+    --i: 3;
+  }
+  & > :nth-child(5) {
+    --i: 4;
+  }
+  & > :nth-child(6) {
+    --i: 5;
+  }
+  & > :nth-child(7) {
+    --i: 6;
+  }
+  & > :nth-child(8) {
+    --i: 7;
+  }
+  & > :nth-child(9) {
+    --i: 8;
+  }
+  & > :nth-child(n + 10) {
+    --i: 8;
+  }
+}
+
+/*
+ * Arrive en entrant dans l'écran, au rythme du défilement (pages publiques).
+ * Navigateurs sans `animation-timeline` : affiché tout de suite.
+ */
+@utility reveal-scroll {
+  @media (prefers-reduced-motion: no-preference) {
+    @supports (animation-timeline: view()) {
+      animation: rise linear both;
+      animation-timeline: view();
+      animation-range: entry 0% entry 45%;
+    }
+  }
+}
+
+/* Mot d'un titre qui se lève (WordsReveal). */
+@utility reveal-word {
+  display: inline-block;
+  animation: var(--animate-rise);
+  animation-delay: calc(var(--i, 0) * var(--stagger));
+}
+
+/* Coche dessinée (confirmation) : le tracé doit avoir pathLength="1". */
+@utility draw {
+  stroke-dasharray: 1;
+  animation: draw 600ms var(--ease-out-soft) 200ms backwards;
+}
+
+/* Liens soulignés : au survol, le trait s'écarte un peu du texte. */
+a.underline {
+  transition:
+    color var(--dur-2) var(--ease-out-soft),
+    text-underline-offset var(--dur-2) var(--ease-out-soft);
+}
+a.underline:hover {
+  text-underline-offset: 5px;
+}
+
+/* Fenêtres modales : apparition douce, fond qui se fonce. */
+dialog {
+  transition:
+    opacity var(--dur-2) var(--ease-out-soft),
+    scale var(--dur-3) var(--ease-out-soft),
+    overlay var(--dur-2) allow-discrete,
+    display var(--dur-2) allow-discrete;
+  opacity: 0;
+  scale: 0.97;
+}
+dialog[open] {
+  opacity: 1;
+  scale: 1;
+  @starting-style {
+    opacity: 0;
+    scale: 0.97;
+  }
+}
+dialog::backdrop {
+  transition:
+    opacity var(--dur-3) var(--ease-out-soft),
+    overlay var(--dur-3) allow-discrete,
+    display var(--dur-3) allow-discrete;
+  opacity: 0;
+}
+dialog[open]::backdrop {
+  opacity: 1;
+  @starting-style {
+    opacity: 0;
+  }
+}
+
+/* Mouvement réduit : tout est posé d'emblée, rien ne bouge (!important : passe avant tout). */
+/* biome-ignore-start lint/complexity/noImportantStyles: interrupteur global du mouvement réduit et de l'impression. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after,
+  *::backdrop {
+    animation-duration: 0.01ms !important;
+    animation-delay: 0ms !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+@media print {
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+/* biome-ignore-end lint/complexity/noImportantStyles: fin de l'interrupteur. */
+
+/* Écrans de compte (DA v4) : champs blancs sur le fond gris, comme les maquettes 4.x. */
+.auth-fields
+:is(input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]), textarea, select) {
+  background-color: var(--color-surface);
+}
+
+/*
+ * Transitions de page (routeur + RouteTransition) : l'ancienne page sort vite, la nouvelle arrive juste
+ * après. Le reste de l'écran (cadre, fond) ne s'anime pas ; notch et capsule restent ancrés
+ * au-dessus des captures.
+ */
+::view-transition-old(root) {
+  display: none;
+}
+::view-transition-new(root) {
+  animation: none;
+}
+::view-transition-group(notch),
+::view-transition-group(notch-fade),
+::view-transition-group(tab-bar),
+::view-transition-group(tab-bar-fade) {
+  animation: none;
+  z-index: 100;
+}
+::view-transition-old(notch),
+::view-transition-old(notch-fade),
+::view-transition-old(tab-bar),
+::view-transition-old(tab-bar-fade) {
+  display: none;
+}
+::view-transition-new(notch),
+::view-transition-new(notch-fade),
+::view-transition-new(tab-bar),
+::view-transition-new(tab-bar-fade) {
+  animation: none;
+}
+/* Nom de la page posé pendant la transition seulement : hors transition, il créerait un
+   contexte d'empilement qui ferait passer les coins fixés (fil d'Ariane, actions) sous le fondu. */
+:root:active-view-transition [data-page-transition] {
+  view-transition-name: page;
+}
+/* La page garde sa taille réelle pendant le fondu (pas d'étirement entre deux hauteurs). */
+::view-transition-group(page) {
+  animation: none;
+}
+::view-transition-old(page),
+::view-transition-new(page) {
+  height: auto;
+  object-fit: none;
+  object-position: top center;
+}
+::view-transition-old(page) {
+  animation: 140ms cubic-bezier(0.4, 0, 1, 1) both page-out;
+}
+::view-transition-new(page) {
+  animation: 320ms cubic-bezier(0.2, 0, 0, 1) 90ms both page-in;
+}
+@keyframes page-out {
+  to {
+    opacity: 0;
+    translate: 0 -6px;
+  }
+}
+@keyframes page-in {
+  from {
+    opacity: 0;
+    translate: 0 10px;
+    filter: blur(2px);
+  }
+}
+/* Mobile et mouvement réduit : pas de capture animée (fondu d'arrivée seul, voir RouteTransition). */
+@media (max-width: 1023px), (prefers-reduced-motion: reduce) {
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    /* biome-ignore lint/complexity/noImportantStyles: doit passer devant les animations ci-dessus et celles du navigateur */
+    animation: none !important;
+  }
+}
