@@ -7,7 +7,7 @@ import { formatHour, formatTimeRange, formatWeekdayShort } from "@/lib/format";
 import { Link } from "@/lib/navigation";
 import { type CalendarEvent, WEEKDAY_LABELS } from "./types";
 
-/** Hauteur d'une heure dans la grille (maquette 1.3 : 64 px). */
+/** Hauteur minimale d'une heure (maquette 1.3 : 64 px) ; la grille s'étire sur toute la hauteur. */
 const HOUR_HEIGHT = 64;
 /** Filets de la grille, plus clairs que `line-soft` (maquette : #F4F4F2). */
 const GRID_LINE = "#f4f4f2";
@@ -46,12 +46,14 @@ export function TimeGridCalendar({
   const todayKey = civilKey(today);
   const columns = `60px repeat(${days.length}, minmax(0, 1fr))`;
   const pxPerMinute = HOUR_HEIGHT / 60;
+  // Positions en % de la hauteur de la grille : elle s'étire, les événements suivent.
+  const percent = (minutes: number) => (minutes / (hours.length * 60)) * 100;
   const isWeekend = (day: CivilDate) => weekdayOf(day.year, day.month, day.day) >= 5;
 
   return (
-    <div className={calendarCard}>
-      <div className="overflow-x-auto">
-        <div className={days.length > 1 ? "min-w-[840px]" : undefined}>
+    <div className={cn(calendarCard, "flex flex-1 flex-col")}>
+      <div className="flex flex-1 flex-col overflow-x-auto">
+        <div className={cn("flex flex-1 flex-col", days.length > 1 && "min-w-[840px]")}>
           {/* En-têtes des jours */}
           <div
             className="grid h-[60px] border-b border-line-soft"
@@ -128,13 +130,15 @@ export function TimeGridCalendar({
           )}
 
           {/* Grille horaire */}
-          <div className="relative grid" style={{ gridTemplateColumns: columns }}>
+          <div
+            className="relative grid flex-1"
+            style={{ gridTemplateColumns: columns, minHeight: hours.length * HOUR_HEIGHT }}
+          >
             <div className="flex flex-col border-r border-line-soft">
               {hours.map((hour) => (
                 <span
                   key={hour}
-                  className="flex justify-end pt-1.5 pr-2.5 text-[11px] font-semibold leading-[14px] text-[#ababa6]"
-                  style={{ height: HOUR_HEIGHT }}
+                  className="flex flex-1 justify-end pt-1.5 pr-2.5 text-[11px] font-semibold leading-[14px] text-[#ababa6]"
                 >
                   {hour}h
                 </span>
@@ -149,9 +153,8 @@ export function TimeGridCalendar({
                   key={civilKey(day)}
                   className={cn("relative", isWeekend(day) && "bg-band")}
                   style={{
-                    height: hours.length * HOUR_HEIGHT,
                     borderLeft: index > 0 ? `1px solid ${GRID_LINE}` : undefined,
-                    backgroundImage: `repeating-linear-gradient(to bottom, ${GRID_LINE} 0 1px, transparent 1px ${HOUR_HEIGHT}px)`,
+                    backgroundImage: `repeating-linear-gradient(to bottom, ${GRID_LINE} 0 1px, transparent 1px ${100 / hours.length}%)`,
                   }}
                 >
                   {placed.map(({ item, top, height, column, columns: count }) => (
@@ -160,8 +163,8 @@ export function TimeGridCalendar({
                       event={item}
                       timeZone={timeZone}
                       style={{
-                        top: top * pxPerMinute + 2,
-                        height: height * pxPerMinute - 4,
+                        top: `calc(${percent(top)}% + 2px)`,
+                        height: `calc(${percent(height)}% - 4px)`,
                         left: `calc(${(column / count) * 100}% + 4px)`,
                         width: `calc(${100 / count}% - 8px)`,
                       }}
@@ -172,7 +175,7 @@ export function TimeGridCalendar({
                     <div
                       aria-hidden="true"
                       className="pointer-events-none absolute inset-x-0 z-10"
-                      style={{ top: nowMinutes * pxPerMinute }}
+                      style={{ top: `${percent(nowMinutes)}%` }}
                     >
                       <div className="h-0.5 bg-accent" />
                       <div className="absolute -top-1 -left-[5px] size-2.5 rounded-full bg-accent" />
