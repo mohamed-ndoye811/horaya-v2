@@ -1,6 +1,7 @@
 import { type FormEvent, useState } from "react";
 import { AuthLead, AuthTitle, Eyebrow } from "@/components/auth/auth-shell";
 import { GoogleButton } from "@/components/auth/google-button";
+import { Avatar } from "@/components/ui/avatar";
 import { Button, textLinkClasses } from "@/components/ui/button";
 import { OrDivider } from "@/components/ui/divider";
 import { Checkbox, Field, inputClasses, PasswordInput } from "@/components/ui/field";
@@ -93,14 +94,9 @@ export function LoginForm({
         <AuthTitle>Mot de passe</AuthTitle>
       </div>
 
-      <div className="flex items-center justify-between gap-3 border-[1.5px] border-ink-subtle bg-surface px-3.5 py-3">
+      <div className="flex items-center justify-between gap-3 rounded-xl border border-line-soft bg-surface px-3.5 py-3">
         <div className="flex min-w-0 items-center gap-3">
-          <span
-            aria-hidden="true"
-            className="flex size-8 shrink-0 items-center justify-center bg-cat-meetup text-label font-bold uppercase text-on-ink"
-          >
-            {email.slice(0, 1)}
-          </span>
+          <Avatar name={email.charAt(0)} size="sm" />
           <span className="truncate text-[15px] font-semibold leading-5 text-ink">{email}</span>
         </div>
         <button
