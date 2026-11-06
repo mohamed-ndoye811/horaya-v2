@@ -1,7 +1,6 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { cn } from "@/lib/cn";
-import { monoLinkClasses } from "./button";
 
 /** Carte blanche des fiches (DA v4) sans marge intérieure : coins de 24 px, ombre douce. */
 export const cardShellClasses =
@@ -29,17 +28,20 @@ export function SectionHeading({
   return (
     <div
       className={cn(
-        "flex items-center justify-between gap-4 pt-5 pb-3",
+        "flex items-baseline justify-between gap-4 pt-5 pb-2.5",
         flush ? "px-0" : "px-4",
         className,
       )}
     >
       <h2 className="flex items-baseline gap-2.5">
-        <span className="font-headline text-section leading-7 text-ink">{title}</span>
-        {meta && <span className="text-[13px] leading-4 text-ink-muted">{meta}</span>}
+        <span className="text-xl font-medium leading-[26px] text-ink">{title}</span>
+        {meta && <span className="text-sm leading-[18px] text-[#8a8a8a]">{meta}</span>}
       </h2>
       {action && (
-        <Link href={action.href} className={monoLinkClasses}>
+        <Link
+          href={action.href}
+          className="tap-area text-sm font-semibold leading-[18px] text-ink transition-colors hover:text-ink-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
+        >
           {action.label} →
         </Link>
       )}
