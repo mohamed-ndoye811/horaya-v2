@@ -234,7 +234,7 @@ export default async function DashboardPage() {
                   action={{ label: "Tous les événements", href: "/app/evenements" }}
                 />
                 <div className="px-4">
-                  <NextDaysCards events={nextDays.slice(0, 4)} timeZone={timeZone} />
+                  <NextDaysCards events={nextDays.slice(0, 4)} now={now} timeZone={timeZone} />
                 </div>
               </section>
             )}

@@ -7,12 +7,13 @@ import { BoxIcon, TicketIcon } from "@/components/ui/icons";
 import { BOOKING_STATUS_BADGE } from "@/components/ui/status";
 import { cn } from "@/lib/cn";
 import { elapsed, joinNames, percentChange } from "@/lib/dashboard";
+import { todayIn } from "@/lib/dates";
 import {
+  formatDateTimeShort,
   formatDayNumber,
   formatHour,
   formatMoney,
   formatMonthShort,
-  formatWeekdayShort,
 } from "@/lib/format";
 
 const plural = (count: number, singular: string, pluralForm = `${singular}s`) =>
@@ -326,49 +327,87 @@ export function TodayCard({
 
 /* ── 7 prochains jours ────────────────────────────────────────────────────── */
 
-export function NextDaysCards({ events, timeZone }: { events: EventRow[]; timeZone: string }) {
+/** Jours calendaires entre aujourd'hui et le début de l'événement (J-3). */
+function daysUntil(date: Date, now: Date, timeZone: string) {
+  const utc = ({ year, month, day }: { year: number; month: number; day: number }) =>
+    Date.UTC(year, month - 1, day);
+  return Math.round((utc(todayIn(timeZone, date)) - utc(todayIn(timeZone, now))) / 86_400_000);
+}
+
+/** État d'une carte (maquette 1.1) : complet, presque complet, peu rempli à J-3, places restantes. */
+function fillState(event: EventRow, now: Date, timeZone: string) {
+  if (event.capacity === null) return { label: "Ouvert", tone: "muted" as const };
+  const remaining = event.capacity - event.seatsHeld;
+  if (remaining <= 0) return { label: "Complet", tone: "full" as const };
+  if (remaining <= 2) return { label: "Presque complet", tone: "almost" as const };
+  const days = daysUntil(event.startsAt, now, timeZone);
+  if (event.seatsHeld / event.capacity < 0.25 && days <= 3) {
+    return {
+      label: `Peu rempli · ${days > 0 ? `J-${days}` : "aujourd'hui"}`,
+      tone: "low" as const,
+    };
+  }
+  return { label: plural(remaining, "place"), tone: "muted" as const };
+}
+
+export function NextDaysCards({
+  events,
+  now,
+  timeZone,
+}: {
+  events: EventRow[];
+  now: Date;
+  timeZone: string;
+}) {
   return (
     <div className="reveal-group grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
       {events.map((event) => {
-        const full = event.capacity !== null && event.seatsHeld >= event.capacity;
         const ratio = event.capacity ? Math.min(1, event.seatsHeld / event.capacity) : 0;
-        const remaining = event.capacity === null ? null : event.capacity - event.seatsHeld;
+        const state = fillState(event, now, timeZone);
         return (
           <Link
             key={event.id}
             href={`/app/evenements/${event.id}`}
-            className="flex h-40 flex-col justify-between rounded-[22px] p-3.5 text-white transition-transform active:scale-[0.99]"
+            className="relative flex h-[168px] flex-col justify-between overflow-clip rounded-3xl border-6 border-white bg-white bg-cover bg-center p-3.5 text-white shadow-[0_1px_2px_rgba(0,0,0,0.04),0_16px_40px_rgba(0,0,0,0.1)] transition-transform active:scale-[0.99]"
             style={{
-              background: `linear-gradient(160deg, ${event.typeColor} 0%, #1a1a1a 110%)`,
+              backgroundImage: event.coverImageUrl
+                ? `url(${event.coverImageUrl})`
+                : `linear-gradient(in oklab 135deg, ${event.typeColor} 0%, color-mix(in srgb, ${event.typeColor} 62%, black) 100%)`,
             }}
           >
-            <span className="w-fit rounded-full bg-black/35 px-2.5 py-1 text-xs font-semibold leading-4">
-              {formatWeekdayShort(event.startsAt, timeZone)}{" "}
-              {formatDayNumber(event.startsAt, timeZone)}{" "}
-              {formatMonthShort(event.startsAt, timeZone).toLowerCase()} ·{" "}
-              {formatHour(event.startsAt, timeZone)}
+            <span
+              aria-hidden="true"
+              className="absolute -inset-x-1.5 -bottom-1.5 h-40 bg-linear-to-b from-black/0 via-black/68 via-42% to-black/92"
+            />
+            <span className="relative flex h-[26px] w-fit items-center rounded-full border border-white/14 bg-black/40 px-2.5 text-xs font-semibold leading-4 backdrop-blur-md">
+              {formatDateTimeShort(event.startsAt, timeZone)}
             </span>
-            <div className="flex flex-col gap-2">
+            <div className="relative flex flex-col gap-2">
               <p className="truncate text-lg font-semibold leading-[22px]">{event.title}</p>
-              <div className="flex items-center gap-2.5">
-                <span className="text-[13px] font-semibold leading-4">
-                  {event.seatsHeld}
-                  <span className="font-normal text-white/70"> / {event.capacity ?? "∞"}</span>
+              <div className="flex items-center justify-between gap-3">
+                <span className="text-[13px] leading-[17px] text-white/75">
+                  <span className="text-base font-semibold text-white">{event.seatsHeld}</span> /{" "}
+                  {event.capacity ?? "∞"}
                 </span>
-                <span className="h-1 flex-1 rounded-full bg-white/25">
+                <span className="h-1 min-w-0 flex-1 rounded-full bg-white/25">
                   <span
-                    className="block h-1 rounded-full bg-white"
-                    style={{ width: `${ratio * 100}%` }}
+                    className={cn(
+                      "block h-1 rounded-full",
+                      state.tone === "low" ? "bg-[#ff9f80]" : "bg-white",
+                    )}
+                    style={{ width: `${Math.round(ratio * 100)}%` }}
                   />
                 </span>
-                <span className="text-xs font-semibold leading-4 text-white/85">
-                  {full
-                    ? "Complet"
-                    : remaining !== null && remaining <= 2
-                      ? "Presque complet"
-                      : remaining !== null
-                        ? plural(remaining, "place")
-                        : "Ouvert"}
+                <span
+                  className={cn(
+                    "text-xs leading-4",
+                    state.tone === "muted" ? "text-white/75" : "font-semibold",
+                    state.tone === "almost" && "text-[#f5c96b]",
+                    state.tone === "low" && "text-[#ff9f80]",
+                    state.tone === "full" && "text-white",
+                  )}
+                >
+                  {state.label}
                 </span>
               </div>
             </div>
