@@ -392,6 +392,120 @@ dialog[open]::backdrop {
     filter: blur(2px);
   }
 }
+/*
+ * Coins autour du notch (à partir de 1280 px) : au changement de page, le fil d'Ariane et les
+ * boutons d'action changent sur place au lieu de partir avec la page. Les boutons sont suivis
+ * par leur position depuis la droite : s'il y en a un au même endroit, seul son contenu change
+ * (le même bouton ne bouge pas) ; sinon il disparaît ou apparaît en fondu.
+ */
+@media (min-width: 1280px) {
+  :root:active-view-transition [data-corner="breadcrumb"] {
+    view-transition-name: breadcrumb;
+  }
+  :root:active-view-transition [data-corner="actions"] > * {
+    view-transition-class: corner-action;
+  }
+  :root:active-view-transition [data-corner="actions"] > :nth-last-child(1) {
+    view-transition-name: corner-action-1;
+  }
+  :root:active-view-transition [data-corner="actions"] > :nth-last-child(2) {
+    view-transition-name: corner-action-2;
+  }
+  :root:active-view-transition [data-corner="actions"] > :nth-last-child(3) {
+    view-transition-name: corner-action-3;
+  }
+  :root:active-view-transition [data-corner="actions"] > :nth-last-child(4) {
+    view-transition-name: corner-action-4;
+  }
+}
+::view-transition-group(breadcrumb),
+::view-transition-group(.corner-action) {
+  animation-duration: 340ms;
+  animation-timing-function: cubic-bezier(0.2, 0, 0, 1);
+  /* Au-dessus du fondu du notch (100), comme hors transition. */
+  z-index: 101;
+}
+/* Textes et boutons à leur taille réelle : rien n'est étiré pendant le changement de largeur. */
+::view-transition-old(breadcrumb),
+::view-transition-new(breadcrumb) {
+  inline-size: auto;
+  block-size: auto;
+}
+::view-transition-old(.corner-action),
+::view-transition-new(.corner-action) {
+  inline-size: auto;
+  block-size: auto;
+  inset-inline-start: auto;
+  inset-inline-end: 0;
+}
+/*
+ * Ancien et nouveau en fondu enchaîné, même durée et sans décalage : le navigateur additionne
+ * les deux images, un texte ou un bouton identique ne bouge donc pas d'un pixel.
+ */
+::view-transition-image-pair(breadcrumb),
+::view-transition-image-pair(.corner-action) {
+  isolation: isolate;
+}
+/* Addition des deux images (le navigateur le fait dans son animation par défaut, remplacée ici). */
+::view-transition-old(breadcrumb),
+::view-transition-new(breadcrumb),
+::view-transition-old(.corner-action),
+::view-transition-new(.corner-action) {
+  mix-blend-mode: plus-lighter;
+}
+::view-transition-old(breadcrumb) {
+  animation: 280ms cubic-bezier(0.2, 0, 0, 1) both corner-text-out;
+}
+::view-transition-new(breadcrumb) {
+  animation: 280ms cubic-bezier(0.2, 0, 0, 1) both corner-text-in;
+}
+::view-transition-old(.corner-action) {
+  animation: 260ms cubic-bezier(0.2, 0, 0, 1) both corner-fade-out;
+}
+::view-transition-new(.corner-action) {
+  animation: 260ms cubic-bezier(0.2, 0, 0, 1) both corner-fade-in;
+}
+/* Bouton sans équivalent sur l'autre page : il s'efface (ou arrive) en rétrécissant un peu. */
+::view-transition-old(.corner-action):only-child {
+  animation: 200ms cubic-bezier(0.4, 0, 1, 1) both corner-leave;
+}
+::view-transition-new(.corner-action):only-child {
+  animation: 280ms cubic-bezier(0.2, 0, 0, 1) 80ms both corner-enter;
+}
+@keyframes corner-text-out {
+  to {
+    opacity: 0;
+    translate: 0 -4px;
+  }
+}
+@keyframes corner-text-in {
+  from {
+    opacity: 0;
+    translate: 0 4px;
+  }
+}
+@keyframes corner-fade-out {
+  to {
+    opacity: 0;
+  }
+}
+@keyframes corner-fade-in {
+  from {
+    opacity: 0;
+  }
+}
+@keyframes corner-leave {
+  to {
+    opacity: 0;
+    scale: 0.92;
+  }
+}
+@keyframes corner-enter {
+  from {
+    opacity: 0;
+    scale: 0.92;
+  }
+}
 /* Mobile et mouvement réduit : pas de capture animée (fondu d'arrivée seul, voir RouteTransition). */
 @media (max-width: 1023px), (prefers-reduced-motion: reduce) {
   ::view-transition-group(*),
