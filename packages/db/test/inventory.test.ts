@@ -11,7 +11,9 @@ import {
   importItems,
   publishEvent,
   scheduleMaintenance,
+  setEventCover,
   setEventItemQuantity,
+  setItemPhoto,
   setItemQuantity,
   updateEvent,
 } from "@horaya/core";
@@ -350,5 +352,21 @@ describe("lectures du matériel", () => {
       previousMonthStart: new Date("2026-09-01T00:00:00Z"),
     });
     expect(stats).toMatchObject({ items: 1, types: 1, maintenanceUnits: 1 });
+  });
+});
+
+describe("images (lot 21)", () => {
+  it("photo d'article : posée, remplacée (l'ancienne est renvoyée), refusée en lecture seule", async () => {
+    const item = await projector();
+    expect(await setItemPhoto(deps, owner, item.id, "/fichiers/a.webp")).toBeNull();
+    expect(await setItemPhoto(deps, owner, item.id, "/fichiers/b.webp")).toBe("/fichiers/a.webp");
+    const viewer = await createMember(organizationId, "viewer");
+    await expect(setItemPhoto(deps, viewer, item.id, null)).rejects.toThrow();
+  });
+
+  it("couverture d'événement : posée puis retirée", async () => {
+    const event = await seminar(20);
+    expect(await setEventCover(deps, owner, event.id, "/fichiers/c.webp")).toBeNull();
+    expect(await setEventCover(deps, owner, event.id, null)).toBe("/fichiers/c.webp");
   });
 });

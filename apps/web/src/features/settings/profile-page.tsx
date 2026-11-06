@@ -37,7 +37,12 @@ export function ProfileSettingsPage({
     >
       <div className="flex flex-col gap-4">
         <ProfileForm
-          initial={{ firstName: data.firstName, lastName: data.lastName, email: data.email }}
+          initial={{
+            firstName: data.firstName,
+            lastName: data.lastName,
+            email: data.email,
+            image: data.image,
+          }}
         />
         <PasswordForm />
       </div>

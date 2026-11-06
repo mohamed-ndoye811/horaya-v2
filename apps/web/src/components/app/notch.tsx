@@ -103,7 +103,7 @@ const LABEL_GAP = 8;
 const clamp01 = (x: number) => Math.min(1, Math.max(0, x));
 
 export interface NotchProps {
-  user: { name: string; shortName: string };
+  user: { name: string; shortName: string; image: string | null };
   workspace: { name: string };
   /** Réservations à valider : pastille orange sur l'icône. */
   pendingBookings: number;
@@ -528,7 +528,11 @@ export function Notch({ user, workspace, pendingBookings, unreadNotifications }:
               panel === "account" && "ring-2 ring-on-ink/40 ring-offset-2 ring-offset-ink",
             )}
           >
-            {initials(user.name)}
+            {user.image ? (
+              <img src={user.image} alt="" className="size-full rounded-full object-cover" />
+            ) : (
+              initials(user.name)
+            )}
           </button>
         </div>
         {/* Le panneau, posé à sa taille finale sous les icônes : la silhouette le révèle. */}
@@ -1235,7 +1239,11 @@ function AccountPanel({
               aria-hidden="true"
               className="flex size-10 shrink-0 items-center justify-center rounded-full bg-linear-135 from-[#f2a15e] to-[#d2552f] text-sm font-bold text-white"
             >
-              {initials(user.name)}
+              {user.image ? (
+                <img src={user.image} alt="" className="size-full rounded-full object-cover" />
+              ) : (
+                initials(user.name)
+              )}
             </span>
             <span className="flex min-w-0 flex-col gap-0.5">
               <span className="truncate text-base font-semibold leading-5 text-white">

@@ -37,6 +37,7 @@ export async function getPublicWorkspace(db: Executor, slug: string) {
       id: organization.id,
       name: organization.name,
       slug: organization.slug,
+      logo: organization.logo,
       brandColor: sql<string>`coalesce(${tenantSettings.brandColor}, '#264489')`,
       displayFont: sql<string>`coalesce(${tenantSettings.displayFont}, 'display')`,
       description: tenantSettings.description,

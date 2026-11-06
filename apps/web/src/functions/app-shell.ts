@@ -17,7 +17,7 @@ export const getAppShell = createServerFn({ method: "GET" }).handler(async () =>
   const firstName = user.firstName || user.name.split(" ")[0] || user.name;
   const lastInitial = user.lastName ? ` ${user.lastName.charAt(0)}.` : "";
   return {
-    user: { name: user.name, shortName: `${firstName}${lastInitial}` },
+    user: { name: user.name, shortName: `${firstName}${lastInitial}`, image: user.image ?? null },
     workspace: { name: workspace.name },
     pendingBookings,
     unreadNotifications,

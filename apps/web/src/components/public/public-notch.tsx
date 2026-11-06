@@ -12,7 +12,7 @@ export function PublicNotch({
   workspace,
   contact,
 }: {
-  workspace: { name: string; slug: string };
+  workspace: { name: string; slug: string; logo: string | null };
   contact: string | null;
 }) {
   const pathname = usePathname();
@@ -69,7 +69,7 @@ export function PublicNotch({
           className="relative top-[3px] flex h-11 items-center justify-center gap-2 px-11"
         >
           <Link href={home} className="flex min-w-0 items-center gap-2 pr-1.5 text-on-ink">
-            <WorkspaceMark name={workspace.name} />
+            <WorkspaceMark name={workspace.name} logo={workspace.logo} />
             <span className="max-w-[170px] truncate text-[15px] font-semibold leading-[18px]">
               {workspace.name}
             </span>
@@ -81,7 +81,7 @@ export function PublicNotch({
 
       <header className="flex items-center justify-between gap-3 px-4 pt-3 lg:hidden">
         <Link href={home} className="flex min-w-0 items-center gap-2 text-ink">
-          <WorkspaceMark name={workspace.name} />
+          <WorkspaceMark name={workspace.name} logo={workspace.logo} />
           <span className="truncate text-[15px] font-semibold leading-[18px]">
             {workspace.name}
           </span>

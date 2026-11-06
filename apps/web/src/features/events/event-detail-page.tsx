@@ -1,4 +1,5 @@
 import { BookingRowActions, CheckInToggle } from "@/components/app/booking-actions";
+import { useImageUpload } from "@/components/app/image-upload";
 import { PageHeader } from "@/components/app/page-header";
 import { CategorySwatch } from "@/components/ui/avatar";
 import { StatusBadge } from "@/components/ui/badge";
@@ -11,6 +12,7 @@ import { Stat } from "@/components/ui/stat";
 import { BOOKING_STATUS_BADGE, eventStatusBadge } from "@/components/ui/status";
 import { Tabs } from "@/components/ui/tabs";
 import type { getEvent } from "@/functions/events";
+import { cn } from "@/lib/cn";
 import { meshCover } from "@/lib/cover";
 import {
   formatEventRange,
@@ -79,21 +81,7 @@ export function EventDetailPage({
       />
 
       <div className="grid grid-cols-2 gap-3 px-4 xl:grid-cols-[236px_repeat(4,minmax(0,1fr))]">
-        <div
-          aria-hidden="true"
-          className="col-span-2 hidden min-h-32 items-center justify-center rounded-3xl bg-cover bg-center xl:col-span-1 xl:flex"
-          style={
-            event.coverImageUrl
-              ? { backgroundImage: `url(${event.coverImageUrl})` }
-              : meshCover(event.typeColor, event.id)
-          }
-        >
-          {!event.coverImageUrl && (
-            <span className="rounded-full bg-black/30 px-3 py-1 text-xs font-semibold text-white">
-              Photo · à venir
-            </span>
-          )}
-        </div>
+        <EventCover id={event.id} cover={event.coverImageUrl} color={event.typeColor} />
         <Stat
           label="Inscrits"
           value={event.seatsHeld}
@@ -403,5 +391,40 @@ export function EventDetailPage({
         </div>
       )}
     </>
+  );
+}
+
+/** Couverture de l'événement (pages publiques) : ajout, remplacement, retrait au survol. */
+function EventCover({ id, cover, color }: { id: string; cover: string | null; color: string }) {
+  const { pick, remove, pending, error, fileInput } = useImageUpload("evenement", id);
+  const action =
+    "rounded-full bg-black/40 px-3 py-1 text-xs font-semibold text-white hover:bg-black/60 disabled:cursor-wait";
+  return (
+    <div
+      className="group col-span-2 hidden min-h-32 flex-col items-center justify-center gap-2 rounded-3xl bg-cover bg-center xl:col-span-1 xl:flex"
+      style={cover ? { backgroundImage: `url(${cover})` } : meshCover(color, id)}
+    >
+      <div
+        className={cn(
+          "flex gap-1.5 transition-opacity",
+          cover && !pending && "opacity-0 group-hover:opacity-100 focus-within:opacity-100",
+        )}
+      >
+        <button type="button" onClick={pick} disabled={pending} className={action}>
+          {pending ? "Envoi…" : cover ? "Changer la photo" : "Ajouter une photo"}
+        </button>
+        {cover && !pending && (
+          <button type="button" onClick={remove} className={action}>
+            Retirer
+          </button>
+        )}
+      </div>
+      {error && (
+        <p className="rounded-full bg-black/60 px-3 py-1 text-xs font-semibold text-white">
+          {error}
+        </p>
+      )}
+      {fileInput}
+    </div>
   );
 }

@@ -15,6 +15,7 @@ export interface ItemRow {
   reference: string;
   typeName: string | null;
   dailyRateCents: number | null;
+  photoUrl: string | null;
   units: number;
   /** Exemplaires en service et libres en ce moment. */
   availableNow: number;
@@ -71,6 +72,7 @@ export async function listItems(
       reference: item.reference,
       typeName: itemType.name,
       dailyRateCents: item.dailyRateCents,
+      photoUrl: item.photoUrl,
       ...itemAggregates(options.now),
     })
     .from(item)
@@ -198,6 +200,7 @@ export async function getItemDetail(
       id: item.id,
       name: item.name,
       reference: item.reference,
+      photoUrl: item.photoUrl,
       description: item.description,
       typeName: itemType.name,
       dailyRateCents: item.dailyRateCents,

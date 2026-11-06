@@ -23,6 +23,7 @@ import { Route as AppIndexRouteImport } from './routes/app/index'
 import { Route as AppCalendrierRouteImport } from './routes/app/calendrier'
 import { Route as AppDesignSystemRouteImport } from './routes/app/design-system'
 import { Route as AppPlusRouteImport } from './routes/app/plus'
+import { Route as FichiersSplatRouteImport } from './routes/fichiers/$'
 import { Route as InvitationIdRouteImport } from './routes/invitation/$id'
 import { Route as PaiementTestCheckoutRouteImport } from './routes/paiement-test/$checkout'
 import { Route as PaiementTestCompteRouteImport } from './routes/paiement-test/compte'
@@ -136,6 +137,11 @@ const AppPlusRoute = AppPlusRouteImport.update({
   id: '/plus',
   path: '/plus',
   getParentRoute: () => AppRoute,
+} as any)
+const FichiersSplatRoute = FichiersSplatRouteImport.update({
+  id: '/fichiers/$',
+  path: '/fichiers/$',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const InvitationIdRoute = InvitationIdRouteImport.update({
   id: '/invitation/$id',
@@ -374,6 +380,7 @@ export interface FileRoutesByFullPath {
   '/app/calendrier': typeof AppCalendrierRoute
   '/app/design-system': typeof AppDesignSystemRoute
   '/app/plus': typeof AppPlusRoute
+  '/fichiers/$': typeof FichiersSplatRoute
   '/invitation/$id': typeof InvitationIdRoute
   '/paiement-test/$checkout': typeof PaiementTestCheckoutRoute
   '/paiement-test/compte': typeof PaiementTestCompteRoute
@@ -431,6 +438,7 @@ export interface FileRoutesByTo {
   '/app/calendrier': typeof AppCalendrierRoute
   '/app/design-system': typeof AppDesignSystemRoute
   '/app/plus': typeof AppPlusRoute
+  '/fichiers/$': typeof FichiersSplatRoute
   '/invitation/$id': typeof InvitationIdRoute
   '/paiement-test/$checkout': typeof PaiementTestCheckoutRoute
   '/paiement-test/compte': typeof PaiementTestCompteRoute
@@ -491,6 +499,7 @@ export interface FileRoutesById {
   '/app/calendrier': typeof AppCalendrierRoute
   '/app/design-system': typeof AppDesignSystemRoute
   '/app/plus': typeof AppPlusRoute
+  '/fichiers/$': typeof FichiersSplatRoute
   '/invitation/$id': typeof InvitationIdRoute
   '/paiement-test/$checkout': typeof PaiementTestCheckoutRoute
   '/paiement-test/compte': typeof PaiementTestCompteRoute
@@ -552,6 +561,7 @@ export interface FileRouteTypes {
     | '/app/calendrier'
     | '/app/design-system'
     | '/app/plus'
+    | '/fichiers/$'
     | '/invitation/$id'
     | '/paiement-test/$checkout'
     | '/paiement-test/compte'
@@ -609,6 +619,7 @@ export interface FileRouteTypes {
     | '/app/calendrier'
     | '/app/design-system'
     | '/app/plus'
+    | '/fichiers/$'
     | '/invitation/$id'
     | '/paiement-test/$checkout'
     | '/paiement-test/compte'
@@ -668,6 +679,7 @@ export interface FileRouteTypes {
     | '/app/calendrier'
     | '/app/design-system'
     | '/app/plus'
+    | '/fichiers/$'
     | '/invitation/$id'
     | '/paiement-test/$checkout'
     | '/paiement-test/compte'
@@ -723,6 +735,7 @@ export interface RootRouteChildren {
   authMotDePasseOublieRoute: typeof authMotDePasseOublieRoute
   authNouveauMotDePasseRoute: typeof authNouveauMotDePasseRoute
   ApiHealthRoute: typeof ApiHealthRoute
+  FichiersSplatRoute: typeof FichiersSplatRoute
   InvitationIdRoute: typeof InvitationIdRoute
   PaiementTestCheckoutRoute: typeof PaiementTestCheckoutRoute
   PaiementTestCompteRoute: typeof PaiementTestCompteRoute
@@ -833,6 +846,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/app/plus'
       preLoaderRoute: typeof AppPlusRouteImport
       parentRoute: typeof AppRoute
+    }
+    '/fichiers/$': {
+      id: '/fichiers/$'
+      path: '/fichiers/$'
+      fullPath: '/fichiers/$'
+      preLoaderRoute: typeof FichiersSplatRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/invitation/$id': {
       id: '/invitation/$id'
@@ -1244,6 +1264,7 @@ const rootRouteChildren: RootRouteChildren = {
   authMotDePasseOublieRoute: authMotDePasseOublieRoute,
   authNouveauMotDePasseRoute: authNouveauMotDePasseRoute,
   ApiHealthRoute: ApiHealthRoute,
+  FichiersSplatRoute: FichiersSplatRoute,
   InvitationIdRoute: InvitationIdRoute,
   PaiementTestCheckoutRoute: PaiementTestCheckoutRoute,
   PaiementTestCompteRoute: PaiementTestCompteRoute,

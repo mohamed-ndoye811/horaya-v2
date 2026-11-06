@@ -1,5 +1,6 @@
 import { DISPLAY_FONTS } from "@horaya/core";
 import { useEffect, useState } from "react";
+import { useImageUpload } from "@/components/app/image-upload";
 import { Button } from "@/components/ui/button";
 import { Field, inputClasses, textareaClasses } from "@/components/ui/field";
 import { FormAlert } from "@/components/ui/form-alert";
@@ -38,6 +39,7 @@ export function OrganizationForm({
   initial: {
     name: string;
     slug: string;
+    logo: string | null;
     brandColor: string;
     displayFont: string;
     description: string;
@@ -92,13 +94,21 @@ export function OrganizationForm({
           <FormSection number={1} title="Identité">
             <div className="flex gap-5">
               <div className="hidden flex-col items-center gap-2 sm:flex">
-                <span
-                  aria-hidden="true"
-                  className="flex size-[72px] shrink-0 items-center justify-center rounded-2xl font-headline text-[34px] leading-10"
-                  style={{ backgroundColor: color, color: onColor }}
-                >
-                  {initial0}
-                </span>
+                {initial.logo ? (
+                  <img
+                    src={initial.logo}
+                    alt=""
+                    className="size-[72px] shrink-0 rounded-2xl object-cover"
+                  />
+                ) : (
+                  <span
+                    aria-hidden="true"
+                    className="flex size-[72px] shrink-0 items-center justify-center rounded-2xl font-headline text-[34px] leading-10"
+                    style={{ backgroundColor: color, color: onColor }}
+                  >
+                    {initial0}
+                  </span>
+                )}
                 <span className="text-xs leading-4 text-ink-subtle">Logo</span>
               </div>
               <div className="flex min-w-0 flex-1 flex-col gap-4">
@@ -149,15 +159,7 @@ export function OrganizationForm({
                 </Field>
               </div>
             </div>
-            <div className="flex flex-wrap items-center gap-3 rounded-2xl bg-field px-3 py-2.5">
-              <Button variant="secondary" disabled className="h-9 px-4 text-[13px]">
-                Changer le logo
-              </Button>
-              <p className="text-xs leading-4 text-ink-subtle">
-                L'envoi d'un logo arrive bientôt : en attendant, ton initiale s'affiche sur ta
-                couleur.
-              </p>
-            </div>
+            <LogoActions logo={initial.logo} />
             <Field
               label="Présentation"
               error={errors.description}
@@ -356,9 +358,13 @@ export function OrganizationForm({
             className="flex items-center gap-2.5 px-4 py-4"
             style={{ backgroundColor: color, color: onColor }}
           >
-            <span className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-white/20 font-headline text-sm">
-              {initial0}
-            </span>
+            {initial.logo ? (
+              <img src={initial.logo} alt="" className="size-7 shrink-0 rounded-lg object-cover" />
+            ) : (
+              <span className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-white/20 font-headline text-sm">
+                {initial0}
+              </span>
+            )}
             <span className="truncate text-[15px] font-semibold">{name || "Ton espace"}</span>
           </div>
           <div className="flex flex-col gap-1 px-4 pt-4 pb-3">
@@ -419,4 +425,32 @@ function SlugStatus({ check }: { check: SlugCheck | null }) {
       <span className="shrink-0 text-[13px] font-semibold text-ink-muted">Adresse actuelle</span>
     );
   return <span className="shrink-0 text-[13px] font-bold text-success">✓ Disponible</span>;
+}
+
+/** Logo de l'espace (512 px suffisent) : sans logo, l'initiale sur la couleur de marque. */
+function LogoActions({ logo }: { logo: string | null }) {
+  const { pick, remove, pending, error, fileInput } = useImageUpload("logo", undefined, 512);
+  return (
+    <div className="flex flex-wrap items-center gap-3 rounded-2xl bg-field px-3 py-2.5">
+      <Button variant="secondary" pending={pending} onClick={pick} className="h-9 px-4 text-[13px]">
+        {logo ? "Changer le logo" : "Ajouter un logo"}
+      </Button>
+      {logo && (
+        <Button
+          variant="secondary"
+          disabled={pending}
+          onClick={remove}
+          className="h-9 px-4 text-[13px]"
+        >
+          Retirer
+        </Button>
+      )}
+      <p
+        className={cn("text-xs leading-4", error ? "font-semibold text-danger" : "text-ink-subtle")}
+      >
+        {error ?? "Il s'affiche sur ta page publique ; carré de préférence."}
+      </p>
+      {fileInput}
+    </div>
+  );
 }
