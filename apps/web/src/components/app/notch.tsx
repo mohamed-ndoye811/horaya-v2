@@ -1,6 +1,14 @@
 "use client";
 
 import {
+  animate,
+  cancelFrame,
+  frame,
+  motion,
+  useMotionValue,
+  useReducedMotion,
+} from "motion/react";
+import {
   type ComponentType,
   type ReactNode,
   useCallback,
@@ -77,8 +85,12 @@ interface Hint {
 }
 type Panel = "search" | "notifications" | "account" | null;
 
-/** Durée de l'agrandissement du notch (et de son retour). */
-const GROW_DURATION = 460;
+/** Agrandissement du notch (et retour) : ressort sans rebond, qui garde son élan si on l'interrompt. */
+const GROW = { type: "spring", visualDuration: 0.36, bounce: 0 } as const;
+/** Le contenu change de hauteur (résultats qui arrivent) : le notch suit, un peu plus vite. */
+const FOLLOW = { type: "spring", visualDuration: 0.24, bounce: 0 } as const;
+/** Languette sous le notch : glisse d'une icône à l'autre, sort et rentre sous le notch. */
+const HINT = { type: "spring", visualDuration: 0.22, bounce: 0 } as const;
 /** Rangée d'icônes du notch replié (mesurée au montage ; valeur du premier rendu). */
 const BAR_INNER = 530;
 /** Largeur minimale du notch agrandi (maquette : panneau de 624 px). */
@@ -88,8 +100,6 @@ const LABELS_MIN_WIDTH = 1280;
 /** Espace entre une icône et son libellé. */
 const LABEL_GAP = 8;
 
-/** Décélération douce (proche de cubic-bezier(0.32, 0.72, 0, 1)). */
-const easeOut = (x: number) => 1 - (1 - x) ** 4;
 const clamp01 = (x: number) => Math.min(1, Math.max(0, x));
 
 export interface NotchProps {
@@ -105,7 +115,7 @@ export interface NotchProps {
  * Navigation de l'admin sur grand écran : le notch noir en haut, au centre (DA v4).
  * Un seul notch : la loupe, la cloche ou l'avatar l'agrandissent ; il garde ses icônes (avec leurs
  * libellés) et révèle le panneau dessous. La silhouette est un seul tracé SVG, et une seule
- * progression (0 → 1) pilote largeur, hauteur, courbes, libellés, contenu et voile.
+ * progression (0 → 1, valeur Motion) pilote largeur, hauteur, courbes, libellés, contenu et voile.
  */
 export function Notch({ user, workspace, pendingBookings, unreadNotifications }: NotchProps) {
   const pathname = usePathname();
@@ -123,26 +133,31 @@ export function Notch({ user, workspace, pendingBookings, unreadNotifications }:
   const rowRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
   const veilRef = useRef<HTMLButtonElement>(null);
-  /** Mesures : rangée repliée, notch agrandi, libellés, hauteur du contenu (réelle et affichée). */
+  /** Mesures : rangée repliée, notch agrandi, libellés (éléments et largeurs), hauteur du contenu. */
   const dims = useRef({
     bar: BAR_INNER,
     wide: PANEL_MIN_INNER,
+    texts: [] as HTMLElement[],
     labels: [] as number[],
     content: 0,
-    shown: 0,
   });
-  /** Animation : valeur courante (0 → 1), départ, cible, image en cours. */
-  const anim = useRef({ value: 0, from: 0, target: 0, start: 0, frame: 0 });
+  /** Ouverture (0 replié, 1 agrandi) et hauteur du contenu affichée, animées par Motion. */
+  const progress = useMotionValue(0);
+  const shown = useMotionValue(0);
+  /** Où va le notch : 1 s'il s'ouvre, 0 s'il se referme. */
+  const target = useRef(0);
+  const reduced = useReducedMotion();
   const state = useRef({ panel, labels });
   state.current = { panel, labels };
   const pendingOpen = useRef(false);
 
-  /** Dessine le notch pour une ouverture donnée (0 replié, 1 agrandi). */
-  const draw = useCallback((open: number) => {
+  /** Dessine le notch à son ouverture courante. */
+  const draw = useCallback(() => {
+    const open = progress.get();
     const d = dims.current;
     // Replié : rangée + deux courbes de 44 px ; agrandi : largeur du panneau + deux de 28 px.
     const width = d.bar + 88 + (d.wide + 56 - (d.bar + 88)) * open;
-    const height = NOTCH_BAR_HEIGHT + d.shown * open;
+    const height = NOTCH_BAR_HEIGHT + shown.get() * open;
     const shape = notchShape(width, height, open);
     const root = rootRef.current;
     if (root) {
@@ -157,90 +172,87 @@ export function Notch({ user, workspace, pendingBookings, unreadNotifications }:
     }
     pathRef.current?.setAttribute("d", shape.d);
     const withLabels = state.current.labels ? open : 0;
-    rowRef.current?.querySelectorAll<HTMLElement>("[data-notch-text]").forEach((text, index) => {
+    for (let index = 0; index < d.texts.length; index++) {
+      const text = d.texts[index] as HTMLElement;
       text.style.width = `${(d.labels[index] ?? 0) * withLabels}px`;
       text.style.marginLeft = `${LABEL_GAP * withLabels}px`;
       text.style.opacity = `${withLabels}`;
-    });
+    }
     const content = contentRef.current;
     if (content) {
       const side = Math.max(0, (d.wide - (width - 2 * shape.side)) / 2);
-      const hidden = Math.max(0, d.content - d.shown * open);
+      const hidden = Math.max(0, d.content - shown.get() * open);
       content.style.width = `${d.wide}px`;
       content.style.clipPath = `inset(0 ${side}px ${hidden}px ${side}px round 0 0 ${shape.radius}px ${shape.radius}px)`;
       content.style.opacity = `${clamp01((open - 0.25) / 0.55)}`;
     }
     if (veilRef.current) veilRef.current.style.opacity = `${open}`;
-  }, []);
+  }, [progress, shown]);
+
+  // Les deux valeurs bougent souvent dans la même image : un seul dessin, à l'étape de rendu.
+  useEffect(() => {
+    const schedule = () => frame.render(draw);
+    const offProgress = progress.on("change", schedule);
+    const offShown = shown.on("change", schedule);
+    return () => {
+      offProgress();
+      offShown();
+      cancelFrame(draw);
+    };
+  }, [progress, shown, draw]);
 
   const finish = useRef<() => void>(() => {});
-  const tick = useCallback(
-    (now: number) => {
-      const a = anim.current;
-      const d = dims.current;
-      const done = clamp01((now - a.start) / GROW_DURATION);
-      a.value = a.from + (a.target - a.from) * easeOut(done);
-      // Le contenu change de hauteur (résultats qui arrivent) : le notch suit en douceur.
-      d.shown += (d.content - d.shown) * 0.3;
-      if (Math.abs(d.content - d.shown) < 0.5) d.shown = d.content;
-      draw(a.value);
-      if (done < 1 || d.shown !== d.content) {
-        a.frame = requestAnimationFrame(tick);
-      } else {
-        a.frame = 0;
-        if (a.target === 0) finish.current();
-      }
-    },
-    [draw],
-  );
 
   const animateTo = useCallback(
-    (target: number) => {
-      const a = anim.current;
-      cancelAnimationFrame(a.frame);
-      const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-      a.from = reduced ? target : a.value;
-      a.target = target;
-      a.start = performance.now();
-      a.frame = requestAnimationFrame(tick);
+    (next: number) => {
+      target.current = next;
+      // Une animation interrompue ne termine pas : seul un vrai retour à 0 retire le panneau.
+      const onComplete = next === 0 ? () => finish.current() : undefined;
+      if (reduced) {
+        progress.jump(next);
+        onComplete?.();
+      } else {
+        animate(progress, next, { ...GROW, onComplete });
+      }
     },
-    [tick],
+    [progress, reduced],
   );
 
-  /** Relance le dessin si le contenu change de taille une fois ouvert. */
-  const follow = useCallback(() => {
-    const a = anim.current;
-    if (!a.frame) {
-      a.start = performance.now() - GROW_DURATION;
-      a.frame = requestAnimationFrame(tick);
-    }
-  }, [tick]);
+  /** Le contenu ouvert change de taille : le notch suit. */
+  const follow = useCallback(
+    (height: number) => {
+      if (reduced) shown.jump(height);
+      else animate(shown, height, FOLLOW);
+    },
+    [shown, reduced],
+  );
 
   finish.current = () => {
     setPanel(null);
     setClosing(false);
   };
 
-  const open = useCallback((next: Exclude<Panel, null>) => {
-    setClosing(false);
-    setPanel(next);
-    if (state.current.panel && anim.current.target === 1) return;
-    // Mesures du notch replié : rangée d'icônes et largeur naturelle de chaque libellé.
-    const d = dims.current;
-    const row = rowRef.current;
-    const withLabels = window.innerWidth >= LABELS_MIN_WIDTH;
-    if (row && anim.current.value === 0) {
-      d.bar = row.offsetWidth;
-      d.labels = [...row.querySelectorAll<HTMLElement>("[data-notch-text]")].map(
-        (text) => text.scrollWidth,
-      );
-    }
-    const extra = withLabels ? d.labels.reduce((sum, width) => sum + width + LABEL_GAP, 0) : 0;
-    d.wide = Math.max(d.bar + extra + 32, PANEL_MIN_INNER);
-    state.current.labels = withLabels;
-    setLabels(withLabels);
-    pendingOpen.current = true;
-  }, []);
+  const open = useCallback(
+    (next: Exclude<Panel, null>) => {
+      setClosing(false);
+      setPanel(next);
+      if (state.current.panel && target.current === 1) return;
+      // Mesures du notch replié : rangée d'icônes et largeur naturelle de chaque libellé.
+      const d = dims.current;
+      const row = rowRef.current;
+      const withLabels = window.innerWidth >= LABELS_MIN_WIDTH;
+      if (row && progress.get() === 0) {
+        d.bar = row.offsetWidth;
+        d.labels = d.texts.map((text) => text.scrollWidth);
+      }
+      const extra = withLabels ? d.labels.reduce((sum, width) => sum + width + LABEL_GAP, 0) : 0;
+      d.wide = Math.max(d.bar + extra + 32, PANEL_MIN_INNER);
+      state.current.labels = withLabels;
+      setLabels(withLabels);
+      pendingOpen.current = true;
+    },
+    [progress],
+  );
 
   // Panneau monté : on mesure son contenu, puis le notch s'agrandit jusqu'à lui.
   useLayoutEffect(() => {
@@ -248,21 +260,25 @@ export function Notch({ user, workspace, pendingBookings, unreadNotifications }:
     if (!panel || !content) return;
     const d = dims.current;
     d.content = content.offsetHeight;
+    // Notch replié : il prend d'emblée la hauteur du contenu. Ouvert (autre panneau), il la rejoint.
+    if (progress.get() === 0) shown.jump(d.content);
+    else follow(d.content);
     if (pendingOpen.current) {
       pendingOpen.current = false;
-      if (anim.current.value === 0) d.shown = d.content;
       animateTo(1);
     }
+    draw();
     const observer = new ResizeObserver(() => {
+      if (content.offsetHeight === d.content) return;
       d.content = content.offsetHeight;
-      follow();
+      follow(d.content);
     });
     observer.observe(content);
     return () => observer.disconnect();
-  }, [panel, animateTo, follow]);
+  }, [panel, animateTo, follow, draw, progress, shown]);
 
   const close = useCallback(() => {
-    if (!state.current.panel || anim.current.target === 0) return;
+    if (!state.current.panel || target.current === 0) return;
     setClosing(true);
     animateTo(0);
   }, [animateTo]);
@@ -270,7 +286,7 @@ export function Notch({ user, workspace, pendingBookings, unreadNotifications }:
   /** Un bouton du notch ouvre son panneau, ou le referme s'il est déjà ouvert. */
   const toggle = useCallback(
     (next: Exclude<Panel, null>) => {
-      if (state.current.panel === next && anim.current.target === 1) close();
+      if (state.current.panel === next && target.current === 1) close();
       else open(next);
     },
     [open, close],
@@ -288,12 +304,19 @@ export function Notch({ user, workspace, pendingBookings, unreadNotifications }:
     return () => window.removeEventListener("keydown", onKey);
   }, [toggle]);
 
-  // Premier dessin à la taille réelle de la rangée.
+  // Premier dessin à la taille réelle de la rangée ; les libellés sont gardés pour le dessin.
   useLayoutEffect(() => {
-    if (rowRef.current) dims.current.bar = rowRef.current.offsetWidth;
-    draw(anim.current.value);
-    return () => cancelAnimationFrame(anim.current.frame);
-  }, [draw]);
+    const row = rowRef.current;
+    if (row) {
+      dims.current.bar = row.offsetWidth;
+      dims.current.texts = [...row.querySelectorAll<HTMLElement>("[data-notch-text]")];
+    }
+    draw();
+    return () => {
+      progress.stop();
+      shown.stop();
+    };
+  }, [draw, progress, shown]);
 
   const hideHint = useCallback(
     () => setHint((current) => current && { ...current, visible: false }),
@@ -514,6 +537,12 @@ function SubNotch({ hint }: { hint: Hint | null }) {
   const textRef = useRef<HTMLSpanElement>(null);
   const [width, setWidth] = useState<number>();
   const content = `${hint?.label}|${hint?.badge?.text}`;
+  // Première mesure posée telle quelle ; ensuite la largeur suit le libellé.
+  const measured = useRef(false);
+  useEffect(() => {
+    if (width !== undefined) measured.current = true;
+  }, [width]);
+  const reduced = useReducedMotion();
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: on mesure à chaque nouveau libellé
   useLayoutEffect(() => {
@@ -522,20 +551,21 @@ function SubNotch({ hint }: { hint: Hint | null }) {
 
   if (!hint) return null;
   return (
-    <div
+    <motion.div
       aria-hidden="true"
       className="pointer-events-none absolute top-14 left-0"
-      style={{
+      initial={false}
+      animate={{
         // Centrée sous l'icône, sans que ses courbes (28 px) dépassent le bas plat du notch (44 px de bord).
-        translate: `${Math.min(Math.max(hint.x - (width ?? 0) / 2, 72), hint.span - 72 - (width ?? 0))}px 0`,
-        transition: hint.slide ? "translate 220ms cubic-bezier(0.2, 0, 0, 1)" : "none",
+        x: Math.min(Math.max(hint.x - (width ?? 0) / 2, 72), hint.span - 72 - (width ?? 0)),
       }}
+      transition={hint.slide ? HINT : { duration: 0 }}
     >
-      <div
-        className={cn(
-          "relative transition-transform duration-200 ease-out",
-          hint.visible ? "translate-y-0" : "-translate-y-full",
-        )}
+      <motion.div
+        className="relative"
+        initial={{ y: "-100%" }}
+        animate={{ y: hint.visible ? 0 : "-100%" }}
+        transition={HINT}
       >
         <svg
           width="29"
@@ -555,9 +585,11 @@ function SubNotch({ hint }: { hint: Hint | null }) {
         >
           <path d={TAB_EAR_RIGHT} className="fill-ink" />
         </svg>
-        <div
-          className="flex h-8 items-center justify-center overflow-hidden bg-ink transition-[width] duration-200 ease-out"
-          style={{ width }}
+        <motion.div
+          className="flex h-8 items-center justify-center overflow-hidden bg-ink"
+          initial={false}
+          animate={width === undefined ? undefined : { width }}
+          transition={measured.current && !reduced ? HINT : { duration: 0 }}
         >
           <span
             ref={textRef}
@@ -577,9 +609,9 @@ function SubNotch({ hint }: { hint: Hint | null }) {
               </span>
             )}
           </span>
-        </div>
-      </div>
-    </div>
+        </motion.div>
+      </motion.div>
+    </motion.div>
   );
 }
 

@@ -1,5 +1,5 @@
 import type { CounterBookingInput, PaymentMethod } from "@horaya/core";
-import { motion } from "motion/react";
+import { AnimatePresence, motion, type Variants } from "motion/react";
 import { type FormEvent, type ReactNode, useEffect, useRef, useState, useTransition } from "react";
 import { WordsReveal } from "@/components/motion/words";
 import { Avatar } from "@/components/ui/avatar";
@@ -64,6 +64,13 @@ const METHODS: Array<{ value: PaymentMethod; label: string }> = [
   { value: "check", label: "Chèque" },
   { value: "transfer", label: "Virement" },
 ];
+
+/** Chiffre qui roule : `custom` vaut 1 quand on ajoute (il monte), -1 quand on retire (il descend). */
+const ROLL: Variants = {
+  enter: (rise: number) => ({ y: `${60 * rise}%`, opacity: 0 }),
+  center: { y: 0, opacity: 1 },
+  exit: (rise: number) => ({ y: `${-60 * rise}%`, opacity: 0 }),
+};
 
 const EMPTY_CONTACT = { firstName: "", lastName: "", phone: "", email: "" };
 
@@ -809,18 +816,24 @@ function QuantityStepper({
       <output
         aria-label={label}
         className={cn(
-          "flex min-w-4 justify-center overflow-hidden text-[17px] font-semibold leading-5",
+          "relative flex min-w-4 justify-center overflow-hidden text-[17px] font-semibold leading-5",
           value === 0 ? "text-ink-subtle" : "text-ink",
         )}
       >
-        <motion.span
-          key={value}
-          initial={{ y: `${60 * rise}%`, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          transition={{ duration: 0.2, ease: [0.2, 0, 0, 1] }}
-        >
-          {value}
-        </motion.span>
+        {/* L'ancien chiffre sort pendant que le nouveau arrive (popLayout : il ne prend plus de place). */}
+        <AnimatePresence initial={false} mode="popLayout" custom={rise}>
+          <motion.span
+            key={value}
+            custom={rise}
+            variants={ROLL}
+            initial="enter"
+            animate="center"
+            exit="exit"
+            transition={{ type: "spring", visualDuration: 0.2, bounce: 0 }}
+          >
+            {value}
+          </motion.span>
+        </AnimatePresence>
       </output>
       <button
         type="button"
