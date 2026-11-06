@@ -189,17 +189,20 @@ function Ring({ value, max, className }: { value: number; max: number; className
         strokeOpacity="0.15"
         strokeWidth="4"
       />
-      <circle
-        cx="20"
-        cy="20"
-        r="16"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="4"
-        strokeLinecap="round"
-        strokeDasharray={`${ratio * circumference} ${circumference}`}
-        transform="rotate(-90 20 20)"
-      />
+      {/* À zéro, l'anneau reste vide : un arc nul dessinerait un point. */}
+      {ratio > 0 && (
+        <circle
+          cx="20"
+          cy="20"
+          r="16"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="4"
+          strokeLinecap="round"
+          strokeDasharray={`${ratio * circumference} ${circumference}`}
+          transform="rotate(-90 20 20)"
+        />
+      )}
     </svg>
   );
 }
@@ -253,23 +256,26 @@ export function TodayCard({
             </div>
             <span
               aria-hidden="true"
-              className="relative flex w-3 shrink-0 justify-center self-stretch"
+              className="-my-3 flex w-3 shrink-0 flex-col items-center self-stretch"
             >
-              {index < entries.length - 1 && (
-                <span className="absolute top-1/2 h-full w-px bg-line" />
-              )}
+              {/* Trait continu d'une ligne à l'autre, interrompu par le point (maquette 1.1). */}
+              <span className={cn("w-0.5 flex-1", index > 0 && "bg-line-soft")} />
               <span
                 className={cn(
-                  "relative mt-auto mb-auto size-3 rounded-full border-2",
-                  state.tone === "success" ? "border-accent bg-accent" : "border-line bg-surface",
+                  "size-3 shrink-0 rounded-full",
+                  state.tone === "success"
+                    ? "bg-accent shadow-[0_0_0_4px_rgba(240,151,95,0.22)]"
+                    : "border-2 border-[#cfcfcc] bg-surface",
                 )}
               />
+              <span className={cn("w-0.5 flex-1", index < entries.length - 1 && "bg-line-soft")} />
             </span>
             <span
               aria-hidden="true"
               className="flex size-11 shrink-0 items-center justify-center rounded-[14px] text-ink"
               style={{
                 backgroundColor: entry.color ? `${entry.color}33` : "var(--color-info-bg)",
+                color: entry.color ?? "var(--color-info)",
               }}
             >
               <Icon size={20} />
