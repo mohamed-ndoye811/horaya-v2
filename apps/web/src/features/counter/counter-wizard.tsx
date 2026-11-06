@@ -445,27 +445,30 @@ export function CounterWizard({
               {items.map((item) => {
                 const quantity = quantities[item.id] ?? 0;
                 const left = item.free - quantity;
+                // Photo de l'article, sinon un dégradé de l'app ; même teinte sombre que meshCover.
+                const color =
+                  CATEGORY_COLORS[seedOf(item.id) % CATEGORY_COLORS.length] ?? "#528d74";
+                const shade = `oklch(from ${color} 0.2 calc(c * 0.5) h)`;
                 return (
                   <div
                     key={item.id}
                     className={cn(
-                      "relative isolate flex min-h-24 flex-col justify-between gap-3 overflow-hidden rounded-2xl border-[1.5px] p-3",
-                      quantity > 0 ? "border-ink" : "border-bg",
+                      "relative isolate flex min-h-24 flex-col justify-between gap-3 overflow-hidden rounded-2xl bg-cover bg-center p-3 text-on-ink",
+                      quantity > 0 && "ring-2 ring-accent ring-offset-2",
                     )}
+                    style={
+                      item.photoUrl
+                        ? { backgroundColor: shade, backgroundImage: `url(${item.photoUrl})` }
+                        : meshCover(color, item.id)
+                    }
                   >
-                    {/* Photo de l'article, sinon un dégradé de l'app : à droite, fondue vers le nom. */}
+                    {/* Côté du nom : la teinte sombre de l'image, qui s'y fond vers la droite. */}
                     <div
                       aria-hidden="true"
-                      className="absolute inset-y-0 right-0 -z-10 w-3/5 bg-cover bg-center [mask-image:linear-gradient(to_right,transparent,black_75%)]"
-                      style={
-                        item.photoUrl
-                          ? { backgroundImage: `url(${item.photoUrl})` }
-                          : meshCover(
-                              CATEGORY_COLORS[seedOf(item.id) % CATEGORY_COLORS.length] ??
-                                "#528d74",
-                              item.id,
-                            )
-                      }
+                      className="absolute inset-0 -z-10"
+                      style={{
+                        backgroundImage: `linear-gradient(to right, ${shade} 35%, transparent 85%)`,
+                      }}
                     />
                     <div className="flex justify-end">
                       <StatusBadge tone={left <= 1 ? "warning" : "success"}>
@@ -473,7 +476,7 @@ export function CounterWizard({
                       </StatusBadge>
                     </div>
                     <div className="flex items-center justify-between gap-3">
-                      <span className="line-clamp-2 min-w-0 text-sm font-semibold leading-[18px] text-ink">
+                      <span className="line-clamp-2 min-w-0 text-sm font-semibold leading-[18px]">
                         {item.name}
                       </span>
                       <QuantityStepper
