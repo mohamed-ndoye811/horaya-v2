@@ -93,7 +93,7 @@ export async function saveOrganization(form: FormData): Promise<FormState> {
   return { success: "Paramètres enregistrés." };
 }
 
-/** Écran 26 : réglages des paiements (si le rôle le permet) et notifications du membre. */
+/** Écran 26 : réglages des paiements de l'espace (si le rôle le permet). */
 export async function savePayments(form: FormData): Promise<FormState> {
   const { actor } = await getWorkspaceContext();
   try {
@@ -107,6 +107,16 @@ export async function savePayments(form: FormData): Promise<FormState> {
         ...(form.has("paymentLinkUrl") ? { paymentLinkUrl: text(form, "paymentLinkUrl") } : {}),
       });
     }
+  } catch (error) {
+    return toFormState(error);
+  }
+  return { success: "Paramètres enregistrés." };
+}
+
+/** Préférences de notification du membre connecté (e-mail, dans l'app). */
+export async function saveNotifications(form: FormData): Promise<FormState> {
+  const { actor } = await getWorkspaceContext();
+  try {
     await saveNotificationPreferences(
       deps,
       actor,
@@ -119,7 +129,7 @@ export async function savePayments(form: FormData): Promise<FormState> {
   } catch (error) {
     return toFormState(error);
   }
-  return { success: "Paramètres enregistrés." };
+  return { success: "Notifications enregistrées." };
 }
 
 /* Profil */

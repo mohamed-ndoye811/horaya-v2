@@ -27,7 +27,7 @@ const ACCOUNT_STATES: Record<
   active: { badge: "Connecté", tone: "success", line: "Compte vérifié · versements automatiques" },
 };
 
-/** Écran 26 : connexion des paiements, réglages de facturation et notifications du membre. */
+/** Écran 26 : connexion des paiements et réglages de facturation de l'espace. */
 export function PaymentsSettingsPage({
   data,
   stripeError,
@@ -42,7 +42,7 @@ export function PaymentsSettingsPage({
   return (
     <SettingsShell
       section="paiements"
-      breadcrumb="Paiements & notifications"
+      breadcrumb="Paiements"
       subtitle={
         !hasGateway
           ? data.initial.paymentLinkUrl
@@ -205,7 +205,6 @@ export function PaymentsSettingsPage({
           editable={data.editable}
           initial={data.initial}
           showPaymentLink={!hasGateway}
-          preferences={data.preferences}
         />
       </div>
     </SettingsShell>

@@ -28,6 +28,7 @@ import {
   inviteMember,
   removeMember,
   resendInvitation,
+  saveNotifications,
   saveOrganization,
   savePayments,
   saveProfile,
@@ -157,13 +158,20 @@ const MONTHS = [
   "décembre",
 ];
 
-/** Écran 26 : connexion des paiements, réglages de facturation et notifications du membre. */
+/** Préférences de notification du membre connecté. */
+export const getNotificationsSettings = createServerFn({ method: "GET" }).handler(async () => {
+  const { actor } = await getWorkspaceContext();
+  return {
+    preferences: withDefaultPreferences(await getNotificationPreferences(db, actor.memberId)),
+  };
+});
+
+/** Écran 26 : connexion des paiements et réglages de facturation de l'espace. */
 export const getPaymentsSettings = createServerFn({ method: "GET" }).handler(async () => {
   const { workspace, actor, timeZone } = await getWorkspaceContext();
   const today = todayIn(timeZone);
-  const [settings, saved, collected, awaiting] = await Promise.all([
+  const [settings, collected, awaiting] = await Promise.all([
     getWorkspaceSettings(db, workspace.id),
-    getNotificationPreferences(db, actor.memberId),
     sumCollectedSince(db, workspace.id, startOfDay({ ...today, day: 1 }, timeZone)),
     sumAwaitingPayment(db, workspace.id),
   ]);
@@ -211,7 +219,6 @@ export const getPaymentsSettings = createServerFn({ method: "GET" }).handler(asy
       lateCancellationRefundPercent: settings.lateCancellationRefundPercent,
       paymentLinkUrl: settings.paymentLinkUrl ?? "",
     },
-    preferences: withDefaultPreferences(saved),
   };
 });
 
@@ -235,6 +242,9 @@ const saveOrganizationFn = createServerFn({ method: "POST" })
 const savePaymentsFn = createServerFn({ method: "POST" })
   .validator(formDataInput)
   .handler(({ data }) => savePayments(data));
+const saveNotificationsFn = createServerFn({ method: "POST" })
+  .validator(formDataInput)
+  .handler(({ data }) => saveNotifications(data));
 const saveProfileFn = createServerFn({ method: "POST" })
   .validator(formDataInput)
   .handler(({ data }) => saveProfile(data));
@@ -249,6 +259,8 @@ export const saveOrganizationAction = (_previous: FormState, form: FormData) =>
   saveOrganizationFn({ data: form });
 export const savePaymentsAction = (_previous: FormState, form: FormData) =>
   savePaymentsFn({ data: form });
+export const saveNotificationsAction = (_previous: FormState, form: FormData) =>
+  saveNotificationsFn({ data: form });
 export const saveProfileAction = (_previous: FormState, form: FormData) =>
   saveProfileFn({ data: form });
 export const changePasswordAction = (_previous: FormState, form: FormData) =>

@@ -21,7 +21,10 @@ function PublicLayout() {
       className="flex min-h-dvh flex-col bg-bg lg:h-dvh lg:bg-ink lg:p-1.5"
     >
       <PublicNotch workspace={workspace} contact={contactHref(workspace)} />
-      <div className="flex flex-1 flex-col lg:min-h-0 lg:overflow-y-auto lg:rounded-[10px] lg:bg-bg">
+      <div
+        data-scroll-zone
+        className="flex flex-1 flex-col scrollbar-none lg:min-h-0 lg:overflow-y-auto lg:rounded-[10px] lg:bg-bg"
+      >
         <div className="mx-auto flex w-full max-w-[1440px] flex-1 flex-col px-4 pt-4 pb-6 lg:pt-[62px]">
           <RouteTransition>
             <Outlet />

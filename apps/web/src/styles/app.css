@@ -197,7 +197,8 @@ input[type="password"] {
 /* Les enfants arrivent l'un après l'autre (listes, cartes, lignes de tableau). */
 @utility reveal-group {
   & > * {
-    animation: var(--animate-rise);
+    /* --reveal : autre arrivée pour un groupe (fondu seul pour les lignes de tableau). */
+    animation: var(--reveal, var(--animate-rise));
     animation-delay: calc(min(var(--i, 0), 8) * var(--stagger));
   }
   & > :nth-child(2) {
@@ -361,7 +362,7 @@ dialog[open]::backdrop {
 /* Nom de la page posé pendant la transition seulement : hors transition, il créerait un
    contexte d'empilement qui ferait passer les coins fixés (fil d'Ariane, actions) sous le fondu. */
 @media (min-width: 1024px) {
-  :root:active-view-transition [data-page-transition] {
+  :root:active-view-transition-type(page) [data-page-transition] {
     view-transition-name: page;
     /*
      * Nommée, la page devient une couche à part : sans ce z-index, les coins fixés qu'elle
@@ -370,6 +371,31 @@ dialog[open]::backdrop {
      */
     position: relative;
     z-index: 41;
+  }
+}
+/* Autre section d'un sous-menu (réglages) : seul le contenu de la section change. */
+:root:active-view-transition-type(section) [data-section-content] {
+  view-transition-name: section;
+}
+::view-transition-group(section) {
+  animation: none;
+}
+::view-transition-old(section),
+::view-transition-new(section) {
+  height: auto;
+  object-fit: none;
+  object-position: top center;
+}
+::view-transition-old(section) {
+  animation: 120ms cubic-bezier(0.4, 0, 1, 1) both corner-fade-out;
+}
+::view-transition-new(section) {
+  animation: 260ms cubic-bezier(0.2, 0, 0, 1) 60ms both section-in;
+}
+@keyframes section-in {
+  from {
+    opacity: 0;
+    translate: 0 6px;
   }
 }
 /* La page garde sa taille réelle pendant le fondu (pas d'étirement entre deux hauteurs). */
@@ -522,5 +548,17 @@ dialog[open]::backdrop {
   ::view-transition-new(*) {
     /* biome-ignore lint/complexity/noImportantStyles: doit passer devant les animations ci-dessus et celles du navigateur */
     animation: none !important;
+  }
+}
+
+/*
+ * Zones qui défilent (contenu dans le cadre, panneaux du notch) : barre de défilement masquée.
+ * On défile toujours à la molette, au pavé tactile ou au clavier ; rien ne bouge quand la hauteur
+ * du contenu change pendant une animation.
+ */
+@utility scrollbar-none {
+  scrollbar-width: none;
+  &::-webkit-scrollbar {
+    display: none;
   }
 }

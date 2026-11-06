@@ -48,6 +48,7 @@ import { Route as AppMaterielNouveauRouteImport } from './routes/app/materiel/no
 import { Route as AppParametresIndexRouteImport } from './routes/app/parametres/index'
 import { Route as AppParametresIntegrationsRouteImport } from './routes/app/parametres/integrations'
 import { Route as AppParametresMembresRouteImport } from './routes/app/parametres/membres'
+import { Route as AppParametresNotificationsRouteImport } from './routes/app/parametres/notifications'
 import { Route as AppParametresOrganisationRouteImport } from './routes/app/parametres/organisation'
 import { Route as AppParametresProfilRouteImport } from './routes/app/parametres/profil'
 import { Route as AppReservationsIndexRouteImport } from './routes/app/reservations/index'
@@ -263,6 +264,12 @@ const AppParametresMembresRoute = AppParametresMembresRouteImport.update({
   path: '/parametres/membres',
   getParentRoute: () => AppRoute,
 } as any)
+const AppParametresNotificationsRoute =
+  AppParametresNotificationsRouteImport.update({
+    id: '/parametres/notifications',
+    path: '/parametres/notifications',
+    getParentRoute: () => AppRoute,
+  } as any)
 const AppParametresOrganisationRoute =
   AppParametresOrganisationRouteImport.update({
     id: '/parametres/organisation',
@@ -388,6 +395,7 @@ export interface FileRoutesByFullPath {
   '/app/materiel/nouveau': typeof AppMaterielNouveauRoute
   '/app/parametres/integrations': typeof AppParametresIntegrationsRoute
   '/app/parametres/membres': typeof AppParametresMembresRoute
+  '/app/parametres/notifications': typeof AppParametresNotificationsRoute
   '/app/parametres/organisation': typeof AppParametresOrganisationRoute
   '/app/parametres/profil': typeof AppParametresProfilRoute
   '/app/reservations/$id': typeof AppReservationsIdRoute
@@ -444,6 +452,7 @@ export interface FileRoutesByTo {
   '/app/materiel/nouveau': typeof AppMaterielNouveauRoute
   '/app/parametres/integrations': typeof AppParametresIntegrationsRoute
   '/app/parametres/membres': typeof AppParametresMembresRoute
+  '/app/parametres/notifications': typeof AppParametresNotificationsRoute
   '/app/parametres/organisation': typeof AppParametresOrganisationRoute
   '/app/parametres/profil': typeof AppParametresProfilRoute
   '/app/reservations/$id': typeof AppReservationsIdRoute
@@ -503,6 +512,7 @@ export interface FileRoutesById {
   '/app/materiel/nouveau': typeof AppMaterielNouveauRoute
   '/app/parametres/integrations': typeof AppParametresIntegrationsRoute
   '/app/parametres/membres': typeof AppParametresMembresRoute
+  '/app/parametres/notifications': typeof AppParametresNotificationsRoute
   '/app/parametres/organisation': typeof AppParametresOrganisationRoute
   '/app/parametres/profil': typeof AppParametresProfilRoute
   '/app/reservations/$id': typeof AppReservationsIdRoute
@@ -563,6 +573,7 @@ export interface FileRouteTypes {
     | '/app/materiel/nouveau'
     | '/app/parametres/integrations'
     | '/app/parametres/membres'
+    | '/app/parametres/notifications'
     | '/app/parametres/organisation'
     | '/app/parametres/profil'
     | '/app/reservations/$id'
@@ -619,6 +630,7 @@ export interface FileRouteTypes {
     | '/app/materiel/nouveau'
     | '/app/parametres/integrations'
     | '/app/parametres/membres'
+    | '/app/parametres/notifications'
     | '/app/parametres/organisation'
     | '/app/parametres/profil'
     | '/app/reservations/$id'
@@ -677,6 +689,7 @@ export interface FileRouteTypes {
     | '/app/materiel/nouveau'
     | '/app/parametres/integrations'
     | '/app/parametres/membres'
+    | '/app/parametres/notifications'
     | '/app/parametres/organisation'
     | '/app/parametres/profil'
     | '/app/reservations/$id'
@@ -996,6 +1009,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppParametresMembresRouteImport
       parentRoute: typeof AppRoute
     }
+    '/app/parametres/notifications': {
+      id: '/app/parametres/notifications'
+      path: '/parametres/notifications'
+      fullPath: '/app/parametres/notifications'
+      preLoaderRoute: typeof AppParametresNotificationsRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/app/parametres/organisation': {
       id: '/app/parametres/organisation'
       path: '/parametres/organisation'
@@ -1156,6 +1176,7 @@ interface AppRouteChildren {
   AppMaterielNouveauRoute: typeof AppMaterielNouveauRoute
   AppParametresIntegrationsRoute: typeof AppParametresIntegrationsRoute
   AppParametresMembresRoute: typeof AppParametresMembresRoute
+  AppParametresNotificationsRoute: typeof AppParametresNotificationsRoute
   AppParametresOrganisationRoute: typeof AppParametresOrganisationRoute
   AppParametresProfilRoute: typeof AppParametresProfilRoute
   AppReservationsIdRoute: typeof AppReservationsIdRoute
@@ -1191,6 +1212,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppMaterielNouveauRoute: AppMaterielNouveauRoute,
   AppParametresIntegrationsRoute: AppParametresIntegrationsRoute,
   AppParametresMembresRoute: AppParametresMembresRoute,
+  AppParametresNotificationsRoute: AppParametresNotificationsRoute,
   AppParametresOrganisationRoute: AppParametresOrganisationRoute,
   AppParametresProfilRoute: AppParametresProfilRoute,
   AppReservationsIdRoute: AppReservationsIdRoute,

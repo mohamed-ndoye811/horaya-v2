@@ -5,19 +5,20 @@ import { cn } from "@/lib/cn";
 import { Link } from "@/lib/navigation";
 import { PageHeader } from "./page-header";
 
-export type SettingsSection = "profil" | "organisation" | "membres" | "paiements" | "integrations";
+export type SettingsSection =
+  | "profil"
+  | "organisation"
+  | "membres"
+  | "paiements"
+  | "notifications"
+  | "integrations";
 
-const SECTIONS: Array<{ value: SettingsSection | "notifications"; label: string; href: string }> = [
+const SECTIONS: Array<{ value: SettingsSection; label: string; href: string }> = [
   { value: "profil", label: "Profil", href: "/app/parametres/profil" },
   { value: "organisation", label: "Organisation & marque", href: "/app/parametres/organisation" },
   { value: "membres", label: "Membres & rôles", href: "/app/parametres/membres" },
   { value: "paiements", label: "Paiements", href: "/app/parametres/paiements" },
-  // Les notifications sont réglées sur la même page que les paiements (écran 26).
-  {
-    value: "notifications",
-    label: "Notifications",
-    href: "/app/parametres/paiements#notifications",
-  },
+  { value: "notifications", label: "Notifications", href: "/app/parametres/notifications" },
   { value: "integrations", label: "Intégrations", href: "/app/parametres/integrations" },
 ];
 
@@ -94,7 +95,8 @@ export function SettingsShell({
             );
           })}
         </nav>
-        <div className="flex min-w-0 flex-1 flex-col gap-4">
+        {/* Contenu de la section : seul lui change d'une section à l'autre (transition « section »). */}
+        <div data-section-content className="flex min-w-0 flex-1 flex-col gap-4">
           {children}
           {saveBar && (
             <>

@@ -642,7 +642,7 @@ function NotchPanel({
     <div
       role="dialog"
       aria-label={label}
-      className="flex max-h-[calc(100dvh-96px)] w-full flex-col gap-3.5 overflow-y-auto px-4 pt-1 pb-5"
+      className="flex max-h-[calc(100dvh-96px)] w-full flex-col gap-3.5 overflow-y-auto scrollbar-none px-4 pt-1 pb-5"
     >
       {children}
     </div>
@@ -1021,7 +1021,7 @@ function NotificationsPanel({
             choisis ce qui te prévient, dans l'app ou par e-mail.
           </p>
           <Link
-            href="/app/parametres/paiements#notifications"
+            href="/app/parametres/notifications"
             onClick={onClose}
             className="text-[13px] font-semibold leading-4 text-on-ink hover:text-notch-idle"
           >
@@ -1107,10 +1107,16 @@ const ACCOUNT_LINKS = [
     detail: "Identité, marque, mentions légales",
   },
   { href: "/app/parametres/membres", label: "Membres", detail: "Ton équipe et les invitations" },
+  { href: "/app/parametres/paiements", label: "Paiements", detail: "Encaissement, acompte, TVA" },
   {
-    href: "/app/parametres/paiements",
-    label: "Paiements et notifications",
-    detail: "Moyens de paiement, alertes",
+    href: "/app/parametres/notifications",
+    label: "Notifications",
+    detail: "Ce qui te prévient, et comment",
+  },
+  {
+    href: "/app/parametres/integrations",
+    label: "Intégrations",
+    detail: "Tes autres outils · bientôt",
   },
 ];
 
@@ -1140,7 +1146,7 @@ function AccountPanel({
       >
         <div className="flex min-w-0 flex-col gap-1">
           <GroupLabel>Paramètres</GroupLabel>
-          <div className="grid grid-cols-2 gap-2">
+          <div className={cn("grid gap-2", wide ? "grid-cols-3" : "grid-cols-2")}>
             {ACCOUNT_LINKS.map((link) => (
               <Link
                 key={link.href}

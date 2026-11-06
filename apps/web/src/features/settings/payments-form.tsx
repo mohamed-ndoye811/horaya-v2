@@ -1,15 +1,9 @@
-import {
-  FREE_CANCELLATION_HOURS,
-  NOTIFICATION_TYPES,
-  type NotificationPreference,
-} from "@horaya/core";
+import { FREE_CANCELLATION_HOURS } from "@horaya/core";
 import { AffixInput, Field, inputClasses } from "@/components/ui/field";
 import { FormAlert } from "@/components/ui/form-alert";
-import { cardClasses, FormSection } from "@/components/ui/section";
+import { FormSection } from "@/components/ui/section";
 import { Select } from "@/components/ui/select";
-import { Switch } from "@/components/ui/switch";
 import { savePaymentsAction } from "@/functions/settings";
-import { cn } from "@/lib/cn";
 import { useFormAction } from "@/lib/use-form-action";
 import type { FormState } from "@/server/form-state";
 
@@ -25,7 +19,6 @@ const REFUND_OPTIONS = [0, 25, 50, 75];
 export function PaymentsForm({
   editable,
   initial,
-  preferences,
   showPaymentLink,
 }: {
   editable: boolean;
@@ -38,7 +31,6 @@ export function PaymentsForm({
   };
   /** Paiement par lien (pas de Stripe intégré) : lien par défaut de l'espace. */
   showPaymentLink: boolean;
-  preferences: NotificationPreference[];
 }) {
   const { state, onSubmit } = useFormAction<FormState>(savePaymentsAction, {});
   const errors = state.fieldErrors ?? {};
@@ -162,64 +154,6 @@ export function PaymentsForm({
             )}
           </FormSection>
         </fieldset>
-
-        <section
-          id="notifications"
-          aria-labelledby="notifications-title"
-          className={cn(cardClasses, "min-w-0 scroll-mt-6 sm:p-6")}
-        >
-          <div className="flex items-center gap-2.5 pb-3">
-            <span className="flex size-[26px] shrink-0 items-center justify-center rounded-full bg-ink text-xs font-bold leading-[14px] text-on-ink">
-              2
-            </span>
-            <h2
-              id="notifications-title"
-              className="grow text-lg font-semibold leading-[22px] text-ink"
-            >
-              Notifications
-            </h2>
-            <span className="w-14 shrink-0 text-center text-xs font-semibold text-ink-subtle">
-              E-mail
-            </span>
-            <span className="w-14 shrink-0 text-center text-xs font-semibold text-ink-subtle">
-              In-app
-            </span>
-          </div>
-          <ul>
-            {NOTIFICATION_TYPES.map((type) => {
-              const current = preferences.find((entry) => entry.type === type.value);
-              return (
-                <li
-                  key={type.value}
-                  className="flex items-center gap-3 border-t border-[#f4f4f2] py-3"
-                >
-                  <span className="min-w-0 grow truncate text-sm leading-[18px] text-ink">
-                    {type.label}
-                  </span>
-                  <span className="flex w-14 shrink-0 justify-center">
-                    <Switch
-                      hideLabel
-                      label={`${type.label} par e-mail`}
-                      name={`email:${type.value}`}
-                      defaultChecked={current?.email ?? type.email}
-                    />
-                  </span>
-                  <span className="flex w-14 shrink-0 justify-center">
-                    <Switch
-                      hideLabel
-                      label={`${type.label} dans l'app`}
-                      name={`inApp:${type.value}`}
-                      defaultChecked={current?.inApp ?? type.inApp}
-                    />
-                  </span>
-                </li>
-              );
-            })}
-          </ul>
-          <p className="pt-2 text-xs leading-4 text-ink-subtle">
-            Tes préférences personnelles : chaque membre règle les siennes.
-          </p>
-        </section>
       </div>
     </form>
   );
