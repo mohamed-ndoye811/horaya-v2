@@ -441,7 +441,7 @@ export function CounterWizard({
           </div>
           {pickingItems && items && items.length > 0 && (
             // Cartes du matériel : choisies, elles prennent le contour noir des séances.
-            <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
+            <div className="grid gap-4 sm:grid-cols-2 2xl:grid-cols-3">
               {items.map((item) => {
                 const quantity = quantities[item.id] ?? 0;
                 const left = item.free - quantity;
@@ -453,7 +453,7 @@ export function CounterWizard({
                   <div
                     key={item.id}
                     className={cn(
-                      "relative isolate flex min-h-24 flex-col justify-between gap-3 overflow-hidden rounded-2xl bg-cover bg-center p-3 text-on-ink",
+                      "relative isolate flex min-h-32 flex-col justify-between gap-4 overflow-hidden rounded-[20px] bg-cover bg-center p-4 text-on-ink",
                       quantity > 0 && "ring-2 ring-accent ring-offset-2",
                     )}
                     style={
@@ -476,7 +476,7 @@ export function CounterWizard({
                       </StatusBadge>
                     </div>
                     <div className="flex items-center justify-between gap-3">
-                      <span className="line-clamp-2 min-w-0 text-sm font-semibold leading-[18px]">
+                      <span className="line-clamp-2 min-w-0 text-base font-semibold leading-5">
                         {item.name}
                       </span>
                       <QuantityStepper
