@@ -7,7 +7,6 @@ import { StatusBadge } from "@/components/ui/badge";
 import { Button, ButtonLink } from "@/components/ui/button";
 import { Field, inputClasses } from "@/components/ui/field";
 import { FormAlert } from "@/components/ui/form-alert";
-import { BoxIcon } from "@/components/ui/icons";
 import { SearchInput } from "@/components/ui/search-input";
 import {
   type CounterResult,
@@ -16,6 +15,8 @@ import {
   searchCounterCustomersAction,
 } from "@/functions/reservations";
 import { cn } from "@/lib/cn";
+import { CATEGORY_COLORS } from "@/lib/colors";
+import { meshCover, seedOf } from "@/lib/cover";
 import { formatMoney } from "@/lib/format";
 
 export interface CounterEvent {
@@ -48,6 +49,7 @@ interface CustomerHit {
 interface CounterItem {
   id: string;
   name: string;
+  photoUrl: string | null;
   free: number;
   onEvent: number;
 }
@@ -438,7 +440,7 @@ export function CounterWizard({
             </button>
           </div>
           {pickingItems && items && items.length > 0 && (
-            // Cartes du matériel (photo à venir) : choisies, elles prennent le contour noir des séances.
+            // Cartes du matériel : choisies, elles prennent le contour noir des séances.
             <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
               {items.map((item) => {
                 const quantity = quantities[item.id] ?? 0;
@@ -447,17 +449,25 @@ export function CounterWizard({
                   <div
                     key={item.id}
                     className={cn(
-                      "flex flex-col gap-3 rounded-2xl border-[1.5px] p-3",
+                      "relative isolate flex min-h-24 flex-col justify-between gap-3 overflow-hidden rounded-2xl border-[1.5px] p-3",
                       quantity > 0 ? "border-ink" : "border-bg",
                     )}
                   >
-                    <div className="flex items-start justify-between gap-2">
-                      <span
-                        aria-hidden="true"
-                        className="flex size-9 items-center justify-center rounded-[10px] bg-field text-ink-subtle"
-                      >
-                        <BoxIcon size={18} />
-                      </span>
+                    {/* Photo de l'article, sinon un dégradé de l'app : à droite, fondue vers le nom. */}
+                    <div
+                      aria-hidden="true"
+                      className="absolute inset-y-0 right-0 -z-10 w-3/5 bg-cover bg-center [mask-image:linear-gradient(to_right,transparent,black_75%)]"
+                      style={
+                        item.photoUrl
+                          ? { backgroundImage: `url(${item.photoUrl})` }
+                          : meshCover(
+                              CATEGORY_COLORS[seedOf(item.id) % CATEGORY_COLORS.length] ??
+                                "#528d74",
+                              item.id,
+                            )
+                      }
+                    />
+                    <div className="flex justify-end">
                       <StatusBadge tone={left <= 1 ? "warning" : "success"}>
                         {left} libre{left > 1 ? "s" : ""}
                       </StatusBadge>
