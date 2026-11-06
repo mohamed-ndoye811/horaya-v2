@@ -2,6 +2,7 @@ import { createFileRoute, Outlet } from "@tanstack/react-router";
 import { MobileTabBar, MobileTopBar } from "@/components/app/mobile-nav";
 import { Notch } from "@/components/app/notch";
 import { RouteTransition } from "@/components/motion/route-transition";
+import { ScrollZone } from "@/components/motion/scroll-zone";
 import { getAppShell } from "@/functions/app-shell";
 
 /**
@@ -25,10 +26,7 @@ function AppLayout() {
         pendingBookings={pendingBookings}
         unreadNotifications={unreadNotifications}
       />
-      <div
-        data-scroll-zone
-        className="flex min-w-0 flex-1 flex-col scrollbar-none lg:relative lg:min-h-0 lg:overflow-y-auto lg:rounded-[10px] lg:bg-bg lg:pt-14"
-      >
+      <ScrollZone className="flex min-w-0 flex-1 flex-col scrollbar-none lg:relative lg:min-h-0 lg:overflow-y-auto lg:rounded-[10px] lg:bg-bg lg:pt-14">
         <MobileTopBar />
         <main className="relative flex min-w-0 flex-1 flex-col lg:pb-4">
           <RouteTransition>
@@ -36,7 +34,7 @@ function AppLayout() {
           </RouteTransition>
         </main>
         <MobileTabBar pendingBookings={pendingBookings} />
-      </div>
+      </ScrollZone>
     </div>
   );
 }
