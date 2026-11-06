@@ -29,18 +29,30 @@ export interface SearchResults {
 
 const plural = (count: number, word: string) => `${count} ${word}${count > 1 ? "s" : ""}`;
 
-/** Recherche du notch (⌘K) : événements à venir et brouillons, clients, réservations. */
+/**
+ * Recherche du notch (⌘K) : événements à venir et brouillons, clients, réservations.
+ * Sans recherche, des raccourcis : les réservations à valider et les prochains événements.
+ */
 export async function searchWorkspace(query: string): Promise<SearchResults> {
   const search = query.trim();
-  if (search.length < 2) return { events: [], customers: [], bookings: [] };
   const { organizationId } = await requireMember();
   const now = new Date();
+  const suggest = search.length < 2;
   const [settings, upcoming, drafts, customers, bookings] = await Promise.all([
     tenantSettingsReader(db).get(organizationId),
-    listEvents(db, organizationId, { tab: "published", now, search, limit: 4 }),
-    listEvents(db, organizationId, { tab: "draft", now, search, limit: 2 }),
-    listCustomers(db, organizationId, { segment: "all", now, search, limit: 3 }),
-    listBookings(db, organizationId, { tab: "all", search, limit: 3 }),
+    listEvents(db, organizationId, {
+      tab: "published",
+      now,
+      search: suggest ? undefined : search,
+      limit: suggest ? 3 : 4,
+    }),
+    suggest ? [] : listEvents(db, organizationId, { tab: "draft", now, search, limit: 2 }),
+    suggest ? [] : listCustomers(db, organizationId, { segment: "all", now, search, limit: 3 }),
+    listBookings(
+      db,
+      organizationId,
+      suggest ? { tab: "pending", limit: 3 } : { tab: "all", search, limit: 3 },
+    ),
   ]);
   const timeZone = settings.timezone;
 
@@ -54,7 +66,7 @@ export async function searchWorkspace(query: string): Promise<SearchResults> {
           ? "Brouillon"
           : event.capacity
             ? `${event.seatsHeld} / ${event.capacity}`
-            : plural(event.seatsHeld, "place"),
+            : plural(event.seatsHeld, "inscrit"),
       ].join(" · "),
       image: event.coverImageUrl,
       color: event.typeColor,

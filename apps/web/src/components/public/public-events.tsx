@@ -4,6 +4,7 @@ import type { CSSProperties, ReactNode } from "react";
 import { WordsReveal } from "@/components/motion/words";
 import { cardShellClasses } from "@/components/ui/section";
 import { cn } from "@/lib/cn";
+import { meshCover } from "@/lib/cover";
 import { displayFontClass } from "@/lib/fonts";
 import {
   formatDayNumber,
@@ -15,13 +16,9 @@ import {
 import { availability, type BookingState, bookingState, pluralize } from "@/lib/public-booking";
 import { param, withParams } from "@/lib/search-params";
 
-/** Image d'un événement, ou un dégradé de la couleur de l'espace quand il n'en a pas. */
-export function eventCover(imageUrl: string | null): CSSProperties {
-  return {
-    backgroundImage: imageUrl
-      ? `url(${imageUrl})`
-      : "linear-gradient(in oklab 135deg, var(--brand) 0%, color-mix(in srgb, var(--brand) 62%, black) 100%)",
-  };
+/** Image d'un événement, ou un dégradé flou de la couleur de l'espace quand il n'en a pas. */
+export function eventCover(imageUrl: string | null, seed: string): CSSProperties {
+  return imageUrl ? { backgroundImage: `url(${imageUrl})` } : meshCover("var(--brand)", seed);
 }
 
 /** Grand bandeau sombre en tête de page (maquette 5.1). */
@@ -283,7 +280,7 @@ function EventCard({
           "flex h-[180px] shrink-0 items-start justify-between bg-cover bg-center p-3",
           state.kind !== "open" && "opacity-85",
         )}
-        style={eventCover(event.coverImageUrl)}
+        style={eventCover(event.coverImageUrl, event.id)}
       >
         <span className="flex w-[52px] shrink-0 flex-col items-center rounded-xl bg-surface py-1.5">
           <span className="text-[10px] font-bold uppercase leading-3 text-[var(--brand-text)]">

@@ -6,6 +6,7 @@ import { StatusBadge } from "@/components/ui/badge";
 import { BoxIcon, TicketIcon } from "@/components/ui/icons";
 import { BOOKING_STATUS_BADGE } from "@/components/ui/status";
 import { cn } from "@/lib/cn";
+import { meshCover } from "@/lib/cover";
 import { elapsed, joinNames, percentChange } from "@/lib/dashboard";
 import { todayIn } from "@/lib/dates";
 import {
@@ -369,11 +370,11 @@ export function NextDaysCards({
             key={event.id}
             href={`/app/evenements/${event.id}`}
             className="relative flex h-[168px] flex-col justify-between overflow-clip rounded-3xl border-6 border-white bg-white bg-cover bg-center p-3.5 text-white shadow-[0_1px_2px_rgba(0,0,0,0.04),0_16px_40px_rgba(0,0,0,0.1)] transition-transform active:scale-[0.99]"
-            style={{
-              backgroundImage: event.coverImageUrl
-                ? `url(${event.coverImageUrl})`
-                : `linear-gradient(in oklab 135deg, ${event.typeColor} 0%, color-mix(in srgb, ${event.typeColor} 62%, black) 100%)`,
-            }}
+            style={
+              event.coverImageUrl
+                ? { backgroundImage: `url(${event.coverImageUrl})` }
+                : meshCover(event.typeColor, event.id)
+            }
           >
             <span
               aria-hidden="true"

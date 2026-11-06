@@ -112,7 +112,7 @@ export default async function PublicEventPage({
         <div className="flex min-w-0 flex-1 flex-col gap-4">
           <div
             className="flex h-[230px] shrink-0 items-start rounded-[22px] bg-cover bg-center p-3 sm:h-[400px] sm:rounded-3xl"
-            style={eventCover(event.coverImageUrl)}
+            style={eventCover(event.coverImageUrl, event.id)}
           >
             <Link
               href={homeHref}

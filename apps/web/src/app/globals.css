@@ -68,7 +68,6 @@
   --animate-pop: pop 180ms cubic-bezier(0.2, 0, 0, 1) backwards;
   --animate-grow-x: grow-x 700ms cubic-bezier(0.2, 0, 0, 1) backwards;
   --animate-fade: fade 200ms cubic-bezier(0.2, 0, 0, 1) backwards;
-  --animate-notch-open: notch-open 260ms cubic-bezier(0.2, 0, 0, 1) backwards;
 
   @keyframes rise {
     from {
@@ -91,12 +90,6 @@
   @keyframes grow-x {
     from {
       scale: 0 1;
-    }
-  }
-  /* Le notch descend en panneau depuis le cadre. */
-  @keyframes notch-open {
-    from {
-      clip-path: inset(0 0 calc(100% - 56px) 0);
     }
   }
   @keyframes fade {
@@ -326,4 +319,63 @@ dialog[open]::backdrop {
 .auth-fields
 :is(input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]), textarea, select) {
   background-color: var(--color-surface);
+}
+
+/*
+ * Transitions de page (RouteTransition) : l'ancienne page sort vite, la nouvelle arrive juste
+ * après. Le reste de l'écran (cadre, fond) ne s'anime pas ; notch et capsule restent ancrés
+ * au-dessus des captures.
+ */
+::view-transition-old(root) {
+  display: none;
+}
+::view-transition-new(root) {
+  animation: none;
+}
+::view-transition-group(notch),
+::view-transition-group(notch-fade),
+::view-transition-group(tab-bar),
+::view-transition-group(tab-bar-fade) {
+  animation: none;
+  z-index: 100;
+}
+::view-transition-old(notch),
+::view-transition-old(notch-fade),
+::view-transition-old(tab-bar),
+::view-transition-old(tab-bar-fade) {
+  display: none;
+}
+::view-transition-new(notch),
+::view-transition-new(notch-fade),
+::view-transition-new(tab-bar),
+::view-transition-new(tab-bar-fade) {
+  animation: none;
+}
+::view-transition-old(.page-exit) {
+  animation: 140ms cubic-bezier(0.4, 0, 1, 1) both page-out;
+}
+::view-transition-new(.page-enter) {
+  animation: 320ms cubic-bezier(0.2, 0, 0, 1) 90ms both page-in;
+}
+@keyframes page-out {
+  to {
+    opacity: 0;
+    translate: 0 -6px;
+  }
+}
+@keyframes page-in {
+  from {
+    opacity: 0;
+    translate: 0 10px;
+    filter: blur(2px);
+  }
+}
+/* Mobile et mouvement réduit : pas de capture animée (fondu d'arrivée seul, voir RouteTransition). */
+@media (max-width: 1023px), (prefers-reduced-motion: reduce) {
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    /* biome-ignore lint/complexity/noImportantStyles: doit passer devant les animations ci-dessus et celles du navigateur */
+    animation: none !important;
+  }
 }
