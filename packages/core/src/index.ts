@@ -1,4 +1,4 @@
-// Métier pur d'Horaya : aucune dépendance à Next.js, Hono ou Postgres.
+// Métier pur d'Horaya : aucune dépendance à un framework, à Hono ou à Postgres.
 // Chaque module expose ses types, ses règles, ses ports (interfaces de dépôt)
 // et ses cas d'usage ; packages/db implémente les ports.
 export * from "./accounts/password";

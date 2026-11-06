@@ -1,7 +1,7 @@
-import Link from "next/link";
 import type { ReactNode } from "react";
 import { cn } from "@/lib/cn";
 import { formatDayNumber, formatMoney, formatMonthShort, formatWeekdayShort } from "@/lib/format";
+import { Link } from "@/lib/navigation";
 import { Avatar, CategorySwatch } from "./avatar";
 import { TicketIcon } from "./icons";
 

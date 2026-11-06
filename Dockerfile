@@ -11,7 +11,6 @@ WORKDIR /repo
 FROM base AS deps
 COPY pnpm-lock.yaml pnpm-workspace.yaml package.json ./
 COPY apps/web/package.json apps/web/
-COPY apps/start/package.json apps/start/
 COPY packages/core/package.json packages/core/
 COPY packages/db/package.json packages/db/
 COPY packages/auth/package.json packages/auth/
@@ -24,7 +23,7 @@ COPY . .
 RUN DATABASE_URL=postgres://build:build@localhost:5432/build \
     BETTER_AUTH_SECRET=build-only-secret-not-used-at-runtime-0000 \
     BETTER_AUTH_URL=https://build.invalid \
-    pnpm --filter start build
+    pnpm --filter web build
 
 # Migrations : uniquement le paquet db et ses dépendances de production.
 FROM build AS migrate-bundle
@@ -42,7 +41,7 @@ WORKDIR /app
 ENV NODE_ENV=production \
     PORT=3000 \
     HOST=0.0.0.0
-COPY --from=build --chown=node:node /repo/apps/start/.output ./
+COPY --from=build --chown=node:node /repo/apps/web/.output ./
 USER node
 EXPOSE 3000
 CMD ["node", "server/index.mjs"]

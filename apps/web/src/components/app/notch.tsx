@@ -1,7 +1,5 @@
 "use client";
 
-import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
 import {
   type ComponentType,
   type ReactNode,
@@ -11,13 +9,6 @@ import {
   useRef,
   useState,
 } from "react";
-import {
-  type NotificationItem,
-  openNotifications,
-  type SearchHit,
-  type SearchResults,
-  searchWorkspace,
-} from "@/app/app/notch-actions";
 import { ActiveIndicator } from "@/components/motion/indicator";
 import { Avatar } from "@/components/ui/avatar";
 import {
@@ -33,9 +24,17 @@ import {
   TicketIcon,
   UsersIcon,
 } from "@/components/ui/icons";
+import {
+  type NotificationItem,
+  openNotifications,
+  type SearchHit,
+  type SearchResults,
+  searchWorkspace,
+} from "@/functions/notch";
 import { authClient } from "@/lib/auth-client";
 import { cn } from "@/lib/cn";
 import { initials } from "@/lib/format";
+import { Link, usePathname, useRouter } from "@/lib/navigation";
 import { HorayaMark } from "./logo";
 import { NOTCH_BAR_HEIGHT, notchShape } from "./notch-shape";
 

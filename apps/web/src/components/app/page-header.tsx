@@ -6,9 +6,11 @@ import { cn } from "@/lib/cn";
  * Coins de part et d'autre du notch (DA v4, à partir de `xl`) : à gauche « où je suis »,
  * à droite les actions de la page, en boutons de 38 px. Sous `xl`, ils restent dans l'en-tête.
  */
-const cornerLeft = "xl:fixed xl:top-[22px] xl:left-[22px] xl:z-40 xl:text-ink";
+// Pas d'animation d'arrivée dans les coins : au changement de page, ils s'animent sur place
+// (transition de vue, voir app.css « Coins autour du notch »).
+const cornerLeft = "xl:fixed xl:top-[22px] xl:left-[22px] xl:z-40 xl:text-ink xl:animate-none";
 const cornerRight =
-  "xl:fixed xl:top-3 xl:right-[22px] xl:z-40 xl:flex-nowrap " +
+  "xl:fixed xl:top-3 xl:right-[22px] xl:z-40 xl:flex-nowrap xl:animate-none " +
   "xl:[&_a]:h-[38px] xl:[&_a]:px-4 xl:[&_a]:text-sm xl:[&_button]:h-[38px] xl:[&_button]:px-4 xl:[&_button]:text-sm";
 
 /**
@@ -67,6 +69,7 @@ export function PageHeader({
         <div className="flex min-w-0 flex-col gap-1.5">
           <p
             data-tour="breadcrumb"
+            data-corner="breadcrumb"
             className={cn(
               "reveal hidden text-[13px] font-semibold leading-4 text-ink-muted lg:block",
               cornerLeft,
@@ -119,6 +122,7 @@ export function PageHeader({
         ) : (
           <div
             data-tour="actions"
+            data-corner={actionsInCorner ? "actions" : undefined}
             className={cn("reveal flex shrink-0 flex-wrap gap-2", actionsInCorner && cornerRight)}
             style={stagger(4)}
           >

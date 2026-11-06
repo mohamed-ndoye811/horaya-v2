@@ -1,8 +1,8 @@
 "use client";
 
-import Link from "next/link";
 import { ActiveIndicator } from "@/components/motion/indicator";
 import { cn } from "@/lib/cn";
+import { Link } from "@/lib/navigation";
 
 /**
  * Onglets d'une fiche (Participants, Matériel, Infos) : rail blanc en pilule, onglet actif

@@ -1,8 +1,8 @@
-import Link from "next/link";
 import type { ReactNode } from "react";
 import { HorayaWordmark } from "@/components/app/logo";
 import { stagger, WordsReveal } from "@/components/motion/words";
 import { cn } from "@/lib/cn";
+import { Link } from "@/lib/navigation";
 import { OnboardingSteps } from "./onboarding-steps";
 
 /** Logo Horaya (lien vers l'accueil), en noir sur fond clair. */

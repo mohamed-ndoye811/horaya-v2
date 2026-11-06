@@ -7,14 +7,15 @@ Réservations, événements et matériel dans un seul agenda, sous la marque de 
 ```
 packages/
   core/   Métier pur : entités, règles, cas d'usage, ports (interfaces de dépôt).
-          Aucune dépendance à Next.js, Hono ou Postgres. Validation avec Zod.
+          Aucune dépendance à un framework, à Hono ou à Postgres. Validation avec Zod.
   db/     Postgres + Drizzle : schéma, migrations, implémentation des ports du core.
   auth/   Better Auth : e-mail/mot de passe, Google, organisations = tenants,
           rôles owner / admin / editor / viewer (permissions.ts).
   mail/   E-mails transactionnels (gabarits + envoi SMTP).
 apps/
-  web/    Next.js (App Router) : admin + pages publiques des organisateurs.
-          Appelle directement les cas d'usage du core côté serveur, jamais l'API HTTP.
+  web/    TanStack Start (Vite, TanStack Router, serveur Nitro) : admin + pages publiques
+          des organisateurs. Ses fonctions serveur appellent directement les cas d'usage
+          du core, jamais l'API HTTP.
   api/    (à venir) Hono : API publique pour les intégrateurs et futures apps
           mobiles / logicielles. Même core derrière.
 ```
@@ -152,9 +153,9 @@ autre apparence, ajouter une variante au composant.
 ## Design
 
 Maquettes et tokens dans le fichier Paper **HORAYA** (pages 00 à 05). Les tokens
-(couleurs, typo) sont reportés dans `apps/web/src/app/globals.css`.
+(couleurs, typo) sont reportés dans `apps/web/src/styles/app.css`.
 
-Polices, toutes Google Fonts (libres de droits), chargées via `next/font` :
+Polices, toutes Google Fonts (libres de droits), auto-hébergées via Fontsource :
 
 - **Archivo** (variable, axe de largeur) pour les titres. Remplace Sztos des maquettes.
   Utilitaires : `font-headline` (gros titres) et `font-section` (en-têtes de section).
@@ -163,8 +164,9 @@ Polices, toutes Google Fonts (libres de droits), chargées via `next/font` :
 
 ## Production
 
-- Images Docker (`Dockerfile`, multi-étapes) : `--target web` (serveur Next.js standalone, port
-  3000, sonde `/api/health`) et `--target migrate` (migrations Drizzle, initContainer).
+- Images Docker (`Dockerfile`, multi-étapes) : `--target web` (serveur Nitro autonome
+  `.output/`, port 3000, sonde `/api/health`) et `--target migrate` (migrations Drizzle,
+  initContainer).
 - `.github/workflows/deploy.yml` : à chaque push sur `develop`, tests puis images
   `ghcr.io/mohamed-ndoye811/horaya-v2-{web,migrate}:<sha>`, puis SHA épinglé dans
   `diamondinfra_cloud/apps/horaya-v2` (Argo CD déploie sur staging.horaya.app). Procédure et

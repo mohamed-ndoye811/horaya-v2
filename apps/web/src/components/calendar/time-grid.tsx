@@ -1,10 +1,10 @@
 import { weekdayOf } from "@horaya/core";
-import Link from "next/link";
 import type { CSSProperties } from "react";
 import { type CivilDate, civilKey, isAllDay, layoutDay, layoutSpans } from "@/lib/calendar";
 import { cn } from "@/lib/cn";
 import { shadeOf, tintOf } from "@/lib/colors";
 import { formatHour, formatTimeRange, formatWeekdayShort } from "@/lib/format";
+import { Link } from "@/lib/navigation";
 import { type CalendarEvent, WEEKDAY_LABELS } from "./types";
 
 /** Hauteur d'une heure dans la grille (maquette 1.3 : 64 px). */

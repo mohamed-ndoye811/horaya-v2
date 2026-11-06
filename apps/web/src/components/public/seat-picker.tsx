@@ -1,10 +1,10 @@
 "use client";
 
-import Link from "next/link";
 import { useState } from "react";
 import { ArrowRight } from "@/components/ui/icons";
 import { cn } from "@/lib/cn";
 import { formatMoney } from "@/lib/format";
+import { Link } from "@/lib/navigation";
 import { brandButtonClasses } from "./public-chrome";
 
 /** Carte de réservation de la maquette 5.2 : nombre de places, total, puis l'étape suivante. */

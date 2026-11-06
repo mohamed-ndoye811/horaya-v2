@@ -1,5 +1,4 @@
 import type { PublicEventRow } from "@horaya/db";
-import Link from "next/link";
 import type { CSSProperties, ReactNode } from "react";
 import { WordsReveal } from "@/components/motion/words";
 import { cardShellClasses } from "@/components/ui/section";
@@ -13,6 +12,7 @@ import {
   formatPublicSchedule,
   formatWeekdayShort,
 } from "@/lib/format";
+import { Link } from "@/lib/navigation";
 import { availability, type BookingState, bookingState, pluralize } from "@/lib/public-booking";
 import { param, withParams } from "@/lib/search-params";
 

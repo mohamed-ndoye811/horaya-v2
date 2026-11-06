@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import {
   type KeyboardEvent as ReactKeyboardEvent,
   useCallback,
@@ -12,6 +11,7 @@ import {
 } from "react";
 import { createPortal } from "react-dom";
 import { cn } from "@/lib/cn";
+import { Link } from "@/lib/navigation";
 import { IconButton } from "./button";
 import { KebabIcon } from "./icons";
 

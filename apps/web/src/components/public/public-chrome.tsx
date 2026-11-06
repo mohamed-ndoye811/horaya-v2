@@ -1,6 +1,6 @@
-import Link from "next/link";
 import type { CSSProperties } from "react";
 import { luminance, textOn } from "@/lib/colors";
+import { Link } from "@/lib/navigation";
 
 /**
  * Marque blanche (maquettes 5.1 à 5.6) : la page publique prend les couleurs de l'espace.

@@ -1,9 +1,9 @@
 "use client";
 
-import Link from "next/link";
 import { type ReactNode, useId, useState } from "react";
 import { ActiveIndicator } from "@/components/motion/indicator";
 import { cn } from "@/lib/cn";
+import { Link } from "@/lib/navigation";
 
 interface Segment {
   value: string;

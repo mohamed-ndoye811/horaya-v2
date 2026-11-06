@@ -13,9 +13,9 @@ Le vault Obsidian de Moh : `/Volumes/moh-drive/hub/notes/hub` (synchronisé avec
 
 1. **Lire les maquettes dans Paper** quand le lot a des écrans : `get_jsx` / `get_computed_styles`
    pour les valeurs exactes, jamais à l'œil. Compter chaque appel Paper.
-2. **Coder** dans l'ordre core → db → web. Le core reste sans Next.js, Hono ni Postgres ; l'app
-   web appelle les cas d'usage du core (`deps`, `requireMember()` dans `apps/web/src/server/`),
-   jamais l'API HTTP.
+2. **Coder** dans l'ordre core → db → web. Le core reste sans framework, Hono ni Postgres ; l'app
+   web (TanStack Start) appelle les cas d'usage du core depuis ses fonctions serveur (`deps`,
+   `requireMember()` dans `apps/web/src/server/`), jamais l'API HTTP.
 3. **Vérifier** : `pnpm typecheck`, `pnpm test`, `rtk proxy pnpm lint` (sans `rtk proxy`, le hook
    remplace Biome par ESLint), `pnpm build`, puis le rendu dans Chrome avec `playwright-core`
    installé dans le scratchpad (jamais dans le repo).
@@ -53,14 +53,25 @@ Moh (on ajoute), en-tête YAML valide, heure de Paris (`TZ=Europe/Paris date`), 
 
 ## Conventions de code
 
-- **Next.js 16** : lire la doc embarquée (`apps/web/node_modules/next/dist/docs/`) avant d'utiliser
-  une API ; `proxy.ts` remplace `middleware`, `params` et `searchParams` sont des promesses.
+- **TanStack Start** (app web, depuis le lot 20) : lire la doc officielle (tanstack.com/start) avant
+  d'utiliser une API. Organisation de `apps/web/src/` :
+  - `routes/` : une route = `loader` (appelle une fonction serveur) + `head` + `component` ;
+    paramètres d'URL validés par `validateSearch` (Zod, `searchText` de `lib/search-params`).
+  - `functions/` : fonctions serveur (`createServerFn`, validation avec `.validator()`) et leurs
+    enveloppes aux noms des actions. **Aucune fonction d'aide au niveau du module** : seul le
+    corps des `.handler()` est retiré du code navigateur.
+  - `server/` : toute la logique serveur (base, Better Auth, e-mails), appelée depuis les
+    handlers. Vérifier : `curl -s localhost:<port>/src/functions/<x>.ts | grep ^import` ne doit
+    montrer aucun import serveur.
+  - `features/` : le JSX des écrans ; `components/` : le design system.
+  - Navigation : `Link`, `useRouter`, `usePathname`, `useSearchParams` de `@/lib/navigation` ;
+    formulaires : `useFormAction` (`lib/use-form-action.ts`) suit les redirections et recharge
+    les données ; sinon `useRouter().refresh()`.
+  - Redirection et page introuvable côté serveur : `throw redirect({ href })`, `throw notFound()`.
 - **Pas de fusion de classes Tailwind** : `className` sert à la mise en page ; pour une autre
   apparence, ajouter une variante au composant.
-- **Tout ce qui est cliquable a le curseur main** (règle globale dans `globals.css`), le curseur
+- **Tout ce qui est cliquable a le curseur main** (règle globale dans `apps/web/src/styles/app.css`), le curseur
   interdit quand c'est désactivé.
-- **Composants serveur → client** : ne jamais passer de fonction en prop ; préférer des liens
-  (`href`) ou une action serveur.
 - **Zod 4** : les `.default()` s'appliquent aussi aux clés absentes ; pas de valeur par défaut
   dans un schéma de mise à jour partielle.
 - Design system : `apps/web/src/components/` (vitrine sur `/app/design-system`).
@@ -68,7 +79,7 @@ Moh (on ajoute), en-tête YAML valide, heure de Paris (`TZ=Europe/Paris date`), 
 ## Environnement local
 
 - `pnpm db:up` : Postgres 16 et Mailpit (e-mails sur http://localhost:8025).
-- Variables dans le `.env` à la racine du poste (chargé par `next.config.ts` et les scripts).
+- Variables dans le `.env` à la racine du poste (chargé par `vite.config.ts` et les scripts).
 - `pnpm dev` écoute sur le `PORT` du `.env` (3100, 3101 ou 3102 selon le poste). Le port 3000 est
   souvent pris par un autre projet de Moh.
 - Ne jamais arrêter un processus qui n'appartient pas à Horaya.

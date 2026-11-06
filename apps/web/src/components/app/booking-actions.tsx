@@ -1,8 +1,14 @@
 "use client";
 
 import type { BookingStatus } from "@horaya/core";
-import { useRouter } from "next/navigation";
 import { useOptimistic, useState, useTransition } from "react";
+import { Button, IconButton } from "@/components/ui/button";
+import { ChoiceChips } from "@/components/ui/chip";
+import { Dialog } from "@/components/ui/dialog";
+import { AffixInput, Field, textareaClasses } from "@/components/ui/field";
+import { FormAlert } from "@/components/ui/form-alert";
+import { Check, CloseIcon } from "@/components/ui/icons";
+import { ActionMenu } from "@/components/ui/menu";
 import {
   cancelBookingAction,
   checkInAction,
@@ -11,15 +17,9 @@ import {
   recordRefundAction,
   refundBookingAction,
   refuseBookingAction,
-} from "@/app/app/reservations/actions";
-import { Button, IconButton } from "@/components/ui/button";
-import { ChoiceChips } from "@/components/ui/chip";
-import { Dialog } from "@/components/ui/dialog";
-import { AffixInput, Field, textareaClasses } from "@/components/ui/field";
-import { FormAlert } from "@/components/ui/form-alert";
-import { Check, CloseIcon } from "@/components/ui/icons";
-import { ActionMenu } from "@/components/ui/menu";
+} from "@/functions/reservations";
 import { cn } from "@/lib/cn";
+import { useRouter } from "@/lib/navigation";
 
 const REFUSAL_REASONS = [
   "Événement complet",

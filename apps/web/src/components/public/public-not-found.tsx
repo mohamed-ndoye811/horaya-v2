@@ -1,6 +1,6 @@
-import Link from "next/link";
 import { ArrowLeft } from "@/components/ui/icons";
 import { cn } from "@/lib/cn";
+import { Link } from "@/lib/navigation";
 
 /** Écran 28b : page introuvable, en version admin (global) ou publique (dans un espace). */
 export function NotFoundScreen({
