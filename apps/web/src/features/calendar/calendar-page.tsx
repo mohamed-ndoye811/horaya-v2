@@ -295,7 +295,7 @@ export function CalendarPage({
               dayHref={(day) => href({ vue: "jour", date: day })}
             />
             <WeekAgenda days={days} events={events} timeZone={timeZone} today={today} />
-            <div className="hidden lg:block">
+            <div className="hidden lg:flex lg:flex-1 lg:flex-col">
               <TimeGridCalendar
                 days={days}
                 events={events}
@@ -309,8 +309,8 @@ export function CalendarPage({
           </>
         )}
         {view === "jour" && (
-          <div className="flex flex-col lg:flex-row lg:items-start lg:pr-4">
-            <div className="min-w-0 flex-1">
+          <div className="flex flex-1 flex-col lg:flex-row lg:items-start lg:pr-4">
+            <div className="flex min-w-0 flex-1 flex-col lg:self-stretch">
               <TimeGridCalendar
                 days={days}
                 events={events}
