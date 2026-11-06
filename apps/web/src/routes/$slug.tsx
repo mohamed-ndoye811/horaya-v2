@@ -23,7 +23,7 @@ function PublicLayout() {
       <PublicNotch workspace={workspace} contact={contactHref(workspace)} />
       <div
         data-scroll-zone
-        className="flex flex-1 flex-col lg:min-h-0 lg:overflow-y-auto lg:rounded-[10px] lg:bg-bg"
+        className="flex flex-1 flex-col scrollbar-none lg:min-h-0 lg:overflow-y-auto lg:rounded-[10px] lg:bg-bg"
       >
         <div className="mx-auto flex w-full max-w-[1440px] flex-1 flex-col px-4 pt-4 pb-6 lg:pt-[62px]">
           <RouteTransition>

@@ -642,7 +642,7 @@ function NotchPanel({
     <div
       role="dialog"
       aria-label={label}
-      className="flex max-h-[calc(100dvh-96px)] w-full flex-col gap-3.5 overflow-y-auto px-4 pt-1 pb-5"
+      className="flex max-h-[calc(100dvh-96px)] w-full flex-col gap-3.5 overflow-y-auto scrollbar-none px-4 pt-1 pb-5"
     >
       {children}
     </div>

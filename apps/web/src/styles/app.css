@@ -197,7 +197,8 @@ input[type="password"] {
 /* Les enfants arrivent l'un après l'autre (listes, cartes, lignes de tableau). */
 @utility reveal-group {
   & > * {
-    animation: var(--animate-rise);
+    /* --reveal : autre arrivée pour un groupe (fondu seul pour les lignes de tableau). */
+    animation: var(--reveal, var(--animate-rise));
     animation-delay: calc(min(var(--i, 0), 8) * var(--stagger));
   }
   & > :nth-child(2) {
@@ -547,5 +548,17 @@ dialog[open]::backdrop {
   ::view-transition-new(*) {
     /* biome-ignore lint/complexity/noImportantStyles: doit passer devant les animations ci-dessus et celles du navigateur */
     animation: none !important;
+  }
+}
+
+/*
+ * Zones qui défilent (contenu dans le cadre, panneaux du notch) : barre de défilement masquée.
+ * On défile toujours à la molette, au pavé tactile ou au clavier ; rien ne bouge quand la hauteur
+ * du contenu change pendant une animation.
+ */
+@utility scrollbar-none {
+  scrollbar-width: none;
+  &::-webkit-scrollbar {
+    display: none;
   }
 }

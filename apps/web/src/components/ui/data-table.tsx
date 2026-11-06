@@ -1,3 +1,4 @@
+import { motion } from "motion/react";
 import { Fragment, type ReactNode } from "react";
 import { cn } from "@/lib/cn";
 import { Link } from "@/lib/navigation";
@@ -12,6 +13,14 @@ export interface Column<T> {
 }
 
 const alignment = { left: "text-left", right: "text-right", center: "text-center" } as const;
+
+/*
+ * Filtre, recherche : les lignes qui restent glissent jusqu'à leur nouvelle place (animation de
+ * mise en page de Motion), les nouvelles arrivent en fondu (reveal-group). Au-delà de 80 lignes,
+ * pas de glissement : mesurer chaque ligne à chaque rendu coûterait trop.
+ */
+const LAYOUT_ROWS_MAX = 80;
+const layoutTransition = { layout: { duration: 0.32, ease: [0.2, 0, 0, 1] as const } };
 
 /**
  * Tableau des listes de l'admin (DA v4) : une carte blanche arrondie, en-têtes gris sur
@@ -79,6 +88,7 @@ export function DataTable<T>({
   );
   // Carte blanche posée à 16 px des bords, ou collée à sa colonne (`flush`).
   const shell = cn("overflow-hidden rounded-3xl bg-surface", !flush && "mx-4");
+  const layout = rows.length <= LAYOUT_ROWS_MAX ? ("position" as const) : false;
   return (
     <>
       {card && (
@@ -89,11 +99,17 @@ export function DataTable<T>({
             return (
               <Fragment key={rowKey(row)}>
                 {heading && (
-                  <li className="border-t border-line-soft bg-band px-4 py-2 text-xs font-bold leading-4 text-ink first:border-t-0">
+                  <motion.li
+                    layout={layout}
+                    transition={layoutTransition}
+                    className="border-t border-line-soft bg-band px-4 py-2 text-xs font-bold leading-4 text-ink first:border-t-0"
+                  >
                     {band(heading)}
-                  </li>
+                  </motion.li>
                 )}
-                <li
+                <motion.li
+                  layout={layout}
+                  transition={layoutTransition}
                   className={cn(
                     "relative border-t border-line-soft px-4 py-4 first:border-t-0",
                     rowTone?.(row) === "warning" && "bg-warning-bg/50",
@@ -101,7 +117,7 @@ export function DataTable<T>({
                   )}
                 >
                   {card(row)}
-                </li>
+                </motion.li>
               </Fragment>
             );
           })}
@@ -136,8 +152,9 @@ export function DataTable<T>({
                 ))}
               </tr>
             </thead>
-            {/* Les lignes arrivent l'une après l'autre au premier affichage. */}
-            <tbody className="reveal-group">
+            {/* Les lignes arrivent l'une après l'autre, en fondu sur place : un glissement ferait
+                déborder le tableau pendant l'animation. */}
+            <tbody className="reveal-group [--reveal:var(--animate-fade)]">
               {rows.length === 0 && empty && (
                 <tr>
                   <td colSpan={columns.length}>{empty}</td>
@@ -148,7 +165,11 @@ export function DataTable<T>({
                 return (
                   <Fragment key={rowKey(row)}>
                     {heading && (
-                      <tr className="border-t border-line-soft bg-band">
+                      <motion.tr
+                        layout={layout}
+                        transition={layoutTransition}
+                        className="border-t border-line-soft bg-band"
+                      >
                         <th
                           scope="rowgroup"
                           colSpan={columns.length}
@@ -156,9 +177,11 @@ export function DataTable<T>({
                         >
                           {band(heading)}
                         </th>
-                      </tr>
+                      </motion.tr>
                     )}
-                    <tr
+                    <motion.tr
+                      layout={layout}
+                      transition={layoutTransition}
                       className={cn(
                         "border-t border-line-soft transition-colors hover:bg-band",
                         rowHref && "relative cursor-pointer",
@@ -199,7 +222,7 @@ export function DataTable<T>({
                           </div>
                         </td>
                       ))}
-                    </tr>
+                    </motion.tr>
                   </Fragment>
                 );
               })}
