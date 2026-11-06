@@ -438,24 +438,24 @@ export function CounterWizard({
           </div>
           {pickingItems && items && items.length > 0 && (
             // Cartes du matériel (photo à venir) : choisies, elles prennent le contour noir des séances.
-            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 xl:grid-cols-4">
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-5">
               {items.map((item) => {
                 const quantity = quantities[item.id] ?? 0;
                 return (
                   <div
                     key={item.id}
                     className={cn(
-                      "flex flex-col gap-3 rounded-[18px] border-[1.5px] p-2 pb-3",
+                      "flex flex-col gap-2 rounded-2xl border-[1.5px] p-1.5",
                       quantity > 0 ? "border-ink" : "border-bg",
                     )}
                   >
                     <div
                       aria-hidden="true"
-                      className="flex aspect-[4/3] items-center justify-center rounded-xl bg-field text-ink-subtle"
+                      className="flex h-14 items-center justify-center rounded-[10px] bg-field text-ink-subtle"
                     >
-                      <BoxIcon size={32} />
+                      <BoxIcon size={22} />
                     </div>
-                    <span className="flex min-w-0 flex-1 flex-col gap-px px-1.5">
+                    <span className="flex min-w-0 flex-1 flex-col gap-px px-1">
                       <span className="line-clamp-2 text-sm font-semibold leading-[18px] text-ink">
                         {item.name}
                       </span>
@@ -468,7 +468,7 @@ export function CounterWizard({
                         {item.free - quantity} libre{item.free - quantity > 1 ? "s" : ""}
                       </span>
                     </span>
-                    <div className="px-1">
+                    <div>
                       <QuantityStepper
                         value={quantity}
                         min={0}
