@@ -424,7 +424,8 @@ export function Notch({ user, workspace, pendingBookings, unreadNotifications }:
           if (!event.currentTarget.contains(event.relatedTarget)) hideHint();
         }}
       >
-        {!panel && <SubNotch hint={hint} />}
+        {/* Toujours monté (caché pendant un panneau) : il garde sa largeur et sa place. */}
+        <SubNotch hint={hint} />
         <svg
           ref={svgRef}
           aria-hidden="true"
@@ -586,8 +587,13 @@ function SubNotch({ hint }: { hint: Hint | null }) {
     >
       <motion.div
         className="relative"
-        initial={{ y: "-100%" }}
-        animate={{ y: hint.visible ? 0 : "-100%" }}
+        // Rentré sous le notch, il devient invisible : ses bords ne dépassent jamais des courbes.
+        initial={{ y: "-100%", visibility: "hidden" }}
+        animate={
+          hint.visible
+            ? { y: 0, visibility: "visible" }
+            : { y: "-100%", transitionEnd: { visibility: "hidden" } }
+        }
         transition={HINT}
       >
         <svg
