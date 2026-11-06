@@ -17,8 +17,8 @@ Le vault Obsidian de Moh : `/Volumes/moh-drive/hub/notes/hub` (synchronisé avec
    web (TanStack Start) appelle les cas d'usage du core depuis ses fonctions serveur (`deps`,
    `requireMember()` dans `apps/web/src/server/`), jamais l'API HTTP.
 3. **Vérifier** : `pnpm typecheck`, `pnpm test`, `rtk proxy pnpm lint` (sans `rtk proxy`, le hook
-   remplace Biome par ESLint), `pnpm build`, puis le rendu dans Chrome avec `playwright-core`
-   installé dans le scratchpad (jamais dans le repo).
+   remplace Biome par ESLint), `pnpm build`, puis le rendu dans **Yab** (le navigateur de Moh, déjà connecté : `yab exec`
+   ou les outils `mcp__yab-browser__*`), jamais Playwright ni un autre navigateur automatisé.
 4. **Commit** sur une branche `lot/…` ou `fix/…` partie de `origin/develop` (le lint doit sortir
    en 0 : vérifier le code de retour), puis PR vers `develop` avec `gh pr create`. Moh la fusionne
    en squash ; la fusion déploie sur staging.

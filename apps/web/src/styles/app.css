@@ -360,8 +360,17 @@ dialog[open]::backdrop {
 }
 /* Nom de la page posé pendant la transition seulement : hors transition, il créerait un
    contexte d'empilement qui ferait passer les coins fixés (fil d'Ariane, actions) sous le fondu. */
-:root:active-view-transition [data-page-transition] {
-  view-transition-name: page;
+@media (min-width: 1024px) {
+  :root:active-view-transition [data-page-transition] {
+    view-transition-name: page;
+    /*
+     * Nommée, la page devient une couche à part : sans ce z-index, les coins fixés qu'elle
+     * contient passeraient sous le fondu du notch (z-40) pendant l'image qui précède la capture
+     * (flicker du fil d'Ariane et des boutons). Le notch (z-50) reste au-dessus.
+     */
+    position: relative;
+    z-index: 41;
+  }
 }
 /* La page garde sa taille réelle pendant le fondu (pas d'étirement entre deux hauteurs). */
 ::view-transition-group(page) {
