@@ -3,6 +3,7 @@ import { AnimatePresence, motion, type Variants } from "motion/react";
 import { type FormEvent, type ReactNode, useEffect, useRef, useState, useTransition } from "react";
 import { WordsReveal } from "@/components/motion/words";
 import { Avatar } from "@/components/ui/avatar";
+import { StatusBadge } from "@/components/ui/badge";
 import { Button, ButtonLink } from "@/components/ui/button";
 import { Field, inputClasses } from "@/components/ui/field";
 import { FormAlert } from "@/components/ui/form-alert";
@@ -14,6 +15,8 @@ import {
   searchCounterCustomersAction,
 } from "@/functions/reservations";
 import { cn } from "@/lib/cn";
+import { CATEGORY_COLORS } from "@/lib/colors";
+import { meshCover, seedOf } from "@/lib/cover";
 import { formatMoney } from "@/lib/format";
 
 export interface CounterEvent {
@@ -46,6 +49,7 @@ interface CustomerHit {
 interface CounterItem {
   id: string;
   name: string;
+  photoUrl: string | null;
   free: number;
   onEvent: number;
 }
@@ -443,34 +447,53 @@ export function CounterWizard({
             </button>
           </div>
           {pickingItems && items && items.length > 0 && (
-            <div className="flex flex-col overflow-hidden rounded-[14px] border border-bg">
+            // Cartes du matériel : choisies, elles prennent le contour noir des séances.
+            <div className="grid gap-4 sm:grid-cols-2 2xl:grid-cols-3">
               {items.map((item) => {
                 const quantity = quantities[item.id] ?? 0;
+                const left = item.free - quantity;
+                // Photo de l'article, sinon un dégradé de l'app ; même teinte sombre que meshCover.
+                const color =
+                  CATEGORY_COLORS[seedOf(item.id) % CATEGORY_COLORS.length] ?? "#528d74";
+                const shade = `oklch(from ${color} 0.2 calc(c * 0.5) h)`;
                 return (
                   <div
                     key={item.id}
-                    className="flex items-center gap-3 border-t border-bg py-2 pr-2 pl-3.5 first:border-t-0"
+                    className={cn(
+                      "relative isolate flex min-h-32 flex-col justify-between gap-4 overflow-hidden rounded-[20px] bg-cover bg-center p-4 text-on-ink",
+                      quantity > 0 && "ring-2 ring-accent ring-offset-2",
+                    )}
+                    style={
+                      item.photoUrl
+                        ? { backgroundColor: shade, backgroundImage: `url(${item.photoUrl})` }
+                        : meshCover(color, item.id)
+                    }
                   >
-                    <span className="flex min-w-0 flex-1 flex-col gap-px">
-                      <span className="text-sm font-semibold leading-[18px] text-ink">
+                    {/* Côté du nom : la teinte sombre de l'image, qui s'y fond vers la droite. */}
+                    <div
+                      aria-hidden="true"
+                      className="absolute inset-0 -z-10"
+                      style={{
+                        backgroundImage: `linear-gradient(to right, ${shade} 35%, transparent 85%)`,
+                      }}
+                    />
+                    <div className="flex justify-end">
+                      <StatusBadge tone={left <= 1 ? "warning" : "success"}>
+                        {left} libre{left > 1 ? "s" : ""}
+                      </StatusBadge>
+                    </div>
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="line-clamp-2 min-w-0 text-base font-semibold leading-5">
                         {item.name}
                       </span>
-                      <span
-                        className={cn(
-                          "text-xs leading-4",
-                          item.free - quantity <= 1 ? "text-warning" : "text-success",
-                        )}
-                      >
-                        {item.free - quantity} libre{item.free - quantity > 1 ? "s" : ""}
-                      </span>
-                    </span>
-                    <QuantityStepper
-                      value={quantity}
-                      min={0}
-                      max={item.free}
-                      label={item.name}
-                      onChange={(next) => setQuantities({ ...quantities, [item.id]: next })}
-                    />
+                      <QuantityStepper
+                        value={quantity}
+                        min={0}
+                        max={item.free}
+                        label={item.name}
+                        onChange={(next) => setQuantities({ ...quantities, [item.id]: next })}
+                      />
+                    </div>
                   </div>
                 );
               })}
@@ -554,7 +577,7 @@ export function CounterWizard({
         </Section>
       </div>
 
-      <aside className="flex w-full shrink-0 flex-col justify-between gap-6 rounded-3xl bg-ink p-[22px] lg:sticky lg:top-[62px] lg:w-[360px] lg:self-start lg:min-h-[calc(100dvh-180px)]">
+      <aside className="flex w-full shrink-0 flex-col justify-between gap-6 rounded-3xl bg-ink p-[22px] lg:sticky lg:top-[62px] lg:w-[360px] lg:self-start">
         <div className="flex flex-col gap-4">
           <div className="flex items-center justify-between">
             <p className="font-mono text-[11px] font-semibold leading-[14px] tracking-[0.06em] text-ink-subtle">

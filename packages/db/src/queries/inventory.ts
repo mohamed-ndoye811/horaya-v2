@@ -340,6 +340,7 @@ export async function listCounterItems(db: Executor, organizationId: string, eve
     .select({
       id: item.id,
       name: item.name,
+      photoUrl: item.photoUrl,
       free: sql<number>`(select count(*) from item_unit u where u.item_id = "item"."id" and u.status = 'available'
         and not exists (select 1 from item_allocation a where a.item_unit_id = u.id and a.cancelled_at is null
           and a.starts_at < ${iso(event.endsAt)} and a.ends_at > ${iso(event.startsAt)}
