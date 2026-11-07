@@ -10,7 +10,7 @@ import { SignOutButton } from "./sign-out-button";
  * n'affichent pas (matériel, clients, types, liens, paramètres) et au compte.
  */
 export function MorePage({ data }: { data: Awaited<ReturnType<typeof getMoreMenu>> }) {
-  const { userName, role, workspace, members } = data;
+  const { userName, userImage, role, workspace, members } = data;
 
   return (
     <div className="flex flex-col gap-[18px] px-4 pt-4">
@@ -19,7 +19,11 @@ export function MorePage({ data }: { data: Awaited<ReturnType<typeof getMoreMenu
           aria-hidden="true"
           className="flex size-12 shrink-0 items-center justify-center rounded-full bg-linear-135 from-[#f7b27e] to-[#e8743b] text-base font-bold text-white"
         >
-          {initials(userName)}
+          {userImage ? (
+            <img src={userImage} alt="" className="size-full rounded-full object-cover" />
+          ) : (
+            initials(userName)
+          )}
         </span>
         <div className="flex min-w-0 flex-1 flex-col gap-0.5">
           <h1 className="truncate text-base font-semibold leading-5 text-white">{userName}</h1>

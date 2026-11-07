@@ -286,6 +286,7 @@ export async function listEventItems(db: Executor, organizationId: string, event
       itemId: item.id,
       name: item.name,
       reference: item.reference,
+      photoUrl: item.photoUrl,
       quantity: sql<number>`count(*)::int`,
       units: sql<string>`string_agg(${itemUnit.label}, ', ' order by ${itemUnit.label})`,
     })
@@ -299,7 +300,7 @@ export async function listEventItems(db: Executor, organizationId: string, event
         isNull(itemAllocation.cancelledAt),
       ),
     )
-    .groupBy(item.id, item.name, item.reference)
+    .groupBy(item.id, item.name, item.reference, item.photoUrl)
     .orderBy(asc(item.name));
 }
 

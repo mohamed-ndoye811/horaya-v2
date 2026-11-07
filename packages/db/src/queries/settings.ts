@@ -81,6 +81,7 @@ export interface TeamMemberRow {
   userId: string;
   name: string;
   email: string;
+  image: string | null;
   role: MemberRole;
   joinedAt: Date;
 }
@@ -103,6 +104,7 @@ export async function listTeam(db: Executor, organizationId: string, now: Date) 
         userId: member.userId,
         name: user.name,
         email: user.email,
+        image: user.image,
         role: member.role,
         joinedAt: member.createdAt,
       })

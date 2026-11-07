@@ -330,7 +330,11 @@ export function BookingDetailPage({ data }: { data: Awaited<ReturnType<typeof ge
                       key={entry.itemId}
                       className="flex items-center gap-3.5 border-t border-[#f4f4f2] py-3"
                     >
-                      <ItemTile name={entry.name} reference={entry.reference} />
+                      <ItemTile
+                        name={entry.name}
+                        reference={entry.reference}
+                        photoUrl={entry.photoUrl}
+                      />
                       <div className="flex min-w-0 flex-1 flex-col gap-0.5">
                         <Link
                           href={`/app/materiel/${entry.itemId}`}
@@ -366,7 +370,11 @@ export function BookingDetailPage({ data }: { data: Awaited<ReturnType<typeof ge
                     key={entry.itemId}
                     className="flex items-center gap-3.5 border-t border-[#f4f4f2] py-3"
                   >
-                    <ItemTile name={entry.name} reference={entry.reference} />
+                    <ItemTile
+                      name={entry.name}
+                      reference={entry.reference}
+                      photoUrl={entry.photoUrl}
+                    />
                     <div className="flex min-w-0 flex-1 flex-col gap-0.5">
                       <Link
                         href={`/app/materiel/${entry.itemId}`}
