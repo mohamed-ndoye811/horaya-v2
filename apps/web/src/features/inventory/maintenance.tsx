@@ -1,7 +1,14 @@
 import { useRef, useState, useTransition } from "react";
-import { Button, textLinkClasses } from "@/components/ui/button";
+import { Button, textLinkClasses, textLinkSmClasses } from "@/components/ui/button";
 import { Dialog } from "@/components/ui/dialog";
-import { AffixInput, Checkbox, Field, inputClasses, textareaClasses } from "@/components/ui/field";
+import {
+  AffixInput,
+  Checkbox,
+  Field,
+  FieldError,
+  inputClasses,
+  textareaClasses,
+} from "@/components/ui/field";
 import { FormAlert } from "@/components/ui/form-alert";
 import { cancelMaintenanceAction, scheduleMaintenanceAction } from "@/functions/inventory";
 import { cn } from "@/lib/cn";
@@ -25,7 +32,7 @@ export function AddMaintenance({
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="whitespace-nowrap text-[13px] font-semibold leading-[17px] text-ink hover:underline"
+        className={cn(textLinkSmClasses, "whitespace-nowrap")}
       >
         + Ajouter une intervention
       </button>
@@ -132,9 +139,7 @@ function MaintenanceDialog({
               />
             ))}
           </div>
-          {errors.unitIds && (
-            <p className="text-[13px] font-semibold text-danger">{errors.unitIds}</p>
-          )}
+          {errors.unitIds && <FieldError>{errors.unitIds}</FieldError>}
         </fieldset>
         <div className="grid gap-4 sm:grid-cols-2">
           <Field label="Du" required error={errors.startsAt}>
@@ -184,7 +189,7 @@ export function CancelMaintenance({ allocationIds }: { allocationIds: string[] }
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   return (
-    <span className="flex flex-col items-end gap-1">
+    <div className="flex flex-col items-end gap-1">
       <button
         type="button"
         disabled={pending}
@@ -195,11 +200,11 @@ export function CancelMaintenance({ allocationIds }: { allocationIds: string[] }
             else router.refresh();
           })
         }
-        className={`${textLinkClasses} text-[13px] disabled:cursor-not-allowed disabled:opacity-50`}
+        className={cn(textLinkSmClasses, "disabled:cursor-not-allowed")}
       >
         Annuler
       </button>
-      {error && <span className="text-[13px] font-semibold text-danger">{error}</span>}
-    </span>
+      {error && <FieldError>{error}</FieldError>}
+    </div>
   );
 }

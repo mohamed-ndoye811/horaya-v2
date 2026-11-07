@@ -1,22 +1,35 @@
 import { ITEM_CSV_COLUMNS } from "@horaya/core";
 import { useState } from "react";
-import { Button } from "@/components/ui/button";
+import { Button, textLinkClasses } from "@/components/ui/button";
 import { Dialog } from "@/components/ui/dialog";
 import { Field } from "@/components/ui/field";
 import { FormAlert } from "@/components/ui/form-alert";
+import { ActionMenu } from "@/components/ui/menu";
 import { importItemsAction } from "@/functions/inventory";
 import { useRouter } from "@/lib/navigation";
 import { useFormAction } from "@/lib/use-form-action";
 import type { FormState } from "@/server/form-state";
 
-/** « Importer CSV » de l'écran 20 : fichier, rappel des colonnes, modèle à télécharger. */
+/**
+ * « Importer CSV » de l'écran 20 : fichier, rappel des colonnes, modèle à télécharger.
+ * Sous `lg`, action secondaire rangée dans un menu « … ».
+ */
 export function ImportItemsButton() {
   const [open, setOpen] = useState(false);
   return (
     <>
-      <Button variant="secondary" onClick={() => setOpen(true)}>
-        Importer CSV
-      </Button>
+      <div className="hidden lg:flex">
+        <Button variant="secondary" onClick={() => setOpen(true)}>
+          Importer CSV
+        </Button>
+      </div>
+      <div className="flex lg:hidden">
+        <ActionMenu
+          variant="outline"
+          label="Autres actions"
+          items={[{ label: "Importer un CSV", onSelect: () => setOpen(true) }]}
+        />
+      </div>
       {open && <ImportDialog onClose={() => setOpen(false)} />}
     </>
   );
@@ -72,7 +85,7 @@ function ImportDialog({ onClose }: { onClose: () => void }) {
                 name="file"
                 required
                 accept=".csv,text/csv"
-                className="text-[15px] font-medium text-ink file:mr-4 file:h-10 file:border-2 file:border-ink file:bg-transparent file:px-4 file:font-bold file:text-ink"
+                className="text-[15px] font-medium text-ink file:mr-4 file:h-10 file:rounded-full file:border file:border-line file:bg-surface file:px-4 file:text-sm file:font-semibold file:text-ink hover:file:bg-field"
               />
             )}
           </Field>
@@ -81,11 +94,7 @@ function ImportDialog({ onClose }: { onClose: () => void }) {
               Colonnes reconnues : {ITEM_CSV_COLUMNS.map((column) => column.header).join(", ")}.
               Seul le nom est obligatoire ; sans quantité, l'article a un exemplaire.
             </p>
-            <a
-              href="/app/materiel/modele-import"
-              download
-              className="font-bold text-ink underline decoration-1 underline-offset-[3px]"
-            >
+            <a href="/app/materiel/modele-import" download className={textLinkClasses}>
               Télécharger le modèle
             </a>
           </div>

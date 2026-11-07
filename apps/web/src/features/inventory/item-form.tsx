@@ -4,8 +4,10 @@ import { Button } from "@/components/ui/button";
 import { AffixInput, Checkbox, Field, inputClasses, textareaClasses } from "@/components/ui/field";
 import { FormAlert } from "@/components/ui/form-alert";
 import { BoxIcon } from "@/components/ui/icons";
-import { FormSection } from "@/components/ui/section";
+import { cardClasses, cardShellClasses, dashedClasses, FormSection } from "@/components/ui/section";
+import { Tag } from "@/components/ui/tag";
 import { saveItem } from "@/functions/inventory";
+import { cn } from "@/lib/cn";
 import { useFormAction } from "@/lib/use-form-action";
 import type { FormState } from "@/server/form-state";
 
@@ -91,7 +93,7 @@ export function ItemForm({
                           const form = event.currentTarget.form;
                           if (form) read(form);
                         }}
-                        className="h-6 rounded-full bg-field px-2.5 text-xs font-semibold leading-4 text-[#4a4a4a] hover:bg-line-soft"
+                        className="h-8 rounded-full bg-field px-3 text-xs font-semibold leading-4 text-ink-soft hover:bg-line-soft"
                       >
                         {type}
                       </button>
@@ -263,27 +265,30 @@ export function ItemForm({
       </div>
 
       <aside className="flex flex-col gap-4">
-        <section className="flex flex-col gap-3 rounded-3xl bg-surface p-5 shadow-[0_1px_2px_rgba(0,0,0,0.04),0_16px_40px_rgba(0,0,0,0.06)]">
+        <section className={cn(cardClasses, "gap-3")}>
           <div className="flex items-center justify-between">
             <h2 className="text-base font-semibold leading-5 text-ink">Photos</h2>
-            <span className="inline-flex h-[22px] items-center rounded-full bg-info-bg px-2.5 text-xs font-bold text-info">
-              À venir
-            </span>
+            <Tag tone="info">À venir</Tag>
           </div>
-          <div className="flex h-24 flex-col items-center justify-center gap-0.5 rounded-2xl border-[1.5px] border-dashed border-[#dcdcd8] text-center">
+          <div
+            className={cn(
+              dashedClasses,
+              "flex h-24 flex-col items-center justify-center gap-0.5 rounded-2xl text-center",
+            )}
+          >
             <p className="text-[13px] font-semibold leading-[17px] text-ink-subtle">
               Glisse tes photos
             </p>
-            <p className="text-[11px] leading-[14px] text-[#ababa6]">JPG ou PNG · 5 max</p>
+            <p className="text-[11px] leading-[14px] text-ink-faint">JPG ou PNG · 5 max</p>
           </div>
           <p className="text-xs leading-4 text-ink-subtle">
             La première photo servira de vignette dans les listes et sur ta page publique.
           </p>
         </section>
-        <section className="flex flex-col overflow-hidden rounded-3xl bg-surface shadow-[0_1px_2px_rgba(0,0,0,0.04),0_16px_40px_rgba(0,0,0,0.06)]">
+        <section className={cn(cardShellClasses, "overflow-hidden")}>
           <div className="relative flex h-[150px] items-center justify-center bg-field text-ink-subtle">
-            <span className="absolute top-3 left-3 rounded-full bg-ink/70 px-2.5 py-1 text-[11px] font-bold uppercase leading-[14px] tracking-[0.06em] text-white">
-              Aperçu public
+            <span className="absolute top-3 left-3">
+              <Tag tone="overlay">Aperçu public</Tag>
             </span>
             <BoxIcon size={44} />
           </div>

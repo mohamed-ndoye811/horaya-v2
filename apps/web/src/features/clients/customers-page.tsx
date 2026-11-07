@@ -108,7 +108,7 @@ export function CustomersPage({
           counts.all > 0 && (
             <>
               <form
-                className="min-w-0 md:flex-1 xl:max-w-[300px]"
+                className="min-w-0 lg:flex-1 xl:max-w-[300px]"
                 onSubmit={(event) => {
                   event.preventDefault();
                   const q = String(new FormData(event.currentTarget).get("q") ?? "").trim();
@@ -280,7 +280,7 @@ export function CustomersPage({
                       Prochaine le {dayMonth(row.nextVisit, timeZone)}
                     </span>
                   ) : (
-                    <span className="text-[13px] leading-[17px] text-[#4a4a4a]">
+                    <span className="text-[13px] leading-[17px] text-ink-soft">
                       {row.lastVisit ? visitLabel(row.lastVisit, timeZone) : "—"}
                     </span>
                   ),
@@ -289,6 +289,8 @@ export function CustomersPage({
                 key: "tags",
                 header: "Étiquettes",
                 width: 240,
+                // Entre 1024 et 1280 px : les filtres VIP / Entreprises / Inactifs couvrent l'essentiel.
+                hideBelow: "xl",
                 cell: (row) => (
                   <div className="flex flex-wrap gap-1.5">
                     {customerTags(row, now).map((tag) => (

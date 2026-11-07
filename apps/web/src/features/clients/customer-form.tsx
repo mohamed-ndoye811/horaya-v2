@@ -3,9 +3,10 @@ import { Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Checkbox, Field, inputClasses } from "@/components/ui/field";
 import { FormAlert } from "@/components/ui/form-alert";
-import { FormSection } from "@/components/ui/section";
+import { FormSection, inkCardClasses } from "@/components/ui/section";
 import { Tag } from "@/components/ui/tag";
 import { saveCustomer } from "@/functions/clients";
+import { cn } from "@/lib/cn";
 import { useFormAction } from "@/lib/use-form-action";
 import type { FormState } from "@/server/form-state";
 
@@ -151,17 +152,17 @@ export function CustomerForm({
           </div>
         </FormSection>
       </div>
-      <aside className="flex flex-col gap-4 rounded-3xl bg-ink p-5">
+      <aside className={cn(inkCardClasses, "flex flex-col gap-4 rounded-3xl p-5")}>
         <p className="text-[11px] font-bold uppercase leading-[14px] tracking-[0.06em] text-ink-subtle">
           Aperçu de la fiche
         </p>
         <div className="flex min-w-0 items-center gap-3">
           <Avatar name={name || "?"} size="profile" />
           <div className="flex min-w-0 flex-col gap-0.5">
-            <p className="truncate text-[17px] font-semibold leading-[22px] text-white">
+            <p className="truncate text-[17px] font-semibold leading-[22px] text-on-ink">
               {name || "Nouveau client"}
             </p>
-            <p className="truncate text-[13px] leading-[17px] text-[#9a9ea8]">
+            <p className="truncate text-[13px] leading-[17px] text-on-ink-muted">
               {[preview.email, preview.phone].filter(Boolean).join(" · ") || "Pas de contact"}
             </p>
           </div>
@@ -177,7 +178,7 @@ export function CustomerForm({
           </div>
         )}
         {!preview.email && (
-          <p className="rounded-2xl bg-white/5 px-3.5 py-3 text-[13px] leading-5 text-[#9a9ea8]">
+          <p className="rounded-2xl bg-white/5 px-3.5 py-3 text-[13px] leading-5 text-on-ink-muted">
             Sans e-mail, pas de confirmation automatique : ses réservations passeront par le
             comptoir.
           </p>

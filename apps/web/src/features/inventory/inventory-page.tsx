@@ -4,7 +4,7 @@ import { FabLink } from "@/components/app/fab";
 import { ItemTile } from "@/components/app/item-tile";
 import { PageHeader } from "@/components/app/page-header";
 import { StatusBadge, type Tone } from "@/components/ui/badge";
-import { ButtonLink } from "@/components/ui/button";
+import { ButtonLink, rowLinkClasses } from "@/components/ui/button";
 import { DataTable } from "@/components/ui/data-table";
 import { EmptyState } from "@/components/ui/empty-state";
 import { PlusIcon } from "@/components/ui/icons";
@@ -12,6 +12,7 @@ import { ProgressBar } from "@/components/ui/progress";
 import { SearchInput } from "@/components/ui/search-input";
 import { SegmentedLinks } from "@/components/ui/segmented";
 import { MiniStat } from "@/components/ui/stat";
+import { Tag } from "@/components/ui/tag";
 import type { getInventory } from "@/functions/inventory";
 import { cn } from "@/lib/cn";
 import { formatDateTimeShort, formatMoney, formatRelativeDateTime } from "@/lib/format";
@@ -94,7 +95,7 @@ export function InventoryPage({
           counts.all > 0 && (
             <>
               <form
-                className="min-w-0 md:flex-1 xl:max-w-[280px]"
+                className="min-w-0 lg:flex-1 xl:max-w-[280px]"
                 onSubmit={(event) => {
                   event.preventDefault();
                   const q = String(new FormData(event.currentTarget).get("q") ?? "").trim();
@@ -134,9 +135,7 @@ export function InventoryPage({
           value={stats.outNow}
           aside={
             stats.returnsToday > 0 && (
-              <span className="inline-flex h-[22px] items-center rounded-full bg-info-bg px-2.5 text-xs font-bold text-info">
-                {stats.returnsToday} retour{stats.returnsToday > 1 ? "s" : ""} ce soir
-              </span>
+              <Tag tone="info">{`${stats.returnsToday} retour${stats.returnsToday > 1 ? "s" : ""} ce soir`}</Tag>
             )
           }
         />
@@ -148,7 +147,9 @@ export function InventoryPage({
               <span
                 className={cn(
                   "inline-flex h-5 items-center rounded-full px-[7px] text-[11px] font-bold leading-[14px]",
-                  trend >= 0 ? "bg-[#7cc29e]/15 text-[#7cc29e]" : "bg-danger/20 text-[#e59a9a]",
+                  trend >= 0
+                    ? "bg-success-on-ink/15 text-success-on-ink"
+                    : "bg-danger/20 text-danger-on-ink",
                 )}
               >
                 {trend >= 0 ? "+" : "−"}
@@ -217,7 +218,10 @@ export function InventoryPage({
                     <div className="flex min-w-0 flex-col gap-1">
                       <Link
                         href={`/app/materiel/${row.id}`}
-                        className="text-sm font-semibold leading-[18px] text-ink after:absolute after:inset-0 hover:underline"
+                        className={cn(
+                          rowLinkClasses,
+                          "text-sm leading-[18px] after:absolute after:inset-0",
+                        )}
                       >
                         {row.name}
                       </Link>
@@ -258,7 +262,7 @@ export function InventoryPage({
                     <div className="flex min-w-0 flex-col gap-px">
                       <Link
                         href={`/app/materiel/${row.id}`}
-                        className="truncate text-sm font-semibold leading-[18px] text-ink hover:underline"
+                        className={cn(rowLinkClasses, "truncate text-sm leading-[18px]")}
                       >
                         {row.name}
                       </Link>
@@ -273,8 +277,10 @@ export function InventoryPage({
                 key: "type",
                 header: "Type",
                 width: 130,
+                // Entre 1024 et 1280 px : la catégorie est la colonne la moins utile.
+                hideBelow: "xl",
                 cell: (row) => (
-                  <span className="truncate text-[13px] leading-[17px] text-[#4a4a4a]">
+                  <span className="truncate text-[13px] leading-[17px] text-ink-soft">
                     {row.typeName ?? "—"}
                   </span>
                 ),
@@ -358,7 +364,7 @@ function ItemStatus({ row }: { row: ItemListRow }) {
 /** Prochaine sortie, ou retour attendu si l'article est dehors. */
 function NextOuting({ row, now, timeZone }: { row: ItemListRow; now: Date; timeZone: string }) {
   if (!row.nextStartsAt || !row.nextEndsAt)
-    return <span className="text-sm text-[#ababa6]">—</span>;
+    return <span className="text-sm text-ink-faint">—</span>;
   const current = row.nextStartsAt <= now;
   const maintenance = row.nextKind === "maintenance";
   const title = row.nextTitle ?? (maintenance ? "Maintenance" : "Réservé");
