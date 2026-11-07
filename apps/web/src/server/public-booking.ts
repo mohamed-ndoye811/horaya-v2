@@ -311,7 +311,8 @@ export async function createPublicBooking(
     manageToken = created.manageToken;
     // « Payer avec ma carte » coché (client connecté) : réglée avant l'e-mail de confirmation.
     // Si la carte ne passe plus (solde, liste d'attente…), la réservation reste à payer.
-    const passId = text(form, "passId");
+    // Un bon cadeau déjà déduit l'emporte : la carte réglerait le prix entier une seconde fois.
+    const passId = giftCardCode ? "" : text(form, "passId");
     const paidWithPass =
       passId !== "" && !(await payWithMyPassImpl(slug, created.booking.id, passId)).error;
     await sendBookingCreatedEmail(workspace.id, created.booking.id, manageToken);

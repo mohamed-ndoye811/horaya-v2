@@ -45,6 +45,7 @@ import { withParams } from "@/lib/search-params";
 import { db } from "./db";
 import { env } from "./env";
 import { type FormState, toFormState } from "./form-state";
+import { giftCardsForCustomer } from "./gift-cards";
 import { absoluteUrl, mailer } from "./mailer";
 import { authCookiePrefix } from "./poste";
 import { getWorkspaceBySlug, workspacePaymentChannel } from "./public";
@@ -267,6 +268,13 @@ export async function customerTerm(slug: string) {
   const rows = await listAccountBookings(db, account.email, workspace.id);
   const next = rows.find((row) => row.enrollmentId && isUpcoming(row, now));
   return next?.enrollmentId ? enrollmentOf(workspace, next.enrollmentId, now) : null;
+}
+
+/** Lot 32 : « Mes bons cadeaux », ceux de l'e-mail du compte connecté (jamais un e-mail saisi). */
+export async function customerGiftCards(slug: string) {
+  const workspace = await publicWorkspace(slug);
+  const account = await requireAccount(slug);
+  return giftCardsForCustomer(workspace.id, account.email);
 }
 
 /** Maquette 8.3 : une réservation, son paiement, l'agenda, changer de date, annuler. */
