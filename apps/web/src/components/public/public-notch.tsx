@@ -32,6 +32,8 @@ export function PublicNotch({
         : "font-medium text-notch-idle hover:text-on-ink",
     );
 
+  const mobileLink = "tap-area text-[13px] font-semibold leading-4 text-ink-muted hover:text-ink";
+
   const nav = (
     <>
       {links.map((entry) => (
@@ -45,7 +47,7 @@ export function PublicNotch({
         </Link>
       ))}
       {contact && (
-        <a href={contact} className={cn(link(false), "hidden sm:flex")}>
+        <a href={contact} className={link(false)}>
           Contact
         </a>
       )}
@@ -86,12 +88,16 @@ export function PublicNotch({
             {workspace.name}
           </span>
         </Link>
-        <Link
-          href={bookings ? home : `${home}/mes-reservations`}
-          className="shrink-0 text-[13px] font-semibold leading-4 text-ink-muted"
-        >
-          {bookings ? "Événements" : "Mes réservations"}
-        </Link>
+        <div className="flex shrink-0 items-center gap-4">
+          {contact && (
+            <a href={contact} className={mobileLink}>
+              Contact
+            </a>
+          )}
+          <Link href={bookings ? home : `${home}/mes-reservations`} className={mobileLink}>
+            {bookings ? "Événements" : "Mes réservations"}
+          </Link>
+        </div>
       </header>
     </>
   );

@@ -78,12 +78,12 @@ export function PublicFooter({
         {details.join(" · ")} ·{" "}
         <Link
           href={`/${workspace.slug}/mentions-legales`}
-          className="underline underline-offset-2 hover:text-ink"
+          className="tap-area underline underline-offset-2 hover:text-ink"
         >
           Mentions légales
         </Link>
       </p>
-      <Link href="/" className="text-xs font-semibold hover:text-ink">
+      <Link href="/" className="tap-area w-fit text-xs font-semibold hover:text-ink">
         Réservations propulsées par Horaya
       </Link>
     </footer>

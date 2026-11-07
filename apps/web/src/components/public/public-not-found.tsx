@@ -1,3 +1,4 @@
+import { ButtonLink } from "@/components/ui/button";
 import { ArrowLeft } from "@/components/ui/icons";
 import { cn } from "@/lib/cn";
 import { Link } from "@/lib/navigation";
@@ -48,20 +49,13 @@ export function NotFoundScreen({
             {text}
           </p>
           <div className="flex flex-col gap-3 sm:flex-row">
-            <Link
-              href={primary.href}
-              className="flex h-[54px] items-center justify-center gap-2.5 rounded-full bg-on-ink px-6 text-base font-extrabold text-ink transition-opacity hover:opacity-90"
-            >
-              <ArrowLeft />
+            <ButtonLink href={primary.href} variant="inverse" size="xl" icon={<ArrowLeft />}>
               {primary.label}
-            </Link>
+            </ButtonLink>
             {secondary && (
-              <Link
-                href={secondary.href}
-                className="flex h-[54px] items-center justify-center rounded-full border border-on-ink/40 px-[22px] text-base font-bold transition-colors hover:bg-on-ink/10"
-              >
+              <ButtonLink href={secondary.href} variant="inverse-outline" size="xl">
                 {secondary.label}
-              </Link>
+              </ButtonLink>
             )}
           </div>
         </div>

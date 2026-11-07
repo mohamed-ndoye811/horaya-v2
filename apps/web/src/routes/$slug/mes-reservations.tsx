@@ -51,7 +51,7 @@ function MyBookingsPage() {
         <p className="text-[13px] font-semibold leading-4 text-[var(--brand-light)]">
           Dans l'e-mail
         </p>
-        <p className="text-[15px] leading-[23px] text-white">
+        <p className="text-[15px] leading-[23px] text-on-ink">
           Un lien par réservation : tu y retrouves ton récapitulatif, le paiement, l'ajout à ton
           agenda et l'annulation. Les nouveaux liens remplacent ceux reçus avant.
         </p>
