@@ -51,6 +51,8 @@ export const getOrganizationSettings = createServerFn({ method: "GET" }).handler
   if (!settings) throw notFound();
   return {
     editable: can(actor.role, "settings", "update"),
+    /** Seul le propriétaire peut supprimer l'espace. */
+    owner: actor.role === "owner",
     members: team.members.length,
     initial: {
       name: settings.name,

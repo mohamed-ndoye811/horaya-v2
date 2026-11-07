@@ -7,7 +7,14 @@ import { env, googleEnabled } from "./env";
 import { mailer } from "./mailer";
 import { authCookiePrefix } from "./poste";
 
-const globalForAuth = globalThis as unknown as { horayaAuth?: Auth };
+const globalForAuth = globalThis as unknown as { horayaAuth?: Auth; platformAdminIds?: string[] };
+
+/**
+ * Comptes de l'équipe Horaya reconnus par le module admin de Better Auth : rempli par
+ * `requirePlatformAdmin` (server/platform.ts) après vérification de PLATFORM_ADMINS.
+ */
+export const platformAdminIds: string[] = globalForAuth.platformAdminIds ?? [];
+globalForAuth.platformAdminIds = platformAdminIds;
 
 export const auth =
   globalForAuth.horayaAuth ??
@@ -22,6 +29,7 @@ export const auth =
     cookiePrefix: authCookiePrefix(env.POSTE),
     // Pose les cookies de session depuis les fonctions serveur TanStack Start.
     cookies: tanstackStartCookies(),
+    platformAdminIds,
   });
 if (process.env.NODE_ENV !== "production") globalForAuth.horayaAuth = auth;
 

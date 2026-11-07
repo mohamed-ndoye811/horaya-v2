@@ -68,3 +68,34 @@ export async function deleteFile(url: string | null | undefined): Promise<void> 
   // Un fichier orphelin ne casse rien : la suppression ne doit pas faire échouer l'action.
   await client.fetch(objectUrl(key), { method: "DELETE" }).catch(() => undefined);
 }
+
+/**
+ * Supprime tous les fichiers d'un espace ou d'un compte (`<id>/…`) : RGPD, à la suppression.
+ * Un échec est journalisé sans bloquer : un fichier orphelin ne casse rien.
+ */
+export async function deleteFolder(ownerId: string): Promise<void> {
+  if (!client || !/^[0-9a-f-]{36}$/.test(ownerId)) return;
+  let token: string | null = null;
+  try {
+    do {
+      const url = new URL(`${env.STORAGE_ENDPOINT}/${env.STORAGE_BUCKET}`);
+      url.searchParams.set("list-type", "2");
+      url.searchParams.set("prefix", `${ownerId}/`);
+      if (token) url.searchParams.set("continuation-token", token);
+      const response = await client.fetch(url.toString());
+      if (!response.ok) throw new Error(`Liste refusée (${response.status})`);
+      const xml = await response.text();
+      const keys = [...xml.matchAll(/<Key>([^<]+)<\/Key>/g)].map((match) => match[1] ?? "");
+      await Promise.all(
+        keys
+          .filter((key) => FILE_KEY.test(key))
+          .map((key) => client.fetch(objectUrl(key), { method: "DELETE" })),
+      );
+      token = /<IsTruncated>true<\/IsTruncated>/.test(xml)
+        ? (xml.match(/<NextContinuationToken>([^<]+)<\/NextContinuationToken>/)?.[1] ?? null)
+        : null;
+    } while (token);
+  } catch (error) {
+    console.error("Stockage : suppression du dossier", ownerId, error);
+  }
+}

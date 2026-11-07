@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import type { getProfileSettings } from "@/functions/settings";
 import { ROLE_LABELS } from "@/lib/roles";
 import { CalendarFeedSection } from "./calendar-feed-section";
+import { DeleteAccountSection } from "./danger-zone";
 import { PasswordForm, ProfileForm } from "./profile-forms";
 
 export function ProfileSettingsPage({
@@ -47,6 +48,7 @@ export function ProfileSettingsPage({
         />
         <PasswordForm />
         <CalendarFeedSection url={data.calendarFeedUrl} workspaceName={data.workspaceName} />
+        <DeleteAccountSection />
       </div>
     </SettingsShell>
   );

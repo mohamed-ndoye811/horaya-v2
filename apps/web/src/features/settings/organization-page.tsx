@@ -1,6 +1,7 @@
 import { SettingsShell } from "@/components/app/settings-shell";
 import { Button, ButtonLink } from "@/components/ui/button";
 import type { getOrganizationSettings } from "@/functions/settings";
+import { DeleteWorkspaceSection } from "./danger-zone";
 import { OrganizationForm } from "./organization-form";
 
 /** Écran 24 : identité de l'espace et marque de la page publique. */
@@ -9,7 +10,7 @@ export function OrganizationSettingsPage({
 }: {
   data: Awaited<ReturnType<typeof getOrganizationSettings>>;
 }) {
-  const { editable, members, initial, events } = data;
+  const { editable, owner, members, initial, events } = data;
   return (
     <SettingsShell
       section="organisation"
@@ -49,7 +50,10 @@ export function OrganizationSettingsPage({
           : undefined
       }
     >
-      <OrganizationForm editable={editable} initial={initial} events={events} />
+      <div className="flex flex-col gap-4">
+        <OrganizationForm editable={editable} initial={initial} events={events} />
+        {owner && <DeleteWorkspaceSection name={initial.name} slug={initial.slug} />}
+      </div>
     </SettingsShell>
   );
 }

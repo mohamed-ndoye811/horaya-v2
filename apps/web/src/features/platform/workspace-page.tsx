@@ -8,6 +8,7 @@ import { FormAlert } from "@/components/ui/form-alert";
 import { SegmentedControl } from "@/components/ui/segmented";
 import { Select } from "@/components/ui/select";
 import {
+  deletePlatformSpace,
   type getPlatformWorkspace,
   grantPlatformLicence,
   revokePlatformLicence,
@@ -247,8 +248,60 @@ export function PlatformWorkspacePage({ data }: { data: Data }) {
             ))}
           </ul>
         </section>
+        <DeleteSpace organizationId={workspace.id} slug={workspace.slug} />
       </div>
     </>
+  );
+}
+
+/** Supprimer l'espace (RGPD, demande du propriétaire…) : adresse à retaper, abonnement résilié. */
+function DeleteSpace({ organizationId, slug }: { organizationId: string; slug: string }) {
+  const [confirm, setConfirm] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [pending, setPending] = useState(false);
+  return (
+    <section
+      aria-labelledby="supprimer"
+      className="flex flex-col gap-3 rounded-3xl border-[1.5px] border-danger-bg bg-surface px-5 py-4 lg:col-span-2"
+    >
+      <h2 id="supprimer" className={title}>
+        Supprimer l'espace
+      </h2>
+      <p className="text-sm text-ink-muted">
+        Définitif : événements, réservations, clients, matériel, équipe et fichiers. Tape « {slug} »
+        pour confirmer.
+      </p>
+      {error && <FormAlert>{error}</FormAlert>}
+      <div className="flex flex-col gap-2 sm:flex-row">
+        <input
+          aria-label={`Tape ${slug} pour confirmer`}
+          value={confirm}
+          onChange={(event) => setConfirm(event.target.value)}
+          autoComplete="off"
+          autoCapitalize="none"
+          className={cn(inputClasses("sm"), "sm:max-w-xs")}
+        />
+        <Button
+          variant="danger"
+          size="sm"
+          disabled={confirm.trim() !== slug}
+          pending={pending}
+          onClick={async () => {
+            setPending(true);
+            const result = await deletePlatformSpace({ data: { organizationId, confirm } }).catch(
+              () => null,
+            );
+            // Succès : redirection vers la liste ; sinon le message du serveur.
+            if (result?.error) {
+              setError(result.error);
+              setPending(false);
+            } else window.location.assign("/app/plateforme");
+          }}
+        >
+          Supprimer définitivement
+        </Button>
+      </div>
+    </section>
   );
 }
 
