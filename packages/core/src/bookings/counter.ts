@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { requireFeature } from "../billing/use-cases";
 import { type AssignedItem, assignEventItems } from "../inventory/use-cases";
 import { recordManualPaymentIn } from "../payments/use-cases";
 import { type Actor, assertMemberCan } from "../shared/actor";
@@ -82,6 +83,7 @@ export async function createCounterBooking(
   const manageTokenHash = await hashToken(manageToken);
 
   return deps.uow.run(async (repositories) => {
+    await requireFeature(repositories, actor.organizationId, "counter", deps.clock.now());
     const locked = await repositories.events.lockForBooking(actor.organizationId, data.eventId);
     if (!locked) throw new NotFoundError("Événement", data.eventId);
     if (locked.event.status !== "published") {

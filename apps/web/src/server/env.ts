@@ -25,6 +25,20 @@ const schema = z.object({
   STRIPE_WEBHOOK_SECRET: optional,
   /** « 1 » : passerelle de test (/paiement-test) sans clés Stripe, pour le développement. */
   PAYMENTS_TEST_GATEWAY: optional,
+  /**
+   * Abonnements Horaya chez Polar (lot 24) : jeton d'accès, secret des webhooks, produits
+   * (une formule × une période) et remises (tarif solidaire, prix bloqué des bêta-testeurs).
+   * Sans jeton : paiement simulé en local, indisponible ailleurs.
+   */
+  POLAR_ACCESS_TOKEN: optional,
+  POLAR_WEBHOOK_SECRET: optional,
+  POLAR_SERVER: z.enum(["production", "sandbox"]).default("production"),
+  POLAR_PRODUCT_PRO_MONTH: optional,
+  POLAR_PRODUCT_PRO_YEAR: optional,
+  POLAR_PRODUCT_EQUIPE_MONTH: optional,
+  POLAR_PRODUCT_EQUIPE_YEAR: optional,
+  POLAR_DISCOUNT_SOLIDAIRE: optional,
+  POLAR_DISCOUNT_BETA: optional,
   /** Poste de travail local (worktree) : voir « Postes de travail » dans CLAUDE.md. */
   POSTE: z.enum(POSTES).optional(),
 });

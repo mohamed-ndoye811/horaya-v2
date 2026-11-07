@@ -1,4 +1,5 @@
 import { PageHeader } from "@/components/app/page-header";
+import { PlanUpsell, usePlanFeature } from "@/components/app/plan-upsell";
 import { ButtonLink } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import type { getCounter } from "@/functions/counter";
@@ -15,6 +16,7 @@ export function CounterPage({
   data: Awaited<ReturnType<typeof getCounter>>;
   initialEventId: string | undefined;
 }) {
+  const allowed = usePlanFeature("counter");
   return (
     <>
       <PageHeader
@@ -27,7 +29,9 @@ export function CounterPage({
           </>
         }
       />
-      {data.events.length === 0 ? (
+      {!allowed ? (
+        <PlanUpsell feature="counter" />
+      ) : data.events.length === 0 ? (
         <EmptyState
           title="Aucune séance ouverte."
           description="Publie d'abord un événement à venir : il apparaîtra ici pour y inscrire quelqu'un."

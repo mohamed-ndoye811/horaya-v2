@@ -6,6 +6,7 @@ import {
   type UnitOfWork,
 } from "@horaya/core";
 import type { Db, Executor } from "./client";
+import { billingRepository } from "./repositories/billing";
 import { bookingRepository } from "./repositories/bookings";
 import { calendarFeedRepository } from "./repositories/calendar-feeds";
 import { calendarLinkRepository } from "./repositories/calendar-links";
@@ -34,6 +35,7 @@ export function repositoriesFor(db: Executor): Repositories {
     payments: paymentRepository(db),
     calendarLinks: calendarLinkRepository(db),
     calendarFeeds: calendarFeedRepository(db),
+    billing: billingRepository(db),
   };
 }
 

@@ -1,7 +1,13 @@
 import { randomUUID } from "node:crypto";
 import type { Actor, Clock, Deps } from "@horaya/core";
 import { createDb } from "../src/client";
-import { member as memberTable, organization, tenantSettings, user } from "../src/schema";
+import {
+  member as memberTable,
+  organization,
+  planGrant,
+  tenantSettings,
+  user,
+} from "../src/schema";
 import { createUnitOfWork } from "../src/unit-of-work";
 
 export const db = createDb(process.env.TEST_DATABASE_URL ?? "");
@@ -23,7 +29,14 @@ export function testDeps(clock: Clock = fixedClock()): Deps {
   return { uow: createUnitOfWork(db), clock };
 }
 
-export async function createOrganization(prefix = "VID") {
+/**
+ * Espace de test. Par défaut avec une licence Équipe : les tests métier n'ont pas à se soucier
+ * des formules ; `{ plan: "libre" }` pour tester les limites.
+ */
+export async function createOrganization(
+  prefix = "VID",
+  { plan = "equipe" }: { plan?: "libre" | "equipe" } = {},
+) {
   const organizationId = randomUUID();
   await db.insert(organization).values({
     id: organizationId,
@@ -32,6 +45,7 @@ export async function createOrganization(prefix = "VID") {
     createdAt: new Date(),
   });
   await db.insert(tenantSettings).values({ organizationId, bookingReferencePrefix: prefix });
+  if (plan !== "libre") await db.insert(planGrant).values({ organizationId, kind: "gift", plan });
   return organizationId;
 }
 

@@ -1,8 +1,9 @@
+import { getCurrentPlan } from "@horaya/core";
 import { countPendingBookings, countUnreadNotifications } from "@horaya/db";
 import { createServerFn } from "@tanstack/react-start";
 import { requireWorkspace } from "@/server/auth";
 import { db } from "@/server/db";
-import { requireMember } from "@/server/services";
+import { deps, requireMember } from "@/server/services";
 
 /** Ce que la coque de l'admin affiche (notch, capsule, grand menu mobile) ; renvoie vers la connexion sans session. */
 export const getAppShell = createServerFn({ method: "GET" }).handler(async () => {
@@ -10,9 +11,10 @@ export const getAppShell = createServerFn({ method: "GET" }).handler(async () =>
     requireWorkspace(),
     requireMember(),
   ]);
-  const [pendingBookings, unreadNotifications] = await Promise.all([
+  const [pendingBookings, unreadNotifications, current] = await Promise.all([
     countPendingBookings(db, workspace.id),
     countUnreadNotifications(db, memberId),
+    getCurrentPlan(deps, workspace.id),
   ]);
   const firstName = user.firstName || user.name.split(" ")[0] || user.name;
   const lastInitial = user.lastName ? ` ${user.lastName.charAt(0)}.` : "";
@@ -21,5 +23,6 @@ export const getAppShell = createServerFn({ method: "GET" }).handler(async () =>
     workspace: { name: workspace.name, slug: workspace.slug },
     pendingBookings,
     unreadNotifications,
+    plan: current.plan,
   };
 });

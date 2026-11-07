@@ -2,6 +2,11 @@
 // Chaque module expose ses types, ses règles, ses ports (interfaces de dépôt)
 // et ses cas d'usage ; packages/db implémente les ports.
 export * from "./accounts/password";
+export * from "./billing/model";
+export * from "./billing/plans";
+export * from "./billing/ports";
+export * from "./billing/rules";
+export * from "./billing/use-cases";
 export * from "./bookings/capacity";
 export * from "./bookings/check-in";
 export * from "./bookings/counter";

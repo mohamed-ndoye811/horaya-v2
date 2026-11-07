@@ -61,6 +61,8 @@ export function PublicFooter({
   workspace,
 }: {
   workspace: {
+    /** Formule payante : pas de logo Horaya. */
+    whiteLabel: boolean;
     name: string;
     slug: string;
     address: string | null;
@@ -88,13 +90,15 @@ export function PublicFooter({
         >
           Mentions légales
         </Link>
-        <Link
-          href="/"
-          aria-label="Réservations propulsées par Horaya"
-          className="tap-area transition-colors hover:text-ink"
-        >
-          <HorayaWordmark height={13} />
-        </Link>
+        {!workspace.whiteLabel && (
+          <Link
+            href="/"
+            aria-label="Réservations propulsées par Horaya"
+            className="tap-area transition-colors hover:text-ink"
+          >
+            <HorayaWordmark height={13} />
+          </Link>
+        )}
       </div>
     </footer>
   );

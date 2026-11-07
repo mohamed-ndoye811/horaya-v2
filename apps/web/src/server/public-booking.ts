@@ -8,6 +8,8 @@ import {
   awaitsOnlinePayment,
   cancelBookingWithToken,
   createEventBooking,
+  getCurrentPlan,
+  hasFeature,
   hashToken,
   paidCents,
   refundForCancellation,
@@ -40,6 +42,13 @@ export async function publicWorkspace(slug: string) {
   const workspace = await getWorkspaceBySlug(slug);
   if (!workspace) throw notFound();
   return workspace;
+}
+
+/** Cadre des pages publiques : l'espace, et le logo Horaya au pied sauf en marque blanche. */
+export async function publicLayout(slug: string) {
+  const workspace = await publicWorkspace(slug);
+  const { plan } = await getCurrentPlan(deps, workspace.id);
+  return { ...workspace, whiteLabel: hasFeature(plan, "whiteLabel") };
 }
 
 /* ---------- Données des pages ---------- */

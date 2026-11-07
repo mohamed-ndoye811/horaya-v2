@@ -92,7 +92,8 @@ export interface ActivityEntry {
     | "item"
     | "settings"
     | "calendar_link"
-    | "calendar_feed";
+    | "calendar_feed"
+    | "billing";
   entityId: string;
   action: string;
   actorType: ActorType;

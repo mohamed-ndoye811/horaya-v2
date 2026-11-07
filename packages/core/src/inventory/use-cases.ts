@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { requireFeature } from "../billing/use-cases";
 import type { CustomerContact } from "../bookings/model";
 import { formatBookingReference, referencePeriod } from "../bookings/reference";
 import { customerContactSchema } from "../bookings/schemas";
@@ -88,7 +89,10 @@ async function insertItemWithUnits(
 export async function createItem(deps: Deps, actor: Actor, input: CreateItemInput): Promise<Item> {
   assertMemberCan(actor, "inventory", "create");
   const data = validate(createItemSchema, input);
-  return deps.uow.run((repositories) => insertItemWithUnits(repositories, actor, data));
+  return deps.uow.run(async (repositories) => {
+    await requireFeature(repositories, actor.organizationId, "inventory", deps.clock.now());
+    return insertItemWithUnits(repositories, actor, data);
+  });
 }
 
 /**
@@ -124,6 +128,7 @@ export async function importItems(deps: Deps, actor: Actor, csv: string): Promis
   }
 
   return deps.uow.run(async (repositories) => {
+    await requireFeature(repositories, actor.organizationId, "inventory", deps.clock.now());
     const items: Item[] = [];
     for (const { line, data } of valid) {
       try {
@@ -574,6 +579,7 @@ export async function createRentalBooking(
   const manageTokenHash = await hashToken(manageToken);
 
   return deps.uow.run(async (repositories) => {
+    await requireFeature(repositories, actor.organizationId, "inventory", deps.clock.now());
     const { item, units } = await lockItemOrThrow(repositories, actor.organizationId, data.itemId);
     const period = { startsAt: data.startsAt, endsAt: data.endsAt };
     const { free } = await pickFreeUnits(repositories, units, period, data.quantity);

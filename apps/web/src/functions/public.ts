@@ -11,7 +11,7 @@ import {
   payManagedBooking,
   publicEventPage,
   publicHome,
-  publicWorkspace,
+  publicLayout,
   requestBookingLinks,
   resendBookingEmail,
 } from "@/server/public-booking";
@@ -25,7 +25,7 @@ const withToken = z.object({ slug, token: z.string().max(200) });
 
 export const getPublicWorkspace = createServerFn({ method: "GET" })
   .validator(slug)
-  .handler(({ data }) => publicWorkspace(data));
+  .handler(({ data }) => publicLayout(data));
 
 export const getPublicHome = createServerFn({ method: "GET" })
   .validator(slug)

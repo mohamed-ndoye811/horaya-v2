@@ -45,6 +45,7 @@ import {
   notificationPreference,
   organization,
   payment,
+  planGrant,
   referenceCounter,
   tenantSettings,
   user,
@@ -69,6 +70,13 @@ const [owner] = await db
   .from(member)
   .where(and(eq(member.organizationId, org.id), eq(member.role, "owner")));
 if (!owner) throw new Error("Cet espace n'a pas de propriétaire");
+// Démo : toutes les fonctionnalités (matériel, comptoir, marque blanche), sans abonnement.
+const grants = await db.select().from(planGrant).where(eq(planGrant.organizationId, org.id));
+if (!grants.some((grant) => grant.kind === "gift" && !grant.revokedAt)) {
+  await db
+    .insert(planGrant)
+    .values({ organizationId: org.id, kind: "gift", plan: "equipe", reason: "Espace de démo" });
+}
 if (reset) {
   await db.transaction(async (tx) => {
     const bookingIds = tx
