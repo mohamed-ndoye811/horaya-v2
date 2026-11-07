@@ -22,9 +22,11 @@ import {
   bookingPromotedEmail,
   bookingRefundedEmail,
   bookingRefusedEmail,
+  bookingReminderEmail,
   bookingWaitlistedEmail,
   type EmailContent,
   teamBookingEmail,
+  teamReminderEmail,
 } from "@horaya/mail";
 import { textOn } from "@/lib/colors";
 import { formatEventRange, formatMoney } from "@/lib/format";
@@ -162,6 +164,47 @@ export async function sendBookingLinkEmail(
   await send(
     loaded.booking.customer.email,
     bookingLinkEmail(loaded.mail(manageUrl(loaded.workspace.slug, manageToken))),
+  );
+}
+
+/** Rappel la veille au client : le lien d'origine n'est pas gardé, on mène à « Mes réservations ». */
+export async function sendBookingReminder(organizationId: string, bookingId: string) {
+  const loaded = await loadBooking(organizationId, bookingId);
+  if (!loaded) return;
+  await send(
+    loaded.booking.customer.email,
+    bookingReminderEmail(loaded.mail(loaded.linkRequestUrl)),
+  );
+}
+
+/** Rappel la veille à l'équipe, selon la préférence « Rappel la veille d'un événement ». */
+export async function sendTeamReminder(input: {
+  organizationId: string;
+  eventId: string;
+  title: string;
+  startsAt: Date;
+  endsAt: Date;
+  timezone: string;
+  capacity: number | null;
+  seats: number;
+}) {
+  const workspace = await getWorkspaceSettings(db, input.organizationId);
+  if (!workspace) return;
+  const when = formatEventRange(input.startsAt, input.endsAt, input.timezone);
+  const link = `/app/evenements/${input.eventId}`;
+  const filled = `${input.seats}${input.capacity ? ` / ${input.capacity}` : ""} place${input.seats > 1 ? "s" : ""}`;
+  await notifyTeam(
+    input.organizationId,
+    "event_reminder",
+    teamReminderEmail({
+      workspaceName: workspace.name,
+      title: input.title,
+      when,
+      seats: input.seats,
+      capacity: input.capacity,
+      url: absoluteUrl(link),
+    }),
+    { title: `Demain : ${input.title}`, body: `${when} · ${filled}`, link },
   );
 }
 

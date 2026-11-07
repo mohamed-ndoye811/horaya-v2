@@ -81,6 +81,8 @@ export const event = pgTable(
     coverImageUrl: text(),
     publishedAt: timestamp({ withTimezone: true }),
     cancelledAt: timestamp({ withTimezone: true }),
+    /** Rappel de la veille envoyé à l'équipe (une seule fois). */
+    reminderSentAt: timestamp({ withTimezone: true }),
     createdAt: createdAt(),
     updatedAt: updatedAt(),
   },

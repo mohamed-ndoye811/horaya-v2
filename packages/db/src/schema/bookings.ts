@@ -57,6 +57,8 @@ export const booking = pgTable(
     cancelledAt: timestamp({ withTimezone: true }),
     /** Arrivée pointée le jour J (check-in), pour toute la réservation. */
     checkedInAt: timestamp({ withTimezone: true }),
+    /** Rappel de la veille envoyé au client (une seule fois). */
+    reminderSentAt: timestamp({ withTimezone: true }),
     createdAt: createdAt(),
     updatedAt: updatedAt(),
   },
