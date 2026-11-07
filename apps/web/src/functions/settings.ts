@@ -15,6 +15,7 @@ import { startOfDay, todayIn } from "@/lib/dates";
 import { formDataInput } from "@/lib/form-data";
 import { formatDayNumber, formatHour, formatMoney, formatMonthShort } from "@/lib/format";
 import { ASSIGNABLE_ROLES, type AssignableRole, canManageTeam } from "@/lib/roles";
+import { myCalendarFeedUrl, regenerateMyCalendarFeed } from "@/server/calendar-feed";
 import { db } from "@/server/db";
 import { env } from "@/server/env";
 import type { FormState } from "@/server/form-state";
@@ -85,6 +86,7 @@ export const getProfileSettings = createServerFn({ method: "GET" }).handler(asyn
     firstName: user.firstName ?? fallbackFirst,
     lastName: user.lastName ?? rest.join(" "),
     image: user.image ?? null,
+    calendarFeedUrl: await myCalendarFeedUrl(actor),
   };
 });
 
@@ -306,6 +308,11 @@ const createLinkFn = createServerFn({ method: "POST" })
   .validator(roleSchema)
   .handler(({ data }) => createJoinLink(data));
 export const createJoinLinkAction = (role: AssignableRole) => createLinkFn({ data: role });
+
+const regenerateFeedFn = createServerFn({ method: "POST" }).handler(() =>
+  regenerateMyCalendarFeed(),
+);
+export const regenerateCalendarFeedAction = () => regenerateFeedFn();
 
 const disableLinkFn = createServerFn({ method: "POST" }).handler(() => disableJoinLink());
 export const disableJoinLinkAction = () => disableLinkFn();

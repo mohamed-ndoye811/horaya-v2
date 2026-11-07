@@ -137,6 +137,22 @@ export const joinLink = pgTable("join_link", {
 });
 
 /**
+ * Abonnement d'agenda personnel (ICS) d'un membre : un par membre, supprimé avec lui.
+ * Le jeton est gardé en clair pour que le membre puisse recopier l'adresse ; le régénérer
+ * coupe l'ancienne.
+ */
+export const calendarFeed = pgTable("calendar_feed", {
+  id: id(),
+  organizationId: organizationId(),
+  memberId: uuid()
+    .notNull()
+    .unique()
+    .references(() => member.id, { onDelete: "cascade" }),
+  token: text().notNull().unique(),
+  createdAt: createdAt(),
+});
+
+/**
  * Limitation de débit des actions publiques (demande de liens, réservations, renvoi d'e-mails) :
  * une fenêtre par clé, partagée entre toutes les instances de l'app.
  */
