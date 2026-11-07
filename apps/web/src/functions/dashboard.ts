@@ -1,4 +1,4 @@
-import { addDays, getBillingOverview } from "@horaya/core";
+import { addDays } from "@horaya/core";
 import {
   countEventsStartingBetween,
   getDashboardOverview,
@@ -10,8 +10,8 @@ import {
 } from "@horaya/db";
 import { createServerFn } from "@tanstack/react-start";
 import { addMonths, mondayOf, startOfDay, todayIn } from "@/lib/dates";
+import { billingFor } from "@/server/billing";
 import { db } from "@/server/db";
-import { deps } from "@/server/services";
 import { getWorkspaceContext } from "@/server/workspace";
 
 /** Données de l'écran 03 (tableau de bord), lues en une fois. */
@@ -52,7 +52,7 @@ export const getDashboard = createServerFn({ method: "GET" }).handler(async () =
       countEventsStartingBetween(db, workspace.id, dayStart, dayEnd),
       listEventTypes(db, workspace.id),
       getWorkspaceSettings(db, workspace.id),
-      getBillingOverview(deps, actor),
+      billingFor(actor),
     ]);
 
   return {

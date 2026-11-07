@@ -4,6 +4,8 @@
  */
 export const PLAN_PREVIEWS = {
   libre: "Libre",
+  quota: "Libre, quota dépassé",
+  quota2: "Libre, 2 mois dépassés",
   essai: "Essai Pro",
   bt: "Bêta-testeur",
   solidaire: "Pro solidaire",

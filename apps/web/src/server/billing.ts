@@ -1,8 +1,10 @@
 import {
+  type Actor,
   applySubscription,
   type BillingInterval,
   type BillingRate,
   billingCustomer,
+  bookingUsage,
   getBillingOverview,
   grantPlan,
   type PlanId,
@@ -66,9 +68,25 @@ export function subscriptionStatusOf(status: string): SubscriptionStatus {
   return "canceled";
 }
 
+/**
+ * Quota simulé par « Voir en tant que » (postes de développement) : réservations de ce mois
+ * et du précédent. shortcut: gardé en mémoire du serveur, perdu au redémarrage (suffit en local).
+ */
+let quotaPreview: { thisMonth: number; lastMonth: number } | null = null;
+
+/** Vue d'ensemble du core, avec le quota simulé en développement. */
+export async function billingFor(actor: Actor) {
+  const overview = await getBillingOverview(deps, actor);
+  if (!env.POSTE || !quotaPreview) return overview;
+  return {
+    ...overview,
+    bookings: bookingUsage(overview.current.plan, quotaPreview.thisMonth, quotaPreview.lastMonth),
+  };
+}
+
 export async function billingOverview() {
   const { actor, timeZone } = await getWorkspaceContext();
-  const overview = await getBillingOverview(deps, actor);
+  const overview = await billingFor(actor);
   const day = new Intl.DateTimeFormat("fr-FR", { day: "numeric", month: "long", timeZone });
   const subscription = overview.account.subscription;
   return {
@@ -164,8 +182,15 @@ export async function previewPlan(choice: PlanPreview): Promise<void> {
     });
 
   await resetBilling(db, id);
+  quotaPreview = null;
   switch (choice) {
     case "libre":
+      return;
+    case "quota":
+      quotaPreview = { thisMonth: 64, lastMonth: 31 };
+      return;
+    case "quota2":
+      quotaPreview = { thisMonth: 64, lastMonth: 58 };
       return;
     case "essai":
       return startTrial(deps, id);
