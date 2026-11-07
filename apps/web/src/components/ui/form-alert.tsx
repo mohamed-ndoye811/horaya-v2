@@ -5,6 +5,7 @@ const tones = {
   danger: "bg-danger-bg text-danger",
   success: "bg-success-bg text-success",
   info: "bg-info-bg text-info",
+  warning: "bg-warning-bg text-warning-strong",
 };
 
 /** Message en tête de formulaire (erreur globale, confirmation…) : encadré teinté arrondi (DA v4). */

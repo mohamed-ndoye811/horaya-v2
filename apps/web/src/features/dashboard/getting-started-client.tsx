@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { GuidedTour, rememberTour, tourDismissed } from "@/components/app/guided-tour";
 import { Button } from "@/components/ui/button";
+import { cardShellClasses } from "@/components/ui/section";
+import { cn } from "@/lib/cn";
 
 /** Carte « Fais le tour en 1 minute » (maquette 4.7) ; se masque après la visite ou « Plus tard ». */
 export function TourCard() {
@@ -10,11 +12,11 @@ export function TourCard() {
   useEffect(() => setHidden(tourDismissed()), []);
   if (hidden && !touring) return null;
   return (
-    <section className="hidden flex-col gap-3.5 rounded-3xl bg-surface p-6 shadow-[0_1px_2px_rgba(0,0,0,0.04),0_16px_40px_rgba(0,0,0,0.06)] lg:flex">
+    <section className={cn(cardShellClasses, "gap-3.5 p-6 max-lg:hidden")}>
       <div className="flex items-center gap-2.5">
         <span
           aria-hidden="true"
-          className="flex size-9 items-center justify-center rounded-xl bg-accent/15 text-[#c8692f]"
+          className="flex size-9 items-center justify-center rounded-xl bg-accent/15 text-accent-strong"
         >
           <svg
             aria-hidden="true"
@@ -38,7 +40,7 @@ export function TourCard() {
         Le notch, les actions de chaque page, l'enregistrement : 4 étapes pour prendre tes repères.
       </p>
       <div className="flex gap-2">
-        <Button className="h-10 px-[18px] text-sm" onClick={() => setTouring(true)}>
+        <Button size="sm" onClick={() => setTouring(true)}>
           Lancer la visite
         </Button>
         <button
@@ -68,16 +70,16 @@ export function TourCard() {
 export function CopyPublicLink({ slug }: { slug: string }) {
   const [copied, setCopied] = useState(false);
   return (
-    <button
-      type="button"
+    <Button
+      variant="secondary"
+      size="xs"
       onClick={async () => {
         await navigator.clipboard.writeText(`${window.location.origin}/${slug}`);
         setCopied(true);
         setTimeout(() => setCopied(false), 2000);
       }}
-      className="flex h-8 items-center rounded-full border border-[#e4e4e1] bg-surface px-3 text-[13px] font-semibold text-ink hover:bg-field"
     >
       {copied ? "Copié" : "Copier"}
-    </button>
+    </Button>
   );
 }

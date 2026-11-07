@@ -1,5 +1,8 @@
 import type { ReactNode } from "react";
 import { SettingsShell } from "@/components/app/settings-shell";
+import { StatusBadge } from "@/components/ui/badge";
+import { dashedClasses } from "@/components/ui/section";
+import { cn } from "@/lib/cn";
 
 const icon = (path: ReactNode) => (
   <svg
@@ -54,16 +57,21 @@ export function IntegrationsSettingsPage() {
         </>
       }
     >
-      <section className="flex flex-wrap items-center gap-5 rounded-3xl border-[1.5px] border-dashed border-[#dcdcd8] bg-band px-7 py-6">
-        <span className="flex size-[52px] shrink-0 items-center justify-center rounded-2xl bg-ink text-white">
+      <section
+        className={cn(
+          dashedClasses,
+          "flex flex-wrap items-center gap-5 rounded-3xl bg-band px-7 py-6",
+        )}
+      >
+        <span className="flex size-[52px] shrink-0 items-center justify-center rounded-2xl bg-ink text-on-ink">
           {icon(<path d="M12 22v-5M9 8V2M15 8V2M18 8v5a6 6 0 0 1-12 0V8Z" />)}
         </span>
         <div className="flex min-w-0 flex-1 flex-col gap-1">
           <h2 className="flex items-center gap-2.5 text-lg font-semibold leading-[22px] text-ink">
             Les intégrations arrivent
-            <span className="rounded-full bg-info-bg px-2.5 py-0.5 text-[11px] font-bold leading-4 text-info">
+            <StatusBadge tone="info" size="sm">
               Bientôt
-            </span>
+            </StatusBadge>
           </h2>
           <p className="text-[13px] leading-5 text-ink-muted">
             Elles arriveront avec l'API publique d'Horaya : tu pourras relier tes réservations à tes
@@ -81,9 +89,9 @@ export function IntegrationsSettingsPage() {
               <span className="flex size-10 items-center justify-center rounded-xl bg-field text-ink-muted">
                 {entry.icon}
               </span>
-              <span className="rounded-full bg-field px-2.5 py-0.5 text-[11px] font-bold leading-4 text-ink-subtle">
+              <StatusBadge tone="neutral" size="sm">
                 À venir
-              </span>
+              </StatusBadge>
             </div>
             <div className="flex flex-col gap-1">
               <h3 className="text-[15px] font-semibold leading-5 text-ink">{entry.title}</h3>

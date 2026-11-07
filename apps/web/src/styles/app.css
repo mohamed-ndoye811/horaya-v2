@@ -30,11 +30,36 @@
   --color-accent: #f0975f;
   /* Icônes inactives du notch. */
   --color-notch-idle: #8b8f99;
+  /* Filet le plus discret entre deux lignes d'une fiche. */
+  --color-line-faint: #f4f4f2;
+  /* Contour appuyé : pointillés des encadrés d'ajout, cases vides. */
+  --color-line-strong: #dcdcd8;
+  /* Texte secondaire foncé (étiquettes en contour, légendes). */
+  --color-ink-soft: #4a4a4a;
+  /* Texte éteint : vide, indisponible, week-end, heures de grille. */
+  --color-ink-faint: #ababa6;
+  /* Orange foncé : texte d'accent sur fond clair (sur-titres, icônes). */
+  --color-accent-strong: #c8692f;
+
+  /* Sur fond noir (cartes noires, notch, barres d'action) : textes, filets, états. */
+  --color-on-ink-soft: #c9cbd1;
+  --color-on-ink-muted: #9a9ea8;
+  --color-on-ink-subtle: #6e727c;
+  --color-ink-line: #333333;
+  --color-ink-raised: #1e1e1e;
+  --color-ink-hover: #2c2c2c;
+  --color-success-on-ink: #8fd6ac;
+  --color-danger-on-ink: #f2a3a3;
+  --color-warning-on-ink: #f5c96b;
 
   --color-success: #397a5c;
   --color-success-bg: #e4efe9;
   --color-warning: #9a6b12;
   --color-warning-bg: #f6ebd3;
+  /* Texte sur fond ambre pâle (bandeaux, encadrés « à faire »). */
+  --color-warning-strong: #5e4410;
+  /* Pointillés ambre (exemplaire en maintenance). */
+  --color-warning-line: #d9a441;
   --color-danger: #9e3a3a;
   --color-danger-bg: #f2e3e3;
   --color-info: #213f7c;
@@ -139,17 +164,35 @@
   }
 }
 
-/* Gros titres de la DA v4 : Urbanist 500 en minuscules, serré. */
+/* Pastille orange des avatars (compte, équipe) : le dégradé du notch. */
+@utility bg-accent-gradient {
+  background-image: linear-gradient(135deg in oklab, #f2a15e, #d2552f);
+}
+
+/*
+ * Liste avec le bouton « + Nouveau » posé en haut à droite (FabLink, sous `lg`) : le texte de
+ * l'en-tête (PageHeader) s'arrête avant lui au lieu de passer dessous.
+ */
+@media (max-width: 1023px) {
+  :has(> [data-fab]) [data-page-title] {
+    padding-right: 132px;
+  }
+}
+
+/*
+ * Gros titres de la DA v4 : Urbanist en minuscules, serré ; en gras (700 au lieu de 500) pour
+ * s'accorder au logotype (choix de Moh du 2026-11-07).
+ */
 @utility font-headline {
   font-family: var(--font-ui);
-  font-weight: 500;
+  font-weight: 700;
   letter-spacing: -0.035em;
 }
 
-/* En-têtes de section. */
+/* En-têtes de section, en gras eux aussi (700 au lieu de 600). */
 @utility font-section {
   font-family: var(--font-ui);
-  font-weight: 600;
+  font-weight: 700;
   letter-spacing: -0.01em;
 }
 
@@ -171,12 +214,27 @@
   label:has(input:disabled) {
     cursor: not-allowed;
   }
+
+  /*
+   * Focus clavier visible partout : contour encre de 2 px, décalé de 2 px ; en blanc cassé sur
+   * fond noir. Couche de base : les `focus-visible:` et `outline-none` des composants passent
+   * devant. Pas sur un élément focalisé par le code (tabindex="-1" : panneaux, fenêtres).
+   */
+  :focus-visible:not([tabindex="-1"]) {
+    outline: 2px solid var(--color-ink);
+    outline-offset: 2px;
+  }
+  .bg-ink :focus-visible:not([tabindex="-1"]) {
+    outline-color: var(--color-on-ink);
+  }
 }
 
 body {
   background-color: var(--color-bg);
   color: var(--color-ink);
   font-family: var(--font-ui);
+  /* iPhone à l'horizontale (viewport-fit=cover) : le contenu évite l'encoche sur les côtés. */
+  padding-inline: env(safe-area-inset-left) env(safe-area-inset-right);
 }
 
 /* Points du mot de passe lisibles (la puce d'Urbanist est minuscule). */
@@ -272,6 +330,7 @@ dialog {
   transition:
     opacity var(--dur-2) var(--ease-out-soft),
     scale var(--dur-3) var(--ease-out-soft),
+    translate var(--dur-3) var(--ease-out-soft),
     overlay var(--dur-2) allow-discrete,
     display var(--dur-2) allow-discrete;
   opacity: 0;
@@ -283,6 +342,21 @@ dialog[open] {
   @starting-style {
     opacity: 0;
     scale: 0.97;
+  }
+}
+/* Sous `sm`, la fenêtre est une feuille collée en bas (Dialog) : elle monte au lieu de grandir. */
+@media (max-width: 639px) {
+  dialog {
+    scale: 1;
+    translate: 0 32px;
+  }
+  dialog[open] {
+    scale: 1;
+    translate: 0 0;
+    @starting-style {
+      scale: 1;
+      translate: 0 32px;
+    }
   }
 }
 dialog::backdrop {

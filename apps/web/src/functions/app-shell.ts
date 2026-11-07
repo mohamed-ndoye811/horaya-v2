@@ -4,7 +4,7 @@ import { requireWorkspace } from "@/server/auth";
 import { db } from "@/server/db";
 import { requireMember } from "@/server/services";
 
-/** Ce que la coque de l'admin affiche (notch, capsule) ; renvoie vers la connexion sans session. */
+/** Ce que la coque de l'admin affiche (notch, capsule, grand menu mobile) ; renvoie vers la connexion sans session. */
 export const getAppShell = createServerFn({ method: "GET" }).handler(async () => {
   const [{ user, workspace }, { memberId }] = await Promise.all([
     requireWorkspace(),
@@ -18,7 +18,7 @@ export const getAppShell = createServerFn({ method: "GET" }).handler(async () =>
   const lastInitial = user.lastName ? ` ${user.lastName.charAt(0)}.` : "";
   return {
     user: { name: user.name, shortName: `${firstName}${lastInitial}`, image: user.image ?? null },
-    workspace: { name: workspace.name },
+    workspace: { name: workspace.name, slug: workspace.slug },
     pendingBookings,
     unreadNotifications,
   };

@@ -1,23 +1,27 @@
 import type { ReactNode } from "react";
+import { StatusBadge } from "@/components/ui/badge";
+import { ButtonLink } from "@/components/ui/button";
+import { inkCardClasses } from "@/components/ui/section";
 import type { getMoreMenu } from "@/functions/settings";
+import { cn } from "@/lib/cn";
 import { initials } from "@/lib/format";
 import { Link } from "@/lib/navigation";
 import { ROLE_LABELS } from "@/lib/roles";
 import { SignOutButton } from "./sign-out-button";
 
 /**
- * Maquette 6.4 : onglet « Plus » de la navigation mobile. Mène à ce que les onglets
- * n'affichent pas (matériel, clients, types, liens, paramètres) et au compte.
+ * Maquette 6.4 : ancienne page de l'onglet « Plus » (l'onglet ouvre désormais le grand menu,
+ * mobile-menu.tsx) ; gardée pour les liens directs et les retours des écrans qu'elle range.
  */
 export function MorePage({ data }: { data: Awaited<ReturnType<typeof getMoreMenu>> }) {
   const { userName, userImage, role, workspace, members } = data;
 
   return (
     <div className="flex flex-col gap-[18px] px-4 pt-4">
-      <div className="flex items-center gap-3 rounded-[22px] bg-ink p-3.5">
+      <div className={cn(inkCardClasses, "flex items-center gap-3 rounded-[22px] p-3.5")}>
         <span
           aria-hidden="true"
-          className="flex size-12 shrink-0 items-center justify-center rounded-full bg-linear-135 from-[#f7b27e] to-[#e8743b] text-base font-bold text-white"
+          className="flex size-12 shrink-0 items-center justify-center rounded-full bg-accent-gradient text-base font-bold text-on-ink"
         >
           {userImage ? (
             <img src={userImage} alt="" className="size-full rounded-full object-cover" />
@@ -26,18 +30,15 @@ export function MorePage({ data }: { data: Awaited<ReturnType<typeof getMoreMenu
           )}
         </span>
         <div className="flex min-w-0 flex-1 flex-col gap-0.5">
-          <h1 className="truncate text-base font-semibold leading-5 text-white">{userName}</h1>
-          <p className="truncate text-xs leading-4 text-[#9a9ea8]">
+          <h1 className="truncate text-base font-semibold leading-5">{userName}</h1>
+          <p className="truncate text-xs leading-4 text-on-ink-muted">
             {`${ROLE_LABELS[role]} · `}
             {workspace.name}
           </p>
         </div>
-        <Link
-          href="/app/parametres/profil"
-          className="flex h-8 shrink-0 items-center rounded-full border border-draft px-3 text-xs font-semibold text-white"
-        >
+        <ButtonLink href="/app/parametres/profil" variant="inverse-outline" size="xs">
           Profil
-        </Link>
+        </ButtonLink>
       </div>
 
       <Group title="Gérer">
@@ -68,9 +69,9 @@ export function MorePage({ data }: { data: Awaited<ReturnType<typeof getMoreMenu
         <Row
           href="/app/parametres/integrations"
           aside={
-            <span className="rounded-full bg-[#f2f2f0] px-2 py-0.5 text-[11px] font-bold leading-[14px] text-ink-subtle">
+            <StatusBadge tone="neutral" size="sm">
               Bientôt
-            </span>
+            </StatusBadge>
           }
           chevron={false}
         >
@@ -104,13 +105,13 @@ function Row({
   children: ReactNode;
 }) {
   return (
-    <li className="border-t border-[#f4f4f2] first:border-t-0">
+    <li className="border-t border-line-faint first:border-t-0">
       <Link href={href} className="flex h-12 items-center justify-between gap-3 text-ink">
         <span className="text-[15px] font-medium leading-5">{children}</span>
         <span className="flex items-center gap-2">
           {aside}
           {chevron && (
-            <span aria-hidden="true" className="text-base leading-4 text-[#c4c4c0]">
+            <span aria-hidden="true" className="text-base leading-4 text-ink-faint">
               ›
             </span>
           )}

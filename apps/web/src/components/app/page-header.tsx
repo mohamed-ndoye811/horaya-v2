@@ -66,7 +66,7 @@ export function PageHeader({
     >
       <div className="flex min-w-0 items-center gap-[18px] xl:shrink-0">
         {leading}
-        <div className="flex min-w-0 flex-col gap-1.5">
+        <div data-page-title className="flex min-w-0 flex-col gap-1.5">
           <p
             data-tour="breadcrumb"
             data-corner="breadcrumb"
@@ -100,7 +100,10 @@ export function PageHeader({
       </div>
       {toolbar && (
         <div
-          className="reveal flex min-w-0 flex-col gap-3 md:flex-row md:items-center xl:ml-auto"
+          // En ligne à partir de `lg` : entre 768 et 1023 px, recherche, filtres et liste ne
+          // tenaient pas sur une ligne (les filtres y restent en pilules défilantes). Faute de
+          // place (1024–1279 px), les filtres passent sous la recherche au lieu de l'écraser.
+          className="reveal flex min-w-0 flex-col gap-3 lg:flex-row lg:flex-wrap lg:items-center xl:ml-auto"
           style={stagger(3)}
         >
           {toolbar}

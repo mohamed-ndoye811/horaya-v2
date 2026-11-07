@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { buttonClasses } from "@/components/ui/button";
+import { FieldError } from "@/components/ui/field";
 import { GoogleLogo } from "@/components/ui/icons";
 import { authClient } from "@/lib/auth-client";
 import { authErrorMessage } from "@/lib/auth-errors";
@@ -38,7 +39,7 @@ export function GoogleButton({ label }: { label: string }) {
         <GoogleLogo />
         {pending ? "Redirection vers Google…" : label}
       </button>
-      {error && <p className="text-[13px] font-semibold text-danger">{error}</p>}
+      {error && <FieldError>{error}</FieldError>}
     </div>
   );
 }

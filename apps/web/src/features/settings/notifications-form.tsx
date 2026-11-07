@@ -35,11 +35,9 @@ export function NotificationsForm({ preferences }: { preferences: NotificationPr
             return (
               <li
                 key={type.value}
-                className="flex items-center gap-3 border-t border-[#f4f4f2] py-3"
+                className="flex items-center gap-3 border-t border-line-faint py-3"
               >
-                <span className="min-w-0 grow truncate text-sm leading-[18px] text-ink">
-                  {type.label}
-                </span>
+                <span className="min-w-0 grow text-sm leading-[18px] text-ink">{type.label}</span>
                 <span className="flex w-14 shrink-0 justify-center">
                   <Switch
                     hideLabel

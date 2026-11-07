@@ -4,15 +4,17 @@ import { ChevronDown } from "./icons";
 
 type SelectVariant = "field" | "filter" | "compact";
 
+// Sous `lg`, 16 px au moins : en dessous, Safari sur iPhone zoome la page au toucher.
 const variants: Record<SelectVariant, string> = {
   /** Dans un formulaire : comme un champ texte. */
   field:
-    "h-11 rounded-xl border border-line-soft bg-field pl-3.5 pr-10 text-[15px] font-medium focus:border-ink focus:bg-surface",
+    "h-11 rounded-xl border border-line-soft bg-field pl-3.5 pr-10 text-base font-medium focus:border-ink focus:bg-surface lg:text-[15px]",
   /** Filtre de liste : pilule blanche, texte gras. */
-  filter: "h-10 rounded-full bg-surface pl-4 pr-10 text-sm font-semibold hover:bg-field",
+  filter:
+    "h-10 rounded-full bg-surface pl-4 pr-10 text-base font-semibold hover:bg-field lg:text-sm",
   /** Dans une ligne de tableau (rôle d'un membre) ou une carte. */
   compact:
-    "h-10 rounded-xl border border-line-soft bg-field pl-3.5 pr-10 text-sm font-semibold focus:border-ink focus:bg-surface",
+    "h-10 rounded-xl border border-line-soft bg-field pl-3.5 pr-10 text-base font-semibold focus:border-ink focus:bg-surface lg:text-sm",
 };
 
 /**

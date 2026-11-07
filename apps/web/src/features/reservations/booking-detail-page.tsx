@@ -10,8 +10,10 @@ import { ItemTile } from "@/components/app/item-tile";
 import { PageHeader } from "@/components/app/page-header";
 import { Avatar } from "@/components/ui/avatar";
 import { StatusBadge } from "@/components/ui/badge";
+import { rowLinkClasses } from "@/components/ui/button";
 import { EventThumb } from "@/components/ui/cells";
-import { cardClasses } from "@/components/ui/section";
+import { FormAlert } from "@/components/ui/form-alert";
+import { cardClasses, dashedClasses } from "@/components/ui/section";
 import { BOOKING_STATUS_BADGE } from "@/components/ui/status";
 import { Timeline } from "@/components/ui/timeline";
 import type { getBooking } from "@/functions/booking";
@@ -61,6 +63,9 @@ function paymentSummary(
 
 const card = cardClasses;
 
+/** E-mail et téléphone du client : liens discrets, soulignés au survol. */
+const contactLinkClasses = "hover:text-ink hover:underline hover:underline-offset-[3px]";
+
 function CardTitle({ children, count }: { children: ReactNode; count?: number }) {
   return (
     <h2 className="flex items-baseline gap-2 text-base font-semibold leading-5 text-ink">
@@ -94,7 +99,7 @@ function Tile({
       <dt
         className={cn(
           "text-xs font-semibold leading-4",
-          tone === "warning" ? "text-[#8a6a2a]" : "text-ink-subtle",
+          tone === "warning" ? "text-warning-strong" : "text-ink-subtle",
         )}
       >
         {label}
@@ -163,7 +168,7 @@ export function BookingDetailPage({ data }: { data: Awaited<ReturnType<typeof ge
   const subtitle = isPending ? (
     <>
       Demande reçue {received}.{" "}
-      <span className="font-semibold text-[#9a6b12]">Sans réponse depuis {waiting}.</span>
+      <span className="font-semibold text-warning">Sans réponse depuis {waiting}.</span>
     </>
   ) : booking.status === "refused" && booking.refusalReason ? (
     `Demande refusée · ${booking.refusalReason}`
@@ -231,7 +236,7 @@ export function BookingDetailPage({ data }: { data: Awaited<ReturnType<typeof ge
             <section className="flex animate-drop flex-wrap items-center gap-x-4 gap-y-3 rounded-3xl bg-warning-bg py-3.5 pr-3.5 pl-5">
               <span
                 aria-hidden="true"
-                className="flex size-10 shrink-0 items-center justify-center rounded-full bg-surface"
+                className="flex size-10 shrink-0 items-center justify-center rounded-full bg-surface text-warning"
               >
                 <svg
                   aria-hidden="true"
@@ -239,17 +244,17 @@ export function BookingDetailPage({ data }: { data: Awaited<ReturnType<typeof ge
                   height="18"
                   viewBox="0 0 24 24"
                   fill="none"
-                  stroke="#9a6b12"
+                  stroke="currentColor"
                 >
                   <circle cx="12" cy="12" r="9" strokeWidth="2" />
                   <path d="M12 7v5l3 2" strokeWidth="2" strokeLinecap="round" />
                 </svg>
               </span>
               <div className="flex min-w-0 flex-1 basis-60 flex-col gap-0.5">
-                <h2 className="text-[15px] font-bold leading-[19px] text-[#3a2e10]">
+                <h2 className="text-[15px] font-bold leading-[19px] text-warning-strong">
                   {booking.customer.firstName} attend ta réponse depuis {waiting}
                 </h2>
-                <p className="text-[13px] leading-[17px] text-[#8a6a2a]">
+                <p className="text-[13px] leading-[17px] text-warning-strong">
                   {paysOnline && booking.amountCents > 0
                     ? `Le lien de paiement en ligne (${formatMoney(booking.amountCents)}) part dès que tu valides.`
                     : "Un e-mail de confirmation part dès que tu valides."}
@@ -296,7 +301,7 @@ export function BookingDetailPage({ data }: { data: Awaited<ReturnType<typeof ge
                 </div>
                 <Link
                   href={`/app/evenements/${booking.event.id}`}
-                  className="text-sm font-semibold leading-[18px] text-ink hover:underline"
+                  className={cn(rowLinkClasses, "text-sm leading-[18px]")}
                 >
                   Voir l'événement →
                 </Link>
@@ -328,7 +333,7 @@ export function BookingDetailPage({ data }: { data: Awaited<ReturnType<typeof ge
                   {assignedItems.map((entry) => (
                     <li
                       key={entry.itemId}
-                      className="flex items-center gap-3.5 border-t border-[#f4f4f2] py-3"
+                      className="flex items-center gap-3.5 border-t border-line-faint py-3"
                     >
                       <ItemTile
                         name={entry.name}
@@ -338,7 +343,7 @@ export function BookingDetailPage({ data }: { data: Awaited<ReturnType<typeof ge
                       <div className="flex min-w-0 flex-1 flex-col gap-0.5">
                         <Link
                           href={`/app/materiel/${entry.itemId}`}
-                          className="truncate text-sm font-semibold text-ink hover:underline"
+                          className={cn(rowLinkClasses, "truncate text-sm")}
                         >
                           {entry.name}
                         </Link>
@@ -368,7 +373,7 @@ export function BookingDetailPage({ data }: { data: Awaited<ReturnType<typeof ge
                 {rentalItems.map((entry) => (
                   <li
                     key={entry.itemId}
-                    className="flex items-center gap-3.5 border-t border-[#f4f4f2] py-3"
+                    className="flex items-center gap-3.5 border-t border-line-faint py-3"
                   >
                     <ItemTile
                       name={entry.name}
@@ -378,7 +383,7 @@ export function BookingDetailPage({ data }: { data: Awaited<ReturnType<typeof ge
                     <div className="flex min-w-0 flex-1 flex-col gap-0.5">
                       <Link
                         href={`/app/materiel/${entry.itemId}`}
-                        className="truncate text-sm font-semibold text-ink hover:underline"
+                        className={cn(rowLinkClasses, "truncate text-sm")}
                       >
                         {entry.name}
                       </Link>
@@ -420,7 +425,7 @@ export function BookingDetailPage({ data }: { data: Awaited<ReturnType<typeof ge
           {booking.customerMessage && (
             <section className={cn(card, "gap-2.5")}>
               <CardTitle>Message du client</CardTitle>
-              <blockquote className="rounded-2xl border-l-[3px] border-[#dcdcd8] bg-field px-4 py-3.5 text-[15px] leading-[22px] text-[#333]">
+              <blockquote className="rounded-2xl border-l-[3px] border-line-strong bg-field px-4 py-3.5 text-[15px] leading-[22px] text-ink-soft">
                 « {booking.customerMessage} »
               </blockquote>
             </section>
@@ -438,7 +443,7 @@ export function BookingDetailPage({ data }: { data: Awaited<ReturnType<typeof ge
                   return (
                     <li
                       key={participant.id}
-                      className="flex min-h-12 flex-wrap items-center gap-x-3 gap-y-1 border-t border-[#f4f4f2] py-2"
+                      className="flex min-h-12 flex-wrap items-center gap-x-3 gap-y-1 border-t border-line-faint py-2"
                     >
                       <Avatar name={fullName} size="xs" />
                       <span className="min-w-0 flex-1 text-sm font-semibold leading-[18px] text-ink">
@@ -482,13 +487,18 @@ export function BookingDetailPage({ data }: { data: Awaited<ReturnType<typeof ge
                 </div>
               </div>
               {booking.status === "cancelled" && paid > 0 && !refundsOnline && (
-                <p className="rounded-2xl bg-warning-bg px-4 py-3 text-sm font-semibold text-warning">
+                <FormAlert tone="warning">
                   Ce client avait payé {formatMoney(paid)} hors Horaya : rembourse-le selon ta
                   politique d'annulation, puis note le remboursement.
-                </p>
+                </FormAlert>
               )}
               {payments.length === 0 ? (
-                <p className="rounded-2xl border-[1.5px] border-dashed border-[#e2e2df] p-4 text-center text-sm leading-5 text-ink-subtle">
+                <p
+                  className={cn(
+                    dashedClasses,
+                    "rounded-2xl p-4 text-center text-sm leading-5 text-ink-subtle",
+                  )}
+                >
                   {isPending && paysOnline
                     ? "Rien d'encaissé pour l'instant. Le lien de paiement part dès que tu valides la réservation."
                     : "Rien d'encaissé pour l'instant. Quand le paiement arrive, note-le avec « Marquer comme payé »."}
@@ -498,7 +508,7 @@ export function BookingDetailPage({ data }: { data: Awaited<ReturnType<typeof ge
                   {payments.map((entry) => (
                     <li
                       key={entry.id}
-                      className="flex items-center justify-between gap-4 border-t border-[#f4f4f2] py-3"
+                      className="flex items-center justify-between gap-4 border-t border-line-faint py-3"
                     >
                       <span className="flex flex-col gap-0.5">
                         <span className="text-sm font-semibold text-ink">
@@ -547,7 +557,18 @@ export function BookingDetailPage({ data }: { data: Awaited<ReturnType<typeof ge
                   {name}
                 </span>
                 <span className="truncate text-[13px] leading-[17px] text-ink-subtle">
-                  {[booking.customer.email, booking.customer.phone].filter(Boolean).join(" · ")}
+                  {/* Un toucher écrit ou appelle le client. */}
+                  {booking.customer.email && (
+                    <a href={`mailto:${booking.customer.email}`} className={contactLinkClasses}>
+                      {booking.customer.email}
+                    </a>
+                  )}
+                  {booking.customer.email && booking.customer.phone && " · "}
+                  {booking.customer.phone && (
+                    <a href={`tel:${booking.customer.phone}`} className={contactLinkClasses}>
+                      {booking.customer.phone}
+                    </a>
+                  )}
                 </span>
               </div>
             </div>
@@ -573,7 +594,7 @@ export function BookingDetailPage({ data }: { data: Awaited<ReturnType<typeof ge
             </dl>
             <Link
               href={`/app/clients/${booking.customer.id}`}
-              className="w-fit text-sm font-semibold leading-[18px] text-ink hover:underline"
+              className={cn(rowLinkClasses, "w-fit text-sm leading-[18px]")}
             >
               Voir la fiche client →
             </Link>

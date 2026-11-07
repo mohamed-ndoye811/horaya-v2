@@ -1,5 +1,12 @@
 import { animate } from "motion/react";
-import { type ReactNode, useEffect, useLayoutEffect, useRef, useState } from "react";
+import {
+  type CSSProperties,
+  type ReactNode,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from "react";
 import { cn } from "@/lib/cn";
 import { Link } from "@/lib/navigation";
 
@@ -9,6 +16,12 @@ export interface Column<T> {
   /** Largeur fixe en px ; sans largeur, la colonne prend la place restante. */
   width?: number;
   align?: "left" | "right" | "center";
+  /**
+   * Colonne secondaire masquée sous 1280 px (entre 1024 et 1279 px, le tableau tient sans
+   * défiler) ; sa largeur est retirée de `minWidth` d'ici là. Jamais la première ni la
+   * dernière colonne (marges du bord, lien de la ligne).
+   */
+  hideBelow?: "xl";
   cell: (row: T) => ReactNode;
 }
 
@@ -72,6 +85,11 @@ export function DataTable<T>({
   rowHref?: (row: T) => string;
 }) {
   const edge = "px-3 first:pl-5 last:pr-5";
+  // Largeur des colonnes masquées sous `xl`, retirée de la largeur minimale d'ici là.
+  const hiddenWidth = columns.reduce(
+    (sum, column) => sum + (column.hideBelow ? (column.width ?? 0) : 0),
+    0,
+  );
   const groupOf = (index: number) => {
     if (!group) return null;
     const row = rows[index] as T;
@@ -158,12 +176,21 @@ export function DataTable<T>({
             aria-label={label}
             // Bordures séparées : le filet de chaque ligne est porté par ses cellules, il bouge
             // avec la ligne (en bordures fusionnées, il appartiendrait au tableau).
-            className="w-full table-fixed border-separate border-spacing-0"
-            style={{ minWidth }}
+            className="w-full min-w-(--table-min) table-fixed border-separate border-spacing-0 xl:min-w-(--table-min-xl)"
+            style={
+              {
+                "--table-min": `${minWidth - hiddenWidth}px`,
+                "--table-min-xl": `${minWidth}px`,
+              } as CSSProperties
+            }
           >
             <colgroup>
               {columns.map((column) => (
-                <col key={column.key} style={column.width ? { width: column.width } : undefined} />
+                <col
+                  key={column.key}
+                  className={column.hideBelow ? "hidden xl:table-column" : undefined}
+                  style={column.width ? { width: column.width } : undefined}
+                />
               ))}
             </colgroup>
             <thead>
@@ -176,6 +203,7 @@ export function DataTable<T>({
                       "h-10 text-xs font-bold leading-4 text-ink-muted",
                       edge,
                       alignment[column.align ?? "left"],
+                      column.hideBelow && "hidden xl:table-cell",
                     )}
                   >
                     {column.header}
@@ -217,6 +245,7 @@ export function DataTable<T>({
                           "min-w-0 border-t border-line-soft align-middle",
                           edge,
                           alignment[column.align ?? "left"],
+                          column.hideBelow && "hidden xl:table-cell",
                         )}
                       >
                         {rowHref && columnIndex === 0 && (

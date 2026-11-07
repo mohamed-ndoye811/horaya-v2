@@ -14,21 +14,36 @@ interface Segment {
   alert?: boolean;
 }
 
+/**
+ * `md` 44 px, `sm` 40 px : rail blanc. `xs` 36 px : petit rail gris posé sur une carte blanche
+ * (jours du comptoir), texte 13 px, zone de toucher agrandie.
+ */
+type SegmentedSize = "xs" | "sm" | "md";
+
 // DA v4 : rail blanc en pilule, segment actif noir.
-const groupClasses = (size: "sm" | "md", fill: boolean) =>
+const groupClasses = (size: SegmentedSize, fill: boolean) =>
   cn(
-    "flex gap-1 rounded-full bg-surface p-1",
-    size === "md" ? "h-11" : "h-10",
+    "flex gap-1 rounded-full",
+    size === "md"
+      ? "h-11 bg-surface p-1"
+      : size === "sm"
+        ? "h-10 bg-surface p-1"
+        : "h-9 bg-field p-[3px]",
     fill ? "w-full" : "w-fit",
   );
 
 // Le fond du segment actif est un repère qui glisse d'un segment à l'autre (ActiveIndicator).
-const segmentClasses = (active: boolean, fill: boolean) =>
+const segmentClasses = (active: boolean, fill: boolean, size: SegmentedSize) =>
   cn(
-    "relative isolate flex items-center justify-center gap-[7px] whitespace-nowrap rounded-full text-sm font-semibold leading-[18px] transition-colors",
+    "relative isolate flex items-center justify-center gap-[7px] whitespace-nowrap rounded-full font-semibold transition-colors",
+    size === "xs" ? "tap-area text-[13px] leading-4" : "text-sm leading-[18px]",
     // Pleine largeur : segments égaux, marge réduite pour tenir sur un petit écran.
-    fill ? "flex-1 basis-0 px-2" : "px-4",
-    active ? "text-on-ink" : "text-ink hover:bg-field",
+    fill ? "flex-1 basis-0 px-2" : size === "xs" ? "px-3" : "px-4",
+    active
+      ? "text-on-ink"
+      : size === "xs"
+        ? "text-ink hover:bg-surface"
+        : "text-ink hover:bg-field",
   );
 
 const indicator = "inset-0 -z-10 rounded-full bg-ink";
@@ -58,8 +73,9 @@ function SegmentContent({ segment, active }: { segment: Segment; active: boolean
 
 /**
  * Filtres ou vues sous forme de liens (« Toutes / En attente / Confirmées »).
- * `collapse` : sous 768 px, pilules qui défilent à l'horizontale à la place des segments
- * (maquette 6.2), qui débordaient de l'écran (filtres de listes à 4 ou 5 entrées).
+ * `collapse` : sous 1024 px, pilules qui défilent à l'horizontale à la place des segments
+ * (maquette 6.2), qui débordaient de l'écran (filtres de listes à 4 ou 5 entrées, et barre
+ * d'outils d'une liste sur tablette).
  */
 export function SegmentedLinks({
   segments,
@@ -73,7 +89,7 @@ export function SegmentedLinks({
   value: string;
   /** Nom du groupe pour les lecteurs d'écran. */
   label: string;
-  size?: "sm" | "md";
+  size?: SegmentedSize;
   fill?: boolean;
   collapse?: boolean;
 }) {
@@ -87,7 +103,7 @@ export function SegmentedLinks({
             key={segment.value}
             href={segment.href}
             aria-current={active ? "page" : undefined}
-            className={segmentClasses(active, fill)}
+            className={segmentClasses(active, fill, size)}
           >
             {active && <ActiveIndicator id={id} className={indicator} />}
             <SegmentContent segment={segment} active={active} />
@@ -101,7 +117,7 @@ export function SegmentedLinks({
     <>
       <nav
         aria-label={label}
-        className="-mx-4 flex gap-1.5 overflow-x-auto px-4 [scrollbar-width:none] md:hidden"
+        className="-mx-4 flex gap-1.5 overflow-x-auto px-4 [scrollbar-width:none] lg:hidden"
       >
         {segments.map((segment) => {
           const active = segment.value === value;
@@ -120,7 +136,7 @@ export function SegmentedLinks({
           );
         })}
       </nav>
-      <div className="hidden md:block">{links}</div>
+      <div className="hidden lg:block">{links}</div>
     </>
   );
 }
@@ -142,7 +158,7 @@ export function SegmentedControl({
   value?: string;
   defaultValue?: string;
   onChange?: (value: string) => void;
-  size?: "sm" | "md";
+  size?: SegmentedSize;
   fill?: boolean;
 }) {
   const id = useId();
@@ -158,7 +174,7 @@ export function SegmentedControl({
             key={segment.value}
             htmlFor={inputId}
             className={cn(
-              segmentClasses(active, fill),
+              segmentClasses(active, fill, size),
               "has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-ink",
             )}
           >

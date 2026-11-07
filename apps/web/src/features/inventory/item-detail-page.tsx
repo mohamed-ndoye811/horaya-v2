@@ -8,15 +8,15 @@ import {
 import { useImageUpload } from "@/components/app/image-upload";
 import { PageHeader } from "@/components/app/page-header";
 import { StatusBadge, type Tone } from "@/components/ui/badge";
-import { Button, ButtonLink } from "@/components/ui/button";
+import { Button, ButtonLink, IconLink } from "@/components/ui/button";
+import { FieldError } from "@/components/ui/field";
 import { BoxIcon, ChevronLeft, ChevronRight, PlusIcon } from "@/components/ui/icons";
-import { cardClasses, cardShellClasses } from "@/components/ui/section";
+import { cardClasses, cardShellClasses, dashedClasses } from "@/components/ui/section";
 import type { getItem } from "@/functions/inventory";
 import { type CivilDate, civilDateOf, civilKey, daysCovered } from "@/lib/calendar";
 import { cn } from "@/lib/cn";
 import { parseCivilDate } from "@/lib/dates";
 import { formatMoney } from "@/lib/format";
-import { Link } from "@/lib/navigation";
 import { withParams } from "@/lib/search-params";
 import { AddMaintenance, CancelMaintenance } from "./maintenance";
 
@@ -206,14 +206,14 @@ export function ItemDetailPage({ data }: { data: Awaited<ReturnType<typeof getIt
                   key={label}
                   className={cn(
                     "flex min-h-10 items-center justify-between gap-4 py-2",
-                    index > 0 && "border-t border-[#f4f4f2]",
+                    index > 0 && "border-t border-line-faint",
                   )}
                 >
                   <dt className="text-[13px] leading-[17px] text-ink-subtle">{label}</dt>
                   <dd
                     className={cn(
                       "text-right text-sm font-semibold leading-[18px]",
-                      money ? "text-success" : value === "—" ? "text-[#ababa6]" : "text-ink",
+                      money ? "text-success" : value === "—" ? "text-ink-faint" : "text-ink",
                     )}
                   >
                     {value}
@@ -222,7 +222,7 @@ export function ItemDetailPage({ data }: { data: Awaited<ReturnType<typeof getIt
               ))}
             </dl>
             {item.description && (
-              <p className="whitespace-pre-line border-t border-[#f4f4f2] py-3 text-[13px] leading-5 text-ink-muted">
+              <p className="whitespace-pre-line border-t border-line-faint py-3 text-[13px] leading-5 text-ink-muted">
                 {item.description}
               </p>
             )}
@@ -234,27 +234,24 @@ export function ItemDetailPage({ data }: { data: Awaited<ReturnType<typeof getIt
             <div className="flex items-center justify-between gap-4">
               <h2 className="text-base font-semibold leading-5 text-ink">Disponibilité</h2>
               <div className="flex items-center gap-2">
-                <Link
-                  href={navHref(-DAYS)}
-                  aria-label="Quinzaine précédente"
-                  className="flex size-[30px] items-center justify-center rounded-full border border-[#e2e2df] text-ink hover:bg-field"
-                >
+                <IconLink href={navHref(-DAYS)} label="Quinzaine précédente">
                   <ChevronLeft />
-                </Link>
+                </IconLink>
                 <span className="text-sm font-semibold leading-[18px] text-ink">
                   {rangeLabel(first, last)}
                 </span>
-                <Link
-                  href={navHref(DAYS)}
-                  aria-label="Quinzaine suivante"
-                  className="flex size-[30px] items-center justify-center rounded-full border border-[#e2e2df] text-ink hover:bg-field"
-                >
+                <IconLink href={navHref(DAYS)} label="Quinzaine suivante">
                   <ChevronRight />
-                </Link>
+                </IconLink>
               </div>
             </div>
             {activeUnits.length === 0 ? (
-              <p className="rounded-2xl border-[1.5px] border-dashed border-[#e2e2df] px-5 py-8 text-center text-sm text-ink-subtle">
+              <p
+                className={cn(
+                  dashedClasses,
+                  "rounded-2xl px-5 py-8 text-center text-sm text-ink-subtle",
+                )}
+              >
                 Aucun exemplaire en service.
               </p>
             ) : (
@@ -267,18 +264,18 @@ export function ItemDetailPage({ data }: { data: Awaited<ReturnType<typeof getIt
               />
             )}
             {legend.size > 0 ? (
-              <ul className="flex flex-wrap gap-x-[18px] gap-y-2 border-t border-[#f0f0ee] pt-3.5">
+              <ul className="flex flex-wrap gap-x-[18px] gap-y-2 border-t border-line-faint pt-3.5">
                 {[...legend.values()].map((allocation) => (
                   <li
                     key={allocation.id}
-                    className="flex items-center gap-1.5 text-xs leading-4 text-[#4a4a4a]"
+                    className="flex items-center gap-1.5 text-xs leading-4 text-ink-soft"
                   >
                     <span
                       aria-hidden="true"
                       className={cn(
                         "size-2 shrink-0 rounded-[3px]",
                         allocation.kind === "maintenance" &&
-                          "border-[1.5px] border-dashed border-[#d9a441]",
+                          "border-[1.5px] border-dashed border-warning-line",
                       )}
                       style={
                         allocation.kind === "maintenance"
@@ -297,7 +294,7 @@ export function ItemDetailPage({ data }: { data: Awaited<ReturnType<typeof getIt
                 ))}
               </ul>
             ) : (
-              <p className="border-t border-[#f0f0ee] pt-3.5 text-[13px] text-ink-subtle">
+              <p className="border-t border-line-faint pt-3.5 text-[13px] text-ink-subtle">
                 Aucune sortie sur ces deux semaines : tous les exemplaires sont libres.
               </p>
             )}
@@ -313,7 +310,7 @@ export function ItemDetailPage({ data }: { data: Awaited<ReturnType<typeof getIt
               )}
             </div>
             {interventions.length === 0 ? (
-              <p className="border-t border-[#f4f4f2] py-4 text-[13px] text-ink-subtle">
+              <p className="border-t border-line-faint py-4 text-[13px] text-ink-subtle">
                 Aucune intervention pour l'instant.
               </p>
             ) : (
@@ -335,7 +332,7 @@ export function ItemDetailPage({ data }: { data: Awaited<ReturnType<typeof getIt
                     <li
                       key={intervention.key}
                       className={cn(
-                        "flex min-h-14 flex-wrap items-center gap-x-3.5 gap-y-1 border-t border-[#f4f4f2] py-2",
+                        "flex min-h-14 flex-wrap items-center gap-x-3.5 gap-y-1 border-t border-line-faint py-2",
                         intervention.cancelled && "opacity-60",
                       )}
                     >
@@ -389,26 +386,20 @@ function ItemPhoto({ id, photoUrl }: { id: string; photoUrl: string | null }) {
         )}
       </div>
       <div className="flex flex-wrap items-center gap-2 px-1 pb-1">
-        <Button
-          variant="secondary"
-          pending={pending}
-          onClick={pick}
-          className="h-9 px-4 text-[13px]"
-        >
+        <Button variant="secondary" size="xs" pending={pending} onClick={pick}>
           {photoUrl ? "Changer la photo" : "Ajouter une photo"}
         </Button>
         {photoUrl && (
-          <Button
-            variant="secondary"
-            disabled={pending}
-            onClick={remove}
-            className="h-9 px-4 text-[13px]"
-          >
+          <Button variant="secondary" size="xs" disabled={pending} onClick={remove}>
             Retirer
           </Button>
         )}
       </div>
-      {error && <p className="px-2 pb-1 text-xs font-semibold leading-4 text-danger">{error}</p>}
+      {error && (
+        <div className="px-2 pb-1">
+          <FieldError>{error}</FieldError>
+        </div>
+      )}
       {fileInput}
     </section>
   );

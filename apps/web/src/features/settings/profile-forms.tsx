@@ -3,7 +3,7 @@ import { useImageUpload } from "@/components/app/image-upload";
 import { PasswordMeter } from "@/components/auth/password-strength";
 import { Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { Checkbox, Field, inputClasses, PasswordInput } from "@/components/ui/field";
+import { Checkbox, Field, FieldError, inputClasses, PasswordInput } from "@/components/ui/field";
 import { FormAlert } from "@/components/ui/form-alert";
 import { FormSection } from "@/components/ui/section";
 import { changePasswordAction, saveProfileAction } from "@/functions/settings";
@@ -145,26 +145,16 @@ function ProfilePhoto({ name, image }: { name: string; image: string | null }) {
       <div className="flex flex-col gap-2">
         <p className="text-[15px] font-semibold leading-5 text-ink">Photo de profil</p>
         <div className="flex flex-wrap gap-2">
-          <Button
-            variant="secondary"
-            pending={pending}
-            onClick={pick}
-            className="h-9 px-4 text-[13px]"
-          >
+          <Button variant="secondary" size="xs" pending={pending} onClick={pick}>
             {image ? "Changer" : "Ajouter une photo"}
           </Button>
           {image && (
-            <Button
-              variant="secondary"
-              disabled={pending}
-              onClick={remove}
-              className="h-9 px-4 text-[13px]"
-            >
+            <Button variant="secondary" size="xs" disabled={pending} onClick={remove}>
               Retirer
             </Button>
           )}
         </div>
-        {error && <p className="text-xs font-semibold leading-4 text-danger">{error}</p>}
+        {error && <FieldError>{error}</FieldError>}
       </div>
       {fileInput}
     </div>

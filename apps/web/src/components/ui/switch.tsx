@@ -21,7 +21,7 @@ export function Switch({
       <span className="relative flex h-[22px] w-10 shrink-0">
         <input
           type="checkbox"
-          className="peer absolute inset-0 appearance-none rounded-full bg-[#e2e2df] transition-colors checked:bg-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
+          className="peer absolute inset-0 appearance-none rounded-full bg-line transition-colors checked:bg-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
           {...props}
         />
         <span

@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Banner } from "@/components/ui/banner";
+import { FieldError } from "@/components/ui/field";
 import { authClient } from "@/lib/auth-client";
 import { authErrorMessage } from "@/lib/auth-errors";
 
@@ -29,7 +30,9 @@ export function VerifyEmailBanner({ email }: { email: string }) {
         <strong>Confirme ton adresse e-mail :</strong> on t'a envoyé un lien à {email}.
       </Banner>
       {status !== "idle" && status !== "pending" && status !== "sent" && (
-        <p className="px-4 text-[13px] font-semibold text-danger">{status}</p>
+        <div className="px-4">
+          <FieldError>{status}</FieldError>
+        </div>
       )}
     </div>
   );

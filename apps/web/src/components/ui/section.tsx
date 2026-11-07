@@ -9,6 +9,19 @@ export const cardShellClasses =
 /** Carte blanche des fiches, avec 20 px de marge intérieure. */
 export const cardClasses = `${cardShellClasses} p-5`;
 
+/**
+ * Carte noire (récapitulatif, aperçu, synthèse) : fond encre, texte clair. Le rayon et les
+ * marges restent au parent (`className` de mise en page). Les textes secondaires y prennent
+ * `text-on-ink-muted`, les filets `border-ink-line`.
+ */
+export const inkCardClasses = "bg-ink text-on-ink";
+
+/**
+ * Encadré en pointillés (zone d'ajout, dépôt de photos, note vide) : contour 1,5 px
+ * `line-strong`. Le rayon et les marges restent au parent.
+ */
+export const dashedClasses = "border-[1.5px] border-dashed border-line-strong";
+
 /** Titre de bloc (« À venir ») avec précision grise et lien discret à droite. */
 export function SectionHeading({
   title,
@@ -35,7 +48,7 @@ export function SectionHeading({
     >
       <h2 className="flex items-baseline gap-2.5">
         <span className="text-xl font-medium leading-[26px] text-ink">{title}</span>
-        {meta && <span className="text-sm leading-[18px] text-[#8a8a8a]">{meta}</span>}
+        {meta && <span className="text-sm leading-[18px] text-ink-subtle">{meta}</span>}
       </h2>
       {action && (
         <Link
@@ -72,7 +85,25 @@ export function FormSection({
   );
 }
 
+const eyebrows = {
+  default: "text-xs font-bold leading-4 text-ink-muted",
+  /** Petites capitales espacées (« APERÇU DE LA FICHE »), sur fond clair ou noir. */
+  caps: "text-[11px] font-bold uppercase leading-[14px] tracking-[0.06em] text-ink-subtle",
+  /** Capitales en mono (sur-titres des pages publiques, en-têtes de jour). */
+  mono: "font-mono text-label font-semibold uppercase leading-4 tracking-[0.055em] text-ink-muted",
+  /** Titre de carte noire (« Ce mois-ci », « Bien démarrer »). */
+  inverse: "text-[13px] font-semibold leading-4 text-on-ink-muted",
+};
+
 /** Petit titre au-dessus d'un bloc (« Message de la cliente », « Historique »). */
-export function Eyebrow({ children, className }: { children: ReactNode; className?: string }) {
-  return <p className={cn("text-xs font-bold leading-4 text-ink-muted", className)}>{children}</p>;
+export function Eyebrow({
+  variant = "default",
+  children,
+  className,
+}: {
+  variant?: keyof typeof eyebrows;
+  children: ReactNode;
+  className?: string;
+}) {
+  return <p className={cn(eyebrows[variant], className)}>{children}</p>;
 }

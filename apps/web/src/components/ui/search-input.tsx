@@ -25,7 +25,8 @@ export function SearchInput({
         type="search"
         className={cn(
           "min-w-0 grow bg-transparent font-medium text-ink outline-none placeholder:text-ink-subtle",
-          size === "md" ? "text-base" : "text-sm",
+          // 16 px sous `lg` : pas de zoom de Safari sur iPhone au toucher.
+          size === "md" ? "text-base" : "text-base lg:text-sm",
         )}
         {...props}
       />

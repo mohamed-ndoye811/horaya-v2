@@ -12,16 +12,22 @@ const inputBase =
   "aria-invalid:border-danger aria-invalid:focus:shadow-[0_0_0_0.5px_var(--color-danger)] " +
   "data-[valid=true]:border-success";
 
+/*
+ * Sous `lg`, texte des champs à 16 px au moins : en dessous, Safari sur iPhone zoome la page
+ * dès qu'on touche le champ.
+ */
 const sizes = {
-  md: "h-11 pl-3.5 text-[15px]",
+  /** 40 px : champ dans une ligne ou à côté d'une pastille (code couleur). */
+  sm: "h-10 pl-3.5 text-base lg:text-sm",
+  md: "h-11 pl-3.5 text-base lg:text-[15px]",
   lg: "h-[52px] pl-4 text-base",
 };
 
 /** Marge droite : normale, ou réservée à une icône / un bouton placé dans le champ. */
 const trailingPadding = {
-  none: { md: "pr-3.5", lg: "pr-4" },
-  icon: { md: "pr-10", lg: "pr-10" },
-  action: { md: "pr-24", lg: "pr-24" },
+  none: { sm: "pr-3.5", md: "pr-3.5", lg: "pr-4" },
+  icon: { sm: "pr-10", md: "pr-10", lg: "pr-10" },
+  action: { sm: "pr-24", md: "pr-24", lg: "pr-24" },
 };
 
 export type InputSize = keyof typeof sizes;
@@ -48,6 +54,15 @@ interface FieldProps {
     "aria-invalid"?: true;
     "aria-describedby"?: string;
   }) => ReactNode;
+}
+
+/** Message d'erreur sous un champ (13 px, rouge, gras). `id` : à relier par `aria-describedby`. */
+export function FieldError({ id, children }: { id?: string; children: ReactNode }) {
+  return (
+    <p id={id} className="text-[13px] font-semibold leading-4 text-danger">
+      {children}
+    </p>
+  );
 }
 
 /**
@@ -100,13 +115,7 @@ export function Field({
         id,
         ...(error ? { "aria-invalid": true as const, "aria-describedby": messageId } : {}),
       })}
-      {error ? (
-        <p id={messageId} className="text-[13px] font-semibold leading-4 text-danger">
-          {error}
-        </p>
-      ) : (
-        hint
-      )}
+      {error ? <FieldError id={messageId}>{error}</FieldError> : hint}
     </div>
   );
 }
@@ -116,7 +125,9 @@ export function textareaClasses() {
   return cn(inputBase, "min-h-32 resize-y px-3.5 py-3 text-base leading-[23px]");
 }
 
-interface AffixInputProps extends Omit<ComponentProps<"input">, "size" | "className"> {
+interface AffixInputProps extends Omit<ComponentProps<"input">, "size" | "className" | "prefix"> {
+  /** Texte fixe collé au bord gauche, sur fond gris (« horaya.app/ »). */
+  prefix?: ReactNode;
   /** Icône avant la valeur (calendrier, repère). */
   leading?: ReactNode;
   /** Unité après la valeur (« places », « € TTC »). */
@@ -125,21 +136,26 @@ interface AffixInputProps extends Omit<ComponentProps<"input">, "size" | "classN
   mono?: boolean;
 }
 
-/** Champ avec icône et/ou unité intégrées ; le cadre réagit au focus du champ. */
-export function AffixInput({ leading, suffix, mono = false, ...props }: AffixInputProps) {
+/** Champ avec préfixe, icône et/ou unité intégrés ; le cadre réagit au focus du champ. */
+export function AffixInput({ prefix, leading, suffix, mono = false, ...props }: AffixInputProps) {
   return (
     <div
       className={cn(
-        "flex h-11 min-w-0 items-center gap-2.5 rounded-xl border border-line-soft bg-field px-3.5 transition-[border-color,background-color]",
+        "flex h-11 min-w-0 items-center gap-2.5 overflow-hidden rounded-xl border border-line-soft bg-field px-3.5 transition-[border-color,background-color]",
         "focus-within:border-ink focus-within:bg-surface",
         "has-aria-invalid:border-danger",
       )}
     >
+      {prefix && (
+        <span className="-ml-3.5 flex shrink-0 items-center self-stretch border-r border-line-soft bg-line-soft px-3.5 text-sm text-ink-subtle">
+          {prefix}
+        </span>
+      )}
       {leading && <span className="flex shrink-0 text-ink-muted">{leading}</span>}
       <input
         className={cn(
           "h-full min-w-0 grow bg-transparent text-ink outline-none placeholder:text-ink-subtle",
-          mono ? "font-mono text-[15px] font-semibold" : "text-base font-medium",
+          mono ? "font-mono text-base font-semibold lg:text-[15px]" : "text-base font-medium",
         )}
         {...props}
       />
@@ -209,11 +225,7 @@ export function Checkbox({ label, className, ...props }: CheckboxProps) {
   return (
     <div className="flex flex-col gap-2" {...invalid.handlers}>
       {box}
-      {invalid.message && (
-        <p id={messageId} className="text-[13px] font-semibold leading-4 text-danger">
-          {invalid.message}
-        </p>
-      )}
+      {invalid.message && <FieldError id={messageId}>{invalid.message}</FieldError>}
     </div>
   );
 }

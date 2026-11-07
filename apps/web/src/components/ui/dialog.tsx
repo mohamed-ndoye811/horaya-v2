@@ -6,7 +6,7 @@ import { CloseIcon } from "./icons";
 
 /**
  * Fenêtre modale sur <dialog> natif : focus piégé, Échap et fond gérés par le navigateur.
- * Contrôlée : `open` / `onClose`.
+ * Contrôlée : `open` / `onClose`. Sous `sm`, feuille qui monte du bas de l'écran.
  */
 export function Dialog({
   open,
@@ -47,6 +47,7 @@ export function Dialog({
       }}
       className={cn(
         "m-auto w-[calc(100%-32px)] rounded-[28px] bg-surface p-0 text-left text-ink shadow-[0_24px_80px_rgba(0,0,0,0.22)] backdrop:bg-ink/35",
+        "max-sm:mb-0 max-sm:w-full max-sm:max-w-none max-sm:rounded-b-none max-sm:pb-[env(safe-area-inset-bottom)]",
         size === "md" ? "max-w-[520px]" : "max-w-[720px]",
       )}
     >
@@ -64,7 +65,7 @@ export function Dialog({
             type="button"
             onClick={onClose}
             aria-label="Fermer"
-            className="flex size-9 shrink-0 items-center justify-center rounded-full bg-field hover:bg-line-soft"
+            className="flex size-10 shrink-0 items-center justify-center rounded-full bg-field hover:bg-line-soft"
           >
             <CloseIcon />
           </button>

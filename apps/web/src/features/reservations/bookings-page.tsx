@@ -5,15 +5,17 @@ import { FilterSelect } from "@/components/app/filter-select";
 import { PageHeader } from "@/components/app/page-header";
 import { StatusBadge } from "@/components/ui/badge";
 import { Banner } from "@/components/ui/banner";
-import { ButtonLink } from "@/components/ui/button";
+import { ButtonLink, rowLinkClasses } from "@/components/ui/button";
 import { MoneyCell, MonoCaption, PersonCell } from "@/components/ui/cells";
 import { DataTable } from "@/components/ui/data-table";
 import { EmptyState } from "@/components/ui/empty-state";
 import { PlusIcon } from "@/components/ui/icons";
+import { ActionMenu } from "@/components/ui/menu";
 import { SearchInput } from "@/components/ui/search-input";
 import { SegmentedLinks } from "@/components/ui/segmented";
 import { BOOKING_STATUS_BADGE } from "@/components/ui/status";
 import type { getBookings } from "@/functions/bookings";
+import { cn } from "@/lib/cn";
 import { elapsed } from "@/lib/dashboard";
 import {
   formatDateTimeShort,
@@ -68,6 +70,12 @@ export function BookingsPage({
       ? "à payer"
       : PAYMENT_MODE_LABELS[row.paymentMode];
 
+  const exportHref = withParams("/app/reservations/export", {
+    statut: tab === "all" ? undefined : tab,
+    q: search,
+    evenement: eventId,
+  });
+
   const href = (overrides: Record<string, string | undefined>) =>
     withParams("/app/reservations", {
       statut: tab === "all" ? undefined : tab,
@@ -91,18 +99,20 @@ export function BookingsPage({
         }
         actions={
           <>
-            <ButtonLink
-              href={withParams("/app/reservations/export", {
-                statut: tab === "all" ? undefined : tab,
-                q: search,
-                evenement: eventId,
-              })}
-              variant="secondary"
-              prefetch={false}
-            >
-              Exporter CSV
-            </ButtonLink>
-            <div className="hidden lg:flex">
+            {/* Sous lg, l'export passe dans un menu « … » (téléchargement : hors du routeur). */}
+            <div className="lg:hidden">
+              <ActionMenu
+                label="Plus d'actions"
+                variant="outline"
+                items={[
+                  { label: "Exporter CSV", onSelect: () => window.location.assign(exportHref) },
+                ]}
+              />
+            </div>
+            <div className="hidden gap-2 lg:flex">
+              <ButtonLink href={exportHref} variant="secondary" prefetch={false}>
+                Exporter CSV
+              </ButtonLink>
               <ButtonLink href="/app/reservations/nouvelle" icon={<PlusIcon />}>
                 Ajouter une réservation
               </ButtonLink>
@@ -113,7 +123,7 @@ export function BookingsPage({
           counts.all > 0 && (
             <>
               <form
-                className="min-w-0 md:flex-1 xl:max-w-[260px]"
+                className="min-w-0 lg:flex-1 lg:basis-60 xl:max-w-[260px]"
                 onSubmit={(event) => {
                   event.preventDefault();
                   const q = String(new FormData(event.currentTarget).get("q") ?? "").trim();
@@ -128,7 +138,7 @@ export function BookingsPage({
                 />
               </form>
               {/* Sur mobile, les pilules puis la liste des événements. */}
-              <div className="flex flex-col gap-3 md:flex-row md:items-center">
+              <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
                 <SegmentedLinks
                   collapse
                   label="Filtrer par statut"
@@ -143,7 +153,7 @@ export function BookingsPage({
                 <FilterSelect
                   param="evenement"
                   label="Événement"
-                  className="md:w-[200px]"
+                  className="lg:w-[200px]"
                   options={[
                     { value: "", label: "Tous les événements" },
                     ...events.map((event) => ({ value: event.id, label: event.title })),
@@ -258,14 +268,14 @@ export function BookingsPage({
                     {row.eventId ? (
                       <Link
                         href={`/app/evenements/${row.eventId}`}
-                        className="truncate text-sm font-medium leading-[18px] text-ink hover:underline"
+                        className={cn(rowLinkClasses, "truncate text-sm leading-[18px]")}
                       >
                         {row.eventTitle}
                       </Link>
                     ) : (
                       <Link
                         href={`/app/reservations/${row.id}`}
-                        className="truncate text-sm font-medium leading-[18px] text-ink hover:underline"
+                        className={cn(rowLinkClasses, "truncate text-sm leading-[18px]")}
                       >
                         {row.eventTitle ?? "Location"}
                       </Link>
@@ -280,8 +290,10 @@ export function BookingsPage({
                 key: "date",
                 header: "Réservé le",
                 width: 150,
+                // Entre 1024 et 1279 px, le tableau tient sans défiler.
+                hideBelow: "xl",
                 cell: (row) => (
-                  <span className="text-[13px] leading-[17px] text-[#4a4a4a]">
+                  <span className="text-[13px] leading-[17px] text-ink-soft">
                     {formatRelativeDateTime(row.createdAt, timeZone)}
                   </span>
                 ),

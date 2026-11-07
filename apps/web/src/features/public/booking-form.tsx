@@ -1,13 +1,11 @@
 import type { CustomFieldDefinition } from "@horaya/core";
 import { type FormEvent, type ReactNode, useState } from "react";
-import { brandButtonClasses } from "@/components/public/public-chrome";
-import { Checkbox, Field, inputClasses, textareaClasses } from "@/components/ui/field";
+import { Button } from "@/components/ui/button";
+import { Checkbox, Field, FieldError, inputClasses, textareaClasses } from "@/components/ui/field";
 import { FormAlert } from "@/components/ui/form-alert";
-import { ArrowRight } from "@/components/ui/icons";
 import { FormSection } from "@/components/ui/section";
 import { Select } from "@/components/ui/select";
 import { createPublicBookingAction } from "@/functions/public";
-import { cn } from "@/lib/cn";
 import { useFormAction } from "@/lib/use-form-action";
 import type { FormState } from "@/server/form-state";
 
@@ -102,15 +100,15 @@ function ExtraParticipant({
             {summary || "Facultatif : tu peux compléter plus tard."}
           </span>
         </div>
-        <button
-          type="button"
+        <Button
+          variant="soft"
+          size="xs"
           aria-expanded={expanded}
           aria-controls={panelId}
           onClick={() => setOpen(!expanded)}
-          className="flex h-9 shrink-0 items-center rounded-full bg-bg px-4 text-[13px] font-bold text-ink transition-colors hover:bg-line"
         >
           {expanded ? "Fermer" : summary ? "Modifier" : "Compléter"}
-        </button>
+        </Button>
       </div>
       <div id={panelId} hidden={!expanded} className="auth-fields grid gap-3 sm:grid-cols-2">
         <Field label="Prénom" error={errors[`p${index}.firstName`]}>
@@ -186,7 +184,7 @@ export function BookingForm({
         required
         label={`J'accepte les conditions de réservation et la politique d'annulation de ${workspaceName}.`}
       />
-      {errors.terms && <p className="text-[13px] font-semibold text-danger">{errors.terms}</p>}
+      {errors.terms && <FieldError>{errors.terms}</FieldError>}
     </div>
   );
 
@@ -326,15 +324,9 @@ export function BookingForm({
             <span className="font-semibold text-on-ink">{recap.main}</span>
             {recap.extra && ` · ${recap.extra}`}
           </p>
-          <button
-            type="submit"
-            disabled={pending}
-            aria-busy={pending}
-            className={cn(brandButtonClasses, "h-12 px-6 text-[15px] disabled:opacity-70")}
-          >
+          <Button type="submit" variant="brand" pending={pending} arrow>
             {pending ? "Un instant…" : submitLabel}
-            {!pending && <ArrowRight />}
-          </button>
+          </Button>
         </div>
       </div>
 

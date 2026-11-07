@@ -1,8 +1,10 @@
 import { useEffect, useRef, useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Checkbox, textareaClasses } from "@/components/ui/field";
+import { Button, textLinkSmClasses } from "@/components/ui/button";
+import { Checkbox, FieldError, textareaClasses } from "@/components/ui/field";
 import { FormAlert } from "@/components/ui/form-alert";
+import { dashedClasses } from "@/components/ui/section";
 import { addNoteAction } from "@/functions/clients";
+import { cn } from "@/lib/cn";
 import { useFormAction } from "@/lib/use-form-action";
 import { useInvalidMessage } from "@/lib/use-invalid-message";
 import type { FormState } from "@/server/form-state";
@@ -31,11 +33,7 @@ export function NoteForm({ customerId }: { customerId: string }) {
       <div className="flex items-baseline justify-between gap-3">
         <h2 className="text-base font-semibold leading-5 text-ink">Notes internes</h2>
         {!open && (
-          <button
-            type="button"
-            onClick={() => setOpen(true)}
-            className="text-[13px] font-semibold leading-[17px] text-ink hover:underline"
-          >
+          <button type="button" onClick={() => setOpen(true)} className={textLinkSmClasses}>
             + Ajouter
           </button>
         )}
@@ -44,7 +42,7 @@ export function NoteForm({ customerId }: { customerId: string }) {
         <form
           ref={formRef}
           onSubmit={onSubmit}
-          className="flex w-full flex-col gap-3 rounded-[14px] border-[1.5px] border-dashed border-[#dcdcd8] p-3"
+          className={cn(dashedClasses, "flex w-full flex-col gap-3 rounded-[14px] p-3")}
         >
           {state.error && <FormAlert>{state.fieldErrors?.body ?? state.error}</FormAlert>}
           <div className="flex flex-col gap-2" {...invalid.handlers}>
@@ -58,21 +56,15 @@ export function NoteForm({ customerId }: { customerId: string }) {
               placeholder="Visible par ton équipe uniquement…"
               className={textareaClasses()}
             />
-            {invalid.message && (
-              <p className="text-[13px] font-semibold leading-4 text-danger">{invalid.message}</p>
-            )}
+            {invalid.message && <FieldError>{invalid.message}</FieldError>}
           </div>
           <div className="flex items-center justify-between gap-3">
             <Checkbox name="pinned" label="Épingler en haut" />
             <div className="flex gap-2">
-              <Button
-                variant="secondary"
-                onClick={() => setOpen(false)}
-                className="h-10 px-4 text-sm"
-              >
+              <Button variant="secondary" size="sm" onClick={() => setOpen(false)}>
                 Annuler
               </Button>
-              <Button type="submit" pending={pending} className="h-10 px-4 text-sm">
+              <Button type="submit" size="sm" pending={pending}>
                 Ajouter la note
               </Button>
             </div>

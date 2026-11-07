@@ -58,7 +58,7 @@ export function AvailabilityGrid({
     return (
       <div
         key={unit.id}
-        className="grid border-b border-[#f4f4f2] last:border-b-0"
+        className="grid border-b border-line-faint last:border-b-0"
         style={{
           gridTemplateColumns: columns,
           gridTemplateRows: `repeat(${lanes}, minmax(0, 1fr))`,
@@ -67,9 +67,10 @@ export function AvailabilityGrid({
       >
         <span
           style={{ gridColumn: 1, gridRow: "1 / -1" }}
+          // Collée à gauche : sur mobile, la grille défile sous le nom de l'exemplaire.
           className={cn(
-            "flex items-center text-xs font-semibold leading-4",
-            unit.status === "available" ? "text-ink-subtle" : "text-[#ababa6] line-through",
+            "sticky left-0 z-20 flex items-center bg-surface text-xs font-semibold leading-4",
+            unit.status === "available" ? "text-ink-subtle" : "text-ink-faint line-through",
           )}
         >
           Ex. {unit.label}
@@ -101,7 +102,7 @@ export function AvailabilityGrid({
                   ? "mt-0.5 mb-1.5"
                   : "my-0.5",
             maintenance &&
-              "border-[1.5px] border-dashed border-[#d9a441] bg-warning-bg text-warning",
+              "border-[1.5px] border-dashed border-warning-line bg-warning-bg text-warning",
             href && "hover:brightness-95",
           );
           const style = {
@@ -127,7 +128,7 @@ export function AvailabilityGrid({
     <div className="overflow-x-auto">
       <figure aria-label="Disponibilité par exemplaire" className="m-0 min-w-[720px]">
         <div className="grid pb-3.5" style={{ gridTemplateColumns: columns }}>
-          <span aria-hidden="true" />
+          <span aria-hidden="true" className="sticky left-0 z-20 bg-surface" />
           {days.map((day) => {
             const isToday = civilKey(day) === todayKey;
             return (
@@ -146,9 +147,9 @@ export function AvailabilityGrid({
                     className={cn(
                       "text-[10px] font-bold leading-3",
                       isToday
-                        ? "text-white/60"
+                        ? "text-on-ink/60"
                         : isWeekend(day)
-                          ? "text-[#ababa6]"
+                          ? "text-ink-faint"
                           : "text-ink-subtle",
                     )}
                   >
@@ -157,7 +158,7 @@ export function AvailabilityGrid({
                   <span
                     className={cn(
                       "text-[15px] font-semibold leading-[18px]",
-                      isToday ? "text-white" : isWeekend(day) ? "text-[#ababa6]" : "text-ink",
+                      isToday ? "text-on-ink" : isWeekend(day) ? "text-ink-faint" : "text-ink",
                     )}
                   >
                     {day.day}
@@ -169,7 +170,7 @@ export function AvailabilityGrid({
         </div>
         {units.slice(0, visibleRows).map(row)}
         {units.length > visibleRows && (
-          <details className="group border-t border-[#f4f4f2]">
+          <details className="group border-t border-line-faint">
             <summary className="flex list-none items-center justify-center gap-2 rounded-xl px-3 py-2.5 text-[13px] font-semibold text-ink hover:bg-field [&::-webkit-details-marker]:hidden">
               <span className="group-open:hidden">
                 Afficher les {units.length - visibleRows} autres exemplaires

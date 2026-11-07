@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 import { cn } from "@/lib/cn";
 
 const tones = {
-  warning: { box: "bg-warning-bg text-[#5e4410]", mark: "bg-warning" },
+  warning: { box: "bg-warning-bg text-warning-strong", mark: "bg-warning" },
   danger: { box: "bg-danger-bg text-danger", mark: "bg-danger" },
   info: { box: "bg-info-bg text-info", mark: "bg-info" },
   success: { box: "bg-success-bg text-success", mark: "bg-success" },

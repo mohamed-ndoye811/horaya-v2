@@ -1,4 +1,5 @@
 import type { CSSProperties } from "react";
+import { HorayaWordmark } from "@/components/app/logo";
 import { luminance, textOn } from "@/lib/colors";
 import { Link } from "@/lib/navigation";
 
@@ -30,10 +31,6 @@ export function brandStyle(color: string): CSSProperties {
   } as CSSProperties;
 }
 
-/** Bouton principal aux couleurs de l'espace (« Réserver mes places »). */
-export const brandButtonClasses =
-  "flex items-center justify-center gap-2 rounded-full bg-[var(--brand)] font-semibold text-[var(--on-brand)] transition-[filter] hover:brightness-110";
-
 /** Logo de l'espace, sinon pastille carrée arrondie à son initiale (notch, en-tête mobile). */
 export function WorkspaceMark({ name, logo }: { name: string; logo?: string | null }) {
   if (logo) {
@@ -59,7 +56,7 @@ export function contactHref(workspace: {
   return null;
 }
 
-/** Pied des pages publiques : coordonnées, mentions légales, « propulsées par Horaya ». */
+/** Pied des pages publiques : coordonnées, mentions légales, logo Horaya (« propulsées par »). */
 export function PublicFooter({
   workspace,
 }: {
@@ -77,19 +74,28 @@ export function PublicFooter({
     workspace.contactEmail ?? workspace.contactPhone,
   ].filter(Boolean);
   return (
-    <footer className="flex flex-col gap-2 px-5 pt-2 pb-5 text-[13px] leading-4 text-ink-subtle sm:flex-row sm:items-center sm:justify-between">
+    // Mobile : coordonnées, puis mentions légales et logo aux deux bouts d'une même ligne.
+    // Grand écran : tout sur une ligne, le logo à droite.
+    <footer className="flex flex-col gap-2 px-5 pt-2 pb-5 text-[13px] leading-4 text-ink-subtle sm:flex-row sm:items-center sm:gap-1">
       <p>
-        {details.join(" · ")} ·{" "}
+        {details.join(" · ")}
+        <span className="max-sm:hidden"> ·</span>
+      </p>
+      <div className="flex flex-1 items-center justify-between gap-4">
         <Link
           href={`/${workspace.slug}/mentions-legales`}
-          className="underline underline-offset-2 hover:text-ink"
+          className="tap-area underline underline-offset-2 hover:text-ink"
         >
           Mentions légales
         </Link>
-      </p>
-      <Link href="/" className="text-xs font-semibold hover:text-ink">
-        Réservations propulsées par Horaya
-      </Link>
+        <Link
+          href="/"
+          aria-label="Réservations propulsées par Horaya"
+          className="tap-area transition-colors hover:text-ink"
+        >
+          <HorayaWordmark height={13} />
+        </Link>
+      </div>
     </footer>
   );
 }

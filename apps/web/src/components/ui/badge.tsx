@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import { cn } from "@/lib/cn";
 
-export type Tone = "success" | "warning" | "danger" | "info" | "draft" | "ink";
+export type Tone = "success" | "warning" | "danger" | "info" | "draft" | "ink" | "neutral";
 
 const tones: Record<Tone, string> = {
   success: "bg-success-bg text-success",
@@ -11,14 +11,28 @@ const tones: Record<Tone, string> = {
   draft: "bg-draft-bg text-draft",
   /** Complet : pilule noire. */
   ink: "bg-ink text-on-ink",
+  /** Sans enjeu (« Bientôt », « À venir ») : gris. */
+  neutral: "bg-field text-ink-subtle",
 };
 
-/** Pastille de statut (DA v4) : pilule teintée, texte 12 px gras. */
-export function StatusBadge({ tone, children }: { tone: Tone; children: ReactNode }) {
+/**
+ * Pastille de statut (DA v4) : pilule teintée, texte 12 px gras. `sm` : 11 px, 20 px de haut
+ * (à côté d'un titre, dans un menu).
+ */
+export function StatusBadge({
+  tone,
+  size = "md",
+  children,
+}: {
+  tone: Tone;
+  size?: "sm" | "md";
+  children: ReactNode;
+}) {
   return (
     <span
       className={cn(
-        "inline-flex h-6 shrink-0 items-center rounded-full px-2.5 text-xs font-bold leading-4 whitespace-nowrap",
+        "inline-flex shrink-0 items-center rounded-full font-bold whitespace-nowrap",
+        size === "sm" ? "h-5 px-2 text-[11px] leading-[14px]" : "h-6 px-2.5 text-xs leading-4",
         tones[tone],
       )}
     >
