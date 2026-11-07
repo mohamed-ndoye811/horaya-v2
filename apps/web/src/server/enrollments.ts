@@ -20,7 +20,7 @@ import { sendEnrollmentEmail } from "./booking-emails";
 import { db } from "./db";
 import { type FormState, toFormState } from "./form-state";
 import { getWorkspaceBySlug } from "./public";
-import { publicEventPage } from "./public-booking";
+import { customerPrefill, publicEventPage } from "./public-booking";
 import { clientIp, rateLimited } from "./rate-limit";
 import { deps } from "./services";
 import { getWorkspaceContext } from "./workspace";
@@ -36,7 +36,7 @@ export async function enrollEventPage(slug: string, eventSlug: string) {
   if (data.event && (!offer || offer.fullSessions.length > 0)) {
     throw redirect({ href: `/${slug}/${eventSlug}` });
   }
-  return { ...data, offer };
+  return { ...data, offer, prefill: await customerPrefill() };
 }
 
 /** « Inscris-toi pour tout le trimestre » : une inscription, une réservation par séance. */

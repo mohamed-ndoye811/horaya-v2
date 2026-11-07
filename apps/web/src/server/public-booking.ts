@@ -127,15 +127,20 @@ export async function bookEventPage(
   }
   const requested = Number(places ?? 1);
   const seats = Number.isInteger(requested) ? Math.min(Math.max(requested, 1), state.maxSeats) : 1;
-  // Espace client connecté : son profil préremplit le participant 1.
+  return { ...data, seats, prefill: await customerPrefill() };
+}
+
+/** Espace client connecté : son profil préremplit le participant 1 (réservation, inscription). */
+export async function customerPrefill() {
   const account = await currentCustomerAccount();
-  const prefill = account && {
-    firstName: account.firstName ?? "",
-    lastName: account.lastName ?? "",
-    email: account.email,
-    phone: account.phone ?? "",
-  };
-  return { ...data, seats, prefill };
+  return (
+    account && {
+      firstName: account.firstName ?? "",
+      lastName: account.lastName ?? "",
+      email: account.email,
+      phone: account.phone ?? "",
+    }
+  );
 }
 
 /** Maquette 5.4 : la réservation du lien, avec ce qui a été payé et ce qui serait remboursé. */

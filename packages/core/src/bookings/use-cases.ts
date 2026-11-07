@@ -427,6 +427,12 @@ async function findOwnBooking(
   if (!booking || customer?.email?.toLowerCase() !== email.toLowerCase()) {
     throw new NotFoundError("Réservation", bookingId);
   }
+  // Une séance d'une inscription au trimestre ne s'annule ni ne se déplace : on signale l'absence.
+  if (booking.enrollmentId) {
+    throw new ConflictError(
+      "Cette séance fait partie de ton inscription : signale plutôt ton absence",
+    );
+  }
   return booking;
 }
 

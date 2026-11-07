@@ -12,7 +12,7 @@ import { paymentNote } from "@/lib/public-booking";
 /** « Inscris-toi pour tout le trimestre » : coordonnées, récapitulatif des séances, un paiement. */
 export function EnrollPage({
   eventSlug,
-  data: { workspace, event, channel, offer },
+  data: { workspace, event, channel, offer, prefill },
 }: {
   eventSlug: string;
   data: Awaited<ReturnType<typeof getEnrollEventPage>>;
@@ -62,6 +62,7 @@ export function EnrollPage({
         workspaceName={workspace.name}
         submitLabel="Confirmer mon inscription"
         enrollment
+        prefill={prefill}
         action={createPublicEnrollmentAction.bind(null, slug, eventSlug)}
         payment={
           link

@@ -207,7 +207,6 @@ export async function reportAbsenceWithToken(
   manageToken: string,
   eventId: string,
 ): Promise<Booking> {
-  const actor: Actor = { type: "customer", organizationId };
   const tokenHash = await hashToken(manageToken);
   return deps.uow.run(async (repositories) => {
     const enrollment = await repositories.enrollments.findByManageTokenHash(
@@ -215,26 +214,64 @@ export async function reportAbsenceWithToken(
       tokenHash,
     );
     if (!enrollment) throw new NotFoundError("Inscription", "lien");
-    if (enrollment.cancelledAt) throw new ConflictError("Cette inscription est terminée");
     const booking = (await repositories.enrollments.listBookings(enrollment.id)).find(
       (entry) => entry.eventId === eventId,
     );
     if (!booking) throw new NotFoundError("Séance", eventId);
-    if (booking.absentAt) throw new ConflictError("Absence déjà signalée pour cette séance");
-    if (!SEAT_HOLDING_STATUSES.has(booking.status)) {
-      throw new ConflictError("Cette séance n'est plus réservée");
-    }
-    const event = await repositories.events.find(organizationId, eventId);
-    const now = deps.clock.now();
-    if (!event || event.startsAt <= now) {
-      throw new ConflictError("La séance a commencé : préviens directement l'atelier");
-    }
-    await releaseSession(repositories, actor, booking, now, {
-      action: "booking.absent",
-      absentAt: now,
-    });
-    return (await repositories.bookings.find(organizationId, booking.id)) ?? booking;
+    return reportAbsence(deps, repositories, enrollment, booking);
   });
+}
+
+/**
+ * « Je serai absent·e » depuis l'espace client (lot 29) : la séance doit appartenir à une
+ * inscription dont la fiche client porte l'e-mail du compte connecté.
+ */
+export async function reportAbsenceAsCustomer(
+  deps: Deps,
+  organizationId: string,
+  bookingId: string,
+  email: string,
+): Promise<Booking> {
+  return deps.uow.run(async (repositories) => {
+    const booking = await repositories.bookings.find(organizationId, bookingId);
+    const enrollment = booking?.enrollmentId
+      ? await repositories.enrollments.find(organizationId, booking.enrollmentId)
+      : null;
+    const customer = enrollment
+      ? await repositories.customers.find(organizationId, enrollment.customerId)
+      : null;
+    if (!booking || !enrollment || customer?.email?.toLowerCase() !== email.toLowerCase()) {
+      throw new NotFoundError("Séance", bookingId);
+    }
+    return reportAbsence(deps, repositories, enrollment, booking);
+  });
+}
+
+async function reportAbsence(
+  deps: Deps,
+  repositories: Repositories,
+  enrollment: Enrollment,
+  booking: Booking,
+): Promise<Booking> {
+  const { organizationId } = enrollment;
+  const actor: Actor = { type: "customer", organizationId };
+  if (enrollment.cancelledAt) throw new ConflictError("Cette inscription est terminée");
+  if (booking.absentAt) throw new ConflictError("Absence déjà signalée pour cette séance");
+  if (!SEAT_HOLDING_STATUSES.has(booking.status)) {
+    throw new ConflictError("Cette séance n'est plus réservée");
+  }
+  const event = booking.eventId
+    ? await repositories.events.find(organizationId, booking.eventId)
+    : null;
+  const now = deps.clock.now();
+  if (!event || event.startsAt <= now) {
+    throw new ConflictError("La séance a commencé : préviens directement l'atelier");
+  }
+  await releaseSession(repositories, actor, booking, now, {
+    action: "booking.absent",
+    absentAt: now,
+  });
+  return (await repositories.bookings.find(organizationId, booking.id)) ?? booking;
 }
 
 /**

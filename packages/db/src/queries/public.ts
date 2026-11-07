@@ -227,6 +227,8 @@ async function findManagedBooking(db: Executor, where: SQL | undefined) {
       rentalStartsAt: booking.rentalStartsAt,
       rentalEndsAt: booking.rentalEndsAt,
       createdAt: booking.createdAt,
+      enrollmentId: booking.enrollmentId,
+      absentAt: booking.absentAt,
       customerFirstName: customer.firstName,
       customerLastName: customer.lastName,
       customerEmail: customer.email,

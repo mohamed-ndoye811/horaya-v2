@@ -1,18 +1,45 @@
 import { createFileRoute, getRouteApi } from "@tanstack/react-router";
 import { CustomerHomePage } from "@/features/customer-space/home-page";
-import { getCustomerHome } from "@/functions/customer-space";
+import { AbsenceButton, EnrollmentProgress } from "@/features/enrollments/enrollment-progress";
+import {
+  getCustomerHome,
+  getCustomerTerm,
+  reportCustomerAbsenceAction,
+} from "@/functions/customer-space";
 
 const layout = getRouteApi("/$slug");
 
 /** Maquettes 8.2 et 8.6 : accueil de l'espace client chez un atelier. */
 export const Route = createFileRoute("/$slug/mon-espace/")({
-  loader: ({ params }) => getCustomerHome({ data: params.slug }),
+  loader: async ({ params }) => {
+    const [home, term] = await Promise.all([
+      getCustomerHome({ data: params.slug }),
+      getCustomerTerm({ data: params.slug }),
+    ]);
+    return { home, term };
+  },
   head: () => ({ meta: [{ title: "Mon espace" }, { name: "robots", content: "noindex" }] }),
   component: CustomerHome,
 });
 
 function CustomerHome() {
-  // Lots 30 à 32 : passer ici `slots` (trimestre, carte de séances, bons cadeaux) quand le
-  // loader en renvoie les données.
-  return <CustomerHomePage workspace={layout.useLoaderData()} data={Route.useLoaderData()} />;
+  const workspace = layout.useLoaderData();
+  const { home, term } = Route.useLoaderData();
+  const next = home.upcoming[0];
+  return (
+    <CustomerHomePage
+      workspace={workspace}
+      data={home}
+      slots={{
+        term: term && <EnrollmentProgress progress={term.progress} timeZone={workspace.timezone} />,
+        nextActions: next?.enrollmentId && next.eventId && next.startsAt && (
+          <AbsenceButton
+            session={{ eventId: next.eventId, title: next.title, startsAt: next.startsAt }}
+            timeZone={workspace.timezone}
+            onAbsent={() => reportCustomerAbsenceAction(workspace.slug, next.id)}
+          />
+        ),
+      }}
+    />
+  );
 }

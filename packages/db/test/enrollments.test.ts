@@ -1,6 +1,7 @@
 import {
   type Actor,
   ConflictError,
+  cancelBookingAsCustomer,
   cancelEnrollment,
   createEvent,
   createEventBooking,
@@ -9,6 +10,7 @@ import {
   enrollInSeries,
   enrollmentProgress,
   publishEvent,
+  reportAbsenceAsCustomer,
   reportAbsenceWithToken,
   updateSeriesEnrollment,
 } from "@horaya/core";
@@ -213,6 +215,21 @@ describe("absence et désinscription", () => {
     expect(
       (await listSeriesEnrollments(db, organizationId, seriesId, clock.now()))[0],
     ).toMatchObject({ sessions: 4, remaining: 3, absences: 1 });
+  });
+
+  it("depuis l'espace client : absence pour le titulaire seulement, ni annulation ni report", async () => {
+    const { seriesId, sessions } = await weeklyCourse();
+    const { bookings } = await enroll(seriesId);
+    const session = bookings.find((entry) => entry.eventId === sessions[1]?.id);
+    const id = session?.id ?? "";
+    await expect(
+      reportAbsenceAsCustomer(deps, organizationId, id, "autre@mail.fr"),
+    ).rejects.toThrow("introuvable");
+    await expect(cancelBookingAsCustomer(deps, organizationId, id, "lea@mail.fr")).rejects.toThrow(
+      "signale plutôt ton absence",
+    );
+    const absent = await reportAbsenceAsCustomer(deps, organizationId, id, "LEA@mail.fr");
+    expect(absent).toMatchObject({ status: "cancelled", absentAt: clock.now() });
   });
 
   it("refuse une absence une fois la séance commencée", async () => {

@@ -9,8 +9,10 @@ import {
   customerHome,
   customerLoginPage,
   customerProfilePage,
+  customerTerm,
   deleteCustomerSpace,
   payCustomerBooking,
+  reportCustomerAbsence,
   rescheduleCustomerBooking,
   saveCustomerProfile,
   sendCustomerLoginLink,
@@ -34,6 +36,11 @@ export const getCustomerLoginPage = createServerFn({ method: "GET" })
 export const getCustomerHome = createServerFn({ method: "GET" })
   .validator(slug)
   .handler(({ data }) => customerHome(data));
+
+/** Lot 30 : « Ton trimestre » (null sans inscription en cours). */
+export const getCustomerTerm = createServerFn({ method: "GET" })
+  .validator(slug)
+  .handler(({ data }) => customerTerm(data));
 
 export const getCustomerBookingPage = createServerFn({ method: "GET" })
   .validator(ofBooking)
@@ -72,6 +79,9 @@ const cancelFn = createServerFn({ method: "POST" })
 const rescheduleFn = createServerFn({ method: "POST" })
   .validator(ofBooking.extend({ event: z.uuid() }))
   .handler(({ data }) => rescheduleCustomerBooking(data.slug, data.booking, data.event));
+const absenceFn = createServerFn({ method: "POST" })
+  .validator(ofBooking)
+  .handler(({ data }) => reportCustomerAbsence(data.slug, data.booking));
 const profileFn = createServerFn({ method: "POST" })
   .validator(formDataInput)
   .handler(({ data }) => saveCustomerProfile(String(data.get("_slug") ?? "") || null, data));
@@ -98,6 +108,10 @@ export const cancelCustomerBookingAction = (slug: string, booking: string) =>
   cancelFn({ data: { slug, booking } });
 export const rescheduleCustomerBookingAction = (slug: string, booking: string, event: string) =>
   rescheduleFn({ data: { slug, booking, event } });
+
+/** Lot 30 : « Je serai absent·e » sur une séance de son inscription. */
+export const reportCustomerAbsenceAction = (slug: string, booking: string) =>
+  absenceFn({ data: { slug, booking } });
 
 /** Maquette 8.4 : le profil. */
 export function saveCustomerProfileAction(

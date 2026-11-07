@@ -20,6 +20,9 @@ describe("espace client", () => {
     expect(bookingBadge({ ...base, paymentStatus: "paid", payable: false }).label).toBe("Payée");
     expect(bookingBadge({ ...base, payable: false }).label).toBe("Confirmée");
     expect(bookingBadge({ ...base, status: "pending", payable: false }).label).toBe("À valider");
+    expect(bookingBadge({ ...base, payable: false, enrollmentId: "e" }).label).toBe(
+      "Inscrit·e au trimestre",
+    );
   });
 
   it("écrit les dates des cartes comme la maquette", () => {
