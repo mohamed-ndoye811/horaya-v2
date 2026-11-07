@@ -8,7 +8,7 @@ import { deps, requireMember } from "@/server/services";
 
 /** Ce que la coque de l'admin affiche (notch, capsule, grand menu mobile) ; renvoie vers la connexion sans session. */
 export const getAppShell = createServerFn({ method: "GET" }).handler(async () => {
-  const [{ user, workspace }, { memberId }] = await Promise.all([
+  const [{ user, session, workspace }, { memberId }] = await Promise.all([
     requireWorkspace(),
     requireMember(),
   ]);
@@ -30,5 +30,7 @@ export const getAppShell = createServerFn({ method: "GET" }).handler(async () =>
     pendingBookings,
     unreadNotifications,
     plan: current.plan,
+    /** « Se connecter en tant que » en cours (équipe Horaya) : bandeau de retour. */
+    impersonating: Boolean((session as { impersonatedBy?: string | null }).impersonatedBy),
   };
 });

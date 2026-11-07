@@ -1,4 +1,5 @@
 import { createFileRoute, Outlet } from "@tanstack/react-router";
+import { ImpersonationBar } from "@/components/app/impersonation-bar";
 import { MobileTabBar, MobileTopBar } from "@/components/app/mobile-nav";
 import { Notch } from "@/components/app/notch";
 import { RouteTransition } from "@/components/motion/route-transition";
@@ -17,7 +18,8 @@ export const Route = createFileRoute("/app")({
 });
 
 function AppLayout() {
-  const { user, workspace, pendingBookings, unreadNotifications } = Route.useLoaderData();
+  const { user, workspace, pendingBookings, unreadNotifications, impersonating } =
+    Route.useLoaderData();
   return (
     // Mobile : le haut de l'écran (encoche, application installée) reste libre.
     <div className="flex min-h-dvh flex-1 flex-col pt-[env(safe-area-inset-top)] lg:h-dvh lg:min-h-0 lg:flex-none lg:bg-ink lg:p-1.5">
@@ -28,6 +30,7 @@ function AppLayout() {
         unreadNotifications={unreadNotifications}
       />
       <ScrollZone className="flex min-w-0 flex-1 flex-col scrollbar-none lg:relative lg:min-h-0 lg:overflow-y-auto lg:rounded-[10px] lg:bg-bg lg:pt-14">
+        {impersonating && <ImpersonationBar name={user.name} />}
         <MobileTopBar />
         <main className="relative flex min-w-0 flex-1 flex-col lg:pb-4">
           <RouteTransition>

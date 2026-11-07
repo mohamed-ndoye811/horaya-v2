@@ -135,6 +135,44 @@ export function bookingCancelledEmail(
 }
 
 /** Lien neuf demandé depuis « Mes réservations » (un e-mail par réservation). */
+/** Rappel la veille : `manageUrl` mène à « Mes réservations » (le lien d'origine n'est pas gardé). */
+export function bookingReminderEmail(mail: BookingMail): EmailContent {
+  return bookingEmail(mail, {
+    subject: `C'est demain : ${mail.title}`,
+    title: "C'est demain !",
+    preheader: `${mail.title} · ${mail.when}`,
+    paragraphs: [
+      `Petit rappel : « ${mail.title} », c'est demain. On t'attend !`,
+      "Un empêchement ? Tu peux gérer ta réservation en ligne.",
+    ],
+    action: { label: "Voir mes réservations", url: mail.manageUrl },
+  });
+}
+
+/** Rappel la veille à l'équipe : l'événement de demain et ses inscrits. */
+export function teamReminderEmail(input: {
+  workspaceName: string;
+  title: string;
+  when: string;
+  seats: number;
+  capacity: number | null;
+  url: string;
+}): EmailContent {
+  const filled = input.capacity
+    ? `${input.seats} place${input.seats > 1 ? "s" : ""} réservée${input.seats > 1 ? "s" : ""} sur ${input.capacity}`
+    : `${places(input.seats)} réservée${input.seats > 1 ? "s" : ""}`;
+  return {
+    subject: `Demain : ${input.title}`,
+    ...renderEmail({
+      preheader: `${input.when} · ${filled}`,
+      title: "C'est demain",
+      paragraphs: [`« ${input.title} » a lieu demain, ${input.when}. ${filled}.`],
+      action: { label: "Voir l'événement", url: input.url },
+      footnote: `Tu reçois cet e-mail en tant que membre de ${input.workspaceName}. Règle tes notifications dans Paramètres › Notifications.`,
+    }),
+  };
+}
+
 export function bookingLinkEmail(mail: BookingMail): EmailContent {
   return bookingEmail(mail, {
     subject: `Ton lien de réservation : ${mail.title}`,

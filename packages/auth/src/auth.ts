@@ -8,7 +8,7 @@ import {
   startTrial,
   ValidationError,
 } from "@horaya/core";
-import { createDeps, type Db, schema, tenantSettingsRepository } from "@horaya/db";
+import { createDeps, type Db, ownedWorkspaces, schema, tenantSettingsRepository } from "@horaya/db";
 import {
   emailVerificationEmail,
   invitationEmail,
@@ -17,7 +17,7 @@ import {
 } from "@horaya/mail";
 import { type BetterAuthPlugin, betterAuth } from "better-auth";
 import { APIError, createAuthMiddleware } from "better-auth/api";
-import { organization } from "better-auth/plugins";
+import { admin, organization } from "better-auth/plugins";
 import { asc, eq } from "drizzle-orm";
 import { ac, roles } from "./permissions";
 
@@ -35,6 +35,12 @@ export interface AuthOptions {
    * l'app web) ; sans lui, rien (tests, scripts). Toujours placé en dernier.
    */
   cookies?: BetterAuthPlugin | undefined;
+  /**
+   * Comptes de l'équipe Horaya autorisés par le module admin (suspension, « se connecter en
+   * tant que »). L'app le remplit après sa propre vérification (PLATFORM_ADMINS) et n'expose
+   * jamais les routes /admin/* : seuls ses appels côté serveur passent par ce module.
+   */
+  platformAdminIds?: string[] | undefined;
 }
 
 /** Les champs additionnels ne sont pas typés dans les callbacks d'e-mail. */
@@ -65,6 +71,20 @@ export function createAuth(db: Db, options: AuthOptions) {
       additionalFields: {
         firstName: { type: "string", required: false },
         lastName: { type: "string", required: false },
+      },
+      // RGPD : chacun peut supprimer son compte (mot de passe, ou session récente avec Google),
+      // une fois ses espaces supprimés ou donnés à un autre membre.
+      deleteUser: {
+        enabled: true,
+        beforeDelete: async (user) => {
+          const owned = await ownedWorkspaces(db, user.id);
+          if (owned.length > 0) {
+            throw new APIError("BAD_REQUEST", {
+              code: "OWNS_WORKSPACES",
+              message: `Supprime d'abord ${owned.length > 1 ? "tes espaces" : "ton espace"} (${owned.map((entry) => entry.name).join(", ")}) ou donne-${owned.length > 1 ? "les" : "le"} à un autre membre.`,
+            });
+          }
+        },
       },
     },
     emailAndPassword: {
@@ -164,6 +184,11 @@ export function createAuth(db: Db, options: AuthOptions) {
             await startTrial(createDeps(db), org.id);
           },
         },
+      }),
+      admin({
+        adminUserIds: options.platformAdminIds ?? [],
+        bannedUserMessage: "Ce compte est suspendu. Écris-nous à bonjour@horaya.app.",
+        impersonationSessionDuration: 60 * 60,
       }),
       // Doit rester le dernier plugin : pose les cookies depuis les fonctions serveur de l'app.
       ...(options.cookies ? [options.cookies] : []),

@@ -135,6 +135,7 @@ export async function listPlatformUsers(db: Executor, query: string | undefined)
       name: user.name,
       email: user.email,
       emailVerified: user.emailVerified,
+      banned: user.banned,
       createdAt: user.createdAt,
       workspaces: sql<
         Array<{ id: string; name: string; role: string }>

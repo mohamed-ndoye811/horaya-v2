@@ -1,4 +1,9 @@
 import handler, { createServerEntry } from "@tanstack/react-start/server-entry";
+import "./server/errors";
+import { scheduleReminders } from "./server/reminders";
+
+// Tâches de fond (rappels de la veille) : en production seulement, jamais sur un poste local.
+if (process.env.NODE_ENV === "production" && !process.env.POSTE) scheduleReminders();
 
 /** En-têtes de sécurité de toutes les réponses (HSTS et TLS sont gérés par Cloudflare et l'ingress). */
 const SECURITY_HEADERS: Record<string, string> = {

@@ -9,8 +9,10 @@ export {
   bookingPromotedEmail,
   bookingRefundedEmail,
   bookingRefusedEmail,
+  bookingReminderEmail,
   bookingWaitlistedEmail,
   teamBookingEmail,
+  teamReminderEmail,
 } from "./booking-templates";
 export { escapeHtml } from "./layout";
 export { createConsoleMailer, createSmtpMailer, type EmailContent, type Mailer } from "./mailer";

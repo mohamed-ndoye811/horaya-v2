@@ -19,6 +19,7 @@ import { Route as authConnexionRouteImport } from './routes/(auth)/connexion'
 import { Route as authMotDePasseOublieRouteImport } from './routes/(auth)/mot-de-passe-oublie'
 import { Route as authNouveauMotDePasseRouteImport } from './routes/(auth)/nouveau-mot-de-passe'
 import { Route as AgendaChar123tokenChar125DoticsRouteImport } from './routes/agenda/{$token}[.]ics'
+import { Route as ApiErreursRouteImport } from './routes/api/erreurs'
 import { Route as ApiHealthRouteImport } from './routes/api/health'
 import { Route as AppIndexRouteImport } from './routes/app/index'
 import { Route as AppCalendrierRouteImport } from './routes/app/calendrier'
@@ -125,6 +126,11 @@ const AgendaChar123tokenChar125DoticsRoute =
     path: '/agenda/{$token}.ics',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiErreursRoute = ApiErreursRouteImport.update({
+  id: '/api/erreurs',
+  path: '/api/erreurs',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiHealthRoute = ApiHealthRouteImport.update({
   id: '/api/health',
   path: '/api/health',
@@ -415,6 +421,7 @@ export interface FileRoutesByFullPath {
   '/mot-de-passe-oublie': typeof authMotDePasseOublieRoute
   '/nouveau-mot-de-passe': typeof authNouveauMotDePasseRoute
   '/agenda/{$token}.ics': typeof AgendaChar123tokenChar125DoticsRoute
+  '/api/erreurs': typeof ApiErreursRoute
   '/api/health': typeof ApiHealthRoute
   '/app/calendrier': typeof AppCalendrierRoute
   '/app/design-system': typeof AppDesignSystemRoute
@@ -479,6 +486,7 @@ export interface FileRoutesByTo {
   '/mot-de-passe-oublie': typeof authMotDePasseOublieRoute
   '/nouveau-mot-de-passe': typeof authNouveauMotDePasseRoute
   '/agenda/{$token}.ics': typeof AgendaChar123tokenChar125DoticsRoute
+  '/api/erreurs': typeof ApiErreursRoute
   '/api/health': typeof ApiHealthRoute
   '/app/calendrier': typeof AppCalendrierRoute
   '/app/design-system': typeof AppDesignSystemRoute
@@ -546,6 +554,7 @@ export interface FileRoutesById {
   '/(auth)/mot-de-passe-oublie': typeof authMotDePasseOublieRoute
   '/(auth)/nouveau-mot-de-passe': typeof authNouveauMotDePasseRoute
   '/agenda/{$token}.ics': typeof AgendaChar123tokenChar125DoticsRoute
+  '/api/erreurs': typeof ApiErreursRoute
   '/api/health': typeof ApiHealthRoute
   '/app/calendrier': typeof AppCalendrierRoute
   '/app/design-system': typeof AppDesignSystemRoute
@@ -614,6 +623,7 @@ export interface FileRouteTypes {
     | '/mot-de-passe-oublie'
     | '/nouveau-mot-de-passe'
     | '/agenda/{$token}.ics'
+    | '/api/erreurs'
     | '/api/health'
     | '/app/calendrier'
     | '/app/design-system'
@@ -678,6 +688,7 @@ export interface FileRouteTypes {
     | '/mot-de-passe-oublie'
     | '/nouveau-mot-de-passe'
     | '/agenda/{$token}.ics'
+    | '/api/erreurs'
     | '/api/health'
     | '/app/calendrier'
     | '/app/design-system'
@@ -744,6 +755,7 @@ export interface FileRouteTypes {
     | '/(auth)/mot-de-passe-oublie'
     | '/(auth)/nouveau-mot-de-passe'
     | '/agenda/{$token}.ics'
+    | '/api/erreurs'
     | '/api/health'
     | '/app/calendrier'
     | '/app/design-system'
@@ -809,6 +821,7 @@ export interface RootRouteChildren {
   authMotDePasseOublieRoute: typeof authMotDePasseOublieRoute
   authNouveauMotDePasseRoute: typeof authNouveauMotDePasseRoute
   AgendaChar123tokenChar125DoticsRoute: typeof AgendaChar123tokenChar125DoticsRoute
+  ApiErreursRoute: typeof ApiErreursRoute
   ApiHealthRoute: typeof ApiHealthRoute
   FichiersSplatRoute: typeof FichiersSplatRoute
   InvitationIdRoute: typeof InvitationIdRoute
@@ -893,6 +906,13 @@ declare module '@tanstack/react-router' {
       path: '/agenda/{$token}.ics'
       fullPath: '/agenda/{$token}.ics'
       preLoaderRoute: typeof AgendaChar123tokenChar125DoticsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/erreurs': {
+      id: '/api/erreurs'
+      path: '/api/erreurs'
+      fullPath: '/api/erreurs'
+      preLoaderRoute: typeof ApiErreursRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/health': {
@@ -1390,6 +1410,7 @@ const rootRouteChildren: RootRouteChildren = {
   authMotDePasseOublieRoute: authMotDePasseOublieRoute,
   authNouveauMotDePasseRoute: authNouveauMotDePasseRoute,
   AgendaChar123tokenChar125DoticsRoute: AgendaChar123tokenChar125DoticsRoute,
+  ApiErreursRoute: ApiErreursRoute,
   ApiHealthRoute: ApiHealthRoute,
   FichiersSplatRoute: FichiersSplatRoute,
   InvitationIdRoute: InvitationIdRoute,

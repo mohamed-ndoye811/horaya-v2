@@ -4,11 +4,15 @@ import { z } from "zod";
 import { formDataInput } from "@/lib/form-data";
 import {
   changeRate,
+  deletePlatformWorkspace,
+  deleteUserAccount,
   grantLicence,
+  impersonateUser,
   platformHome,
   platformUsers,
   platformWorkspace,
   revokeLicence,
+  suspendUser,
 } from "@/server/platform";
 
 /** Cockpit de la plateforme (équipe Horaya) : espaces, comptes, licences et tarifs. */
@@ -35,3 +39,19 @@ export const revokePlatformLicence = createServerFn({ method: "POST" })
 export const setPlatformRate = createServerFn({ method: "POST" })
   .validator(z.object({ organizationId: z.uuid(), rate: z.enum(BILLING_RATES) }))
   .handler(({ data }) => changeRate(data.organizationId, data.rate));
+
+export const suspendPlatformUser = createServerFn({ method: "POST" })
+  .validator(z.object({ userId: z.uuid(), suspended: z.boolean() }))
+  .handler(({ data }) => suspendUser(data.userId, data.suspended));
+
+export const impersonatePlatformUser = createServerFn({ method: "POST" })
+  .validator(z.uuid())
+  .handler(({ data }) => impersonateUser(data));
+
+export const deletePlatformUser = createServerFn({ method: "POST" })
+  .validator(z.uuid())
+  .handler(({ data }) => deleteUserAccount(data));
+
+export const deletePlatformSpace = createServerFn({ method: "POST" })
+  .validator(z.object({ organizationId: z.uuid(), confirm: z.string().max(100) }))
+  .handler(({ data }) => deletePlatformWorkspace(data.organizationId, data.confirm));

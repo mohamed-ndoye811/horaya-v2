@@ -10,5 +10,7 @@ export * from "./join-links";
 export * from "./notifications";
 export * from "./payments";
 export * from "./platform";
+export * from "./privacy";
 export * from "./public";
+export * from "./reminders";
 export * from "./settings";

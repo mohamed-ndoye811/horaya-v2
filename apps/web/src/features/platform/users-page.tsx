@@ -1,9 +1,18 @@
+import { useState } from "react";
 import { PageHeader } from "@/components/app/page-header";
 import { StatusBadge } from "@/components/ui/badge";
 import { DataTable } from "@/components/ui/data-table";
+import { FormAlert } from "@/components/ui/form-alert";
+import { ActionMenu } from "@/components/ui/menu";
 import { SearchInput } from "@/components/ui/search-input";
-import type { getPlatformUsers } from "@/functions/platform";
+import {
+  deletePlatformUser,
+  type getPlatformUsers,
+  impersonatePlatformUser,
+  suspendPlatformUser,
+} from "@/functions/platform";
 import { Link, useRouter } from "@/lib/navigation";
+import type { FormState } from "@/server/form-state";
 import { PlatformTabs, shortDay } from "./shared";
 
 type Data = Awaited<ReturnType<typeof getPlatformUsers>>;
@@ -11,6 +20,52 @@ type Data = Awaited<ReturnType<typeof getPlatformUsers>>;
 /** Cockpit : tous les comptes et leurs espaces. */
 export function PlatformUsersPage({ data }: { data: Data }) {
   const router = useRouter();
+  const [message, setMessage] = useState<FormState>({});
+  type Row = Data["rows"][number];
+
+  async function act(run: () => Promise<FormState>) {
+    setMessage(await run());
+    router.refresh();
+  }
+
+  const actions = (row: Row) => (
+    <ActionMenu
+      label={`Actions pour ${row.name}`}
+      items={[
+        {
+          label: "Se connecter en tant que",
+          onSelect: async () => {
+            const result = await impersonatePlatformUser({ data: row.id }).catch(() => null);
+            // Succès : la fonction répond par une redirection ; on recharge pour changer de session.
+            if (result?.error) setMessage(result);
+            else window.location.assign("/app");
+          },
+        },
+        row.banned
+          ? {
+              label: "Réactiver le compte",
+              onSelect: () =>
+                act(() => suspendPlatformUser({ data: { userId: row.id, suspended: false } })),
+            }
+          : {
+              label: "Suspendre le compte",
+              onSelect: () =>
+                act(() => suspendPlatformUser({ data: { userId: row.id, suspended: true } })),
+            },
+        {
+          label: "Supprimer le compte",
+          tone: "danger",
+          onSelect: () => {
+            if (
+              window.confirm(`Supprimer définitivement le compte de ${row.name} (${row.email}) ?`)
+            ) {
+              act(() => deletePlatformUser({ data: row.id }));
+            }
+          },
+        },
+      ]}
+    />
+  );
   return (
     <>
       <PageHeader
@@ -47,7 +102,14 @@ export function PlatformUsersPage({ data }: { data: Data }) {
           </>
         }
       />
-      <div className="pb-6">
+      <div className="flex flex-col gap-3 pb-6">
+        {(message.error || message.success) && (
+          <div className="px-4">
+            <FormAlert tone={message.error ? "danger" : "success"}>
+              {message.error ?? message.success}
+            </FormAlert>
+          </div>
+        )}
         <DataTable
           label="Comptes"
           rows={data.rows}
@@ -79,7 +141,11 @@ export function PlatformUsersPage({ data }: { data: Data }) {
               header: "E-mail",
               width: 130,
               cell: (row) =>
-                row.emailVerified ? (
+                row.banned ? (
+                  <StatusBadge tone="danger" size="sm">
+                    Suspendu
+                  </StatusBadge>
+                ) : row.emailVerified ? (
                   <StatusBadge tone="success" size="sm">
                     Confirmé
                   </StatusBadge>
@@ -98,15 +164,25 @@ export function PlatformUsersPage({ data }: { data: Data }) {
                 <span className="text-sm text-ink-muted">{shortDay(row.createdAt)}</span>
               ),
             },
+            {
+              key: "actions",
+              header: <span className="sr-only">Actions</span>,
+              width: 56,
+              align: "right",
+              cell: actions,
+            },
           ]}
           card={(row) => (
-            <div className="flex min-w-0 flex-col gap-1">
-              <span className="truncate text-[15px] font-semibold text-ink">{row.name}</span>
-              <span className="truncate text-xs text-ink-subtle">
-                {row.email}
-                {row.emailVerified ? "" : " · à confirmer"}
-              </span>
-              <Workspaces list={row.workspaces} />
+            <div className="flex items-start gap-3">
+              <div className="flex min-w-0 flex-1 flex-col gap-1">
+                <span className="truncate text-[15px] font-semibold text-ink">{row.name}</span>
+                <span className="truncate text-xs text-ink-subtle">
+                  {row.email}
+                  {row.emailVerified ? "" : " · à confirmer"}
+                </span>
+                <Workspaces list={row.workspaces} />
+              </div>
+              {actions(row)}
             </div>
           )}
         />

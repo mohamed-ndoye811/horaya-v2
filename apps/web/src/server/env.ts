@@ -41,6 +41,9 @@ const schema = z.object({
   POLAR_DISCOUNT_BETA: optional,
   /** Équipe Horaya : e-mails (séparés par des virgules) qui ont accès au cockpit de la plateforme. */
   PLATFORM_ADMINS: optional,
+  /** Suivi des erreurs (GlitchTip, compatible Sentry) ; sans DSN, rien n'est envoyé. */
+  SENTRY_DSN: optional,
+  SENTRY_ENVIRONMENT: z.string().default("production"),
   /** Poste de travail local (worktree) : voir « Postes de travail » dans CLAUDE.md. */
   POSTE: z.enum(POSTES).optional(),
 });
