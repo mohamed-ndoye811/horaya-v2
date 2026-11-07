@@ -5,8 +5,10 @@ import {
   type NotificationType,
 } from "@horaya/core";
 import {
+  claimAlmostFull,
   createNotifications,
   getBookingDetail,
+  getWeeklyDigest,
   getWorkspaceSettings,
   listNotificationRecipients,
   tenantSettingsReader,
@@ -25,11 +27,20 @@ import {
   bookingReminderEmail,
   bookingWaitlistedEmail,
   type EmailContent,
+  teamAlmostFullEmail,
   teamBookingEmail,
   teamReminderEmail,
+  weeklyDigestEmail,
 } from "@horaya/mail";
 import { textOn } from "@/lib/colors";
-import { formatEventRange, formatMoney } from "@/lib/format";
+import {
+  formatDayNumber,
+  formatEventRange,
+  formatHour,
+  formatMoney,
+  formatMonthShort,
+  formatWeekdayShort,
+} from "@/lib/format";
 import { paymentChannel } from "@/lib/payment-channel";
 import { db } from "./db";
 import { absoluteUrl, mailer } from "./mailer";
@@ -208,6 +219,68 @@ export async function sendTeamReminder(input: {
   );
 }
 
+/** « Événement presque complet » : une fois par événement, dès 80 % de la jauge prise. */
+async function notifyAlmostFull(eventId: string) {
+  const event = await claimAlmostFull(db, eventId);
+  if (!event?.capacity) return;
+  const workspace = await getWorkspaceSettings(db, event.organizationId);
+  if (!workspace) return;
+  const when = formatEventRange(event.startsAt, event.endsAt, event.timezone);
+  const link = `/app/evenements/${event.id}`;
+  const full = event.seats >= event.capacity;
+  await notifyTeam(
+    event.organizationId,
+    "event_almost_full",
+    teamAlmostFullEmail({
+      workspaceName: workspace.name,
+      title: event.title,
+      when,
+      seats: event.seats,
+      capacity: event.capacity,
+      url: absoluteUrl(link),
+    }),
+    {
+      title: `${full ? "Complet" : "Presque complet"} : ${event.title}`,
+      body: `${when} · ${event.seats} / ${event.capacity} places`,
+      link,
+    },
+  );
+}
+
+/** Récap hebdomadaire d'un espace (le lundi matin). Rien n'est envoyé pour une semaine vide. */
+export async function sendWeeklyDigest(organizationId: string, now = new Date()) {
+  const [workspace, digest] = await Promise.all([
+    getWorkspaceSettings(db, organizationId),
+    getWeeklyDigest(db, organizationId, now),
+  ]);
+  if (!workspace) return;
+  if (!digest.bookings && !digest.cancelled && !digest.pending && !digest.upcoming.length) return;
+  const upcoming = digest.upcoming.map((entry) => ({
+    day: `${formatWeekdayShort(entry.startsAt, entry.timezone)} ${formatDayNumber(entry.startsAt, entry.timezone)} ${formatMonthShort(entry.startsAt, entry.timezone).toLowerCase()}`,
+    text: `${formatHour(entry.startsAt, entry.timezone)} · ${entry.title} · ${entry.seats}${entry.capacity ? ` / ${entry.capacity}` : ""} place${entry.seats > 1 ? "s" : ""}`,
+  }));
+  const revenue = digest.revenueCents > 0 ? formatMoney(digest.revenueCents) : null;
+  await notifyTeam(
+    organizationId,
+    "weekly_digest",
+    weeklyDigestEmail({
+      workspaceName: workspace.name,
+      bookings: digest.bookings,
+      seats: digest.seats,
+      cancelled: digest.cancelled,
+      pending: digest.pending,
+      revenue,
+      upcoming,
+      url: absoluteUrl("/app"),
+    }),
+    {
+      title: "Ta semaine",
+      body: `${digest.bookings} réservation${digest.bookings > 1 ? "s" : ""}, ${upcoming.length} événement${upcoming.length > 1 ? "s" : ""} à venir`,
+      link: "/app",
+    },
+  );
+}
+
 /** Prévient l'équipe par e-mail et dans l'app (cloche du notch), selon les préférences de chacun. */
 async function notifyTeam(
   organizationId: string,
@@ -367,6 +440,13 @@ export async function notifyFromActivity(entries: ActivityEntry[]) {
         }
         break;
       }
+    }
+    // Chaque place prise peut faire passer la jauge à 80 %.
+    if (
+      booking.event &&
+      ["booking.created", "booking.confirmed", "booking.promoted"].includes(entry.action)
+    ) {
+      await notifyAlmostFull(booking.event.id);
     }
   }
 }

@@ -1,4 +1,4 @@
-import { applySubscription, organizationOfPolarCustomer } from "@horaya/core";
+import { applySubscription, endSubscription, organizationOfPolarCustomer } from "@horaya/core";
 import { webhooks } from "@polar-sh/sdk/2026-10";
 import { createFileRoute } from "@tanstack/react-router";
 import { planOfProduct, subscriptionStatusOf } from "@/server/billing";
@@ -48,8 +48,15 @@ export const Route = createFileRoute("/api/polar/webhook")({
             (typeof fromMetadata === "string" ? fromMetadata : null) ??
             subscription.customer.external_id ??
             (await organizationOfPolarCustomer(deps, subscription.customer_id));
-          if (!product || !organizationId) {
+          if (!organizationId) {
             console.error("Webhook Polar : abonnement non rattaché", subscription.id);
+            return Response.json({ received: true });
+          }
+          // Produit hors Horaya (ex. changement de formule vers une autre app de l'organisation
+          // Polar) : la formule Horaya ne reste pas active sans être payée.
+          if (!product) {
+            const ended = await endSubscription(deps, organizationId, subscription.id);
+            console.error("Webhook Polar : produit inconnu", subscription.product_id, { ended });
             return Response.json({ received: true });
           }
           await applySubscription(deps, organizationId, {

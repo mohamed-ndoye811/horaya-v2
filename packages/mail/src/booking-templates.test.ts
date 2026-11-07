@@ -1,5 +1,14 @@
 import { describe, expect, it } from "vitest";
-import { type BookingMail, bookingConfirmedEmail, bookingRefusedEmail } from "./booking-templates";
+import {
+  type BookingMail,
+  bookingConfirmedEmail,
+  bookingRefusedEmail,
+  teamAlmostFullEmail,
+  weeklyDigestEmail,
+} from "./booking-templates";
+import { mixColors } from "./layout";
+import { inlineImages } from "./mailer";
+import { notchFlankPng } from "./notch";
 
 const mail: BookingMail = {
   workspace: { name: "Cabinet Vidal", color: "#528D74", textColor: "#F7F5F3" },
@@ -40,6 +49,74 @@ describe("e-mails aux participants", () => {
       "https://staging.horaya.app/fichiers/org/logos/0f3c2a4e-5b6d-4e7f-8a9b-0c1d2e3f4a5b.webp";
     const email = bookingConfirmedEmail({ ...mail, workspace: { ...mail.workspace, logo } });
     expect(email.html).toContain(`<img src="${logo}"`);
-    expect(bookingConfirmedEmail(mail).html).not.toContain("<img");
+    expect(bookingConfirmedEmail(mail).html).not.toMatch(/<img src="(?!cid:)/);
+  });
+});
+
+describe("e-mails à l'équipe", () => {
+  const team = {
+    workspaceName: "Cabinet Vidal",
+    title: "Atelier",
+    when: "Lun. 10 nov., 18h",
+    url: "u",
+  };
+
+  it("dit combien de places restent, ou que c'est complet", () => {
+    expect(teamAlmostFullEmail({ ...team, seats: 8, capacity: 10 })).toMatchObject({
+      subject: "Presque complet : Atelier",
+    });
+    expect(teamAlmostFullEmail({ ...team, seats: 8, capacity: 10 }).text).toContain(
+      "8 places prises sur 10, plus que 2 places",
+    );
+    const full = teamAlmostFullEmail({ ...team, seats: 10, capacity: 10 });
+    expect(full.subject).toBe("Complet : Atelier");
+    expect(full.text).toContain("plus aucune de libre");
+  });
+
+  it("résume la semaine et liste les événements à venir", () => {
+    const email = weeklyDigestEmail({
+      workspaceName: "Cabinet Vidal",
+      bookings: 1,
+      seats: 3,
+      cancelled: 0,
+      pending: 2,
+      revenue: "45,00 €",
+      upcoming: [{ day: "Lun. 10 nov.", text: "18:00 · Atelier · 8 / 10 places" }],
+      url: "u",
+    });
+    expect(email.subject).toBe("Ta semaine sur Cabinet Vidal : 1 réservation");
+    expect(email.text).toContain("1 réservation (3 places), 0 annulation, 45,00 € encaissés");
+    expect(email.text).toContain("2 réservations attendent ta validation");
+    expect(email.text).toContain("18:00 · Atelier · 8 / 10 places");
+  });
+});
+
+describe("gabarit", () => {
+  it("prend la teinte de l'espace, ou le logotype Horaya pour l'équipe", () => {
+    expect(mixColors("#FFFFFF", "#000000", 0.5)).toBe("#808080");
+    const branded = bookingConfirmedEmail(mail);
+    expect(branded.html).toContain(`background:${mixColors("#528D74", "#111111", 0.16)}`);
+    expect(branded.html).not.toContain("cid:horaya-logotype");
+    expect(branded.text).toContain("Réservations propulsées par Horaya");
+    const team = teamAlmostFullEmail({
+      workspaceName: "Cabinet Vidal",
+      title: "Atelier",
+      when: "Lun. 10 nov., 18h",
+      seats: 8,
+      capacity: 10,
+      url: "u",
+    });
+    expect(team.html).toContain('src="cid:horaya-logotype"');
+  });
+});
+
+describe("notch", () => {
+  it("joint les flancs du notch à la couleur du cadre, tracés comme dans l'app", () => {
+    const images = inlineImages(bookingConfirmedEmail(mail).html);
+    const tone = mixColors("#528D74", "#111111", 0.16).slice(1).toLowerCase();
+    expect(images.map((image) => image.cid)).toEqual([`notch-left-${tone}`, `notch-right-${tone}`]);
+    const png = notchFlankPng("left", "#111111");
+    expect(png.subarray(1, 4).toString()).toBe("PNG");
+    expect([png.readUInt32BE(16), png.readUInt32BE(20)]).toEqual([88, 100]);
   });
 });

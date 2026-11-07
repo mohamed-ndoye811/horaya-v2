@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as SlugRouteImport } from './routes/$slug'
 import { Route as AppRouteImport } from './routes/app'
+import { Route as ConfidentialiteRouteImport } from './routes/confidentialite'
 import { Route as SlugIndexRouteImport } from './routes/$slug/index'
 import { Route as SlugMentionsLegalesRouteImport } from './routes/$slug/mentions-legales'
 import { Route as SlugMesReservationsRouteImport } from './routes/$slug/mes-reservations'
@@ -88,6 +89,11 @@ const SlugRoute = SlugRouteImport.update({
 const AppRoute = AppRouteImport.update({
   id: '/app',
   path: '/app',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ConfidentialiteRoute = ConfidentialiteRouteImport.update({
+  id: '/confidentialite',
+  path: '/confidentialite',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SlugIndexRoute = SlugIndexRouteImport.update({
@@ -415,6 +421,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/$slug': typeof SlugRouteWithChildren
   '/app': typeof AppRouteWithChildren
+  '/confidentialite': typeof ConfidentialiteRoute
   '/$slug/mentions-legales': typeof SlugMentionsLegalesRoute
   '/$slug/mes-reservations': typeof SlugMesReservationsRoute
   '/connexion': typeof authConnexionRoute
@@ -480,6 +487,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/confidentialite': typeof ConfidentialiteRoute
   '/$slug/mentions-legales': typeof SlugMentionsLegalesRoute
   '/$slug/mes-reservations': typeof SlugMesReservationsRoute
   '/connexion': typeof authConnexionRoute
@@ -548,6 +556,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/$slug': typeof SlugRouteWithChildren
   '/app': typeof AppRouteWithChildren
+  '/confidentialite': typeof ConfidentialiteRoute
   '/$slug/mentions-legales': typeof SlugMentionsLegalesRoute
   '/$slug/mes-reservations': typeof SlugMesReservationsRoute
   '/(auth)/connexion': typeof authConnexionRoute
@@ -617,6 +626,7 @@ export interface FileRouteTypes {
     | '/'
     | '/$slug'
     | '/app'
+    | '/confidentialite'
     | '/$slug/mentions-legales'
     | '/$slug/mes-reservations'
     | '/connexion'
@@ -682,6 +692,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/confidentialite'
     | '/$slug/mentions-legales'
     | '/$slug/mes-reservations'
     | '/connexion'
@@ -749,6 +760,7 @@ export interface FileRouteTypes {
     | '/'
     | '/$slug'
     | '/app'
+    | '/confidentialite'
     | '/$slug/mentions-legales'
     | '/$slug/mes-reservations'
     | '/(auth)/connexion'
@@ -817,6 +829,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   SlugRoute: typeof SlugRouteWithChildren
   AppRoute: typeof AppRouteWithChildren
+  ConfidentialiteRoute: typeof ConfidentialiteRoute
   authConnexionRoute: typeof authConnexionRoute
   authMotDePasseOublieRoute: typeof authMotDePasseOublieRoute
   authNouveauMotDePasseRoute: typeof authNouveauMotDePasseRoute
@@ -857,6 +870,13 @@ declare module '@tanstack/react-router' {
       path: '/app'
       fullPath: '/app'
       preLoaderRoute: typeof AppRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/confidentialite': {
+      id: '/confidentialite'
+      path: '/confidentialite'
+      fullPath: '/confidentialite'
+      preLoaderRoute: typeof ConfidentialiteRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/$slug/': {
@@ -1406,6 +1426,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   SlugRoute: SlugRouteWithChildren,
   AppRoute: AppRouteWithChildren,
+  ConfidentialiteRoute: ConfidentialiteRoute,
   authConnexionRoute: authConnexionRoute,
   authMotDePasseOublieRoute: authMotDePasseOublieRoute,
   authNouveauMotDePasseRoute: authNouveauMotDePasseRoute,
@@ -1429,10 +1450,11 @@ export const routeTree = rootRouteImport
   ._addFileTypes<FileRouteTypes>()
 
 import type { getRouter } from './router.tsx'
-import type { createStart } from '@tanstack/react-start'
+import type { startInstance } from './start.ts'
 declare module '@tanstack/react-start' {
   interface Register {
     ssr: true
     router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
   }
 }

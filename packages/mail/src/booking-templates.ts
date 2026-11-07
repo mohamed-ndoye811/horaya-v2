@@ -173,6 +173,79 @@ export function teamReminderEmail(input: {
   };
 }
 
+const teamFootnote = (workspaceName: string) =>
+  `Tu reçois cet e-mail en tant que membre de ${workspaceName}. Règle tes notifications dans Paramètres › Paiements & notifications.`;
+
+/** Préférence « Événement presque complet » : 80 % de la jauge atteinte (ou complet d'un coup). */
+export function teamAlmostFullEmail(input: {
+  workspaceName: string;
+  title: string;
+  when: string;
+  seats: number;
+  capacity: number;
+  url: string;
+}): EmailContent {
+  const left = input.capacity - input.seats;
+  const full = left <= 0;
+  return {
+    subject: `${full ? "Complet" : "Presque complet"} : ${input.title}`,
+    ...renderEmail({
+      preheader: `${input.seats} / ${input.capacity} places · ${input.when}`,
+      title: full ? "C'est complet" : "Presque complet",
+      paragraphs: [
+        `« ${input.title} » (${input.when}) : ${places(input.seats)} prise${input.seats > 1 ? "s" : ""} sur ${input.capacity}, ${full ? "plus aucune de libre" : `plus que ${places(left)}`}.`,
+        full
+          ? "Si la demande continue, c'est peut-être le moment d'ouvrir une autre date."
+          : "Si la demande continue, tu peux agrandir la jauge ou prévoir une autre date.",
+      ],
+      action: { label: "Voir l'événement", url: input.url },
+      footnote: teamFootnote(input.workspaceName),
+    }),
+  };
+}
+
+/** Préférence « Récap hebdomadaire » : la semaine écoulée et les 7 prochains jours, le lundi matin. */
+export function weeklyDigestEmail(input: {
+  workspaceName: string;
+  bookings: number;
+  seats: number;
+  cancelled: number;
+  pending: number;
+  /** Encaissé sur la semaine, déjà mis en forme ; null si rien. */
+  revenue: string | null;
+  /** Événements des 7 prochains jours : jour (« lun. 10 nov. ») et ligne (« 18:00 · Atelier · 8 / 12 places »). */
+  upcoming: Array<{ day: string; text: string }>;
+  url: string;
+}): EmailContent {
+  const plural = (count: number, word: string) => `${count} ${word}${count > 1 ? "s" : ""}`;
+  const week = [
+    `${plural(input.bookings, "réservation")} (${places(input.seats)})`,
+    plural(input.cancelled, "annulation"),
+    ...(input.revenue ? [`${input.revenue} encaissés`] : []),
+  ].join(", ");
+  return {
+    subject: `Ta semaine sur ${input.workspaceName} : ${plural(input.bookings, "réservation")}`,
+    ...renderEmail({
+      preheader: `${week}. ${plural(input.upcoming.length, "événement")} dans les 7 prochains jours.`,
+      title: "Ta semaine",
+      paragraphs: [
+        `Ces 7 derniers jours : ${week}.`,
+        ...(input.pending
+          ? [
+              `${input.pending > 1 ? `${input.pending} réservations attendent` : "Une réservation attend"} ta validation.`,
+            ]
+          : []),
+        input.upcoming.length
+          ? "Dans les 7 prochains jours :"
+          : "Aucun événement prévu dans les 7 prochains jours.",
+      ],
+      details: input.upcoming.map((entry): [string, string] => [entry.day, entry.text]),
+      action: { label: "Ouvrir le tableau de bord", url: input.url },
+      footnote: teamFootnote(input.workspaceName),
+    }),
+  };
+}
+
 export function bookingLinkEmail(mail: BookingMail): EmailContent {
   return bookingEmail(mail, {
     subject: `Ton lien de réservation : ${mail.title}`,
