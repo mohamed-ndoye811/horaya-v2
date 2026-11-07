@@ -1,11 +1,11 @@
 import type { CalendarLinkFilter } from "@horaya/core";
 import { useOptimistic, useState, useTransition } from "react";
 import { CategorySwatch } from "@/components/ui/avatar";
-import { Button } from "@/components/ui/button";
+import { Button, rowLinkClasses, textLinkSmClasses } from "@/components/ui/button";
 import { ChoiceCards } from "@/components/ui/choice-cards";
 import { DataTable } from "@/components/ui/data-table";
 import { Dialog } from "@/components/ui/dialog";
-import { Checkbox, Field, inputClasses } from "@/components/ui/field";
+import { Checkbox, Field, FieldError, inputClasses } from "@/components/ui/field";
 import { FormAlert } from "@/components/ui/form-alert";
 import { PlusIcon } from "@/components/ui/icons";
 import { ActionMenu, type MenuItem } from "@/components/ui/menu";
@@ -16,6 +16,7 @@ import {
   saveCalendarLinkAction,
   setCalendarLinkActiveAction,
 } from "@/functions/events";
+import { cn } from "@/lib/cn";
 import { useRouter } from "@/lib/navigation";
 import { useFormAction } from "@/lib/use-form-action";
 import type { FormState } from "@/server/form-state";
@@ -133,33 +134,41 @@ export function CalendarLinksTable({
           <div className="flex flex-col gap-3">
             <div className="flex items-start gap-3">
               <div className="flex min-w-0 flex-1 flex-col gap-1">
+                {/* Toute la carte ouvre le lien ; le menu et l'interrupteur passent au-dessus. */}
                 <button
                   type="button"
                   onClick={() => setEditing(row)}
-                  className="truncate text-left text-sm font-semibold leading-[18px] text-ink hover:underline"
+                  className={cn(
+                    rowLinkClasses,
+                    "truncate text-left text-sm leading-[18px] after:absolute after:inset-0",
+                  )}
                 >
                   {row.name}
                 </button>
                 <span className="truncate font-mono text-xs text-ink-subtle">
                   {row.url.replace(/^https?:\/\//, "")}
                 </span>
-                <span className="text-[13px] leading-5 text-[#4a4a4a]">
+                <span className="text-[13px] leading-5 text-ink-soft">
                   {row.summary} · {row.upcomingEvents} à venir
                 </span>
               </div>
-              <ActionMenu label={`Actions pour ${row.name}`} items={menu(row)} />
+              <div className="relative">
+                <ActionMenu label={`Actions pour ${row.name}`} items={menu(row)} />
+              </div>
             </div>
-            <ActiveSwitch
-              row={row}
-              labelled
-              disabled={pending}
-              onToggle={(isActive, setOptimistic) =>
-                run(async () => {
-                  setOptimistic(isActive);
-                  return setCalendarLinkActiveAction(row.id, isActive);
-                })
-              }
-            />
+            <div className="relative w-fit">
+              <ActiveSwitch
+                row={row}
+                labelled
+                disabled={pending}
+                onToggle={(isActive, setOptimistic) =>
+                  run(async () => {
+                    setOptimistic(isActive);
+                    return setCalendarLinkActiveAction(row.id, isActive);
+                  })
+                }
+              />
+            </div>
           </div>
         )}
         columns={[
@@ -171,7 +180,7 @@ export function CalendarLinksTable({
                 <button
                   type="button"
                   onClick={() => setEditing(row)}
-                  className="truncate text-left text-sm font-semibold leading-[18px] text-ink hover:underline"
+                  className={cn(rowLinkClasses, "truncate text-left text-sm leading-[18px]")}
                 >
                   {row.name}
                 </button>
@@ -186,7 +195,7 @@ export function CalendarLinksTable({
             header: "Montre",
             width: 260,
             cell: (row) => (
-              <span className="line-clamp-2 text-[13px] text-[#4a4a4a]">{row.summary}</span>
+              <span className="line-clamp-2 text-[13px] text-ink-soft">{row.summary}</span>
             ),
           },
           {
@@ -402,7 +411,7 @@ function LinkDialog({
                       allSelected ? new Set() : new Set(options.map((option) => option.id)),
                     )
                   }
-                  className="text-[13px] font-semibold text-ink hover:underline"
+                  className={textLinkSmClasses}
                 >
                   {allSelected ? "Tout décocher" : "Tout cocher"}
                 </button>
@@ -446,9 +455,7 @@ function LinkDialog({
                 ))}
               </ul>
             )}
-            {errors.filterIds && (
-              <p className="text-[13px] font-semibold text-danger">{errors.filterIds}</p>
-            )}
+            {errors.filterIds && <FieldError>{errors.filterIds}</FieldError>}
           </fieldset>
         )}
       </form>

@@ -119,8 +119,8 @@ export function EventDetailPage({
             dark
             label="Taux de présence"
             badge={
-              <span className="flex items-center gap-1.5 rounded-full bg-success/25 px-2 py-0.5 text-[11px] font-bold leading-4 text-[#8fd6ac]">
-                <span aria-hidden="true" className="size-1.5 rounded-full bg-[#8fd6ac]" />
+              <span className="flex items-center gap-1.5 rounded-full bg-success/25 px-2 py-0.5 text-[11px] font-bold leading-4 text-success-on-ink">
+                <span aria-hidden="true" className="size-1.5 rounded-full bg-success-on-ink" />
                 Check-in ouvert
               </span>
             }
@@ -394,20 +394,25 @@ export function EventDetailPage({
   );
 }
 
-/** Couverture de l'événement (pages publiques) : ajout, remplacement, retrait au survol. */
+/**
+ * Couverture de l'événement (pages publiques) : ajout, remplacement, retrait au survol, ou
+ * toujours visibles sur écran tactile. Pleine largeur sous xl, première case de la rangée à xl.
+ */
 function EventCover({ id, cover, color }: { id: string; cover: string | null; color: string }) {
   const { pick, remove, pending, error, fileInput } = useImageUpload("evenement", id);
   const action =
-    "rounded-full bg-black/40 px-3 py-1 text-xs font-semibold text-white hover:bg-black/60 disabled:cursor-wait";
+    "tap-area rounded-full bg-black/40 px-3 py-1 text-xs font-semibold text-white hover:bg-black/60 disabled:cursor-wait";
   return (
     <div
-      className="group col-span-2 hidden min-h-32 flex-col items-center justify-center gap-2 rounded-3xl bg-cover bg-center xl:col-span-1 xl:flex"
+      className="group col-span-2 flex min-h-32 flex-col items-center justify-center gap-2 rounded-3xl bg-cover bg-center xl:col-span-1"
       style={cover ? { backgroundImage: `url(${cover})` } : meshCover(color, id)}
     >
       <div
         className={cn(
           "flex gap-1.5 transition-opacity",
-          cover && !pending && "opacity-0 group-hover:opacity-100 focus-within:opacity-100",
+          cover &&
+            !pending &&
+            "opacity-0 group-hover:opacity-100 focus-within:opacity-100 [@media(hover:none)]:opacity-100",
         )}
       >
         <button type="button" onClick={pick} disabled={pending} className={action}>

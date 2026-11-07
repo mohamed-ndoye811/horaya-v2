@@ -18,7 +18,7 @@ export function CalendarLegend({
               className="size-2 shrink-0 rounded-[3px]"
               style={{ backgroundColor: category.color }}
             />
-            <span className="text-xs font-semibold leading-4 text-[#4a4a4a]">{category.name}</span>
+            <span className="text-xs font-semibold leading-4 text-ink-soft">{category.name}</span>
           </li>
         ))}
       </ul>

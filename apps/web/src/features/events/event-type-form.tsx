@@ -1,9 +1,10 @@
 import { isRedirect, useRouter } from "@tanstack/react-router";
 import { useState, useTransition } from "react";
-import { Button, textLinkClasses } from "@/components/ui/button";
-import { AffixInput, Checkbox, Field, inputClasses } from "@/components/ui/field";
+import { Button, IconButton, textLinkClasses } from "@/components/ui/button";
+import { AffixInput, Checkbox, Field, FieldError, inputClasses } from "@/components/ui/field";
 import { FormAlert } from "@/components/ui/form-alert";
 import { CloseIcon, PlusIcon } from "@/components/ui/icons";
+import { dashedClasses } from "@/components/ui/section";
 import { Select } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { archiveEventTypeAction, saveEventType } from "@/functions/events";
@@ -237,22 +238,22 @@ export function EventTypeForm({ initial }: { initial: EventTypeFormValues }) {
                     {FIELD_TYPE_LABELS[field.type]}
                     {field.required ? " · requis" : ""}
                   </span>
-                  <button
-                    type="button"
+                  <IconButton
+                    size="sm"
+                    label={`Retirer le champ ${field.label}`}
                     onClick={() =>
                       setFields((current) => current.filter((entry) => entry.key !== field.key))
                     }
-                    aria-label={`Retirer le champ ${field.label}`}
-                    className="flex size-7 items-center justify-center text-ink hover:bg-draft-bg"
+                    className="tap-area"
                   >
                     <CloseIcon size={10} />
-                  </button>
+                  </IconButton>
                 </span>
               </li>
             ))}
           </ul>
-          <div className="flex flex-col gap-2.5 rounded-xl border-[1.5px] border-dashed border-[#dcdcd8] p-3">
-            <div className="flex gap-2">
+          <div className={cn(dashedClasses, "flex flex-col gap-2.5 rounded-xl p-3")}>
+            <div className="flex flex-col gap-2 sm:flex-row">
               <input
                 value={draftLabel}
                 onChange={(event) => setDraftLabel(event.target.value)}
@@ -264,14 +265,14 @@ export function EventTypeForm({ initial }: { initial: EventTypeFormValues }) {
                 }}
                 aria-label="Libellé du champ"
                 placeholder="Ex. Régime alimentaire"
-                className={cn(inputClasses(), "h-10 text-sm")}
+                className={inputClasses("sm")}
               />
               <Select
                 variant="compact"
                 aria-label="Type de champ"
                 value={draftType}
                 onChange={(event) => setDraftType(event.target.value as FieldType)}
-                className="w-40 shrink-0"
+                className="sm:w-40 sm:shrink-0"
               >
                 <option value="text">Texte</option>
                 <option value="select">Choix</option>
@@ -284,7 +285,7 @@ export function EventTypeForm({ initial }: { initial: EventTypeFormValues }) {
                 onChange={(event) => setDraftOptions(event.target.value)}
                 aria-label="Choix possibles"
                 placeholder="Choix séparés par des virgules : Végétarien, Sans gluten…"
-                className={cn(inputClasses(), "h-10 text-sm")}
+                className={inputClasses("sm")}
               />
             )}
             <div className="flex items-center justify-between gap-3">
@@ -303,9 +304,7 @@ export function EventTypeForm({ initial }: { initial: EventTypeFormValues }) {
               </button>
             </div>
           </div>
-          {errors.customFields && (
-            <p className="text-[13px] font-semibold text-danger">{errors.customFields}</p>
-          )}
+          {errors.customFields && <FieldError>{errors.customFields}</FieldError>}
         </div>
 
         <div className="mx-6 flex flex-col gap-4 border-t border-line-soft py-5">
@@ -363,7 +362,7 @@ export function EventTypeForm({ initial }: { initial: EventTypeFormValues }) {
                 }
               })
             }
-            className="text-sm font-semibold text-[#f0a090] hover:underline"
+            className="tap-area text-sm font-semibold text-danger-on-ink hover:underline"
             title={initial.eventCount > 0 ? "Les événements existants gardent ce type" : undefined}
           >
             {archiving ? "Suppression…" : "Supprimer le type"}
@@ -375,7 +374,7 @@ export function EventTypeForm({ initial }: { initial: EventTypeFormValues }) {
           {initial.id ? "Enregistrer" : "Créer le type"}
         </Button>
         {archiveError && (
-          <p className="w-full pb-2 text-[13px] font-semibold text-[#f0a090]">{archiveError}</p>
+          <p className="w-full pb-2 text-[13px] font-semibold text-danger-on-ink">{archiveError}</p>
         )}
       </div>
     </form>

@@ -4,7 +4,7 @@ import { FabLink } from "@/components/app/fab";
 import { FilterSelect } from "@/components/app/filter-select";
 import { PageHeader } from "@/components/app/page-header";
 import { StatusBadge } from "@/components/ui/badge";
-import { ButtonLink } from "@/components/ui/button";
+import { ButtonLink, rowLinkClasses } from "@/components/ui/button";
 import { DateBlock, EventCell, EventThumb } from "@/components/ui/cells";
 import { DataTable } from "@/components/ui/data-table";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -15,6 +15,7 @@ import { SearchInput } from "@/components/ui/search-input";
 import { SegmentedLinks } from "@/components/ui/segmented";
 import { eventStatusBadge } from "@/components/ui/status";
 import type { getEvents } from "@/functions/events";
+import { cn } from "@/lib/cn";
 import { mondayOf, startOfDay, todayIn } from "@/lib/dates";
 import { formatTimeRange } from "@/lib/format";
 import { Link, useRouter } from "@/lib/navigation";
@@ -153,7 +154,7 @@ export function EventsPage({
         toolbar={
           <>
             <form
-              className="min-w-0 md:flex-1 xl:max-w-[300px]"
+              className="min-w-0 lg:flex-1 xl:max-w-[300px]"
               onSubmit={(event) => {
                 event.preventDefault();
                 const q = String(new FormData(event.currentTarget).get("q") ?? "").trim();
@@ -168,7 +169,7 @@ export function EventsPage({
               />
             </form>
             {/* Sur mobile, les pilules seules : la recherche couvre aussi les types. */}
-            <div className="flex flex-col gap-3 md:flex-row md:items-center">
+            <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
               <SegmentedLinks
                 collapse
                 label="Filtrer les événements"
@@ -248,7 +249,7 @@ export function EventsPage({
                 <div className="flex min-w-0 flex-col gap-0.5">
                   <Link
                     href={`/app/evenements/${row.id}`}
-                    className="truncate text-[15px] font-semibold leading-5 text-ink hover:underline"
+                    className={cn(rowLinkClasses, "truncate text-[15px] leading-5")}
                   >
                     {row.title}
                   </Link>
@@ -279,6 +280,7 @@ export function EventsPage({
             key: "location",
             header: "Lieu",
             width: 180,
+            hideBelow: "xl",
             cell: (row) => (
               <span className="truncate text-sm text-ink">
                 {row.locationName ?? (row.onlineUrl ? "En ligne" : "—")}

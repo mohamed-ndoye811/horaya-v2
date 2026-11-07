@@ -183,7 +183,7 @@ export function WeekStrip({
           >
             <span
               className={cn(
-                "font-mono text-[10px] font-semibold uppercase leading-[13px] tracking-[0.05em]",
+                "font-mono text-[11px] font-semibold uppercase leading-[14px] tracking-[0.05em]",
                 index >= 5 ? "text-ink-muted" : "text-ink",
               )}
             >
@@ -353,7 +353,7 @@ export function WeekAgenda({
               <h2 className="flex items-center gap-2.5 border-b border-line-soft pb-2 font-mono text-label font-semibold uppercase tracking-[0.055em] text-ink">
                 {dayLabel(day, true)}
                 {civilKey(day) === todayKey && (
-                  <span className="bg-ink px-1.5 py-0.5 text-[10px] leading-[13px] text-on-ink">
+                  <span className="bg-ink px-1.5 py-0.5 text-[11px] leading-[14px] text-on-ink">
                     Aujourd'hui
                   </span>
                 )}

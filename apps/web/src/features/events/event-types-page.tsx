@@ -3,6 +3,7 @@ import { PageHeader } from "@/components/app/page-header";
 import { ButtonLink } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { ChevronRight, PlusIcon } from "@/components/ui/icons";
+import { cardShellClasses } from "@/components/ui/section";
 import type { getEventTypes } from "@/functions/events";
 import { cn } from "@/lib/cn";
 import { formatMoney } from "@/lib/format";
@@ -63,7 +64,7 @@ export function EventTypesPage({
       : null;
 
   return (
-    <div className="flex min-h-dvh flex-col">
+    <div className="flex flex-1 flex-col">
       <PageHeader
         eyebrow="Événements / Types"
         title="Types d'événements"
@@ -96,15 +97,23 @@ export function EventTypesPage({
             />
           ) : (
             <>
+              {/* Panneau ouvert : la liste reste en cartes jusqu'à xl (le tableau n'y tient pas). */}
               <ul
                 aria-label="Types d'événements"
-                className="flex flex-col overflow-hidden rounded-3xl bg-surface lg:hidden"
+                className={cn(
+                  "flex flex-col overflow-hidden rounded-3xl bg-surface",
+                  panelValues ? "xl:hidden" : "lg:hidden",
+                )}
               >
                 {types.map((type) => (
                   <li key={type.id} className="border-b border-line-soft">
                     <Link
                       href={`/app/evenements/types?type=${type.id}`}
-                      className="flex items-center gap-3.5 px-4 py-4 text-ink hover:bg-surface"
+                      aria-current={type.id === selected ? "page" : undefined}
+                      className={cn(
+                        "flex items-center gap-3.5 px-4 py-4 text-ink hover:bg-band",
+                        type.id === selected && "bg-band",
+                      )}
                     >
                       <span
                         className="size-2.5 shrink-0 rounded-[3px]"
@@ -132,83 +141,90 @@ export function EventTypesPage({
                   </li>
                 ))}
               </ul>
-              <div className="hidden overflow-hidden rounded-3xl bg-surface shadow-[0_1px_2px_rgba(0,0,0,0.04),0_16px_40px_rgba(0,0,0,0.06)] lg:block">
-                <table className="w-full min-w-[640px] table-fixed border-collapse">
-                  <colgroup>
-                    <col />
-                    <col style={{ width: 110 }} />
-                    <col style={{ width: 130 }} />
-                    <col style={{ width: 120 }} />
-                  </colgroup>
-                  <thead>
-                    <tr className="h-10 bg-band">
-                      {["Type", "Durée", "Prix", "Événements"].map((label, index) => (
-                        <th
-                          key={label}
-                          scope="col"
-                          className={cn(
-                            "px-3 text-xs font-bold text-ink-muted first:pl-5 last:pr-5",
-                            index === 3 ? "text-right" : "text-left",
-                          )}
-                        >
-                          {label}
-                        </th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {types.map((type) => {
-                      const active = type.id === selected;
-                      return (
-                        <tr
-                          key={type.id}
-                          className={cn(
-                            "relative h-[60px] border-t border-[#f4f4f2] hover:bg-band",
-                            active && "bg-band shadow-[inset_3px_0_0_var(--color-ink)]",
-                          )}
-                        >
-                          <td className="px-3 pl-5">
-                            <div className="flex items-center gap-3">
-                              <span
-                                className="size-2.5 shrink-0 rounded-[3px]"
-                                style={{ backgroundColor: type.color }}
-                                aria-hidden="true"
-                              />
-                              <Link
-                                href={`/app/evenements/types?type=${type.id}`}
-                                className="truncate text-[15px] font-semibold text-ink after:absolute after:inset-0"
-                              >
-                                {type.name}
-                              </Link>
-                            </div>
-                          </td>
-                          <td className="px-3 text-[13px] text-[#4a4a4a]">
-                            {formatDuration(type.defaultDurationMinutes)}
-                          </td>
-                          <td className="px-3 text-[13px] text-[#4a4a4a]">
-                            {type.defaultPriceCents
-                              ? formatMoney(type.defaultPriceCents)
-                              : "Gratuit"}
-                          </td>
-                          <td
+              <div className={cn("hidden", panelValues ? "xl:block" : "lg:block")}>
+                <div className={cn(cardShellClasses, "overflow-hidden")}>
+                  <table className="w-full min-w-[640px] table-fixed border-collapse">
+                    <colgroup>
+                      <col />
+                      <col style={{ width: 110 }} />
+                      <col style={{ width: 130 }} />
+                      <col style={{ width: 120 }} />
+                    </colgroup>
+                    <thead>
+                      <tr className="h-10 bg-band">
+                        {["Type", "Durée", "Prix", "Événements"].map((label, index) => (
+                          <th
+                            key={label}
+                            scope="col"
                             className={cn(
-                              "px-3 pr-5 text-right text-sm font-semibold",
-                              type.eventCount === 0 ? "text-[#ababa6]" : "text-ink",
+                              "px-3 text-xs font-bold text-ink-muted first:pl-5 last:pr-5",
+                              index === 3 ? "text-right" : "text-left",
                             )}
                           >
-                            {type.eventCount}
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
+                            {label}
+                          </th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {types.map((type) => {
+                        const active = type.id === selected;
+                        return (
+                          <tr
+                            key={type.id}
+                            className={cn(
+                              "relative h-[60px] border-t border-line-faint hover:bg-band",
+                              active && "bg-band shadow-[inset_3px_0_0_var(--color-ink)]",
+                            )}
+                          >
+                            <td className="px-3 pl-5">
+                              <div className="flex items-center gap-3">
+                                <span
+                                  className="size-2.5 shrink-0 rounded-[3px]"
+                                  style={{ backgroundColor: type.color }}
+                                  aria-hidden="true"
+                                />
+                                <Link
+                                  href={`/app/evenements/types?type=${type.id}`}
+                                  className="truncate text-[15px] font-semibold text-ink after:absolute after:inset-0"
+                                >
+                                  {type.name}
+                                </Link>
+                              </div>
+                            </td>
+                            <td className="px-3 text-[13px] text-ink-soft">
+                              {formatDuration(type.defaultDurationMinutes)}
+                            </td>
+                            <td className="px-3 text-[13px] text-ink-soft">
+                              {type.defaultPriceCents
+                                ? formatMoney(type.defaultPriceCents)
+                                : "Gratuit"}
+                            </td>
+                            <td
+                              className={cn(
+                                "px-3 pr-5 text-right text-sm font-semibold",
+                                type.eventCount === 0 ? "text-ink-faint" : "text-ink",
+                              )}
+                            >
+                              {type.eventCount}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
               </div>
             </>
           )}
         </div>
         {panelValues && (
-          <aside className="overflow-hidden rounded-3xl bg-surface shadow-[0_1px_2px_rgba(0,0,0,0.04),0_16px_40px_rgba(0,0,0,0.06)] lg:sticky lg:top-4 lg:w-[460px] lg:shrink-0">
+          <aside
+            className={cn(
+              cardShellClasses,
+              "overflow-hidden lg:sticky lg:top-4 lg:w-[460px] lg:shrink-0",
+            )}
+          >
             <EventTypeForm key={panelValues.id ?? "nouveau"} initial={panelValues} />
           </aside>
         )}

@@ -1,5 +1,6 @@
 import { weekdayOf } from "@horaya/core";
 import type { CSSProperties } from "react";
+import { cardShellClasses } from "@/components/ui/section";
 import { type CivilDate, civilKey, isAllDay, layoutDay, layoutSpans } from "@/lib/calendar";
 import { cn } from "@/lib/cn";
 import { shadeOf, tintOf } from "@/lib/colors";
@@ -10,11 +11,10 @@ import { type CalendarEvent, WEEKDAY_LABELS } from "./types";
 /** Hauteur minimale d'une heure (maquette 1.3 : 64 px) ; la grille s'étire sur toute la hauteur. */
 const HOUR_HEIGHT = 64;
 /** Filets de la grille, plus clairs que `line-soft` (maquette : #F4F4F2). */
-const GRID_LINE = "#f4f4f2";
+const GRID_LINE = "var(--color-line-faint)";
 
 /** Carte blanche des vues du calendrier (DA v4). */
-export const calendarCard =
-  "mx-4 overflow-hidden rounded-3xl bg-surface shadow-[0_1px_2px_rgba(0,0,0,0.04),0_16px_40px_rgba(0,0,0,0.06)]";
+export const calendarCard = `${cardShellClasses} mx-4 overflow-hidden`;
 
 /**
  * Vues Semaine et Jour (maquette 1.3) : en-têtes des jours, ligne « Jour » pour les
@@ -51,7 +51,7 @@ export function TimeGridCalendar({
   const isWeekend = (day: CivilDate) => weekdayOf(day.year, day.month, day.day) >= 5;
 
   return (
-    <div className={cn(calendarCard, "flex flex-1 flex-col")}>
+    <div className={cn(calendarCard, "flex-1")}>
       <div className="flex flex-1 flex-col overflow-x-auto">
         <div className={cn("flex flex-1 flex-col", days.length > 1 && "min-w-[840px]")}>
           {/* En-têtes des jours */}
@@ -102,7 +102,7 @@ export function TimeGridCalendar({
               className="grid border-b border-line-soft"
               style={{ gridTemplateColumns: columns }}
             >
-              <span className="flex justify-end pt-2.5 pr-2.5 text-[11px] font-semibold leading-[14px] text-[#ababa6]">
+              <span className="flex justify-end pt-2.5 pr-2.5 text-[11px] font-semibold leading-[14px] text-ink-faint">
                 Jour
               </span>
               <div
@@ -138,7 +138,7 @@ export function TimeGridCalendar({
               {hours.map((hour) => (
                 <span
                   key={hour}
-                  className="flex flex-1 justify-end pt-1.5 pr-2.5 text-[11px] font-semibold leading-[14px] text-[#ababa6]"
+                  className="flex flex-1 justify-end pt-1.5 pr-2.5 text-[11px] font-semibold leading-[14px] text-ink-faint"
                 >
                   {hour}h
                 </span>
