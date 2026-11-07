@@ -34,4 +34,12 @@ describe("e-mails aux participants", () => {
     expect(email.text).toContain("Motif : Événement complet.");
     expect(email.text).toContain("Voir les autres événements : https://horaya.app/cabinet-vidal");
   });
+
+  it("affiche le logo de l'espace dans l'en-tête quand il en a un", () => {
+    const logo =
+      "https://staging.horaya.app/fichiers/org/logos/0f3c2a4e-5b6d-4e7f-8a9b-0c1d2e3f4a5b.webp";
+    const email = bookingConfirmedEmail({ ...mail, workspace: { ...mail.workspace, logo } });
+    expect(email.html).toContain(`<img src="${logo}"`);
+    expect(bookingConfirmedEmail(mail).html).not.toContain("<img");
+  });
 });

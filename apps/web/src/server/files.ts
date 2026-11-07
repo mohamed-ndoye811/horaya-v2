@@ -1,7 +1,9 @@
-import { setEventCover, setItemPhoto } from "@horaya/core";
+import { setEventCover, setItemPhoto, updateTenantSettings } from "@horaya/core";
+import { getWorkspaceSettings } from "@horaya/db";
 import { z } from "zod";
 import { auth, requestHeaders } from "./auth";
 import { authApiFormState } from "./auth-errors";
+import { db } from "./db";
 import type { FormState } from "./form-state";
 import { toFormState } from "./form-state";
 import { deps } from "./services";
@@ -9,7 +11,7 @@ import { deleteFile, type FileFolder, imageProblem, storeImage } from "./storage
 import { getWorkspaceContext } from "./workspace";
 
 /** Ce qu'une image illustre : photo d'article, couverture d'événement, photo de profil, logo. */
-export const IMAGE_TARGETS = ["article", "evenement", "profil", "logo"] as const;
+export const IMAGE_TARGETS = ["article", "evenement", "profil", "logo", "couverture"] as const;
 export type ImageTarget = (typeof IMAGE_TARGETS)[number];
 
 const FOLDERS: Record<ImageTarget, FileFolder> = {
@@ -17,6 +19,7 @@ const FOLDERS: Record<ImageTarget, FileFolder> = {
   evenement: "evenements",
   profil: "profils",
   logo: "logos",
+  couverture: "couvertures",
 };
 
 /**
@@ -47,6 +50,9 @@ export async function saveImageImpl(form: FormData): Promise<FormState> {
     else if (target === "profil") {
       previous = user.image;
       await auth.api.updateUser({ body: { image: url }, headers: requestHeaders() });
+    } else if (target === "couverture") {
+      previous = (await getWorkspaceSettings(db, workspace.id))?.coverImageUrl;
+      await updateTenantSettings(deps, actor, { coverImageUrl: url });
     } else {
       previous = workspace.logo;
       await auth.api.updateOrganization({

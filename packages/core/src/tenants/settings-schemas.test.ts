@@ -31,3 +31,18 @@ describe("coordonnées de l'espace", () => {
     });
   });
 });
+
+describe("couverture de l'espace", () => {
+  it("n'accepte qu'une image rangée par l'app, ou rien", () => {
+    expect(
+      updateTenantSettingsSchema.parse({ coverImageUrl: "/fichiers/org/couvertures/a.webp" }),
+    ).toEqual({ coverImageUrl: "/fichiers/org/couvertures/a.webp" });
+    expect(updateTenantSettingsSchema.parse({ coverImageUrl: null })).toEqual({
+      coverImageUrl: null,
+    });
+    expect(
+      updateTenantSettingsSchema.safeParse({ coverImageUrl: "https://ailleurs.example/x.jpg" })
+        .success,
+    ).toBe(false);
+  });
+});

@@ -20,8 +20,8 @@ interface LayoutInput {
   details?: Array<[string, string]>;
   action: { label: string; url: string };
   footnote: string;
-  /** E-mail envoyé au nom d'un espace : son nom et sa couleur remplacent la marque Horaya. */
-  brand?: { name: string; color: string; textColor: string };
+  /** E-mail envoyé au nom d'un espace : son nom, sa couleur et son logo (adresse absolue) remplacent la marque Horaya. */
+  brand?: { name: string; color: string; textColor: string; logo?: string | null };
 }
 
 /** Gabarit commun des e-mails transactionnels (HTML en tableaux, compatible clients mail). */
@@ -52,7 +52,7 @@ export function renderEmail({
         .join("")}</table>`
     : "";
   const header = brand
-    ? `<td style="background:${brand.color};padding:24px 32px"><span style="font-size:17px;font-weight:800;letter-spacing:0.02em;text-transform:uppercase;color:${brand.textColor}">${escapeHtml(brand.name)}</span></td>`
+    ? `<td style="background:${brand.color};padding:24px 32px">${brand.logo ? `<img src="${escapeHtml(brand.logo)}" width="32" height="32" alt="" style="display:inline-block;width:32px;height:32px;border:0;border-radius:8px;vertical-align:middle;margin-right:12px">` : ""}<span style="font-size:17px;font-weight:800;letter-spacing:0.02em;text-transform:uppercase;vertical-align:middle;color:${brand.textColor}">${escapeHtml(brand.name)}</span></td>`
     : `<td style="background:${INK};padding:28px 32px"><span style="font-family:Archivo,'Arial Narrow',Arial,sans-serif;font-weight:900;font-size:26px;letter-spacing:-0.04em;text-transform:uppercase;color:#F7F5F3">Horaya</span></td>`;
 
   const html = `<!doctype html>

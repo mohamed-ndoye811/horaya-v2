@@ -3,7 +3,7 @@ import { saveImageAction } from "@/functions/files";
 import { useRouter } from "@/lib/navigation";
 
 /** Ce qu'illustre l'image (voir server/files.ts). */
-type ImageTarget = "article" | "evenement" | "profil" | "logo";
+type ImageTarget = "article" | "evenement" | "profil" | "logo" | "couverture";
 
 /**
  * Réduit une photo avant l'envoi (`max` px sur le grand côté, WebP) : une photo de téléphone

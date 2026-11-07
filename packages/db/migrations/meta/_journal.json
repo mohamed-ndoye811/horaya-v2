@@ -78,6 +78,13 @@
       "when": 1792403811649,
       "tag": "0010_counter_booking",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1794039352643,
+      "tag": "0011_giant_luckman",
+      "breakpoints": true
     }
   ]
 }

@@ -40,6 +40,7 @@ export function OrganizationForm({
     name: string;
     slug: string;
     logo: string | null;
+    coverImageUrl: string | null;
     brandColor: string;
     displayFont: string;
     description: string;
@@ -159,7 +160,20 @@ export function OrganizationForm({
                 </Field>
               </div>
             </div>
-            <LogoActions logo={initial.logo} />
+            <ImageActions
+              target="logo"
+              image={initial.logo}
+              add="Ajouter un logo"
+              change="Changer le logo"
+              hint="Il s'affiche sur ta page publique et dans les e-mails ; carré de préférence."
+            />
+            <ImageActions
+              target="couverture"
+              image={initial.coverImageUrl}
+              add="Ajouter une couverture"
+              change="Changer la couverture"
+              hint="Le grand bandeau de ta page publique ; une photo en paysage."
+            />
             <Field
               label="Présentation"
               error={errors.description}
@@ -427,15 +441,31 @@ function SlugStatus({ check }: { check: SlugCheck | null }) {
   return <span className="shrink-0 text-[13px] font-bold text-success">✓ Disponible</span>;
 }
 
-/** Logo de l'espace (512 px suffisent) : sans logo, l'initiale sur la couleur de marque. */
-function LogoActions({ logo }: { logo: string | null }) {
-  const { pick, remove, pending, error, fileInput } = useImageUpload("logo", undefined, 512);
+/** Logo (512 px suffisent) ou couverture de l'espace : ajout, remplacement, retrait. */
+function ImageActions({
+  target,
+  image,
+  add,
+  change,
+  hint,
+}: {
+  target: "logo" | "couverture";
+  image: string | null;
+  add: string;
+  change: string;
+  hint: string;
+}) {
+  const { pick, remove, pending, error, fileInput } = useImageUpload(
+    target,
+    undefined,
+    target === "logo" ? 512 : 1600,
+  );
   return (
     <div className="flex flex-wrap items-center gap-3 rounded-2xl bg-field px-3 py-2.5">
       <Button variant="secondary" pending={pending} onClick={pick} className="h-9 px-4 text-[13px]">
-        {logo ? "Changer le logo" : "Ajouter un logo"}
+        {image ? change : add}
       </Button>
-      {logo && (
+      {image && (
         <Button
           variant="secondary"
           disabled={pending}
@@ -448,7 +478,7 @@ function LogoActions({ logo }: { logo: string | null }) {
       <p
         className={cn("text-xs leading-4", error ? "font-semibold text-danger" : "text-ink-subtle")}
       >
-        {error ?? "Il s'affiche sur ta page publique ; carré de préférence."}
+        {error ?? hint}
       </p>
       {fileInput}
     </div>

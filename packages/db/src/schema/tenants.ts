@@ -28,6 +28,8 @@ export const tenantSettings = pgTable("tenant_settings", {
   /** Secteur d'activité (valeurs : TENANT_SECTORS du core). */
   sector: text(),
   description: text(),
+  /** Image de couverture de la page publique (adresse /fichiers/… rangée par l'app). */
+  coverImageUrl: text(),
   /** Coordonnées et identité légale, affichées sur la page publique (contact, mentions légales). */
   contactEmail: text(),
   contactPhone: text(),
