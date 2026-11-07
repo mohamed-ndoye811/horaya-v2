@@ -3,7 +3,8 @@ import handler, { createServerEntry } from "@tanstack/react-start/server-entry";
 /** En-têtes de sécurité de toutes les réponses (HSTS et TLS sont gérés par Cloudflare et l'ingress). */
 const SECURITY_HEADERS: Record<string, string> = {
   "X-Content-Type-Options": "nosniff",
-  "X-Frame-Options": "DENY",
+  // En local, l'app peut s'afficher dans un cadre de la même origine (aperçu mobile à 390 px).
+  "X-Frame-Options": process.env.NODE_ENV === "production" ? "DENY" : "SAMEORIGIN",
   "Referrer-Policy": "strict-origin-when-cross-origin",
   "Permissions-Policy": "camera=(), microphone=(), geolocation=(), payment=()",
 };
