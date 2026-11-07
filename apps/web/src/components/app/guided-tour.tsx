@@ -3,6 +3,7 @@
 import { motion, useReducedMotion } from "motion/react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
+import { inkCardClasses } from "@/components/ui/section";
 import { cn } from "@/lib/cn";
 
 /** Étapes de la visite (maquette 4.8) : chaque étape vise un repère `data-tour` de la coque. */
@@ -129,7 +130,7 @@ export function GuidedTour({ onClose }: { onClose: () => void }) {
         style={{ width: POPOVER_WIDTH, ...popoverStyle }}
       >
         <div className="flex items-center justify-between">
-          <p className="font-mono text-[11px] font-bold uppercase tracking-[0.06em] text-[#c8692f]">
+          <p className="font-mono text-[11px] font-bold uppercase tracking-[0.06em] text-accent-strong">
             Étape {index + 1} sur {STEPS.length}
           </p>
           <button
@@ -158,30 +159,28 @@ export function GuidedTour({ onClose }: { onClose: () => void }) {
           </span>
           <span className="flex gap-2">
             {index > 0 && (
-              <Button
-                variant="secondary"
-                className="h-10 px-4 text-sm"
-                onClick={() => setIndex(index - 1)}
-              >
+              <Button variant="secondary" size="sm" onClick={() => setIndex(index - 1)}>
                 Précédent
               </Button>
             )}
-            <Button
-              className="h-10 px-4 text-sm"
-              onClick={() => (last ? close() : setIndex(index + 1))}
-            >
+            <Button size="sm" onClick={() => (last ? close() : setIndex(index + 1))}>
               {last ? "Terminer" : "Suivant"}
             </Button>
           </span>
         </div>
       </div>
 
-      <ol className="absolute bottom-4 left-4 flex flex-col gap-2 rounded-[20px] bg-ink px-5 py-4 text-[13px] leading-[18px]">
-        <li className="pb-0.5 text-xs font-semibold text-[#9a9ea8]">La visite</li>
+      <ol
+        className={cn(
+          inkCardClasses,
+          "absolute bottom-4 left-4 flex flex-col gap-2 rounded-[20px] px-5 py-4 text-[13px] leading-[18px]",
+        )}
+      >
+        <li className="pb-0.5 text-xs font-semibold text-on-ink-muted">La visite</li>
         {STEPS.map((entry, position) => (
           <li
             key={entry.title}
-            className={cn(position === index ? "font-semibold text-white" : "text-[#9a9ea8]")}
+            className={cn(position === index ? "font-semibold text-on-ink" : "text-on-ink-muted")}
           >
             {position < index ? "✓ " : position === index ? "→ " : ""}
             {position + 1}. {entry.title}

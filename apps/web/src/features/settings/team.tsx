@@ -118,7 +118,7 @@ export function TeamTable({ rows, manageable }: { rows: TeamRow[]; manageable: b
 
   const roleCell = (row: TeamRow) =>
     row.role === "owner" ? (
-      <span className="inline-flex h-[30px] items-center rounded-full bg-ink px-3 text-[13px] font-semibold text-white">
+      <span className="inline-flex h-[30px] items-center rounded-full bg-ink px-3 text-[13px] font-semibold text-on-ink">
         {ROLE_LABELS[row.role]}
       </span>
     ) : !manageable || row.isMe || row.kind === "invitation" ? (

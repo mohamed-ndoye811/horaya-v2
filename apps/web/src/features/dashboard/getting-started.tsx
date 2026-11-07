@@ -1,5 +1,6 @@
+import { ButtonLink } from "@/components/ui/button";
+import { cardShellClasses, dashedClasses, inkCardClasses } from "@/components/ui/section";
 import { cn } from "@/lib/cn";
-import { Link } from "@/lib/navigation";
 import { CopyPublicLink, TourCard } from "./getting-started-client";
 
 export interface StartStep {
@@ -20,11 +21,16 @@ export function GettingStarted({ steps, slug }: { steps: StartStep[]; slug: stri
   return (
     <div className="flex flex-col gap-4 px-4 pb-4">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-start">
-        <section className="flex min-w-0 flex-1 flex-col gap-[18px] rounded-3xl bg-ink p-6 sm:p-7">
+        <section
+          className={cn(
+            inkCardClasses,
+            "flex min-w-0 flex-1 flex-col gap-[18px] rounded-3xl p-6 sm:p-7",
+          )}
+        >
           <div className="flex flex-wrap items-end justify-between gap-4">
             <div className="flex flex-col gap-1.5">
-              <p className="text-[13px] font-semibold leading-4 text-[#9a9ea8]">Bien démarrer</p>
-              <h2 className="font-headline text-[28px] leading-8 tracking-[-0.03em] text-white">
+              <p className="text-[13px] font-semibold leading-4 text-on-ink-muted">Bien démarrer</p>
+              <h2 className="font-headline text-[28px] leading-8 tracking-[-0.03em] text-on-ink">
                 {done} étape{done > 1 ? "s" : ""} sur {steps.length}
               </h2>
             </div>
@@ -34,7 +40,7 @@ export function GettingStarted({ steps, slug }: { steps: StartStep[]; slug: stri
                   key={step.label}
                   className={cn(
                     "h-1.5 flex-1 rounded-full",
-                    step.done ? "bg-accent" : "bg-[#2e2e2e]",
+                    step.done ? "bg-accent" : "bg-ink-line",
                   )}
                 />
               ))}
@@ -48,7 +54,7 @@ export function GettingStarted({ steps, slug }: { steps: StartStep[]; slug: stri
                   key={step.label}
                   className={cn(
                     "flex items-center gap-3.5 rounded-2xl pl-4",
-                    active ? "min-h-16 bg-[#1e1e1e] py-2.5 pr-2.5" : "min-h-14 pr-4",
+                    active ? "min-h-16 bg-ink-raised py-2.5 pr-2.5" : "min-h-14 pr-4",
                   )}
                 >
                   {step.done ? (
@@ -73,7 +79,7 @@ export function GettingStarted({ steps, slug }: { steps: StartStep[]; slug: stri
                         "flex size-[26px] shrink-0 items-center justify-center rounded-full font-mono text-[11px] font-bold",
                         active
                           ? "border-2 border-accent text-accent"
-                          : "border-[1.5px] border-[#3a3a3a] text-ink-subtle",
+                          : "border-[1.5px] border-ink-line text-ink-subtle",
                       )}
                     >
                       {index + 1}
@@ -86,7 +92,7 @@ export function GettingStarted({ steps, slug }: { steps: StartStep[]; slug: stri
                         step.done
                           ? "font-medium text-ink-subtle line-through"
                           : active
-                            ? "font-semibold text-white"
+                            ? "font-semibold text-on-ink"
                             : "font-medium text-[#d8d8d8]",
                       )}
                     >
@@ -97,12 +103,9 @@ export function GettingStarted({ steps, slug }: { steps: StartStep[]; slug: stri
                     )}
                   </span>
                   {active ? (
-                    <Link
-                      href={step.href}
-                      className="flex h-10 shrink-0 items-center rounded-full bg-surface px-[18px] text-sm font-semibold text-ink hover:bg-field"
-                    >
+                    <ButtonLink href={step.href} variant="inverse" size="sm">
                       Commencer
-                    </Link>
+                    </ButtonLink>
                   ) : (
                     !step.done &&
                     step.duration && (
@@ -116,7 +119,7 @@ export function GettingStarted({ steps, slug }: { steps: StartStep[]; slug: stri
         </section>
         <div className="flex w-full flex-col gap-4 lg:w-[420px] lg:shrink-0">
           <TourCard />
-          <section className="flex flex-col gap-3.5 rounded-3xl bg-surface p-6 shadow-[0_1px_2px_rgba(0,0,0,0.04),0_16px_40px_rgba(0,0,0,0.06)]">
+          <section className={cn(cardShellClasses, "gap-3.5 p-6")}>
             <div className="flex items-center justify-between">
               <h2 className="text-[17px] font-semibold leading-[22px] text-ink">
                 Ta page publique
@@ -126,7 +129,7 @@ export function GettingStarted({ steps, slug }: { steps: StartStep[]; slug: stri
                 En ligne
               </span>
             </div>
-            <div className="flex h-11 items-center justify-between gap-3 rounded-xl border border-[#ededeb] bg-field pr-1.5 pl-3.5">
+            <div className="flex h-11 items-center justify-between gap-3 rounded-xl border border-bg bg-field pr-1.5 pl-3.5">
               <span className="truncate font-mono text-[13px] text-ink">horaya.app/{slug}</span>
               <CopyPublicLink slug={slug} />
             </div>
@@ -136,7 +139,12 @@ export function GettingStarted({ steps, slug }: { steps: StartStep[]; slug: stri
           </section>
         </div>
       </div>
-      <p className="flex min-h-[120px] items-center justify-center gap-3 rounded-3xl border-[1.5px] border-dashed border-[#cfcfcb] px-6 text-center text-sm font-medium leading-5 text-ink-subtle">
+      <p
+        className={cn(
+          dashedClasses,
+          "flex min-h-[120px] items-center justify-center gap-3 rounded-3xl px-6 text-center text-sm font-medium leading-5 text-ink-subtle",
+        )}
+      >
         <svg
           aria-hidden="true"
           width="20"

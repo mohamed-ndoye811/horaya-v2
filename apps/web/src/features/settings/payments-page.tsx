@@ -1,7 +1,10 @@
 import { SettingsShell } from "@/components/app/settings-shell";
 import { StatusBadge } from "@/components/ui/badge";
-import { Button, ButtonLink } from "@/components/ui/button";
+import { Button, ButtonLink, buttonClasses } from "@/components/ui/button";
+import { FormAlert } from "@/components/ui/form-alert";
+import { inkCardClasses } from "@/components/ui/section";
 import type { getPaymentsSettings } from "@/functions/settings";
+import { cn } from "@/lib/cn";
 import { formatMoney } from "@/lib/format";
 import { PaymentsForm } from "./payments-form";
 
@@ -101,7 +104,7 @@ export function PaymentsSettingsPage({
                     href="https://dashboard.stripe.com/"
                     target="_blank"
                     rel="noreferrer"
-                    className="flex h-10 items-center gap-2 rounded-full border border-line px-4 text-sm font-semibold text-ink transition-colors hover:bg-field"
+                    className={buttonClasses({ variant: "secondary", size: "sm" })}
                   >
                     Ouvrir Stripe ↗
                   </a>
@@ -109,7 +112,7 @@ export function PaymentsSettingsPage({
               ) : data.canConnect ? (
                 // Envoi classique vers la route serveur, qui renvoie chez Stripe.
                 <form method="post" action="/app/parametres/paiements/stripe">
-                  <Button type="submit" className="h-10 px-4 text-sm">
+                  <Button type="submit" size="sm">
                     {data.accountStatus === "not_connected"
                       ? "Connecter Stripe"
                       : "Reprendre l'activation"}
@@ -122,9 +125,9 @@ export function PaymentsSettingsPage({
               )}
             </div>
             {stripeError && (
-              <p className="border-b border-line-soft bg-danger-bg px-5 py-3 text-sm font-semibold text-danger">
-                Stripe n'a pas pu être joint. Réessaie dans un instant.
-              </p>
+              <div className="border-b border-line-soft px-5 py-3">
+                <FormAlert>Stripe n'a pas pu être joint. Réessaie dans un instant.</FormAlert>
+              </div>
             )}
             <dl className="grid sm:grid-cols-3">
               {[
@@ -145,13 +148,16 @@ export function PaymentsSettingsPage({
         ) : (
           <section
             aria-label="Paiement par lien"
-            className="flex flex-col gap-5 rounded-3xl bg-ink p-5 lg:flex-row lg:items-stretch lg:p-6"
+            className={cn(
+              inkCardClasses,
+              "flex flex-col gap-5 rounded-3xl p-5 lg:flex-row lg:items-stretch lg:p-6",
+            )}
           >
             <div className="flex min-w-0 flex-1 flex-col gap-3">
               <div className="flex items-center gap-3">
                 <span
                   aria-hidden="true"
-                  className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-white/10 text-white"
+                  className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-white/10 text-on-ink"
                 >
                   <svg
                     aria-hidden="true"
@@ -166,19 +172,20 @@ export function PaymentsSettingsPage({
                     <path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7" />
                   </svg>
                 </span>
-                <h2 className="text-lg font-semibold leading-[22px] text-white">
+                <h2 className="text-lg font-semibold leading-[22px] text-on-ink">
                   Paiement en ligne par lien
                 </h2>
               </div>
-              <p className="text-[13px] leading-5 text-[#9a9ea8]">
+              <p className="text-[13px] leading-5 text-on-ink-muted">
                 Ton client reçoit un bouton « Payer » vers ton lien (Stripe, SumUp, PayPal,
                 HelloAsso…). Quand l'argent arrive, ton équipe clique « Marquer comme payé » sur la
                 réservation : les chiffres restent justes. Un événement peut avoir son propre lien.
               </p>
             </div>
-            <dl className="grid shrink-0 grid-cols-2 gap-3 lg:w-[376px]">
+            {/* Sur téléphone, les deux montants s'empilent : côte à côte, ils débordaient. */}
+            <dl className="grid shrink-0 gap-3 sm:grid-cols-2 lg:w-[376px]">
               {[
-                [`Encaissé en ${month}`, formatMoney(collected), "noté dans Horaya", "text-white"],
+                [`Encaissé en ${month}`, formatMoney(collected), "noté dans Horaya", "text-on-ink"],
                 [
                   "À encaisser",
                   formatMoney(awaiting.cents),
@@ -188,13 +195,13 @@ export function PaymentsSettingsPage({
               ].map(([label, value, caption, tone]) => (
                 <div
                   key={label}
-                  className="flex flex-col gap-1.5 rounded-[18px] bg-white/[0.06] px-4 py-3.5"
+                  className="flex min-w-0 flex-col gap-1.5 rounded-[18px] bg-white/[0.06] px-4 py-3.5"
                 >
-                  <dt className="text-xs font-semibold leading-4 text-[#9a9ea8]">{label}</dt>
+                  <dt className="text-xs font-semibold leading-4 text-on-ink-muted">{label}</dt>
                   <dd className={`font-headline text-[28px] leading-8 tracking-[-0.03em] ${tone}`}>
                     {value}
                   </dd>
-                  <dd className="text-xs leading-4 text-[#9a9ea8]">{caption}</dd>
+                  <dd className="text-xs leading-4 text-on-ink-muted">{caption}</dd>
                 </div>
               ))}
             </dl>

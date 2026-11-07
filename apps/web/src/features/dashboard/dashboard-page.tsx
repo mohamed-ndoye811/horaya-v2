@@ -13,6 +13,7 @@ import {
   LatestBookings,
   MobileSummary,
   MonthBand,
+  MonthCard,
   NextDaysCards,
   TodayCard,
   TodoCards,
@@ -164,13 +165,9 @@ export function DashboardPage({ data }: { data: Awaited<ReturnType<typeof getDas
             today={overview.today}
             now={now}
             timeZone={timeZone}
-            month={{
-              bookings: bookingsThisMonth,
-              fillRate: stats.fillRate,
-              collectedCents: collectedThisMonth,
-            }}
           />
-          <div className="hidden flex-1 flex-col lg:flex">
+          {/* Dès la tablette, les sections du bureau ; la bande noire du mois attend `lg`. */}
+          <div className="hidden flex-1 flex-col md:flex">
             <div className="grid grid-cols-[minmax(0,1fr)] xl:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)]">
               <section className="flex flex-col">
                 <SectionHeading title="À faire" meta={plural(todoCount, "action")} />
@@ -217,16 +214,27 @@ export function DashboardPage({ data }: { data: Awaited<ReturnType<typeof getDas
             )}
 
             {/* La bande « Ce mois-ci » reste collée au bas du cadre, même sur une page courte. */}
-            <div aria-hidden="true" className="h-6 shrink-0" />
-            <MonthBand
-              period={period}
-              previousMonth={previousMonthName}
-              today={today.day}
-              bookingsByDay={monthBookingsByDay}
-              previousBookings={overview.month.previousBookings}
-              collectedByDay={monthCollectedByDay}
-              previousCollectedCents={overview.month.previousCollectedCents}
-              fillRate={stats.fillRate}
+            <div className="hidden lg:contents">
+              <div aria-hidden="true" className="h-6 shrink-0" />
+              <MonthBand
+                period={period}
+                previousMonth={previousMonthName}
+                today={today.day}
+                bookingsByDay={monthBookingsByDay}
+                previousBookings={overview.month.previousBookings}
+                collectedByDay={monthCollectedByDay}
+                previousCollectedCents={overview.month.previousCollectedCents}
+                fillRate={stats.fillRate}
+              />
+            </div>
+          </div>
+          <div className="px-4 pt-[18px] lg:hidden">
+            <MonthCard
+              month={{
+                bookings: bookingsThisMonth,
+                fillRate: stats.fillRate,
+                collectedCents: collectedThisMonth,
+              }}
             />
           </div>
         </>
@@ -234,7 +242,7 @@ export function DashboardPage({ data }: { data: Awaited<ReturnType<typeof getDas
       <Link
         href="/app/plus"
         aria-label="Compte et paramètres"
-        className="absolute top-[30px] right-4 flex size-[38px] items-center justify-center rounded-full bg-linear-135 from-[#f7b27e] to-[#e8743b] text-[13px] font-bold text-white lg:hidden"
+        className="absolute top-[30px] right-4 flex size-[38px] items-center justify-center rounded-full bg-accent-gradient text-[13px] font-bold text-white lg:hidden"
       >
         {user.image ? (
           <img src={user.image} alt="" className="size-full rounded-full object-cover" />

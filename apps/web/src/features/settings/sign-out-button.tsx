@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Button } from "@/components/ui/button";
 import { authClient } from "@/lib/auth-client";
 import { useRouter } from "@/lib/navigation";
 
@@ -14,13 +15,8 @@ export function SignOutButton() {
   }
 
   return (
-    <button
-      type="button"
-      onClick={signOut}
-      disabled={pending}
-      className="flex h-[46px] items-center justify-center rounded-full border border-[#dadad6] text-[15px] font-semibold leading-[18px] text-danger focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
-    >
+    <Button variant="danger" onClick={signOut} pending={pending} className="w-full">
       {pending ? "Déconnexion…" : "Se déconnecter"}
-    </button>
+    </Button>
   );
 }
