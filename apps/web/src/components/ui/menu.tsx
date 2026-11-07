@@ -31,7 +31,7 @@ const TAB_BAR = 80;
  * la barre d'onglets sur mobile). Il suit son bouton quand la page défile (un défilement
  * qui finit juste après le toucher ne le ferme pas) et se ferme quand le bouton sort de
  * l'écran, au clic extérieur ou avec Échap ; flèches, Début et Fin pour passer d'une
- * entrée à l'autre.
+ * entrée à l'autre. Sous `lg` (écran tactile), c'est une feuille d'actions qui monte du bas.
  */
 export function ActionMenu({
   label,
@@ -45,6 +45,8 @@ export function ActionMenu({
 }) {
   const [open, setOpen] = useState(false);
   const [position, setPosition] = useState<{ top: number; left: number } | null>(null);
+  /** Feuille d'actions en bas de l'écran (mobile et tablette) plutôt que menu flottant. */
+  const [sheet, setSheet] = useState(false);
   const trigger = useRef<HTMLDivElement>(null);
   const menu = useRef<HTMLDivElement>(null);
   const menuId = useId();
@@ -82,12 +84,15 @@ export function ActionMenu({
   }, []);
 
   useLayoutEffect(() => {
-    if (open) place();
-  }, [open, place]);
+    if (open && !sheet) place();
+  }, [open, sheet, place]);
 
   useEffect(() => {
     if (!open) return;
     const onPointer = (event: PointerEvent) => {
+      // Feuille : le fond et « Annuler » ferment au clic (fermer dès l'appui ferait tomber le
+      // clic sur la ligne en dessous).
+      if (sheet) return;
       const target = event.target as Node;
       if (!trigger.current?.contains(target) && !menu.current?.contains(target)) close();
     };
@@ -95,6 +100,7 @@ export function ActionMenu({
       if (event.key === "Escape") close(true);
     };
     const onMove = (event: Event) => {
+      if (sheet) return;
       if (event.type === "scroll" && menu.current?.contains(event.target as Node)) return;
       const anchor = trigger.current?.getBoundingClientRect();
       if (!anchor || anchor.bottom < 0 || anchor.top > window.innerHeight) close();
@@ -110,14 +116,14 @@ export function ActionMenu({
       window.removeEventListener("scroll", onMove, true);
       window.removeEventListener("resize", onMove);
     };
-  }, [open, close, place]);
+  }, [open, sheet, close, place]);
 
-  // Focus sur la première entrée dès que le menu est placé.
+  // Focus sur la première entrée dès que le menu est placé (fond visible au clavier seulement).
   useEffect(() => {
-    if (open && position) {
+    if (open && (position || sheet)) {
       menu.current?.querySelector<HTMLElement>("[role=menuitem]:not(:disabled)")?.focus();
     }
-  }, [open, position]);
+  }, [open, position, sheet]);
 
   const onMenuKey = (event: ReactKeyboardEvent<HTMLDivElement>) => {
     const entries = [
@@ -137,10 +143,11 @@ export function ActionMenu({
 
   const itemClasses = (tone?: "danger") =>
     cn(
-      "block w-full rounded-xl px-3 py-2.5 text-left text-sm font-semibold transition-colors focus:outline-none disabled:opacity-50",
+      "block w-full rounded-xl text-left font-semibold transition-colors focus:outline-none disabled:opacity-50",
+      sheet ? "px-4 py-3.5 text-base" : "px-3 py-2.5 text-sm",
       tone === "danger"
-        ? "text-danger hover:bg-danger-bg focus:bg-danger-bg"
-        : "text-ink hover:bg-field focus:bg-field",
+        ? "text-danger hover:bg-danger-bg focus-visible:bg-danger-bg"
+        : "text-ink hover:bg-field focus-visible:bg-field",
     );
 
   return (
@@ -151,11 +158,79 @@ export function ActionMenu({
         aria-haspopup="menu"
         aria-expanded={open}
         aria-controls={open ? menuId : undefined}
-        onClick={() => (open ? close() : setOpen(true))}
+        onClick={() => {
+          if (open) return close();
+          setSheet(window.matchMedia("(max-width: 1023px)").matches);
+          setOpen(true);
+        }}
       >
         <KebabIcon />
       </IconButton>
       {open &&
+        sheet &&
+        createPortal(
+          <div className="fixed inset-0 z-[60] flex flex-col justify-end">
+            <button
+              type="button"
+              aria-label="Fermer"
+              tabIndex={-1}
+              onClick={() => close(true)}
+              className="absolute inset-0 animate-fade cursor-default bg-ink/40"
+            />
+            <div className="relative flex animate-rise flex-col gap-2 px-2 pb-[calc(8px+env(safe-area-inset-bottom))]">
+              <div
+                ref={menu}
+                id={menuId}
+                role="menu"
+                aria-label={label}
+                tabIndex={-1}
+                onKeyDown={onMenuKey}
+                className="flex flex-col overflow-hidden rounded-3xl bg-surface p-1.5"
+              >
+                <p className="px-4 pt-2 pb-1 text-xs font-semibold leading-4 text-ink-subtle">
+                  {label}
+                </p>
+                {items.map((item) =>
+                  "href" in item ? (
+                    <Link
+                      key={item.label}
+                      href={item.href}
+                      role="menuitem"
+                      className={itemClasses(item.tone)}
+                      onClick={() => close()}
+                    >
+                      {item.label}
+                    </Link>
+                  ) : (
+                    <button
+                      key={item.label}
+                      type="button"
+                      role="menuitem"
+                      disabled={item.disabled}
+                      className={itemClasses(item.tone)}
+                      onClick={() => {
+                        close();
+                        item.onSelect();
+                      }}
+                    >
+                      {item.label}
+                    </button>
+                  ),
+                )}
+              </div>
+              <button
+                type="button"
+                onClick={() => close(true)}
+                className="h-12 rounded-3xl bg-surface text-base font-semibold text-ink"
+              >
+                Annuler
+              </button>
+            </div>
+          </div>,
+          document.body,
+        )}
+      {open &&
+        !sheet &&
         createPortal(
           <div
             ref={menu}
