@@ -17,6 +17,7 @@ import { cn } from "@/lib/cn";
 import { formatMoney } from "@/lib/format";
 import { useRouter } from "@/lib/navigation";
 import { PLAN_PREVIEWS, type PlanPreview } from "@/lib/plan-preview";
+import { toast } from "@/lib/toast";
 
 type Data = Awaited<ReturnType<typeof getBillingSettings>>;
 
@@ -79,7 +80,6 @@ function sourceBadge(data: Data): { label: string; tone: Tone } {
 export function BillingSettingsPage({ data, paid }: { data: Data; paid: boolean }) {
   const [interval, setInterval] = useState<BillingInterval>(data.subscription?.interval ?? "month");
   const [pending, setPending] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
   const current = PLANS[data.plan];
   const badge = sourceBadge(data);
   const subscribed = Boolean(data.subscription) && data.subscription?.status !== "canceled";
@@ -100,14 +100,26 @@ export function BillingSettingsPage({ data, paid }: { data: Data; paid: boolean 
     };
   }, [waiting]);
 
+  // Messages du retour de paiement, une fois chacun : en attente, puis formule active.
+  const announced = useRef<"none" | "waiting" | "active">("none");
+  useEffect(() => {
+    if (!paid || announced.current === "active") return;
+    if (subscribed) {
+      announced.current = "active";
+      toast(`Merci ! Ta formule ${current.name} est active.`);
+    } else if (announced.current === "none") {
+      announced.current = "waiting";
+      toast("Paiement validé : ta formule s'active dans quelques secondes.", { tone: "info" });
+    }
+  }, [paid, subscribed, current.name]);
+
   /** Paiement ou portail chez Polar : le navigateur part sur leur page. */
   async function go(key: string, request: () => Promise<string>) {
     setPending(key);
-    setError(null);
     try {
       window.location.assign(await request());
     } catch {
-      setError("Le paiement n'a pas pu s'ouvrir. Réessaie dans un instant.");
+      toast("Le paiement n'a pas pu s'ouvrir. Réessaie dans un instant.", { tone: "error" });
       setPending(null);
     }
   }
@@ -119,14 +131,6 @@ export function BillingSettingsPage({ data, paid }: { data: Data; paid: boolean 
       subtitle={`Formule ${current.name} · ${badge.label.toLowerCase()}`}
     >
       <div className="flex flex-col gap-4">
-        {paid && (
-          <FormAlert tone="success">
-            {waiting
-              ? "Merci ! Ton paiement est validé : la formule s'active dans quelques secondes."
-              : `Merci ! Ta formule ${current.name} est active.`}
-          </FormAlert>
-        )}
-        {error && <FormAlert>{error}</FormAlert>}
         {data.preview && <PreviewSwitcher />}
 
         <section

@@ -43,6 +43,7 @@ import { Tabs } from "@/components/ui/tabs";
 import { Tag } from "@/components/ui/tag";
 import { Timeline } from "@/components/ui/timeline";
 import { formatDateTimeShort } from "@/lib/format";
+import { toast } from "@/lib/toast";
 import { BOOKINGS, CALENDAR_EVENTS, CATEGORIES, NOW, TODAY, UPCOMING } from "./demo-data";
 import { FormDemo, InteractionDemo } from "./interactive-demos";
 
@@ -176,6 +177,44 @@ export function DesignSystemPage() {
           >
             dashedClasses
           </div>
+        </div>
+      </Demo>
+
+      <Demo title="Languette du notch">
+        <div className="flex flex-wrap gap-3">
+          <Button variant="secondary" onClick={() => toast("Modifications enregistrées.")}>
+            Confirmation
+          </Button>
+          <Button
+            variant="secondary"
+            onClick={() =>
+              toast("Le paiement n'a pas pu s'ouvrir. Réessaie dans un instant.", { tone: "error" })
+            }
+          >
+            Erreur
+          </Button>
+          <Button
+            variant="secondary"
+            onClick={() =>
+              toast("Réservation annulée par le client · Léa Martin", {
+                tone: "warning",
+                href: "/app/reservations",
+              })
+            }
+          >
+            Attention
+          </Button>
+          <Button
+            variant="secondary"
+            onClick={() =>
+              toast("Demain : Atelier céramique · 14:00 · 8 sur 10", {
+                tone: "info",
+                href: "/app/evenements",
+              })
+            }
+          >
+            Info avec lien
+          </Button>
         </div>
       </Demo>
 

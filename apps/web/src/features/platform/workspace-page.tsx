@@ -17,6 +17,7 @@ import {
 import { cn } from "@/lib/cn";
 import { useRouter } from "@/lib/navigation";
 import { ROLE_LABELS } from "@/lib/roles";
+import { useSuccessToast } from "@/lib/toast";
 import { useFormAction } from "@/lib/use-form-action";
 import type { FormState } from "@/server/form-state";
 import { PlanBadge, shortDay } from "./shared";
@@ -311,6 +312,7 @@ function GrantForm({ organizationId }: { organizationId: string }) {
     (_previous, form) => grantPlatformLicence({ data: form }),
     {},
   );
+  useSuccessToast(state);
   return (
     <form
       onSubmit={onSubmit}
@@ -350,7 +352,6 @@ function GrantForm({ organizationId }: { organizationId: string }) {
         </Field>
       </div>
       {state.error && <FormAlert>{state.error}</FormAlert>}
-      {state.success && <FormAlert tone="success">{state.success}</FormAlert>}
       <Button type="submit" size="sm" disabled={pending} className="self-start">
         {pending ? "…" : "Accorder la licence"}
       </Button>

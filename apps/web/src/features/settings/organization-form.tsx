@@ -15,6 +15,7 @@ import { cardShellClasses, FormSection } from "@/components/ui/section";
 import { checkWorkspaceSlug, saveOrganizationAction } from "@/functions/settings";
 import { cn } from "@/lib/cn";
 import { textOn } from "@/lib/colors";
+import { useSuccessToast } from "@/lib/toast";
 import { useFormAction } from "@/lib/use-form-action";
 import type { FormState } from "@/server/form-state";
 import type { SlugCheck } from "@/server/settings";
@@ -56,6 +57,7 @@ export function OrganizationForm({
   events: PreviewEvent[];
 }) {
   const { state, onSubmit } = useFormAction<FormState>(saveOrganizationAction, {});
+  useSuccessToast(state);
   const errors = state.fieldErrors ?? {};
   const [name, setName] = useState(initial.name);
   const [slug, setSlug] = useState(initial.slug);
@@ -88,7 +90,6 @@ export function OrganizationForm({
         className="flex min-w-0 flex-1 flex-col gap-4"
       >
         {state.error && <FormAlert>{state.error}</FormAlert>}
-        {state.success && <FormAlert tone="success">{state.success}</FormAlert>}
         {!editable && (
           <FormAlert tone="info">
             Seuls le propriétaire et les admins peuvent modifier ces réglages.

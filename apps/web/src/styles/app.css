@@ -51,6 +51,12 @@
   --color-success-on-ink: #8fd6ac;
   --color-danger-on-ink: #f2a3a3;
   --color-warning-on-ink: #f5c96b;
+  --color-info-on-ink: #a9c1f2;
+  /* Couleurs vives de la languette du notch : pastille et halo. */
+  --color-success-vivid: #12b76a;
+  --color-danger-vivid: #f04438;
+  --color-warning-vivid: #f79009;
+  --color-info-vivid: #2e7cf6;
 
   --color-success: #397a5c;
   --color-success-bg: #e4efe9;

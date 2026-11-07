@@ -1,10 +1,13 @@
 /** Recherche du notch et notifications : logique serveur (voir functions/notch.ts). */
 import {
+  countPendingBookings,
+  countUnreadNotifications,
   listBookings,
   listCustomers,
   listEvents,
   listItems,
   listNotifications,
+  listNotificationsSince,
   markNotificationsRead,
   tenantSettingsReader,
 } from "@horaya/db";
@@ -129,4 +132,35 @@ export async function openNotifications(): Promise<NotificationItem[]> {
     when: formatRelativeDateTime(row.createdAt, settings.timezone),
     unread: row.readAt === null,
   }));
+}
+
+export interface LiveShell {
+  /** Heure du serveur : le prochain passage repart d'ici (pas de l'horloge du navigateur). */
+  now: string;
+  pendingBookings: number;
+  unreadNotifications: number;
+  /** Notifications arrivées depuis le dernier passage, à montrer sous le notch. */
+  fresh: { id: string; type: string; message: string; link: string | null }[];
+}
+
+/** Coque de l'admin en direct : compteurs et nouvelles notifications depuis `since`. */
+export async function pollShell(since: Date): Promise<LiveShell> {
+  const { organizationId, memberId } = await requireMember();
+  const now = new Date();
+  const [pendingBookings, unreadNotifications, fresh] = await Promise.all([
+    countPendingBookings(db, organizationId),
+    countUnreadNotifications(db, memberId),
+    listNotificationsSince(db, memberId, since),
+  ]);
+  return {
+    now: now.toISOString(),
+    pendingBookings,
+    unreadNotifications,
+    fresh: fresh.map((row) => ({
+      id: row.id,
+      type: row.type,
+      message: row.body ? `${row.title} · ${row.body}` : row.title,
+      link: row.link,
+    })),
+  };
 }

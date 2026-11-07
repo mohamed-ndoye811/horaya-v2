@@ -2,9 +2,11 @@ import { createFileRoute, Outlet } from "@tanstack/react-router";
 import { ImpersonationBar } from "@/components/app/impersonation-bar";
 import { MobileTabBar, MobileTopBar } from "@/components/app/mobile-nav";
 import { Notch } from "@/components/app/notch";
+import { PillToast, ToastAnnouncer } from "@/components/app/notch-toast";
 import { RouteTransition } from "@/components/motion/route-transition";
 import { ScrollZone } from "@/components/motion/scroll-zone";
 import { getAppShell } from "@/functions/app-shell";
+import { useLiveShell } from "@/lib/live-shell";
 
 /**
  * Coque de l'admin (DA v4) : sur grand écran, un cadre noir de 6 px autour de l'écran et le
@@ -18,8 +20,9 @@ export const Route = createFileRoute("/app")({
 });
 
 function AppLayout() {
-  const { user, workspace, pendingBookings, unreadNotifications, impersonating } =
-    Route.useLoaderData();
+  const shell = Route.useLoaderData();
+  const { user, workspace, impersonating } = shell;
+  const { pendingBookings, unreadNotifications } = useLiveShell(shell);
   return (
     // Mobile : le haut de l'écran (encoche, application installée) reste libre.
     <div className="flex min-h-dvh flex-1 flex-col pt-[env(safe-area-inset-top)] lg:h-dvh lg:min-h-0 lg:flex-none lg:bg-ink lg:p-1.5">
@@ -44,6 +47,8 @@ function AppLayout() {
           workspace={workspace}
         />
       </ScrollZone>
+      <PillToast />
+      <ToastAnnouncer />
     </div>
   );
 }

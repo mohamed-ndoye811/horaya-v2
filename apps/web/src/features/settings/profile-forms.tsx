@@ -7,6 +7,7 @@ import { Checkbox, Field, FieldError, inputClasses, PasswordInput } from "@/comp
 import { FormAlert } from "@/components/ui/form-alert";
 import { FormSection } from "@/components/ui/section";
 import { changePasswordAction, saveProfileAction } from "@/functions/settings";
+import { useSuccessToast } from "@/lib/toast";
 import { useFormAction } from "@/lib/use-form-action";
 import type { FormState } from "@/server/form-state";
 
@@ -16,12 +17,12 @@ export function ProfileForm({
   initial: { firstName: string; lastName: string; email: string; image: string | null };
 }) {
   const { state, onSubmit, pending } = useFormAction<FormState>(saveProfileAction, {});
+  useSuccessToast(state);
   const errors = state.fieldErrors ?? {};
   return (
     <form id="profile-form" onSubmit={onSubmit} className="flex flex-col gap-5">
       <FormSection number={1} title="Toi">
         {state.error && <FormAlert>{state.error}</FormAlert>}
-        {state.success && <FormAlert tone="success">{state.success}</FormAlert>}
         <ProfilePhoto name={`${initial.firstName} ${initial.lastName}`} image={initial.image} />
         <div className="grid gap-4 sm:grid-cols-2">
           <Field label="Prénom" required error={errors.firstName}>
@@ -86,12 +87,12 @@ export function PasswordForm() {
     }
     return result;
   }, {});
+  useSuccessToast(state);
   const errors = state.fieldErrors ?? {};
   return (
     <form ref={formRef} onSubmit={onSubmit} className="flex flex-col gap-5">
       <FormSection number={2} title="Mot de passe">
         {state.error && !state.fieldErrors && <FormAlert>{state.error}</FormAlert>}
-        {state.success && <FormAlert tone="success">{state.success}</FormAlert>}
         <div className="grid items-start gap-4 sm:grid-cols-2">
           <Field label="Mot de passe actuel" required>
             {(field) => (

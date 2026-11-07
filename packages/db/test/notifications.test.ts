@@ -4,6 +4,7 @@ import {
   countUnreadNotifications,
   createNotifications,
   listNotifications,
+  listNotificationsSince,
   markNotificationsRead,
 } from "../src/queries";
 import { createMember, createOrganization, db, testDeps } from "./helpers";
@@ -42,6 +43,10 @@ describe("notifications dans l'app", () => {
       readAt: null,
     });
     expect(await countUnreadNotifications(db, ownerId)).toBe(1);
+    // En direct : seulement ce qui est arrivé après le dernier passage.
+    expect(await listNotificationsSince(db, ownerId, new Date(0))).toHaveLength(1);
+    const later = new Date((entry?.createdAt.getTime() ?? Date.now()) + 1000);
+    expect(await listNotificationsSince(db, ownerId, later)).toEqual([]);
 
     await markNotificationsRead(db, ownerId);
     expect(await countUnreadNotifications(db, ownerId)).toBe(0);

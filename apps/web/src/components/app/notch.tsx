@@ -14,9 +14,11 @@ import { BellIcon, SearchIcon } from "@/components/ui/icons";
 import { cn } from "@/lib/cn";
 import { initials } from "@/lib/format";
 import { Link, usePathname } from "@/lib/navigation";
+import { useToast } from "@/lib/toast";
 import { HorayaMark } from "./logo";
 import { AccountPanel, isActive, NAV, NotificationsPanel, SearchPanel } from "./notch-panels";
 import { NOTCH_BAR_HEIGHT, notchShape } from "./notch-shape";
+import { NotchToast } from "./notch-toast";
 
 /* Languette du libellé : les courbes en S du notch, ramenées à 32 px de haut (28 px de large). */
 const TAB_EAR_LEFT = "M0 0 C15.3 0 12.7 32 28 32 L29 32 L29 0 Z";
@@ -286,17 +288,18 @@ export function Notch({ user, workspace, pendingBookings, unreadNotifications }:
     close();
   }, [pathname]);
 
-  // Un panneau s'ouvre : plus de libellé.
+  // Un panneau s'ouvre, ou un message sort sous le notch : plus de libellé.
+  const toastShown = useToast() !== null && !panel;
   useEffect(() => {
-    if (panel) hideHint();
-  }, [panel, hideHint]);
+    if (panel || toastShown) hideHint();
+  }, [panel, toastShown, hideHint]);
 
   /**
    * Libellé sous le notch (« sous-notch ») pour l'icône survolée ou focalisée : les icônes ne
    * bougent pas, la languette glisse de l'une à l'autre. Les espaces entre icônes la gardent.
    */
   function pointAt(target: EventTarget, root: HTMLElement) {
-    if (!(target instanceof Element) || panel || muted.current) return;
+    if (!(target instanceof Element) || panel || toastShown || muted.current) return;
     const item = target.closest<HTMLElement>("[data-notch-label]");
     if (!item) {
       if (target.closest("a, button")) hideHint();
@@ -376,6 +379,7 @@ export function Notch({ user, workspace, pendingBookings, unreadNotifications }:
       >
         {/* Toujours monté (caché pendant un panneau) : il garde sa largeur et sa place. */}
         <SubNotch hint={hint} />
+        <NotchToast hidden={Boolean(panel)} />
         <svg
           ref={svgRef}
           aria-hidden="true"
