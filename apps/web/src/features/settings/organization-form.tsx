@@ -1,20 +1,23 @@
-import { DISPLAY_FONTS } from "@horaya/core";
+import { BRAND_COLOR_PRESETS, DISPLAY_FONTS } from "@horaya/core";
 import { useEffect, useState } from "react";
 import { useImageUpload } from "@/components/app/image-upload";
-import { Button } from "@/components/ui/button";
-import { Field, inputClasses, textareaClasses } from "@/components/ui/field";
+import { Button, monoLinkClasses } from "@/components/ui/button";
+import {
+  AffixInput,
+  Field,
+  FieldError,
+  inputClasses,
+  textareaClasses,
+} from "@/components/ui/field";
 import { FormAlert } from "@/components/ui/form-alert";
 import { Check } from "@/components/ui/icons";
-import { FormSection } from "@/components/ui/section";
+import { cardShellClasses, FormSection } from "@/components/ui/section";
 import { checkWorkspaceSlug, saveOrganizationAction } from "@/functions/settings";
 import { cn } from "@/lib/cn";
 import { textOn } from "@/lib/colors";
 import { useFormAction } from "@/lib/use-form-action";
 import type { FormState } from "@/server/form-state";
 import type { SlugCheck } from "@/server/settings";
-
-/** Couleurs proposées (écran 24) ; toute couleur hexadécimale reste possible. */
-const PRESETS = ["#528D74", "#264489", "#66537C", "#CF879C", "#B4532A"];
 
 const FONT_CLASSES: Record<string, string> = {
   display: "font-headline",
@@ -128,34 +131,26 @@ export function OrganizationForm({
                 </Field>
                 <Field label="Adresse de la page publique" error={errors.slug}>
                   {(field) => (
-                    <div
-                      className={cn(
-                        "flex h-11 overflow-hidden rounded-xl border bg-field focus-within:border-ink",
-                        errors.slug ||
-                          slugCheck?.state === "taken" ||
-                          slugCheck?.state === "invalid"
-                          ? "border-danger"
-                          : "border-line-soft",
-                      )}
-                    >
-                      <span className="flex shrink-0 items-center border-r border-line-soft bg-[#efefec] px-3.5 text-sm text-ink-subtle">
-                        horaya.app/
-                      </span>
-                      <span className="flex min-w-0 flex-1 items-center gap-3 px-3.5">
-                        <input
-                          {...field}
-                          name="slug"
-                          required
-                          maxLength={48}
-                          value={slug}
-                          onChange={(event) =>
-                            setSlug(event.target.value.toLowerCase().replace(/\s+/g, "-"))
-                          }
-                          className="h-full min-w-0 flex-1 bg-transparent font-mono text-sm text-ink outline-none"
-                        />
-                        <SlugStatus check={slugCheck} />
-                      </span>
-                    </div>
+                    <AffixInput
+                      {...field}
+                      // Adresse prise ou invalide : cadre rouge avant même l'envoi.
+                      aria-invalid={
+                        field["aria-invalid"] ||
+                        slugCheck?.state === "taken" ||
+                        slugCheck?.state === "invalid" ||
+                        undefined
+                      }
+                      prefix="horaya.app/"
+                      suffix={<SlugStatus check={slugCheck} />}
+                      mono
+                      name="slug"
+                      required
+                      maxLength={48}
+                      value={slug}
+                      onChange={(event) =>
+                        setSlug(event.target.value.toLowerCase().replace(/\s+/g, "-"))
+                      }
+                    />
                   )}
                 </Field>
               </div>
@@ -204,7 +199,7 @@ export function OrganizationForm({
                 Couleur de marque
               </legend>
               <div className="flex flex-wrap items-center gap-3">
-                {PRESETS.map((preset) => {
+                {BRAND_COLOR_PRESETS.map((preset) => {
                   const selected = preset.toUpperCase() === color.toUpperCase();
                   return (
                     <label
@@ -228,24 +223,24 @@ export function OrganizationForm({
                     </label>
                   );
                 })}
-                <input
-                  aria-label="Couleur hexadécimale"
-                  value={hex}
-                  maxLength={7}
-                  onChange={(event) => {
-                    const value = event.target.value.startsWith("#")
-                      ? event.target.value
-                      : `#${event.target.value}`;
-                    setHex(value.toUpperCase());
-                    if (/^#[0-9A-Fa-f]{6}$/.test(value)) setColor(value.toUpperCase());
-                  }}
-                  className="ml-2 h-10 w-[110px] rounded-xl border border-line-soft bg-field px-3.5 font-mono text-sm uppercase text-ink outline-none focus:border-ink"
-                />
+                <div className="ml-2 w-[110px]">
+                  <input
+                    aria-label="Couleur hexadécimale"
+                    value={hex}
+                    maxLength={7}
+                    onChange={(event) => {
+                      const value = event.target.value.startsWith("#")
+                        ? event.target.value
+                        : `#${event.target.value}`;
+                      setHex(value.toUpperCase());
+                      if (/^#[0-9A-Fa-f]{6}$/.test(value)) setColor(value.toUpperCase());
+                    }}
+                    className={cn(inputClasses("sm"), "font-mono uppercase")}
+                  />
+                </div>
                 <input type="hidden" name="brandColor" value={color} />
               </div>
-              {errors.brandColor && (
-                <p className="text-[13px] font-semibold text-danger">{errors.brandColor}</p>
-              )}
+              {errors.brandColor && <FieldError>{errors.brandColor}</FieldError>}
             </fieldset>
             <fieldset className="flex flex-col gap-2.5">
               <legend className="mb-2.5 text-[13px] font-semibold text-ink">
@@ -367,7 +362,7 @@ export function OrganizationForm({
             Live
           </span>
         </div>
-        <div className="flex flex-col overflow-hidden rounded-3xl bg-surface shadow-[0_1px_2px_rgba(0,0,0,0.04),0_16px_40px_rgba(0,0,0,0.06)]">
+        <div className={cn(cardShellClasses, "overflow-hidden")}>
           <div
             className="flex items-center gap-2.5 px-4 py-4"
             style={{ backgroundColor: color, color: onColor }}
@@ -420,7 +415,7 @@ export function OrganizationForm({
           href={`/${initial.slug}`}
           target="_blank"
           rel="noreferrer"
-          className="px-1 text-[13px] font-semibold text-ink hover:underline"
+          className={cn(monoLinkClasses, "px-1")}
         >
           Ouvrir la page publique →
         </a>
@@ -462,16 +457,11 @@ function ImageActions({
   );
   return (
     <div className="flex flex-wrap items-center gap-3 rounded-2xl bg-field px-3 py-2.5">
-      <Button variant="secondary" pending={pending} onClick={pick} className="h-9 px-4 text-[13px]">
+      <Button variant="secondary" size="xs" pending={pending} onClick={pick}>
         {image ? change : add}
       </Button>
       {image && (
-        <Button
-          variant="secondary"
-          disabled={pending}
-          onClick={remove}
-          className="h-9 px-4 text-[13px]"
-        >
+        <Button variant="secondary" size="xs" disabled={pending} onClick={remove}>
           Retirer
         </Button>
       )}

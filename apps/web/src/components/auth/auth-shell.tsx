@@ -1,6 +1,8 @@
 import type { ReactNode } from "react";
 import { HorayaWordmark } from "@/components/app/logo";
 import { stagger, WordsReveal } from "@/components/motion/words";
+import { StatusBadge } from "@/components/ui/badge";
+import { inkCardClasses } from "@/components/ui/section";
 import { cn } from "@/lib/cn";
 import { Link } from "@/lib/navigation";
 import { OnboardingSteps } from "./onboarding-steps";
@@ -30,14 +32,14 @@ function SampleEvents() {
           </p>
           <p className="text-base font-semibold leading-5 text-ink">Atelier tournage</p>
           <div className="flex items-center gap-2.5">
-            <span className="flex h-1 flex-1 rounded-full bg-[#ededeb]">
+            <span className="flex h-1 flex-1 rounded-full bg-bg">
               <span className="h-1 w-3/4 rounded-full bg-ink" />
             </span>
             <span className="font-mono text-[11px] font-semibold text-ink">9 / 12</span>
           </div>
         </div>
       </div>
-      <div className="hidden w-[250px] shrink-0 flex-col overflow-hidden rounded-[20px] bg-[#1c1c1c] xl:flex">
+      <div className="hidden w-[250px] shrink-0 flex-col overflow-hidden rounded-[20px] bg-ink-raised xl:flex">
         <div
           className="h-[180px] bg-cover bg-center"
           style={{ backgroundImage: "url(/auth/seminaire.jpg)" }}
@@ -47,9 +49,11 @@ function SampleEvents() {
             <span className="size-2 rounded-[3px] bg-cat-seminaire" />
             Jeu. 19 juin · 9 h
           </p>
-          <p className="text-base font-semibold leading-5 text-white">Séminaire Ardèche</p>
-          <span className="w-fit rounded-full bg-success-bg px-[9px] py-[3px] text-[11px] font-bold leading-[14px] text-success">
-            Complet
+          <p className="text-base font-semibold leading-5 text-on-ink">Séminaire Ardèche</p>
+          <span className="w-fit">
+            <StatusBadge tone="success" size="sm">
+              Complet
+            </StatusBadge>
           </span>
         </div>
       </div>
@@ -74,11 +78,11 @@ export function BrandAside({
   return (
     <>
       <div className="flex flex-col gap-5">
-        <p className="font-headline text-[clamp(52px,5vw,72px)] leading-[1] tracking-[-0.045em] text-white">
+        <p className="font-headline text-[clamp(52px,5vw,72px)] leading-[1] tracking-[-0.045em] text-on-ink">
           <WordsReveal>{title}</WordsReveal>
         </p>
         <p
-          className="reveal max-w-[440px] text-lg leading-[27px] text-[#9a9ea8]"
+          className="reveal max-w-[440px] text-lg leading-[27px] text-on-ink-muted"
           style={stagger(3)}
         >
           {lead}
@@ -137,7 +141,7 @@ export function AuthShell({
           viewBox={`0 0 ${notch.width} 56`}
           className="absolute -top-1.5 left-0"
         >
-          <path d={notch.path} fill="#111111" />
+          <path d={notch.path} fill="var(--color-ink)" />
         </svg>
         <div className="relative flex h-[50px] items-center justify-center text-on-ink">
           {step ? (
@@ -151,7 +155,12 @@ export function AuthShell({
       </div>
 
       <div className="auth-fields flex flex-1 gap-4 lg:min-h-0 lg:overflow-y-auto lg:rounded-[10px] lg:bg-bg lg:px-4 lg:pt-[68px] lg:pb-4">
-        <aside className="hidden w-[620px] max-w-[46%] shrink-0 flex-col justify-between gap-10 overflow-hidden rounded-3xl bg-ink p-10 lg:flex">
+        <aside
+          className={cn(
+            inkCardClasses,
+            "hidden w-[620px] max-w-[46%] shrink-0 flex-col justify-between gap-10 overflow-hidden rounded-3xl p-10 lg:flex",
+          )}
+        >
           {aside}
         </aside>
 

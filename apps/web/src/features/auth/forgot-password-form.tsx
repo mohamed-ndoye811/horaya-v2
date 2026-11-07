@@ -68,7 +68,7 @@ export function ForgotPasswordForm() {
       <div className="flex flex-col gap-6">
         <span
           aria-hidden="true"
-          className="flex size-16 items-center justify-center rounded-2xl bg-ink text-white"
+          className="flex size-16 items-center justify-center rounded-2xl bg-ink text-on-ink"
         >
           <Envelope size={22} />
         </span>
@@ -80,13 +80,9 @@ export function ForgotPasswordForm() {
             pour choisir un nouveau mot de passe.
           </AuthLead>
         </div>
-        <p
-          role="status"
-          className="flex items-center gap-2.5 rounded-2xl bg-success-bg px-4 py-3 text-sm font-semibold text-success"
-        >
-          <Check size={14} />
+        <FormAlert tone="success" icon={<Check size={14} />}>
           E-mail envoyé · valable 30 minutes
-        </p>
+        </FormAlert>
         {error && <FormAlert>{error}</FormAlert>}
         <Button
           size="lg"

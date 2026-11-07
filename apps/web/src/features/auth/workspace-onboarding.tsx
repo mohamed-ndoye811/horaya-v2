@@ -2,7 +2,7 @@ import { BRAND_COLOR_PRESETS, slugify, TENANT_SECTORS } from "@horaya/core";
 import { useEffect, useState } from "react";
 import { AuthLead, AuthShell, AuthTitle } from "@/components/auth/auth-shell";
 import { Button } from "@/components/ui/button";
-import { Field, inputClasses } from "@/components/ui/field";
+import { Field, FieldError, inputClasses } from "@/components/ui/field";
 import { FormAlert } from "@/components/ui/form-alert";
 import { Check } from "@/components/ui/icons";
 import { checkSlug, createWorkspace } from "@/functions/auth";
@@ -142,9 +142,7 @@ export function WorkspaceOnboarding() {
               </label>
             ))}
           </div>
-          {state.fieldErrors?.sector && (
-            <p className="text-[13px] font-semibold text-danger">{state.fieldErrors.sector}</p>
-          )}
+          {state.fieldErrors?.sector && <FieldError>{state.fieldErrors.sector}</FieldError>}
         </fieldset>
 
         <fieldset className="flex flex-col gap-2">
@@ -231,8 +229,8 @@ function PublicPagePreview({ name, slug, color }: { name: string; slug: string; 
   return (
     <div className="flex flex-1 flex-col gap-5">
       <div className="flex items-center justify-between gap-3 text-[13px]">
-        <span className="font-medium text-[#9a9ea8]">Aperçu en direct</span>
-        <span className="flex min-w-0 items-center gap-2 font-mono text-xs text-[#9a9ea8]">
+        <span className="font-medium text-on-ink-muted">Aperçu en direct</span>
+        <span className="flex min-w-0 items-center gap-2 font-mono text-xs text-on-ink-muted">
           <span className="size-1.5 shrink-0 rounded-full bg-success" />
           <span className="truncate">horaya.app/{slug || "ton-espace"}</span>
         </span>

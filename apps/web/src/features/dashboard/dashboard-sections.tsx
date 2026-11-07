@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import { Avatar } from "@/components/ui/avatar";
 import { StatusBadge } from "@/components/ui/badge";
 import { BoxIcon, TicketIcon } from "@/components/ui/icons";
+import { inkCardClasses } from "@/components/ui/section";
 import { BOOKING_STATUS_BADGE } from "@/components/ui/status";
 import { cn } from "@/lib/cn";
 import { meshCover } from "@/lib/cover";
@@ -45,7 +46,7 @@ function TodoCard({
       href={href}
       className={cn(
         "flex min-h-[116px] flex-col justify-between gap-3 rounded-[28px] px-[18px] py-4 transition-[scale,box-shadow] hover:shadow-[0_12px_32px_rgba(0,0,0,0.08)] active:scale-[0.99]",
-        accent ? "bg-linear-135 from-[#f0975f] to-[#d8723a] text-white" : "bg-surface text-ink",
+        accent ? "bg-accent-gradient text-white" : "bg-surface text-ink",
       )}
     >
       <div className="flex items-start justify-between gap-3">
@@ -96,7 +97,7 @@ export function TodoCards({
           <>
             <span className="flex -space-x-1.5">
               {pending.people.map((person) => (
-                <span key={person.fullName} className="rounded-full ring-2 ring-[#e8843f]">
+                <span key={person.fullName} className="rounded-full ring-2 ring-accent">
                   <Avatar name={person.fullName} size="sm" />
                 </span>
               ))}
@@ -121,14 +122,10 @@ export function TodoCards({
         value={toCollect.count}
       >
         {toCollect.link > 0 && (
-          <span className="rounded-full bg-warning-bg px-2.5 py-1 text-xs font-bold leading-4 text-warning">
-            {plural(toCollect.link, "lien")}
-          </span>
+          <StatusBadge tone="warning">{plural(toCollect.link, "lien")}</StatusBadge>
         )}
         {toCollect.onSite > 0 && (
-          <span className="rounded-full bg-warning-bg px-2.5 py-1 text-xs font-bold leading-4 text-warning">
-            {toCollect.onSite} sur place
-          </span>
+          <StatusBadge tone="warning">{toCollect.onSite} sur place</StatusBadge>
         )}
       </TodoCard>
       <TodoCard
@@ -267,7 +264,7 @@ export function TodayCard({
                   "size-3 shrink-0 rounded-full",
                   state.tone === "success"
                     ? "bg-accent shadow-[0_0_0_4px_rgba(240,151,95,0.22)]"
-                    : "border-2 border-[#cfcfcc] bg-surface",
+                    : "border-2 border-line-strong bg-surface",
                 )}
               />
               <span className={cn("w-0.5 flex-1", index < entries.length - 1 && "bg-line-soft")} />
@@ -394,7 +391,7 @@ export function NextDaysCards({
                   <span
                     className={cn(
                       "block h-1 rounded-full",
-                      state.tone === "low" ? "bg-[#ff9f80]" : "bg-white",
+                      state.tone === "low" ? "bg-danger-on-ink" : "bg-white",
                     )}
                     style={{ width: `${Math.round(ratio * 100)}%` }}
                   />
@@ -403,8 +400,8 @@ export function NextDaysCards({
                   className={cn(
                     "text-xs leading-4",
                     state.tone === "muted" ? "text-white/75" : "font-semibold",
-                    state.tone === "almost" && "text-[#f5c96b]",
-                    state.tone === "low" && "text-[#ff9f80]",
+                    state.tone === "almost" && "text-warning-on-ink",
+                    state.tone === "low" && "text-danger-on-ink",
                     state.tone === "full" && "text-white",
                   )}
                 >
@@ -475,7 +472,7 @@ function Delta({ value }: { value: number | null }) {
     <span
       className={cn(
         "rounded-full px-2 py-0.5 text-xs font-bold leading-4",
-        value >= 0 ? "bg-success/25 text-[#8fd6ac]" : "bg-danger/30 text-[#f2a3a3]",
+        value >= 0 ? "bg-success/25 text-success-on-ink" : "bg-danger/30 text-danger-on-ink",
       )}
     >
       {value > 0 ? "+" : value < 0 ? "−" : ""}
@@ -530,13 +527,13 @@ function MonthStat({
 }) {
   return (
     <div className="flex min-w-0 flex-1 flex-col gap-1.5 md:border-l md:border-white/10 md:pl-6">
-      <p className="flex min-w-0 items-center gap-2 text-[13px] leading-5 text-[#9a9ea8]">
+      <p className="flex min-w-0 items-center gap-2 text-[13px] leading-5 text-on-ink-muted">
         <span className="shrink-0">{label}</span>
         <Delta value={delta ?? null} />
-        <span className="truncate text-xs text-[#6f737c]">{note}</span>
+        <span className="truncate text-xs text-on-ink-subtle">{note}</span>
       </p>
       <div className="flex items-end gap-5">
-        <p className="shrink-0 font-headline text-[34px] leading-9 text-white">
+        <p className="shrink-0 font-headline text-[34px] leading-9 text-on-ink">
           {value}
           {suffix && <span className="ml-1 text-lg font-light">{suffix}</span>}
         </p>
@@ -590,8 +587,8 @@ export function MonthBand({
         className="absolute -top-6 right-0 hidden size-6 bg-[radial-gradient(circle_at_0_0,transparent_24px,var(--color-ink)_24.5px)] lg:block"
       />
       <div className="flex shrink-0 flex-col gap-1 md:w-40">
-        <p className="font-headline text-xl leading-6 text-white">Ce mois-ci</p>
-        <p className="text-xs leading-4 text-[#9a9ea8]">{period}</p>
+        <p className="font-headline text-xl leading-6 text-on-ink">Ce mois-ci</p>
+        <p className="text-xs leading-4 text-on-ink-muted">{period}</p>
       </div>
       <MonthStat
         label="Réservations"
@@ -631,21 +628,22 @@ export function MonthBand({
   );
 }
 
-/** Tableau de bord sur mobile (maquette 6.1) : deux compteurs, le programme du jour, le mois. */
+/**
+ * Tableau de bord sur téléphone (maquette 6.1) : deux compteurs et le programme du jour. Dès
+ * `md`, les sections du bureau prennent le relais.
+ */
 export function MobileSummary({
   pending,
   toCollect,
   today,
   now,
   timeZone,
-  month,
 }: {
   pending: number;
   toCollect: { count: number; amountCents: number };
   today: TodayEntry[];
   now: Date;
   timeZone: string;
-  month: { bookings: number; fillRate: number | null; collectedCents: number };
 }) {
   const stat = (href: string, dot: string, label: string, value: ReactNode, detail: string) => (
     <Link
@@ -664,7 +662,7 @@ export function MobileSummary({
   );
   const euros = formatMoney(toCollect.amountCents).replace(/\s?€$/, "");
   return (
-    <div className="flex flex-col gap-[18px] px-4 lg:hidden">
+    <div className="flex flex-col gap-[18px] px-4 md:hidden">
       <div className="flex gap-2.5">
         {stat(
           "/app/reservations?statut=pending",
@@ -692,7 +690,7 @@ export function MobileSummary({
           )}
         </h2>
         {today.length === 0 && (
-          <p className="border-t border-[#f4f4f2] px-4 py-4 text-sm leading-[18px] text-ink-subtle">
+          <p className="border-t border-line-faint px-4 py-4 text-sm leading-[18px] text-ink-subtle">
             Rien au programme aujourd'hui.
           </p>
         )}
@@ -706,7 +704,7 @@ export function MobileSummary({
             <Link
               key={`${entry.kind}-${entry.id}`}
               href={href}
-              className="flex min-h-[62px] items-center gap-3 border-t border-[#f4f4f2] px-4 py-2.5"
+              className="flex min-h-[62px] items-center gap-3 border-t border-line-faint px-4 py-2.5"
             >
               <span className="w-11 shrink-0 font-mono text-xs font-semibold leading-4 text-ink">
                 {formatHour(entry.startsAt, timeZone)}
@@ -728,9 +726,9 @@ export function MobileSummary({
               </span>
               {entry.kind === "event" &&
                 (full ? (
-                  <span className="rounded-full bg-success-bg px-2 py-[3px] text-[11px] font-bold leading-[14px] text-success">
+                  <StatusBadge tone="success" size="sm">
                     Complet
-                  </span>
+                  </StatusBadge>
                 ) : (
                   <span className="font-mono text-xs font-semibold leading-4 text-ink">
                     {entry.seatsHeld}
@@ -741,26 +739,39 @@ export function MobileSummary({
           );
         })}
       </section>
-
-      <section className="flex flex-col gap-3.5 rounded-[22px] bg-ink p-[18px]">
-        <h2 className="text-[13px] font-semibold leading-4 text-[#9a9ea8]">Ce mois-ci</h2>
-        <dl className="flex justify-between gap-3">
-          {[
-            [String(month.bookings), "réservations", "text-white"],
-            [month.fillRate === null ? "—" : `${month.fillRate} %`, "remplissage", "text-white"],
-            [formatMoney(month.collectedCents), "encaissé", "text-accent"],
-          ].map(([value, label, color]) => (
-            <div key={label} className="flex flex-col-reverse gap-0.5">
-              <dt className="text-[11px] leading-[14px] text-ink-subtle">{label}</dt>
-              <dd
-                className={cn("text-[26px] font-medium leading-[30px] tracking-[-0.03em]", color)}
-              >
-                {value}
-              </dd>
-            </div>
-          ))}
-        </dl>
-      </section>
     </div>
+  );
+}
+
+/** « Ce mois-ci » sous `lg` (maquette 6.1), à la place de la bande noire du bureau. */
+export function MonthCard({
+  month,
+}: {
+  month: { bookings: number; fillRate: number | null; collectedCents: number };
+}) {
+  return (
+    <section className={cn(inkCardClasses, "flex flex-col gap-3.5 rounded-[22px] p-[18px]")}>
+      <h2 className="text-[13px] font-semibold leading-4 text-on-ink-muted">Ce mois-ci</h2>
+      <dl className="flex justify-between gap-3">
+        {[
+          [String(month.bookings), "réservations", "text-on-ink"],
+          [month.fillRate === null ? "—" : `${month.fillRate} %`, "remplissage", "text-on-ink"],
+          [formatMoney(month.collectedCents), "encaissé", "text-accent"],
+        ].map(([value, label, color]) => (
+          <div key={label} className="flex min-w-0 flex-col-reverse gap-0.5">
+            <dt className="text-[11px] leading-[14px] text-ink-subtle">{label}</dt>
+            {/* Trois montants côte à côte : un peu plus petits sur téléphone pour tenir en 390 px. */}
+            <dd
+              className={cn(
+                "text-[22px] font-medium leading-[26px] tracking-[-0.03em] sm:text-[26px] sm:leading-[30px]",
+                color,
+              )}
+            >
+              {value}
+            </dd>
+          </div>
+        ))}
+      </dl>
+    </section>
   );
 }
