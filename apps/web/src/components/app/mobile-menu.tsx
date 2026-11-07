@@ -86,9 +86,10 @@ export function MobileMenu({ user, workspace, unread: unreadAtLoad, pending }: M
     const dialog = ref.current;
     if (!dialog || !open || dialog.open) return;
     dialog.showModal();
-    // Focus sur la pilule du panneau, pas sur la recherche (le clavier cacherait le menu), sans
-    // défilement : Safari ferait défiler la fenêtre pendant l'ouverture pour le montrer.
-    dialog.querySelector<HTMLElement>("[data-menu-close]")?.focus({ preventScroll: true });
+    // Focus sur le panneau (sans contour, tabindex -1), pas sur la recherche (le clavier
+    // cacherait le menu) ni sur la pilule (anneau de focus au toucher), sans défilement : Safari
+    // ferait défiler la fenêtre pendant l'ouverture pour le montrer.
+    dialog.querySelector<HTMLElement>("[data-menu-panel]")?.focus({ preventScroll: true });
     document.documentElement.style.overflow = "hidden";
   }, [open]);
 
@@ -271,8 +272,10 @@ function Panel({
       />
       <motion.div
         ref={panel}
+        tabIndex={-1}
+        data-menu-panel
         style={{ clipPath }}
-        className="absolute inset-x-3 bottom-[calc(12px+env(safe-area-inset-bottom))] flex max-h-[calc(100%-24px-env(safe-area-inset-top)-env(safe-area-inset-bottom))] flex-col rounded-[28px] bg-ink text-on-ink"
+        className="absolute inset-x-3 bottom-[calc(12px+env(safe-area-inset-bottom))] flex max-h-[calc(100%-24px-env(safe-area-inset-top)-env(safe-area-inset-bottom))] flex-col rounded-[28px] outline-none bg-ink text-on-ink"
       >
         <motion.div
           style={{ opacity: contentOpacity, y: contentY }}
@@ -347,7 +350,6 @@ function Panel({
           type="button"
           onClick={onClose}
           aria-label="Fermer le menu"
-          data-menu-close
           className={cn(pillClasses, "shrink-0")}
         >
           <PillContent
