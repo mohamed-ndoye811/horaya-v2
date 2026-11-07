@@ -38,12 +38,15 @@ export interface BookingRepository {
   listWaitlisted(eventId: string): Promise<Booking[]>;
   /** Réservations encore actives (en attente, confirmées, en liste d'attente). */
   listActive(eventId: string): Promise<Booking[]>;
-  /** Réservations actives et pas encore terminées d'un client, retrouvé par son e-mail. */
-  listUpcomingForCustomerEmail(
+  /**
+   * Changement de date : la réservation passe sur un autre événement, avec son nouveau statut ;
+   * le rappel de la veille repartira pour la nouvelle date.
+   */
+  moveToEvent(
     organizationId: string,
-    email: string,
-    now: Date,
-  ): Promise<Booking[]>;
+    bookingId: string,
+    change: { eventId: string; status: BookingStatus; confirmedAt: Date | null },
+  ): Promise<Booking>;
   updatePaymentStatus(
     organizationId: string,
     bookingId: string,

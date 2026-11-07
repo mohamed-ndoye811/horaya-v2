@@ -6,7 +6,7 @@ import {
   type EventVisibility,
   type PaymentMode,
 } from "@horaya/core";
-import { and, asc, eq, gte, sql } from "drizzle-orm";
+import { and, asc, eq, gte, type SQL, sql } from "drizzle-orm";
 import type { Executor } from "../client";
 import {
   booking,
@@ -173,7 +173,34 @@ export async function getPublicEvent(
 }
 
 /** Réservation retrouvée par le jeton de son lien « Gérer ma réservation » (déjà haché). */
-export async function getManagedBooking(db: Executor, organizationId: string, tokenHash: string) {
+export function getManagedBooking(db: Executor, organizationId: string, tokenHash: string) {
+  return findManagedBooking(
+    db,
+    and(eq(booking.organizationId, organizationId), eq(booking.manageTokenHash, tokenHash)),
+  );
+}
+
+/**
+ * Espace client (maquette 8.3) : une réservation de cet espace, seulement si sa fiche client
+ * porte l'e-mail du compte connecté.
+ */
+export function getAccountBooking(
+  db: Executor,
+  organizationId: string,
+  bookingId: string,
+  email: string,
+) {
+  return findManagedBooking(
+    db,
+    and(
+      eq(booking.organizationId, organizationId),
+      eq(booking.id, bookingId),
+      sql`lower(${customer.email}) = ${email.toLowerCase()}`,
+    ),
+  );
+}
+
+async function findManagedBooking(db: Executor, where: SQL | undefined) {
   const [row] = await db
     .select({
       id: booking.id,
@@ -204,12 +231,17 @@ export async function getManagedBooking(db: Executor, organizationId: string, to
       onlineUrl: event.onlineUrl,
       eventPaymentLinkUrl: event.paymentLinkUrl,
       typeColor: eventType.color,
+      eventId: event.id,
+      eventTypeId: event.eventTypeId,
+      eventDescription: event.description,
+      eventCoverImageUrl: event.coverImageUrl,
+      priceCents: event.priceCents,
     })
     .from(booking)
     .innerJoin(customer, eq(customer.id, booking.customerId))
     .leftJoin(event, eq(event.id, booking.eventId))
     .leftJoin(eventType, eq(eventType.id, event.eventTypeId))
-    .where(and(eq(booking.organizationId, organizationId), eq(booking.manageTokenHash, tokenHash)));
+    .where(where);
   if (!row) return null;
   const participants = await db
     .select({ firstName: bookingParticipant.firstName, lastName: bookingParticipant.lastName })
@@ -218,7 +250,7 @@ export async function getManagedBooking(db: Executor, organizationId: string, to
     .orderBy(asc(bookingParticipant.createdAt));
   return { ...row, participants };
 }
-export type ManagedBooking = NonNullable<Awaited<ReturnType<typeof getManagedBooking>>>;
+export type ManagedBooking = NonNullable<Awaited<ReturnType<typeof findManagedBooking>>>;
 
 /** Lien calendrier actif d'un espace, par son adresse (null s'il est désactivé ou inconnu). */
 export async function getPublicCalendarLink(
