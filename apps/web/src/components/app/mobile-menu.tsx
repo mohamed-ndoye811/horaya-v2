@@ -57,8 +57,9 @@ export function MobileMenu({ open, onClose, ...content }: MobileMenuProps) {
     if (!dialog || !open || dialog.open) return;
     opener.current = document.activeElement;
     dialog.showModal();
-    // Premier focus sur « Fermer », pas sur la recherche (le clavier cacherait le menu).
-    dialog.querySelector<HTMLElement>("[data-menu-close]")?.focus();
+    // Premier focus sur « Fermer », pas sur la recherche (le clavier cacherait le menu), sans
+    // défilement : la feuille est encore sous l'écran, Safari la ferait défiler pour la montrer.
+    dialog.querySelector<HTMLElement>("[data-menu-close]")?.focus({ preventScroll: true });
     document.documentElement.style.overflow = "hidden";
   }, [open]);
 
@@ -91,7 +92,8 @@ export function MobileMenu({ open, onClose, ...content }: MobileMenuProps) {
         onClose();
       }}
       onClose={onClose}
-      className="m-0 size-full max-h-none max-w-none overflow-hidden bg-transparent p-0 backdrop:bg-transparent"
+      // `overflow-clip` : aucun défilement possible, même provoqué par le focus pendant l'animation.
+      className="m-0 size-full max-h-none max-w-none overflow-clip bg-transparent p-0 backdrop:bg-transparent"
     >
       <AnimatePresence onExitComplete={closed}>
         {open && <Sheet key="menu" onClose={onClose} {...content} />}
@@ -117,7 +119,7 @@ function Sheet({ onClose, user, workspace, unread, onRead }: Omit<MobileMenuProp
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
         transition={SOFT}
-        className="absolute inset-0 cursor-default bg-ink/40"
+        className="absolute inset-0 cursor-default touch-none bg-ink/40"
       />
       <motion.div
         initial={{ y: "100%" }}
