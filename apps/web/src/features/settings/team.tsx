@@ -27,6 +27,8 @@ export interface TeamRow {
   kind: "member" | "invitation";
   name: string;
   email: string;
+  /** Photo de profil du membre (absente pour une invitation). */
+  image?: string | null;
   role: keyof typeof ROLE_LABELS;
   /** « invitée il y a 2 jours ». */
   detail?: string;
@@ -101,7 +103,7 @@ export function TeamTable({ rows, manageable }: { rows: TeamRow[]; manageable: b
 
   const memberCell = (row: TeamRow) => (
     <div className="flex min-w-0 items-center gap-3">
-      <Avatar name={row.name} size="row" pending={row.kind === "invitation"} />
+      <Avatar name={row.name} image={row.image} size="row" pending={row.kind === "invitation"} />
       <div className="flex min-w-0 flex-col gap-px">
         <span className="truncate text-sm font-semibold leading-[18px] text-ink">
           {row.name}

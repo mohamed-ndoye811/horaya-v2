@@ -55,6 +55,7 @@ export const getDashboard = createServerFn({ method: "GET" }).handler(async () =
   return {
     user: {
       name: user.name,
+      image: user.image ?? null,
       firstName: user.firstName as string | null | undefined,
       email: user.email,
       emailVerified: user.emailVerified,

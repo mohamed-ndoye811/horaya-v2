@@ -249,6 +249,7 @@ function bookingItems(db: Executor, bookingId: string, activeOnly: boolean) {
       itemId: item.id,
       name: item.name,
       reference: item.reference,
+      photoUrl: item.photoUrl,
       dailyRateCents: item.dailyRateCents,
       depositCents: item.depositCents,
       quantity: sql<number>`count(*)::int`,

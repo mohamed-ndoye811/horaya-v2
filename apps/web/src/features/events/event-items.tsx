@@ -13,6 +13,7 @@ interface Reserved {
   itemId: string;
   name: string;
   reference: string;
+  photoUrl: string | null;
   quantity: number;
   units: string;
 }
@@ -76,7 +77,7 @@ export function EventItems({
               key={entry.itemId}
               className="flex flex-wrap items-center gap-4 border-b border-line-soft py-3.5"
             >
-              <ItemTile name={entry.name} reference={entry.reference} />
+              <ItemTile name={entry.name} reference={entry.reference} photoUrl={entry.photoUrl} />
               <div className="flex min-w-0 flex-1 flex-col gap-1">
                 <Link
                   href={`/app/materiel/${entry.itemId}`}

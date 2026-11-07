@@ -236,7 +236,11 @@ export function DashboardPage({ data }: { data: Awaited<ReturnType<typeof getDas
         aria-label="Compte et paramètres"
         className="absolute top-[30px] right-4 flex size-[38px] items-center justify-center rounded-full bg-linear-135 from-[#f7b27e] to-[#e8743b] text-[13px] font-bold text-white lg:hidden"
       >
-        {initials(user.name)}
+        {user.image ? (
+          <img src={user.image} alt="" className="size-full rounded-full object-cover" />
+        ) : (
+          initials(user.name)
+        )}
       </Link>
     </>
   );

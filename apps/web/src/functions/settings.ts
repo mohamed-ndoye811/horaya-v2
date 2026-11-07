@@ -119,6 +119,7 @@ export const getMembersSettings = createServerFn({ method: "GET" }).handler(asyn
       kind: "member" as const,
       name: entry.name,
       email: entry.email,
+      image: entry.image,
       role: entry.role,
       isMe: entry.id === actor.memberId,
     })),
@@ -230,6 +231,7 @@ export const getMoreMenu = createServerFn({ method: "GET" }).handler(async () =>
   const { members } = await listTeam(db, workspace.id, new Date());
   return {
     userName: user.name,
+    userImage: user.image ?? null,
     role: actor.role,
     workspace: { name: workspace.name, slug: workspace.slug },
     members: members.length,
