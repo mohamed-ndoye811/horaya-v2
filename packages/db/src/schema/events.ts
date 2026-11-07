@@ -83,6 +83,8 @@ export const event = pgTable(
     cancelledAt: timestamp({ withTimezone: true }),
     /** Rappel de la veille envoyé à l'équipe (une seule fois). */
     reminderSentAt: timestamp({ withTimezone: true }),
+    /** Équipe prévenue que l'événement est presque complet (une seule fois). */
+    almostFullNotifiedAt: timestamp({ withTimezone: true }),
     createdAt: createdAt(),
     updatedAt: updatedAt(),
   },

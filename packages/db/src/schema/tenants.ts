@@ -51,6 +51,8 @@ export const tenantSettings = pgTable("tenant_settings", {
   paymentLinkUrl: text(),
   stripeAccountId: text(),
   stripeAccountStatus: stripeAccountStatus().notNull().default("not_connected"),
+  /** Dernier récap hebdomadaire envoyé à l'équipe (le lundi matin). */
+  weeklyDigestSentAt: timestamp({ withTimezone: true }),
   createdAt: createdAt(),
   updatedAt: updatedAt(),
 });

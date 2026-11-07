@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { type BookingMail, bookingConfirmedEmail, bookingRefusedEmail } from "./booking-templates";
+import {
+  type BookingMail,
+  bookingConfirmedEmail,
+  bookingRefusedEmail,
+  teamAlmostFullEmail,
+  weeklyDigestEmail,
+} from "./booking-templates";
 
 const mail: BookingMail = {
   workspace: { name: "Cabinet Vidal", color: "#528D74", textColor: "#F7F5F3" },
@@ -41,5 +47,43 @@ describe("e-mails aux participants", () => {
     const email = bookingConfirmedEmail({ ...mail, workspace: { ...mail.workspace, logo } });
     expect(email.html).toContain(`<img src="${logo}"`);
     expect(bookingConfirmedEmail(mail).html).not.toContain("<img");
+  });
+});
+
+describe("e-mails à l'équipe", () => {
+  const team = {
+    workspaceName: "Cabinet Vidal",
+    title: "Atelier",
+    when: "Lun. 10 nov., 18h",
+    url: "u",
+  };
+
+  it("dit combien de places restent, ou que c'est complet", () => {
+    expect(teamAlmostFullEmail({ ...team, seats: 8, capacity: 10 })).toMatchObject({
+      subject: "Presque complet : Atelier",
+    });
+    expect(teamAlmostFullEmail({ ...team, seats: 8, capacity: 10 }).text).toContain(
+      "8 places prises sur 10, plus que 2 places",
+    );
+    const full = teamAlmostFullEmail({ ...team, seats: 10, capacity: 10 });
+    expect(full.subject).toBe("Complet : Atelier");
+    expect(full.text).toContain("plus aucune de libre");
+  });
+
+  it("résume la semaine et liste les événements à venir", () => {
+    const email = weeklyDigestEmail({
+      workspaceName: "Cabinet Vidal",
+      bookings: 1,
+      seats: 3,
+      cancelled: 0,
+      pending: 2,
+      revenue: "45,00 €",
+      upcoming: [{ day: "Lun. 10 nov.", text: "18:00 · Atelier · 8 / 10 places" }],
+      url: "u",
+    });
+    expect(email.subject).toBe("Ta semaine sur Cabinet Vidal : 1 réservation");
+    expect(email.text).toContain("1 réservation (3 places), 0 annulation, 45,00 € encaissés");
+    expect(email.text).toContain("2 réservations attendent ta validation");
+    expect(email.text).toContain("18:00 · Atelier · 8 / 10 places");
   });
 });
