@@ -4,11 +4,17 @@ import {
   type BillingRate,
   billingCustomer,
   getBillingOverview,
+  grantPlan,
   type PlanId,
   prepareCheckout,
   type SubscriptionStatus,
+  setBillingRate,
+  startTrial,
 } from "@horaya/core";
+import { resetBilling } from "@horaya/db";
 import { createPolar } from "@polar-sh/sdk/2026-10";
+import type { PlanPreview } from "@/lib/plan-preview";
+import { db } from "./db";
 import { env } from "./env";
 import { deps } from "./services";
 import { getWorkspaceContext } from "./workspace";
@@ -80,6 +86,8 @@ export async function billingOverview() {
     bookings: overview.bookings,
     canManage: overview.canManage,
     available: billingAvailable,
+    /** Poste de développement : le sélecteur « Voir en tant que » s'affiche. */
+    preview: Boolean(env.POSTE),
   };
 }
 
@@ -128,4 +136,53 @@ export async function openBillingPortal(): Promise<string> {
     return_url: back,
   });
   return session.customer_portal_url;
+}
+
+/**
+ * « Voir en tant que » : remet l'espace dans une situation de facturation donnée, pour de vrai
+ * dans la base locale (les limites du core suivent). Jamais hors d'un poste de développement.
+ */
+export async function previewPlan(choice: PlanPreview): Promise<void> {
+  if (!env.POSTE) throw new Error("Réservé aux postes de développement");
+  const { workspace } = await getWorkspaceContext();
+  const id = workspace.id;
+  const inDays = (days: number) => new Date(Date.now() + days * 864e5);
+  const subscribe = (
+    plan: PaidPlan,
+    interval: BillingInterval,
+    status: SubscriptionStatus,
+    cancelAtPeriodEnd = false,
+  ) =>
+    applySubscription(deps, id, {
+      plan,
+      interval,
+      status,
+      polarCustomerId: `test_cus_${id}`,
+      polarSubscriptionId: `test_sub_${id}`,
+      currentPeriodEnd: inDays(cancelAtPeriodEnd ? 10 : interval === "year" ? 365 : 30),
+      cancelAtPeriodEnd,
+    });
+
+  await resetBilling(db, id);
+  switch (choice) {
+    case "libre":
+      return;
+    case "essai":
+      return startTrial(deps, id);
+    case "bt":
+      await setBillingRate(deps, id, "beta");
+      await grantPlan(deps, id, { kind: "beta", plan: "pro", days: null, reason: "Aperçu" });
+      return;
+    case "solidaire":
+      await setBillingRate(deps, id, "solidaire");
+      return subscribe("pro", "month", "active");
+    case "pro":
+      return subscribe("pro", "month", "active");
+    case "equipe":
+      return subscribe("equipe", "year", "active");
+    case "impaye":
+      return subscribe("pro", "month", "past_due");
+    case "resilie":
+      return subscribe("pro", "month", "active", true);
+  }
 }

@@ -7,9 +7,16 @@ import { FormAlert } from "@/components/ui/form-alert";
 import { Check } from "@/components/ui/icons";
 import { ProgressBar } from "@/components/ui/progress";
 import { SegmentedControl } from "@/components/ui/segmented";
-import { billingPortal, checkoutPlan, type getBillingSettings } from "@/functions/billing";
+import {
+  billingPortal,
+  checkoutPlan,
+  type getBillingSettings,
+  previewBilling,
+} from "@/functions/billing";
 import { cn } from "@/lib/cn";
 import { formatMoney } from "@/lib/format";
+import { useRouter } from "@/lib/navigation";
+import { PLAN_PREVIEWS, type PlanPreview } from "@/lib/plan-preview";
 
 type Data = Awaited<ReturnType<typeof getBillingSettings>>;
 
@@ -102,6 +109,7 @@ export function BillingSettingsPage({ data, paid }: { data: Data; paid: boolean 
           </FormAlert>
         )}
         {error && <FormAlert>{error}</FormAlert>}
+        {data.preview && <PreviewSwitcher />}
 
         <section
           aria-label="Ta formule"
@@ -348,5 +356,42 @@ function PlanAction({
             ? `Passer à ${PLANS[id].name}`
             : `Choisir ${PLANS[id].name}`}
     </Button>
+  );
+}
+
+/**
+ * « Voir en tant que », sur les postes de développement : met l'espace dans une situation de
+ * facturation (pour de vrai, dans la base locale) et recharge toute l'app.
+ */
+function PreviewSwitcher() {
+  const router = useRouter();
+  const [busy, setBusy] = useState<PlanPreview | null>(null);
+  return (
+    <section
+      aria-label="Voir en tant que"
+      className="flex flex-col gap-3 rounded-3xl border-[1.5px] border-dashed border-warning-line bg-warning-bg p-4"
+    >
+      <p className="text-[13px] font-semibold text-warning-strong">
+        Voir en tant que · développement seulement
+      </p>
+      <div className="flex flex-wrap gap-2">
+        {(Object.keys(PLAN_PREVIEWS) as PlanPreview[]).map((choice) => (
+          <Button
+            key={choice}
+            variant="soft"
+            size="xs"
+            disabled={busy !== null}
+            onClick={async () => {
+              setBusy(choice);
+              await previewBilling({ data: choice });
+              router.refresh();
+              setBusy(null);
+            }}
+          >
+            {busy === choice ? "…" : PLAN_PREVIEWS[choice]}
+          </Button>
+        ))}
+      </div>
+    </section>
   );
 }
