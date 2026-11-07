@@ -142,6 +142,9 @@ export function MobileMenu({ user, workspace, unread: unreadAtLoad, pending }: M
           close();
         }}
         onClose={close}
+        // Sans le fondu ni le glissement des fenêtres (app.css, hors couche : seul le style en
+        // ligne passe devant) : la pilule seule fait l'animation.
+        style={{ transition: "none", opacity: 1, scale: "1", translate: "none" }}
         // `overflow-clip` : aucun défilement possible, même provoqué par le focus pendant l'animation.
         className="m-0 size-full max-h-none max-w-none overflow-clip bg-transparent p-0 backdrop:bg-transparent"
       >
