@@ -19,14 +19,12 @@ describe("suppressions (RGPD)", () => {
     const theirs = await createOrganization("OTH");
     const owner = await createMember(mine);
     if (owner.type !== "member") throw new Error("membre attendu");
-    await db
-      .insert(member)
-      .values({
-        organizationId: theirs,
-        userId: owner.userId,
-        role: "editor",
-        createdAt: new Date(),
-      });
+    await db.insert(member).values({
+      organizationId: theirs,
+      userId: owner.userId,
+      role: "editor",
+      createdAt: new Date(),
+    });
     expect((await ownedWorkspaces(db, owner.userId)).map((entry) => entry.id)).toEqual([mine]);
   });
 
