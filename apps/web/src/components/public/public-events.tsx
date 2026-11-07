@@ -1,6 +1,8 @@
 import type { PublicEventRow } from "@horaya/db";
 import type { CSSProperties, ReactNode } from "react";
 import { WordsReveal } from "@/components/motion/words";
+import { StatusBadge, type Tone } from "@/components/ui/badge";
+import { buttonClasses } from "@/components/ui/button";
 import { cardShellClasses } from "@/components/ui/section";
 import { cn } from "@/lib/cn";
 import { meshCover } from "@/lib/cover";
@@ -38,7 +40,7 @@ export function PublicHero({
 }) {
   return (
     <section
-      className="flex min-h-[260px] flex-col justify-end gap-3.5 rounded-3xl px-6 py-7 text-white lg:h-[340px] lg:px-10 lg:py-9"
+      className="flex min-h-[260px] flex-col justify-end gap-3.5 rounded-3xl px-6 py-7 text-on-ink lg:h-[340px] lg:px-10 lg:py-9"
       style={{
         background: cover
           ? `linear-gradient(to top, rgba(17, 17, 17, 0.85), rgba(17, 17, 17, 0.1) 75%), center / cover no-repeat url("${cover}"), var(--color-ink)`
@@ -59,7 +61,7 @@ export function PublicHero({
         <WordsReveal delay={1}>{title}</WordsReveal>
       </h1>
       {lead && (
-        <p className="reveal max-w-[520px] text-[17px] leading-[25px] text-white/85">{lead}</p>
+        <p className="reveal max-w-[520px] text-[17px] leading-[25px] text-on-ink/85">{lead}</p>
       )}
     </section>
   );
@@ -70,13 +72,11 @@ export function eventBadge(
   state: BookingState,
   seats: ReturnType<typeof availability>,
   requiresApproval: boolean,
-): { label: string; className: string } | null {
-  if (state.kind === "closed")
-    return { label: "Réservations closes", className: "bg-draft-bg text-draft" };
-  if (state.kind !== "open") return { label: "Complet", className: "bg-draft-bg text-draft" };
-  if (requiresApproval) return { label: "Sur validation", className: "bg-info-bg text-info" };
-  if (seats.tone === "warning")
-    return { label: seats.label, className: "bg-warning-bg text-warning" };
+): { label: string; tone: Tone } | null {
+  if (state.kind === "closed") return { label: "Réservations closes", tone: "draft" };
+  if (state.kind !== "open") return { label: "Complet", tone: "draft" };
+  if (requiresApproval) return { label: "Sur validation", tone: "info" };
+  if (seats.tone === "warning") return { label: seats.label, tone: "warning" };
   return null;
 }
 
@@ -287,26 +287,17 @@ function EventCard({
         style={eventCover(event.coverImageUrl, event.id)}
       >
         <span className="flex w-[52px] shrink-0 flex-col items-center rounded-xl bg-surface py-1.5">
-          <span className="text-[10px] font-bold uppercase leading-3 text-[var(--brand-text)]">
+          <span className="text-[11px] font-bold uppercase leading-3 text-[var(--brand-text)]">
             {formatWeekdayShort(event.startsAt, tz)}
           </span>
           <span className="text-section font-semibold leading-6 text-ink">
             {formatDayNumber(event.startsAt, tz)}
           </span>
-          <span className="text-[10px] font-semibold uppercase leading-3 text-ink-subtle">
+          <span className="text-[11px] font-semibold uppercase leading-3 text-ink-subtle">
             {formatMonthShort(event.startsAt, tz)}
           </span>
         </span>
-        {badge && (
-          <span
-            className={cn(
-              "rounded-full px-2.5 py-[5px] text-xs font-bold leading-[14px]",
-              badge.className,
-            )}
-          >
-            {badge.label}
-          </span>
-        )}
+        {badge && <StatusBadge tone={badge.tone}>{badge.label}</StatusBadge>}
       </div>
       <div className="flex flex-1 flex-col gap-2.5 px-[18px] pt-4 pb-[18px]">
         <p className="flex items-center gap-2 text-xs font-semibold leading-4 text-ink-subtle">
@@ -398,8 +389,9 @@ function EventRow({
       <span className="w-[72px] shrink-0 text-right text-[15px] font-semibold leading-5 text-ink lg:w-[90px]">
         {event.priceCents > 0 ? formatMoney(event.priceCents) : "Gratuit"}
       </span>
-      <span className="hidden h-9 shrink-0 items-center rounded-full bg-bg px-4 text-[13px] font-bold text-ink transition-colors group-hover:bg-line sm:flex">
-        Voir
+      {/* Pas de bouton dans un lien : la pilule n'est qu'un repère visuel. */}
+      <span className="hidden shrink-0 sm:block">
+        <span className={buttonClasses({ variant: "soft", size: "xs" })}>Voir</span>
       </span>
     </Link>
   );

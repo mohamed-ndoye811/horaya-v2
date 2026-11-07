@@ -1,6 +1,7 @@
 import { isRedirect, useRouter as useTanstackRouter } from "@tanstack/react-router";
 import { useEffect, useState, useTransition } from "react";
-import { Button, buttonClasses } from "@/components/ui/button";
+import { StatusBadge, type Tone } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Dialog } from "@/components/ui/dialog";
 import { FormAlert } from "@/components/ui/form-alert";
 import {
@@ -8,7 +9,6 @@ import {
   payManagedBookingAction,
   resendBookingEmailAction,
 } from "@/functions/public";
-import { cn } from "@/lib/cn";
 import { useRouter } from "@/lib/navigation";
 
 /** « Rien reçu ? … renvoie l'e-mail. » (sur le bandeau sombre de la maquette 5.4). */
@@ -19,7 +19,7 @@ export function ResendEmail({ slug, token }: { slug: string; token: string }) {
     <p>
       Rien reçu ? Vérifie tes spams ou{" "}
       {message ? (
-        <span className="font-semibold text-white">{message}</span>
+        <span className="font-semibold text-on-ink">{message}</span>
       ) : (
         <button
           type="button"
@@ -30,7 +30,7 @@ export function ResendEmail({ slug, token }: { slug: string; token: string }) {
               setMessage(result.success ?? result.error ?? null);
             })
           }
-          className="font-semibold text-white underline underline-offset-2 disabled:cursor-not-allowed disabled:opacity-60"
+          className="tap-area font-semibold text-on-ink underline underline-offset-2 disabled:cursor-not-allowed disabled:opacity-60"
         >
           renvoie l'e-mail
         </button>
@@ -39,12 +39,6 @@ export function ResendEmail({ slug, token }: { slug: string; token: string }) {
     </p>
   );
 }
-
-const REFUND_TONES = {
-  success: "bg-success-bg text-success",
-  warning: "bg-warning-bg text-warning",
-  draft: "bg-draft-bg text-draft",
-};
 
 /** Annulation par le client (maquette 5.6) : ce qui est remboursé, puis la confirmation. */
 export function CancelBooking({
@@ -58,7 +52,7 @@ export function CancelBooking({
   token: string;
   description: string;
   /** Montant remboursé si quelque chose a été payé. */
-  refund: { label: string; amount: string; tone: keyof typeof REFUND_TONES; text: string } | null;
+  refund: { label: string; amount: string; tone: Tone; text: string } | null;
   /** Politique d'annulation quand rien n'a été payé. */
   policy: string | null;
 }) {
@@ -71,7 +65,7 @@ export function CancelBooking({
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="shrink-0 text-sm font-bold leading-[18px] text-danger hover:underline"
+        className="tap-area shrink-0 text-sm font-bold leading-[18px] text-danger hover:underline"
       >
         Annuler
       </button>
@@ -110,14 +104,12 @@ export function CancelBooking({
           {refund || error ? (
             <>
               {refund && (
-                <div
-                  className={cn("flex flex-col gap-2.5 rounded-2xl p-4", REFUND_TONES[refund.tone])}
-                >
-                  <p className="flex justify-between gap-4 text-sm font-bold leading-[18px]">
-                    <span>{refund.label}</span>
+                <div className="flex flex-col gap-2.5 rounded-2xl bg-field p-4">
+                  <p className="flex items-center justify-between gap-4 text-sm font-bold leading-[18px] text-ink">
+                    <StatusBadge tone={refund.tone}>{refund.label}</StatusBadge>
                     <span>{refund.amount}</span>
                   </p>
-                  <p className="text-[13px] leading-[19px]">{refund.text}</p>
+                  <p className="text-[13px] leading-[19px] text-ink-muted">{refund.text}</p>
                 </div>
               )}
               {error && <FormAlert>{error}</FormAlert>}
@@ -137,11 +129,10 @@ export function PayButton({ slug, token, label }: { slug: string; token: string;
   return (
     <>
       {error && <FormAlert>{error}</FormAlert>}
-      <button
-        type="button"
-        disabled={pending}
-        aria-busy={pending}
-        className={buttonClasses({ variant: "brand", size: "xl" })}
+      <Button
+        variant="brand"
+        size="xl"
+        pending={pending}
         onClick={() =>
           startTransition(async () => {
             try {
@@ -156,7 +147,7 @@ export function PayButton({ slug, token, label }: { slug: string; token: string;
         }
       >
         {pending ? "Un instant…" : label}
-      </button>
+      </Button>
     </>
   );
 }
@@ -174,7 +165,7 @@ export function PaymentPending() {
     return () => clearTimeout(timer);
   }, [tries, router]);
   return (
-    <p role="status" className="text-sm font-semibold text-white/75">
+    <p role="status" className="text-sm font-semibold text-on-ink/75">
       {tries >= 15
         ? "Le paiement met du temps à se confirmer : tu recevras un e-mail dès que c'est fait."
         : "Confirmation du paiement…"}

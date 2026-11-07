@@ -1,8 +1,10 @@
 import type { ReactNode } from "react";
 import { stagger, WordsReveal } from "@/components/motion/words";
 import { NotFoundScreen } from "@/components/public/public-not-found";
-import { buttonClasses } from "@/components/ui/button";
+import { StatusBadge, type Tone } from "@/components/ui/badge";
+import { ButtonLink, buttonClasses } from "@/components/ui/button";
 import { ArrowRight } from "@/components/ui/icons";
+import { inkCardClasses } from "@/components/ui/section";
 import type { getManagedBookingPage } from "@/functions/public";
 import { cn } from "@/lib/cn";
 import { displayFontClass } from "@/lib/fonts";
@@ -62,65 +64,67 @@ export function ManagedBookingPage({
     missing > 0 ? `${named} · ${missing} participant${missing > 1 ? "s" : ""} à compléter` : named;
   const manageHref = `/${slug}/reservation/${token}`;
   const deposit = booking.paymentMode === "deposit";
-  const paymentPill: { label: string; className: string } | null =
+  // `rest` à côté de la pastille, qui ne passe pas à la ligne (évite qu'elle déborde sur mobile).
+  const paymentPill: { label: string; tone: Tone; rest?: string } | null =
     booking.amountCents === 0
       ? null
       : refunded > 0
-        ? { label: `Remboursé ${formatMoney(refunded)}`, className: "bg-draft-bg text-draft" }
+        ? { label: `Remboursé ${formatMoney(refunded)}`, tone: "draft" }
         : paid > 0
           ? {
-              label: deposit
-                ? `Acompte payé · reste ${formatMoney(booking.amountCents - paid)} sur place`
-                : "Payé",
-              className: "bg-success-bg text-success",
+              label: deposit ? "Acompte payé" : "Payé",
+              rest: deposit
+                ? `reste ${formatMoney(booking.amountCents - paid)} sur place`
+                : undefined,
+              tone: "success",
             }
           : awaitsPayment
             ? {
                 label: deposit
-                  ? `Acompte de ${formatMoney(due)} à payer · reste ${formatMoney(booking.amountCents - due)} sur place`
+                  ? `Acompte de ${formatMoney(due)} à payer`
                   : `${formatMoney(due)} à payer en ligne`,
-                className: "bg-warning-bg text-warning",
+                rest: deposit
+                  ? `reste ${formatMoney(booking.amountCents - due)} sur place`
+                  : undefined,
+                tone: "warning",
               }
             : {
                 label:
                   booking.paymentMode === "on_site"
                     ? "À régler sur place"
                     : "À régler auprès de l'organisateur",
-                className: "bg-draft-bg text-draft",
+                tone: "draft",
               };
-  const heading: { title: string; text: string; badge: { label: string; className: string } } =
+  // « brand » : le seul ton qui n'est pas celui d'un StatusBadge (couleur de l'espace).
+  const heading: { title: string; text: string; badge: { label: string; tone: Tone | "brand" } } =
     (() => {
       if (booking.status === "cancelled")
         return {
-          badge: { label: "Annulée", className: "bg-draft-bg text-draft" },
+          badge: { label: "Annulée", tone: "draft" },
           title: "Réservation annulée",
           text: `Ta réservation de ${places} pour « ${title} » est annulée.`,
         };
       if (booking.status === "refused")
         return {
-          badge: { label: "Non retenue", className: "bg-danger-bg text-danger" },
+          badge: { label: "Non retenue", tone: "danger" },
           title: "Demande non retenue",
           text: `${workspace.name} n'a pas pu accepter ta demande pour « ${title} »${booking.refusalReason ? ` (${booking.refusalReason})` : ""}.`,
         };
       if (booking.status === "pending")
         return {
-          badge: { label: "En attente de validation", className: "bg-info-bg text-info" },
+          badge: { label: "En attente de validation", tone: "info" },
           title: fresh ? "Demande envoyée !" : "En attente de validation",
           text: `Merci ${booking.customerFirstName}. ${yourPlaces} pour « ${title} » ${agree("est retenue", "sont retenues")} en attendant la validation de ${workspace.name} : tu recevras un e-mail.`,
         };
       if (booking.status === "waitlisted")
         return {
-          badge: { label: "Liste d'attente", className: "bg-warning-bg text-warning" },
+          badge: { label: "Liste d'attente", tone: "warning" },
           title: "Sur liste d'attente",
           text: `Merci ${booking.customerFirstName}. « ${title} » est complet : si une place se libère, ta demande passe automatiquement et tu es prévenu·e par e-mail.`,
         };
       if (awaitsPayment)
         return {
-          badge: {
-            label: "Plus qu'à payer",
-            className:
-              "bg-[color-mix(in_srgb,var(--brand)_20%,transparent)] text-[var(--brand-light)]",
-          },
+          badge: { label: "Plus qu'à payer", tone: "brand" },
           title:
             channel?.kind === "stripe" && paymentReturn === "ok"
               ? "Paiement en cours"
@@ -141,7 +145,7 @@ export function ManagedBookingPage({
             : agree(" et payée", " et payées")
           : "";
       return {
-        badge: { label: "Confirmée", className: "bg-success-bg text-success" },
+        badge: { label: "Confirmée", tone: "success" },
         title: fresh ? "C'est réservé !" : "Ta réservation",
         text: `${fresh ? `Merci ${booking.customerFirstName}. ` : ""}${yourPlaces} pour « ${title} » ${agree("est confirmée", "sont confirmées")}${paidNote}.`,
       };
@@ -149,15 +153,16 @@ export function ManagedBookingPage({
 
   return (
     <div className="mx-auto flex w-full max-w-[1000px] flex-col gap-4">
-      <section className="flex flex-col gap-[18px] rounded-3xl bg-ink p-6 text-white sm:p-8">
-        <span
-          className={cn(
-            "w-fit rounded-full px-3 py-[5px] text-xs font-bold leading-[14px]",
-            heading.badge.className,
-          )}
-        >
-          {heading.badge.label}
-        </span>
+      <section className={cn(inkCardClasses, "flex flex-col gap-[18px] rounded-3xl p-6 sm:p-8")}>
+        {heading.badge.tone === "brand" ? (
+          <span className="h-6 w-fit rounded-full bg-[color-mix(in_srgb,var(--brand)_20%,transparent)] px-2.5 text-xs font-bold leading-6 text-[var(--brand-light)]">
+            {heading.badge.label}
+          </span>
+        ) : (
+          <span className="w-fit">
+            <StatusBadge tone={heading.badge.tone}>{heading.badge.label}</StatusBadge>
+          </span>
+        )}
         <h1
           className={cn(
             "text-[36px] leading-10 tracking-[-0.04em] sm:text-[48px] sm:leading-[52px]",
@@ -167,7 +172,7 @@ export function ManagedBookingPage({
           <WordsReveal>{heading.title}</WordsReveal>
         </h1>
         <p
-          className="reveal max-w-[620px] text-[17px] leading-[26px] text-white/75"
+          className="reveal max-w-[620px] text-[17px] leading-[26px] text-on-ink/75"
           style={stagger(3)}
         >
           {heading.text}
@@ -180,28 +185,25 @@ export function ManagedBookingPage({
             <PayButton slug={slug} token={token} label={`Payer ${formatMoney(due)}`} />
           )}
           {awaitsPayment && channel?.kind === "link" && (
-            <a
+            <ButtonLink
               href={channel.url}
               target="_blank"
               rel="noreferrer"
-              className={buttonClasses({ variant: "brand", size: "xl" })}
+              variant="brand"
+              size="xl"
             >
               Payer {formatMoney(due)} ↗
-            </a>
+            </ButtonLink>
           )}
           {fresh && !awaitsPayment && (
-            <Link
-              href={manageHref}
-              className="flex h-[54px] items-center justify-center gap-2 rounded-full bg-white px-[26px] text-base font-semibold text-ink transition-colors hover:bg-field"
-            >
+            <ButtonLink href={manageHref} variant="inverse" size="xl" arrow>
               Gérer ma réservation
-              <ArrowRight />
-            </Link>
+            </ButtonLink>
           )}
           <div className="flex flex-col gap-1 text-sm leading-[18px] text-notch-idle">
             <p>
               {fresh ? "Confirmation envoyée à " : "Envoyée à "}
-              <span className="break-all font-semibold text-white">{booking.customerEmail}</span>
+              <span className="break-all font-semibold text-on-ink">{booking.customerEmail}</span>
             </p>
             {active && <ResendEmail slug={slug} token={token} />}
           </div>
@@ -232,14 +234,10 @@ export function ManagedBookingPage({
             <span className="flex flex-wrap items-center gap-2.5">
               {booking.amountCents > 0 ? formatMoney(booking.amountCents) : "Gratuit"}
               {paymentPill && (
-                <span
-                  className={cn(
-                    "rounded-full px-2.5 py-1 text-xs font-bold leading-[14px]",
-                    paymentPill.className,
-                  )}
-                >
-                  {paymentPill.label}
-                </span>
+                <StatusBadge tone={paymentPill.tone}>{paymentPill.label}</StatusBadge>
+              )}
+              {paymentPill?.rest && (
+                <span className="text-[13px] font-medium text-ink-muted">{paymentPill.rest}</span>
               )}
             </span>
           </Fact>
@@ -338,7 +336,7 @@ function AgendaLink({
       href={href}
       {...(external ? { target: "_blank", rel: "noreferrer" } : {})}
       {...(download ? { download: "reservation.ics" } : {})}
-      className="flex h-9 items-center rounded-full bg-bg px-3.5 text-[13px] font-semibold text-ink transition-colors hover:bg-line"
+      className={buttonClasses({ variant: "soft", size: "xs" })}
     >
       {children}
     </a>

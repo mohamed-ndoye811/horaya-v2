@@ -3,8 +3,9 @@ import { WordsReveal } from "@/components/motion/words";
 import { eventBadge, eventCover } from "@/components/public/public-events";
 import { NotFoundScreen } from "@/components/public/public-not-found";
 import { SeatPicker } from "@/components/public/seat-picker";
-import { buttonClasses } from "@/components/ui/button";
-import { ArrowLeft, ArrowRight, Check } from "@/components/ui/icons";
+import { StatusBadge } from "@/components/ui/badge";
+import { ButtonLink } from "@/components/ui/button";
+import { ArrowLeft, Check } from "@/components/ui/icons";
 import type { getPublicEventPage } from "@/functions/public";
 import { cn } from "@/lib/cn";
 import { displayFontClass } from "@/lib/fonts";
@@ -81,13 +82,15 @@ export function PublicEventPage({
             className="flex h-[230px] shrink-0 items-start rounded-[22px] bg-cover bg-center p-3 sm:h-[400px] sm:rounded-3xl"
             style={eventCover(event.coverImageUrl, event.id)}
           >
-            <Link
+            <ButtonLink
               href={homeHref}
-              className="flex h-8 items-center gap-1.5 rounded-full bg-white/90 px-3 text-[13px] font-semibold leading-4 text-ink lg:hidden"
+              variant="secondary"
+              size="xs"
+              icon={<ArrowLeft className="size-3" />}
+              className="lg:hidden"
             >
-              <ArrowLeft className="size-3" />
               Événements
-            </Link>
+            </ButtonLink>
           </div>
           <div className="flex flex-col gap-3 px-1 pt-2 pb-1">
             <p className="flex flex-wrap items-center gap-2 text-[13px] font-semibold leading-4 text-ink-muted">
@@ -98,16 +101,7 @@ export function PublicEventPage({
               />
               {event.typeName}
               {recurrence && <span className="font-medium text-ink-subtle">· {recurrence}</span>}
-              {badge && (
-                <span
-                  className={cn(
-                    "rounded-full px-2.5 py-1 text-xs font-bold leading-[14px]",
-                    badge.className,
-                  )}
-                >
-                  {badge.label}
-                </span>
-              )}
+              {badge && <StatusBadge tone={badge.tone}>{badge.label}</StatusBadge>}
             </p>
             <h1
               className={cn(
@@ -254,7 +248,7 @@ export function PublicEventPage({
       {(state.kind === "open" || state.kind === "waitlist") && (
         <BottomNotch label="Réserver">
           <p className="flex flex-col gap-px pl-3">
-            <span className="text-lg font-semibold leading-[22px] text-white">{price}</span>
+            <span className="text-lg font-semibold leading-[22px] text-on-ink">{price}</span>
             <span className="text-[11px] leading-[14px] text-notch-idle">
               {state.kind === "waitlist"
                 ? "liste d'attente"
@@ -263,10 +257,9 @@ export function PublicEventPage({
                   : seats.label}
             </span>
           </p>
-          <Link href="#reserver" className={buttonClasses({ variant: "brand" })}>
+          <ButtonLink href="#reserver" variant="brand" arrow>
             Réserver
-            <ArrowRight />
-          </Link>
+          </ButtonLink>
         </BottomNotch>
       )}
     </div>
