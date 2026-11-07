@@ -77,6 +77,18 @@ export function describeBookingActivity(
       };
     case "booking.checked_in":
       return { title: `Arrivée pointée${by(entry)}`, tone: "success" };
+    case "booking.enrolled":
+      return {
+        title:
+          entry.actorType === "customer"
+            ? "Inscription au trimestre depuis la page publique"
+            : `Inscription au trimestre${by(entry)}`,
+        tone: "ink",
+      };
+    case "booking.absent":
+      return { title: "Absence signalée par le client · place libérée", tone: "warning" };
+    case "booking.unenrolled":
+      return { title: `Désinscription de la série${by(entry)}`, tone: "danger" };
     case "booking.check_in_undone":
       return { title: `Pointage annulé${by(entry)}`, tone: "ink" };
     default:

@@ -36,6 +36,7 @@ import { Route as PaiementTestCheckoutRouteImport } from './routes/paiement-test
 import { Route as PaiementTestCompteRouteImport } from './routes/paiement-test/compte'
 import { Route as RejoindreTokenRouteImport } from './routes/rejoindre/$token'
 import { Route as SlugEventIndexRouteImport } from './routes/$slug/$event/index'
+import { Route as SlugEventInscriptionRouteImport } from './routes/$slug/$event/inscription'
 import { Route as SlugEventReserverRouteImport } from './routes/$slug/$event/reserver'
 import { Route as SlugCalendrierLienRouteImport } from './routes/$slug/calendrier/$lien'
 import { Route as SlugMonEspaceIndexRouteImport } from './routes/$slug/mon-espace/index'
@@ -220,6 +221,11 @@ const RejoindreTokenRoute = RejoindreTokenRouteImport.update({
 const SlugEventIndexRoute = SlugEventIndexRouteImport.update({
   id: '/$event/',
   path: '/$event/',
+  getParentRoute: () => SlugRoute,
+} as any)
+const SlugEventInscriptionRoute = SlugEventInscriptionRouteImport.update({
+  id: '/$event/inscription',
+  path: '/$event/inscription',
   getParentRoute: () => SlugRoute,
 } as any)
 const SlugEventReserverRoute = SlugEventReserverRouteImport.update({
@@ -507,6 +513,7 @@ export interface FileRoutesByFullPath {
   '/$slug/': typeof SlugIndexRoute
   '/app/': typeof AppIndexRoute
   '/mon-espace/': typeof MonEspaceIndexRoute
+  '/$slug/$event/inscription': typeof SlugEventInscriptionRoute
   '/$slug/$event/reserver': typeof SlugEventReserverRoute
   '/$slug/calendrier/$lien': typeof SlugCalendrierLienRoute
   '/$slug/mon-espace/connexion': typeof SlugMonEspaceConnexionRoute
@@ -582,6 +589,7 @@ export interface FileRoutesByTo {
   '/$slug': typeof SlugIndexRoute
   '/app': typeof AppIndexRoute
   '/mon-espace': typeof MonEspaceIndexRoute
+  '/$slug/$event/inscription': typeof SlugEventInscriptionRoute
   '/$slug/$event/reserver': typeof SlugEventReserverRoute
   '/$slug/calendrier/$lien': typeof SlugCalendrierLienRoute
   '/$slug/mon-espace/connexion': typeof SlugMonEspaceConnexionRoute
@@ -661,6 +669,7 @@ export interface FileRoutesById {
   '/$slug/': typeof SlugIndexRoute
   '/app/': typeof AppIndexRoute
   '/mon-espace/': typeof MonEspaceIndexRoute
+  '/$slug/$event/inscription': typeof SlugEventInscriptionRoute
   '/$slug/$event/reserver': typeof SlugEventReserverRoute
   '/$slug/calendrier/$lien': typeof SlugCalendrierLienRoute
   '/$slug/mon-espace/connexion': typeof SlugMonEspaceConnexionRoute
@@ -741,6 +750,7 @@ export interface FileRouteTypes {
     | '/$slug/'
     | '/app/'
     | '/mon-espace/'
+    | '/$slug/$event/inscription'
     | '/$slug/$event/reserver'
     | '/$slug/calendrier/$lien'
     | '/$slug/mon-espace/connexion'
@@ -816,6 +826,7 @@ export interface FileRouteTypes {
     | '/$slug'
     | '/app'
     | '/mon-espace'
+    | '/$slug/$event/inscription'
     | '/$slug/$event/reserver'
     | '/$slug/calendrier/$lien'
     | '/$slug/mon-espace/connexion'
@@ -894,6 +905,7 @@ export interface FileRouteTypes {
     | '/$slug/'
     | '/app/'
     | '/mon-espace/'
+    | '/$slug/$event/inscription'
     | '/$slug/$event/reserver'
     | '/$slug/calendrier/$lien'
     | '/$slug/mon-espace/connexion'
@@ -1161,6 +1173,13 @@ declare module '@tanstack/react-router' {
       path: '/$event'
       fullPath: '/$slug/$event/'
       preLoaderRoute: typeof SlugEventIndexRouteImport
+      parentRoute: typeof SlugRoute
+    }
+    '/$slug/$event/inscription': {
+      id: '/$slug/$event/inscription'
+      path: '/$event/inscription'
+      fullPath: '/$slug/$event/inscription'
+      preLoaderRoute: typeof SlugEventInscriptionRouteImport
       parentRoute: typeof SlugRoute
     }
     '/$slug/$event/reserver': {
@@ -1513,6 +1532,7 @@ interface SlugRouteChildren {
   SlugMentionsLegalesRoute: typeof SlugMentionsLegalesRoute
   SlugMesReservationsRoute: typeof SlugMesReservationsRoute
   SlugIndexRoute: typeof SlugIndexRoute
+  SlugEventInscriptionRoute: typeof SlugEventInscriptionRoute
   SlugEventReserverRoute: typeof SlugEventReserverRoute
   SlugCalendrierLienRoute: typeof SlugCalendrierLienRoute
   SlugMonEspaceConnexionRoute: typeof SlugMonEspaceConnexionRoute
@@ -1529,6 +1549,7 @@ const SlugRouteChildren: SlugRouteChildren = {
   SlugMentionsLegalesRoute: SlugMentionsLegalesRoute,
   SlugMesReservationsRoute: SlugMesReservationsRoute,
   SlugIndexRoute: SlugIndexRoute,
+  SlugEventInscriptionRoute: SlugEventInscriptionRoute,
   SlugEventReserverRoute: SlugEventReserverRoute,
   SlugCalendrierLienRoute: SlugCalendrierLienRoute,
   SlugMonEspaceConnexionRoute: SlugMonEspaceConnexionRoute,

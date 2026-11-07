@@ -367,3 +367,48 @@ export function bookingRefundedEmail(
     ],
   });
 }
+
+/** Inscription à toute une série (cours à l'année) : le récapitulatif des séances réservées. */
+export function enrollmentConfirmedEmail(input: {
+  workspace: BookingMail["workspace"];
+  firstName: string;
+  title: string;
+  /** Séances réservées, déjà mises en forme (« mar. 18 nov., 18 h 30 »). */
+  sessions: string[];
+  where?: string | null;
+  /** « 300,00 € · à régler sur place ». */
+  amount?: string | null;
+  /** Lien de paiement externe, si l'inscription se règle en ligne. */
+  payUrl?: string | null;
+  manageUrl: string;
+}): EmailContent {
+  const count = `${input.sessions.length} séance${input.sessions.length > 1 ? "s" : ""}`;
+  return {
+    subject: `Inscription confirmée : ${input.title}`,
+    ...renderEmail({
+      preheader: `${count} réservées pour ${input.title}.`,
+      title: "Tu es inscrit·e !",
+      paragraphs: [
+        `Bonjour ${input.firstName},`,
+        `Ton inscription à « ${input.title} » est confirmée : une place t'attend à chacune des ${count} ci-dessous.`,
+        ...(input.payUrl
+          ? [
+              `Règle ton inscription via le lien de paiement de ${input.workspace.name} : ${input.payUrl}`,
+            ]
+          : []),
+        "Un empêchement ? Signale ton absence depuis le lien ci-dessous : ta place profite à quelqu'un d'autre, ton inscription reste.",
+      ],
+      details: [
+        ["Cours", input.title],
+        ...(input.where ? [["Où", input.where] as [string, string]] : []),
+        ...(input.amount ? [["Montant", input.amount] as [string, string]] : []),
+        ...input.sessions.map(
+          (session, index) => [`Séance ${index + 1}`, session] as [string, string],
+        ),
+      ],
+      action: { label: "Gérer mon inscription", url: input.manageUrl },
+      footnote: `Cet e-mail t'est envoyé par ${input.workspace.name} via Horaya, suite à ton inscription.`,
+      brand: input.workspace,
+    }),
+  };
+}

@@ -100,7 +100,12 @@ export async function listSeriesEnrollments(
     })
     .from(booking)
     .innerJoin(event, eq(event.id, booking.eventId))
-    .where(inArray(booking.enrollmentId, rows.map((row) => row.id)))
+    .where(
+      inArray(
+        booking.enrollmentId,
+        rows.map((row) => row.id),
+      ),
+    )
     .groupBy(booking.enrollmentId);
   const byId = new Map(counts.map((count) => [count.enrollmentId, count]));
   return rows.map((row) => ({

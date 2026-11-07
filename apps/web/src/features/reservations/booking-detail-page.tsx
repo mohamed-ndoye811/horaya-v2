@@ -10,11 +10,12 @@ import { ItemTile } from "@/components/app/item-tile";
 import { PageHeader } from "@/components/app/page-header";
 import { Avatar } from "@/components/ui/avatar";
 import { StatusBadge } from "@/components/ui/badge";
+import { Banner } from "@/components/ui/banner";
 import { rowLinkClasses } from "@/components/ui/button";
 import { EventThumb } from "@/components/ui/cells";
 import { FormAlert } from "@/components/ui/form-alert";
 import { cardClasses, dashedClasses } from "@/components/ui/section";
-import { BOOKING_STATUS_BADGE } from "@/components/ui/status";
+import { bookingStatusBadge } from "@/components/ui/status";
 import { Timeline } from "@/components/ui/timeline";
 import type { getBooking } from "@/functions/booking";
 import { describeBookingActivity } from "@/lib/activity";
@@ -160,7 +161,7 @@ export function BookingDetailPage({ data }: { data: Awaited<ReturnType<typeof ge
       ? booking.depositCents
       : booking.amountCents - paid;
   const name = `${booking.customer.firstName} ${booking.customer.lastName}`;
-  const badge = BOOKING_STATUS_BADGE[booking.status];
+  const badge = bookingStatusBadge(booking);
   const now = new Date();
   const isPending = booking.status === "pending";
   const waiting = elapsed(booking.createdAt, now);
@@ -230,6 +231,19 @@ export function BookingDetailPage({ data }: { data: Awaited<ReturnType<typeof ge
           )
         }
       />
+      {booking.enrollmentId && booking.event?.id && (
+        <div className="pb-4">
+          <Banner
+            tone="info"
+            action={
+              <Link href={`/app/evenements/${booking.event.id}?onglet=serie`}>Voir la série</Link>
+            }
+          >
+            <strong>Séance d'une inscription au trimestre</strong> : payée avec l'inscription, gérée
+            depuis l'onglet « Série » de l'événement.
+          </Banner>
+        </div>
+      )}
       <div className="flex flex-col gap-4 px-4 lg:flex-row lg:items-start">
         <div className="flex min-w-0 flex-1 flex-col gap-4">
           {isPending && (

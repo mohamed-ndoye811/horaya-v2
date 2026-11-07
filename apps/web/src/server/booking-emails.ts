@@ -8,6 +8,7 @@ import {
   claimAlmostFull,
   createNotifications,
   getBookingDetail,
+  getEnrollment,
   getWeeklyDigest,
   getWorkspaceSettings,
   listNotificationRecipients,
@@ -27,13 +28,16 @@ import {
   bookingRescheduledEmail,
   bookingWaitlistedEmail,
   type EmailContent,
+  enrollmentConfirmedEmail,
   teamAlmostFullEmail,
   teamBookingEmail,
   teamReminderEmail,
   weeklyDigestEmail,
 } from "@horaya/mail";
 import { textOn } from "@/lib/colors";
+import { enrollmentPayment } from "@/lib/enrollment";
 import {
+  formatDateTimeShort,
   formatDayNumber,
   formatEventRange,
   formatHour,
@@ -167,6 +171,72 @@ export async function sendBookingCreatedEmail(
   await send(loaded.booking.customer.email, template(mail));
 }
 
+/** Inscription à une série : récapitulatif des séances et lien de gestion (jeton en clair). */
+export async function sendEnrollmentEmail(
+  organizationId: string,
+  enrollmentId: string,
+  manageToken: string,
+) {
+  const [enrollment, workspace, settings] = await Promise.all([
+    getEnrollment(db, organizationId, { id: enrollmentId }),
+    getWorkspaceSettings(db, organizationId),
+    tenantSettingsReader(db).get(organizationId),
+  ]);
+  const first = enrollment?.sessions[0];
+  if (!enrollment || !workspace || !first) return;
+  const payment = enrollmentPayment(enrollment, workspace.paymentLinkUrl ?? null);
+  await send(
+    enrollment.customerEmail,
+    enrollmentConfirmedEmail({
+      workspace: {
+        name: workspace.name,
+        color: workspace.brandColor,
+        textColor: textOn(workspace.brandColor),
+        logo: workspace.logo ? absoluteUrl(workspace.logo) : null,
+      },
+      firstName: enrollment.customerFirstName,
+      title: first.title,
+      sessions: enrollment.sessions.map((session) =>
+        formatDateTimeShort(session.startsAt, settings.timezone),
+      ),
+      where: first.locationName,
+      amount: payment
+        ? `${formatMoney(enrollment.amountCents)} · ${payment.label.toLowerCase()}`
+        : null,
+      payUrl: payment?.payUrl ?? null,
+      manageUrl: manageUrl(workspace.slug, manageToken),
+    }),
+  );
+}
+
+/** Nouvelle inscription en ligne à une série : l'équipe est prévenue une fois (pas par séance). */
+async function notifyEnrollmentCreated(entry: ActivityEntry) {
+  if (entry.action !== "enrollment.created" || entry.actorType !== "customer") return;
+  const [enrollment, workspace] = await Promise.all([
+    getEnrollment(db, entry.organizationId, { id: entry.entityId }),
+    getWorkspaceSettings(db, entry.organizationId),
+  ]);
+  const first = enrollment?.sessions[0];
+  if (!enrollment || !workspace || !first) return;
+  const customerName = `${enrollment.customerFirstName} ${enrollment.customerLastName}`;
+  const link = `/app/evenements/${first.eventId}?onglet=serie`;
+  const summary = `${customerName} · ${first.title} · ${enrollment.sessions.length} séances`;
+  await notifyTeam(
+    entry.organizationId,
+    "booking_created",
+    teamBookingEmail({
+      workspaceName: workspace.name,
+      kind: "created",
+      customerName,
+      title: first.title,
+      seats: 1,
+      status: `inscription à ${enrollment.sessions.length} séances`,
+      url: absoluteUrl(link),
+    }),
+    { title: "Nouvelle inscription à la série", body: summary, link },
+  );
+}
+
 /** Rappel la veille au client : le lien d'origine n'est pas gardé, on mène à son espace client. */
 export async function sendBookingReminder(organizationId: string, bookingId: string) {
   const loaded = await loadBooking(organizationId, bookingId);
@@ -289,6 +359,7 @@ async function notifyTeam(
 /** Branché sur la fin des transactions (createDeps) : chaque changement de statut prévient qui de droit. */
 export async function notifyFromActivity(entries: ActivityEntry[]) {
   for (const entry of entries) {
+    if (entry.entityType === "enrollment") await notifyEnrollmentCreated(entry);
     if (entry.entityType !== "booking") continue;
     const loaded = await loadBooking(entry.organizationId, entry.entityId);
     if (!loaded) continue;

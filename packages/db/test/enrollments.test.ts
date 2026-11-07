@@ -45,7 +45,11 @@ async function weeklyCourse({
   capacity = 2,
   waitlist = false,
   dropInAllowed = true,
-}: { capacity?: number; waitlist?: boolean; dropInAllowed?: boolean } = {}) {
+}: {
+  capacity?: number;
+  waitlist?: boolean;
+  dropInAllowed?: boolean;
+} = {}) {
   const type = await createEventType(deps, owner, {
     name: `Tournage ${Math.random().toString(36).slice(2, 7)}`,
     color: "#B4532A",

@@ -232,6 +232,7 @@ export interface EventBookingRow {
   customerEmail: string;
   /** Séance réservée par une inscription à la série. */
   enrollmentId: string | null;
+  absentAt: Date | null;
 }
 
 /** Fiche d'un événement (écran 15) : événement, type, chiffres et réservations. */
@@ -265,6 +266,7 @@ export async function getEventDetail(db: Executor, organizationId: string, event
       customerName: sql<string>`${customer.firstName} || ' ' || ${customer.lastName}`,
       customerEmail: customer.email,
       enrollmentId: booking.enrollmentId,
+      absentAt: booking.absentAt,
     })
     .from(booking)
     .innerJoin(customer, eq(customer.id, booking.customerId))

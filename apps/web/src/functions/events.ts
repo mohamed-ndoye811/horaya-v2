@@ -18,6 +18,7 @@ import { formDataInput } from "@/lib/form-data";
 import { formatShortDateTime } from "@/lib/format";
 import { searchText } from "@/lib/search-params";
 import { db } from "@/server/db";
+import { seriesPanel } from "@/server/enrollments";
 import { env } from "@/server/env";
 import {
   archiveEventTypeActionImpl,
@@ -103,7 +104,7 @@ export const getNewEvent = createServerFn({ method: "GET" })
     };
   });
 
-export const EVENT_DETAIL_TABS = ["participants", "materiel", "infos"] as const;
+export const EVENT_DETAIL_TABS = ["participants", "materiel", "infos", "serie"] as const;
 export const eventSearch = z.object({
   onglet: z.enum(EVENT_DETAIL_TABS).optional().catch(undefined),
 });
@@ -130,6 +131,11 @@ export const getEvent = createServerFn({ method: "GET" })
         data.onglet === "materiel"
           ? await listItemsAvailableBetween(db, workspace.id, detail.event, detail.event.id)
           : [],
+      // Cours à l'année : réglage de la série et inscrits (onglet « Série »).
+      series:
+        data.onglet === "serie" && detail.event.seriesId
+          ? await seriesPanel(workspace.id, detail.event.seriesId)
+          : null,
     };
   });
 

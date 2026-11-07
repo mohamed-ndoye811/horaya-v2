@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { formDataInput } from "@/lib/form-data";
+import { createPublicEnrollment, enrollEventPage, reportAbsence } from "@/server/enrollments";
 import type { FormState } from "@/server/form-state";
 import {
   bookEventPage,
@@ -49,6 +50,11 @@ export const getBookEventPage = createServerFn({ method: "GET" })
   )
   .handler(({ data }) => bookEventPage(data.slug, data.event, data.lien, data.places));
 
+/** Inscription à toute la série depuis la fiche d'un cours. */
+export const getEnrollEventPage = createServerFn({ method: "GET" })
+  .validator(z.object({ slug, event: z.string().max(200) }))
+  .handler(({ data }) => enrollEventPage(data.slug, data.event));
+
 export const getManagedBookingPage = createServerFn({ method: "GET" })
   .validator(withToken)
   .handler(({ data }) => managedBookingPage(data.slug, data.token));
@@ -67,6 +73,14 @@ const bookFn = createServerFn({ method: "POST" })
       data,
     ),
   );
+const enrollFn = createServerFn({ method: "POST" })
+  .validator(formDataInput)
+  .handler(({ data }) =>
+    createPublicEnrollment(String(data.get("_slug") ?? ""), String(data.get("_event") ?? ""), data),
+  );
+const absenceFn = createServerFn({ method: "POST" })
+  .validator(withToken.extend({ eventId: z.string().uuid() }))
+  .handler(({ data }) => reportAbsence(data.slug, data.token, data.eventId));
 const payFn = createServerFn({ method: "POST" })
   .validator(withToken)
   .handler(({ data }) => payManagedBooking(data.slug, data.token));
@@ -92,6 +106,22 @@ export function createPublicBookingAction(
   form.set("_seats", String(seats));
   return bookFn({ data: form });
 }
+
+/** « Inscris-toi pour tout le trimestre » : coordonnées, puis inscription à la série. */
+export function createPublicEnrollmentAction(
+  slug: string,
+  eventSlug: string,
+  _previous: FormState,
+  form: FormData,
+) {
+  form.set("_slug", slug);
+  form.set("_event", eventSlug);
+  return enrollFn({ data: form });
+}
+
+/** « Je serai absent·e » sur une séance d'une inscription (lien de gestion). */
+export const reportAbsenceAction = (slug: string, token: string, eventId: string) =>
+  absenceFn({ data: { slug, token, eventId } });
 
 /** Reprend un paiement abandonné : redirige (erreur de redirection) vers la page de paiement. */
 export const payManagedBookingAction = (slug: string, token: string) =>

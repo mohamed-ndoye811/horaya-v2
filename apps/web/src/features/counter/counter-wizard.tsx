@@ -13,6 +13,7 @@ import { SearchInput } from "@/components/ui/search-input";
 import { dashedClasses, inkCardClasses } from "@/components/ui/section";
 import { SegmentedControl } from "@/components/ui/segmented";
 import { Stepper } from "@/components/ui/stepper";
+import { createCounterEnrollmentAction } from "@/functions/enrollments";
 import {
   type CounterResult,
   counterItemsAction,
@@ -41,6 +42,9 @@ export interface CounterEvent {
   remaining: number | null;
   capacity: number | null;
   waitlist: boolean;
+  /** Cours à l'année : prix de l'inscription à toute la série, si elle est ouverte. */
+  seriesId: string | null;
+  enrollmentPriceCents: number | null;
 }
 
 interface CustomerHit {
@@ -59,7 +63,8 @@ interface CounterItem {
   onEvent: number;
 }
 
-type Done = Extract<CounterResult, { ok: true }>;
+/** `sessions` : inscription à toute la série (nombre de séances réservées). */
+type Done = Extract<CounterResult, { ok: true }> & { sessions?: number };
 
 const DAYS = [
   { value: "today", label: "Aujourd'hui" },
@@ -108,10 +113,13 @@ export function CounterWizard({
   const [error, setError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [done, setDone] = useState<Done | null>(null);
+  const [wholeSeries, setWholeSeries] = useState(false);
   const [pending, startTransition] = useTransition();
 
   const event = events.find((entry) => entry.id === eventId);
-  const total = (event?.priceCents ?? 0) * seats;
+  // Inscription à toute la série : une place par séance restante, au prix de la série.
+  const enrolling = wholeSeries && event?.enrollmentPriceCents != null;
+  const total = enrolling ? (event?.enrollmentPriceCents ?? 0) : (event?.priceCents ?? 0) * seats;
   const full = event?.remaining !== null && event !== undefined && seats > (event.remaining ?? 0);
   const newName = `${contact.firstName} ${contact.lastName}`.trim();
   const customerName = customer?.name ?? (newName || null);
@@ -147,7 +155,7 @@ export function CounterWizard({
 
   function blocking(): string | null {
     if (!event) return "Choisis une séance.";
-    if (full && !event.waitlist)
+    if (full && !event.waitlist && !enrolling)
       return `Il ne reste que ${event.remaining} place${(event.remaining ?? 0) > 1 ? "s" : ""}.`;
     if (!customer) {
       if (!contact.firstName.trim() || !contact.lastName.trim())
@@ -163,10 +171,37 @@ export function CounterWizard({
     const problem = blocking();
     setError(problem);
     if (problem) return;
+    const who = customer ? { customerId: customer.id } : { customer: contact };
+    if (enrolling) {
+      startTransition(async () => {
+        const result = await createCounterEnrollmentAction({
+          seriesId: event?.seriesId ?? "",
+          ...who,
+          paid: total > 0 && paid,
+        });
+        if (result.ok) {
+          setDone({
+            ok: true,
+            bookingId: "",
+            reference: "",
+            status: "confirmed",
+            paymentStatus: result.paid ? "paid" : "none",
+            amountCents: result.amountCents,
+            items: [],
+            sessions: result.sessions,
+          });
+          return;
+        }
+        setError(result.error ?? "L'inscription n'a pas pu être enregistrée.");
+        setFieldErrors(result.fieldErrors ?? {});
+        if (result.fieldErrors?.customer) setCreating(true);
+      });
+      return;
+    }
     const input: CounterBookingInput = {
       eventId,
       seats,
-      ...(customer ? { customerId: customer.id } : { customer: contact }),
+      ...who,
       items: chosenItems.map(([itemId, quantity]) => ({ itemId, quantity })),
       paid: total > 0 && paid,
       paymentMethod: total > 0 && paid ? method : null,
@@ -187,6 +222,7 @@ export function CounterWizard({
     setDone(null);
     setEventId("");
     setSeats(1);
+    setWholeSeries(false);
     setCustomer(null);
     setCreating(false);
     setContact(EMPTY_CONTACT);
@@ -204,7 +240,7 @@ export function CounterWizard({
         seats={seats}
         customerName={customerName ?? ""}
         customerDetail={customer?.phone ?? (contact.phone || null)}
-        method={paid ? method : null}
+        method={paid && !done.sessions ? method : null}
         onRestart={restart}
       />
     );
@@ -216,7 +252,9 @@ export function CounterWizard({
         ? "Gratuit"
         : null
       : paid
-        ? `Payé · ${METHODS.find((entry) => entry.value === method)?.label.toLowerCase()}`
+        ? enrolling
+          ? "Payé sur place"
+          : `Payé · ${METHODS.find((entry) => entry.value === method)?.label.toLowerCase()}`
         : "Lien envoyé par e-mail";
 
   return (
@@ -274,6 +312,7 @@ export function CounterWizard({
                 onSelect={() => {
                   setEventId(entry.id);
                   setSeats(1);
+                  setWholeSeries(false);
                 }}
               />
             ))}
@@ -288,6 +327,29 @@ export function CounterWizard({
               </p>
             )}
           </div>
+          {event?.enrollmentPriceCents != null && (
+            <OptionCards
+              legend="Réserver"
+              value={wholeSeries}
+              onChange={(value) => {
+                setWholeSeries(value);
+                setSeats(1);
+              }}
+              options={[
+                {
+                  value: false,
+                  label: "Cette séance",
+                  detail:
+                    event.priceCents > 0 ? `${formatMoney(event.priceCents)} / pers.` : "Gratuit",
+                },
+                {
+                  value: true,
+                  label: "Toute la série",
+                  detail: `${formatMoney(event.enrollmentPriceCents)} · une place à chaque séance restante`,
+                },
+              ]}
+            />
+          )}
         </Section>
 
         <Section
@@ -403,8 +465,8 @@ export function CounterWizard({
           )}
         </Section>
 
-        <Section number={3} title="Matériel et paiement">
-          <div className="flex flex-wrap gap-2">
+        <Section number={3} title={enrolling ? "Paiement" : "Matériel et paiement"}>
+          <div className={cn("flex flex-wrap gap-2", enrolling && "hidden")}>
             {chosenItems.map(([id, quantity]) => (
               <span
                 key={id}
@@ -493,51 +555,20 @@ export function CounterWizard({
           )}
           {total > 0 && (
             <>
-              <fieldset className="grid gap-2 sm:grid-cols-2">
-                <legend className="sr-only">Paiement</legend>
-                {[
+              <OptionCards
+                legend="Paiement"
+                value={paid}
+                onChange={setPaid}
+                options={[
                   {
                     value: true,
                     label: "Payé sur place",
                     detail: "Espèces, carte, chèque ou virement",
                   },
                   { value: false, label: "À payer", detail: "Lien envoyé avec la confirmation" },
-                ].map((option) => (
-                  <label
-                    key={option.label}
-                    className={cn(
-                      "flex flex-col gap-0.5 rounded-[14px] px-3 py-2.5",
-                      "has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-ink",
-                      paid === option.value ? "bg-ink" : "border border-line hover:bg-field",
-                    )}
-                  >
-                    <input
-                      type="radio"
-                      name="paiement"
-                      checked={paid === option.value}
-                      onChange={() => setPaid(option.value)}
-                      className="sr-only"
-                    />
-                    <span
-                      className={cn(
-                        "text-[13px] font-semibold leading-4",
-                        paid === option.value ? "text-on-ink" : "text-ink",
-                      )}
-                    >
-                      {option.label}
-                    </span>
-                    <span
-                      className={cn(
-                        "text-[11px] leading-[14px]",
-                        paid === option.value ? "text-on-ink-muted" : "text-ink-subtle",
-                      )}
-                    >
-                      {option.detail}
-                    </span>
-                  </label>
-                ))}
-              </fieldset>
-              {paid && (
+                ]}
+              />
+              {paid && !enrolling && (
                 <fieldset className="flex flex-wrap gap-1.5">
                   <legend className="sr-only">Moyen de paiement</legend>
                   {METHODS.map((entry) => (
@@ -612,14 +643,18 @@ export function CounterWizard({
             <p className="text-sm text-on-ink-muted">Choisis une séance.</p>
           )}
           <dl className="flex flex-col border-t border-ink-line">
-            <SummaryLine
-              label={
-                event && event.priceCents > 0
-                  ? `${seats} place${seats > 1 ? "s" : ""} × ${formatMoney(event.priceCents)}`
-                  : "Places"
-              }
-              value={event ? (total > 0 ? formatMoney(total) : String(seats)) : null}
-            />
+            {enrolling ? (
+              <SummaryLine label="Toute la série" value={formatMoney(total)} />
+            ) : (
+              <SummaryLine
+                label={
+                  event && event.priceCents > 0
+                    ? `${seats} place${seats > 1 ? "s" : ""} × ${formatMoney(event.priceCents)}`
+                    : "Places"
+                }
+                value={event ? (total > 0 ? formatMoney(total) : String(seats)) : null}
+              />
+            )}
             {chosenItems.map(([id, quantity]) => (
               <SummaryLine key={id} label={`${itemName(id)} ×${quantity}`} value="attribué" />
             ))}
@@ -646,7 +681,11 @@ export function CounterWizard({
           {/* Sur mobile, le bouton est dans la barre collée en bas (ActionBar ci-dessous). */}
           <div className="hidden flex-col gap-3.5 lg:flex">
             <Button type="submit" variant="inverse" size="lg" pending={pending}>
-              {pending ? "Enregistrement…" : "Enregistrer la réservation"}
+              {pending
+                ? "Enregistrement…"
+                : enrolling
+                  ? "Enregistrer l'inscription"
+                  : "Enregistrer la réservation"}
             </Button>
             <p className="text-center text-xs leading-4 text-ink-muted">ou ⌘ Entrée</p>
           </div>
@@ -664,7 +703,11 @@ export function CounterWizard({
           }
         >
           <Button type="submit" variant="inverse" pending={pending}>
-            {pending ? "Enregistrement…" : "Enregistrer la réservation"}
+            {pending
+              ? "Enregistrement…"
+              : enrolling
+                ? "Enregistrer l'inscription"
+                : "Enregistrer la réservation"}
           </Button>
         </ActionBar>
       </div>
@@ -696,6 +739,59 @@ function Section({
       </div>
       {children}
     </section>
+  );
+}
+
+/** Deux choix en cartes (séance ou série, payé ou à payer) : la carte choisie passe en noir. */
+function OptionCards({
+  legend,
+  value,
+  onChange,
+  options,
+}: {
+  legend: string;
+  value: boolean;
+  onChange: (value: boolean) => void;
+  options: Array<{ value: boolean; label: string; detail: string }>;
+}) {
+  return (
+    <fieldset className="grid gap-2 sm:grid-cols-2">
+      <legend className="sr-only">{legend}</legend>
+      {options.map((option) => (
+        <label
+          key={option.label}
+          className={cn(
+            "flex flex-col gap-0.5 rounded-[14px] px-3 py-2.5",
+            "has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-ink",
+            value === option.value ? "bg-ink" : "border border-line hover:bg-field",
+          )}
+        >
+          <input
+            type="radio"
+            name={legend}
+            checked={value === option.value}
+            onChange={() => onChange(option.value)}
+            className="sr-only"
+          />
+          <span
+            className={cn(
+              "text-[13px] font-semibold leading-4",
+              value === option.value ? "text-on-ink" : "text-ink",
+            )}
+          >
+            {option.label}
+          </span>
+          <span
+            className={cn(
+              "text-[11px] leading-[14px]",
+              value === option.value ? "text-on-ink-muted" : "text-ink-subtle",
+            )}
+          >
+            {option.detail}
+          </span>
+        </label>
+      ))}
+    </fieldset>
   );
 }
 
@@ -890,7 +986,7 @@ function CounterDone({
           </svg>
         </span>
         <p className="reveal font-mono text-xs font-semibold leading-4 text-success">
-          Réf. {done.reference}
+          {done.sessions ? "Inscription au trimestre" : `Réf. ${done.reference}`}
         </p>
         <h2 className="font-headline text-[44px] leading-[42px] text-ink">
           <WordsReveal delay={1}>
@@ -907,7 +1003,10 @@ function CounterDone({
         </DoneRow>
         <DoneRow label="Client">
           <span className="text-[15px] font-bold leading-5 text-ink">
-            {customerName} · {seats} place{seats > 1 ? "s" : ""}
+            {customerName} ·{" "}
+            {done.sessions
+              ? `${done.sessions} séance${done.sessions > 1 ? "s" : ""}`
+              : `${seats} place${seats > 1 ? "s" : ""}`}
           </span>
           {customerDetail && (
             <span className="font-mono text-label font-medium leading-[18px] text-ink-muted">
@@ -943,9 +1042,15 @@ function CounterDone({
         <Button onClick={onRestart} arrow>
           Nouvelle saisie
         </Button>
-        <ButtonLink href={`/app/reservations/${done.bookingId}`} variant="secondary">
-          Voir la réservation
-        </ButtonLink>
+        {done.sessions ? (
+          <ButtonLink href={`/app/evenements/${event.id}?onglet=serie`} variant="secondary">
+            Voir les inscrits
+          </ButtonLink>
+        ) : (
+          <ButtonLink href={`/app/reservations/${done.bookingId}`} variant="secondary">
+            Voir la réservation
+          </ButtonLink>
+        )}
       </div>
     </div>
   );

@@ -11,7 +11,11 @@ export interface EnrollmentRepository {
   find(organizationId: string, enrollmentId: string): Promise<Enrollment | null>;
   findByManageTokenHash(organizationId: string, tokenHash: string): Promise<Enrollment | null>;
   /** Inscription en cours (non annulée) d'un client à une série. */
-  findActive(organizationId: string, seriesId: string, customerId: string): Promise<Enrollment | null>;
+  findActive(
+    organizationId: string,
+    seriesId: string,
+    customerId: string,
+  ): Promise<Enrollment | null>;
   update(
     organizationId: string,
     enrollmentId: string,

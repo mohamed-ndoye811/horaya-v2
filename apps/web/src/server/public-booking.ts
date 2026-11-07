@@ -18,6 +18,7 @@ import {
 import {
   getManagedBooking,
   getPublicEvent,
+  getSeriesOffer,
   listBookingPayments,
   listCalendarLinkEvents,
   listPublicEvents,
@@ -30,6 +31,7 @@ import { withParams } from "@/lib/search-params";
 import { sendBookingCreatedEmail } from "./booking-emails";
 import { currentCustomerAccount } from "./customer-space";
 import { db } from "./db";
+import { managedEnrollment } from "./enrollments";
 import { type FormState, toFormState } from "./form-state";
 import { absoluteUrl } from "./mailer";
 import { paymentDeps } from "./payments";
@@ -83,6 +85,12 @@ export async function publicEventPage(slug: string, eventSlug: string, lien: str
   const workspace = await publicWorkspace(slug);
   const link = await getCalendarLink(workspace.id, lien);
   const event = await getPublicEvent(db, workspace.id, eventSlug, link);
+  const now = new Date();
+  // Cours à l'année : l'inscription à toute la série, s'il reste des séances publiques.
+  const offer =
+    event?.seriesId && event.enrollmentEnabled
+      ? await getSeriesOffer(db, workspace.id, event.seriesId, now)
+      : null;
   return {
     workspace,
     linkSlug: link?.slug ?? null,
@@ -90,7 +98,14 @@ export async function publicEventPage(slug: string, eventSlug: string, lien: str
     channel: event
       ? workspacePaymentChannel(workspace, event.paymentMode, event.paymentLinkUrl)
       : null,
-    now: new Date(),
+    offer:
+      offer &&
+      offer.enrollmentPriceCents !== null &&
+      offer.sessions.length > 0 &&
+      offer.sessions.every((session) => session.visibility === "public")
+        ? offer
+        : null,
+    now,
   };
 }
 
@@ -104,7 +119,8 @@ export async function bookEventPage(
   const data = await publicEventPage(slug, eventSlug, lien);
   if (!data.event) return { ...data, seats: 1, prefill: null };
   const state = bookingState(data.event, data.now);
-  if (state.kind === "full" || state.kind === "closed") {
+  const dropInClosed = data.event.enrollmentEnabled && !data.event.dropInAllowed;
+  if (state.kind === "full" || state.kind === "closed" || dropInClosed) {
     throw redirect({
       href: withParams(`/${slug}/${eventSlug}`, { lien: data.linkSlug ?? undefined }),
     });
@@ -127,8 +143,22 @@ export async function managedBookingPage(slug: string, token: string) {
   const workspace = await publicWorkspace(slug);
   const booking = await getManagedBooking(db, workspace.id, await hashToken(token));
   const now = new Date();
-  if (!booking) return { workspace, booking: null, now } as const;
-  return { workspace, booking, now, ...(await bookingMoney(workspace, booking, now)) };
+  if (!booking) {
+    // Même adresse pour le lien de gestion d'une inscription à une série.
+    return {
+      workspace,
+      booking: null,
+      enrollment: await managedEnrollment(workspace, token, now),
+      now,
+    } as const;
+  }
+  return {
+    workspace,
+    booking,
+    enrollment: null,
+    now,
+    ...(await bookingMoney(workspace, booking, now)),
+  };
 }
 
 /**

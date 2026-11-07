@@ -4,8 +4,11 @@ import type { Executor } from "../client";
 import { booking, seriesEnrollment } from "../schema";
 
 /** Colonnes exposées au core (le hash du jeton reste en base). */
-const { manageTokenHash: _hidden, updatedAt: _updated, ...columns } =
-  getTableColumns(seriesEnrollment);
+const {
+  manageTokenHash: _hidden,
+  updatedAt: _updated,
+  ...columns
+} = getTableColumns(seriesEnrollment);
 const { manageTokenHash: _bookingHash, ...bookingColumns } = getTableColumns(booking);
 
 export function enrollmentRepository(db: Executor): EnrollmentRepository {

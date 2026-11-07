@@ -152,6 +152,8 @@ export function BookingForm({
   recap,
   payment,
   prefill,
+  action,
+  enrollment = false,
 }: {
   slug: string;
   eventSlug: string;
@@ -174,9 +176,13 @@ export function BookingForm({
   } | null;
   /** Espace client connecté : son profil remplit le participant 1. */
   prefill: { firstName: string; lastName: string; email: string; phone: string } | null;
+  /** Autre envoi que la réservation à la séance (inscription à toute la série). */
+  action?: (previous: FormState, form: FormData) => Promise<FormState>;
+  /** Inscription à la série : une seule personne, sans entreprise ni message. */
+  enrollment?: boolean;
 }) {
   const { state, onSubmit, pending } = useFormAction<FormState>(
-    createPublicBookingAction.bind(null, slug, eventSlug, linkSlug, seats),
+    action ?? createPublicBookingAction.bind(null, slug, eventSlug, linkSlug, seats),
     {},
   );
   const errors = state.fieldErrors ?? {};
@@ -185,7 +191,7 @@ export function BookingForm({
       <Checkbox
         name="terms"
         required
-        label={`J'accepte les conditions de réservation et la politique d'annulation de ${workspaceName}.`}
+        label={`J'accepte les conditions ${enrollment ? "d'inscription" : "de réservation et la politique d'annulation"} de ${workspaceName}.`}
       />
       {errors.terms && <FieldError>{errors.terms}</FieldError>}
     </div>
@@ -251,17 +257,19 @@ export function BookingForm({
                   />
                 )}
               </Field>
-              <Field label="Entreprise">
-                {(field) => (
-                  <input
-                    {...field}
-                    name="company"
-                    maxLength={120}
-                    autoComplete="organization"
-                    className={inputClasses()}
-                  />
-                )}
-              </Field>
+              {!enrollment && (
+                <Field label="Entreprise">
+                  {(field) => (
+                    <input
+                      {...field}
+                      name="company"
+                      maxLength={120}
+                      autoComplete="organization"
+                      className={inputClasses()}
+                    />
+                  )}
+                </Field>
+              )}
               {customFields.map((field) => (
                 <CustomField
                   key={field.key}
@@ -280,17 +288,19 @@ export function BookingForm({
               errors={errors}
             />
           ))}
-          <Field label="Un mot pour l'organisateur">
-            {(field) => (
-              <textarea
-                {...field}
-                name="customerMessage"
-                rows={2}
-                maxLength={1000}
-                className={textareaClasses()}
-              />
-            )}
-          </Field>
+          {!enrollment && (
+            <Field label="Un mot pour l'organisateur">
+              {(field) => (
+                <textarea
+                  {...field}
+                  name="customerMessage"
+                  rows={2}
+                  maxLength={1000}
+                  className={textareaClasses()}
+                />
+              )}
+            </Field>
+          )}
         </FormSection>
 
         {payment ? (

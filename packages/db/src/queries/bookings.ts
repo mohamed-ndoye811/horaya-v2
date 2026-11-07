@@ -83,6 +83,7 @@ export interface BookingRow {
   eventStartsAt: Date | null;
   typeColor: string | null;
   enrollmentId: string | null;
+  absentAt: Date | null;
 }
 
 /** Liste des réservations (écran 05) : statut, recherche, événement. */
@@ -123,6 +124,7 @@ export async function listBookings(
       eventStartsAt: bookingStartsAt,
       typeColor: eventType.color,
       enrollmentId: booking.enrollmentId,
+      absentAt: booking.absentAt,
     })
     .from(booking)
     .innerJoin(customer, eq(customer.id, booking.customerId))

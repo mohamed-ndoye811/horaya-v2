@@ -42,6 +42,7 @@ import { BOOKING_STATUS_BADGE, eventStatusBadge } from "@/components/ui/status";
 import { Tabs } from "@/components/ui/tabs";
 import { Tag } from "@/components/ui/tag";
 import { Timeline } from "@/components/ui/timeline";
+import { EnrollmentNextSession } from "@/features/enrollments/enrollment-progress";
 import { formatDateTimeShort } from "@/lib/format";
 import { toast } from "@/lib/toast";
 import { BOOKINGS, CALENDAR_EVENTS, CATEGORIES, NOW, TODAY, UPCOMING } from "./demo-data";
@@ -586,6 +587,41 @@ export function DesignSystemPage() {
               ]}
             />
           </div>
+        </div>
+      </Demo>
+
+      <Demo
+        title="Cours à l'année · espace client"
+        note="Maquette 8.2 : prochain cours et bloc « Ton trimestre » (séance 8 sur 12, une absence), aux couleurs de l'espace."
+      >
+        <div
+          style={{ "--brand": "#B4532A", "--brand-text": "#B4532A" } as CSSProperties}
+          className="max-w-[900px]"
+        >
+          <EnrollmentNextSession
+            timeZone={TZ}
+            courseHref={() => "#"}
+            onAbsent={async () => ({ success: "Démo" })}
+            next={{
+              eventId: "demo",
+              title: "Tournage du mardi",
+              slug: "tournage-du-mardi",
+              startsAt: new Date("2026-11-18T17:30:00Z"),
+              endsAt: new Date("2026-11-18T19:30:00Z"),
+              locationName: "Tour n° 3",
+            }}
+            progress={{
+              total: 12,
+              current: 8,
+              absences: 1,
+              finished: false,
+              endsAt: new Date("2026-12-16T19:30:00Z"),
+              sessions: Array.from({ length: 12 }, (_, index) => ({
+                state: index < 7 ? "done" : index === 7 ? "current" : "upcoming",
+                absent: index === 4,
+              })),
+            }}
+          />
         </div>
       </Demo>
 
