@@ -55,6 +55,7 @@ export const getOrganizationSettings = createServerFn({ method: "GET" }).handler
       name: settings.name,
       slug: settings.slug,
       logo: settings.logo ?? null,
+      coverImageUrl: settings.coverImageUrl ?? null,
       brandColor: settings.brandColor,
       displayFont: settings.displayFont,
       description: settings.description ?? "",

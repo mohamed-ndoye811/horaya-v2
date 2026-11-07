@@ -27,18 +27,22 @@ export function PublicHero({
   title,
   lead,
   font,
+  cover,
 }: {
   eyebrow?: ReactNode;
   title: string;
   lead?: ReactNode;
   font: string;
+  /** Couverture de l'espace ; assombrie vers le bas pour que le titre reste lisible. */
+  cover?: string | null;
 }) {
   return (
     <section
       className="flex min-h-[260px] flex-col justify-end gap-3.5 rounded-3xl px-6 py-7 text-white lg:h-[340px] lg:px-10 lg:py-9"
       style={{
-        background:
-          "radial-gradient(circle at 85% 20%, color-mix(in srgb, var(--brand) 55%, transparent), transparent 60%), var(--color-ink)",
+        background: cover
+          ? `linear-gradient(to top, rgba(17, 17, 17, 0.85), rgba(17, 17, 17, 0.1) 75%), center / cover no-repeat url("${cover}"), var(--color-ink)`
+          : "radial-gradient(circle at 85% 20%, color-mix(in srgb, var(--brand) 55%, transparent), transparent 60%), var(--color-ink)",
       }}
     >
       {eyebrow && (

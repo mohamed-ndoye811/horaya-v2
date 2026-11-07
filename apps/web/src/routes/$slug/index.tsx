@@ -32,6 +32,7 @@ function PublicWorkspacePage() {
         title={workspace.name}
         lead={workspace.description}
         font={workspace.displayFont}
+        cover={workspace.coverImageUrl}
       />
       <PublicEvents
         events={events}

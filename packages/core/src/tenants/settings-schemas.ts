@@ -65,6 +65,8 @@ export const updateTenantSettingsSchema = z
     lateCancellationRefundPercent: percent("Remboursement"),
     /** Lien de paiement par défaut de l'espace (paiement hors Horaya). */
     paymentLinkUrl: paymentLinkSchema,
+    /** Couverture de la page publique : seulement une image rangée par l'app. */
+    coverImageUrl: z.string().startsWith("/fichiers/").max(200).nullable(),
   })
   .partial();
 export type UpdateTenantSettingsInput = z.input<typeof updateTenantSettingsSchema>;

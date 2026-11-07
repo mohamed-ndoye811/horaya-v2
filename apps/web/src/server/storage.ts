@@ -18,7 +18,7 @@ const IMAGE_TYPES: Record<string, string> = {
 /** Le navigateur réduit les photos avant l'envoi : 5 Mo laisse de la marge. */
 export const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
 export const FILE_PREFIX = "/fichiers/";
-export type FileFolder = "articles" | "evenements" | "profils" | "logos";
+export type FileFolder = "articles" | "evenements" | "profils" | "logos" | "couvertures";
 
 const client =
   env.STORAGE_ENDPOINT &&

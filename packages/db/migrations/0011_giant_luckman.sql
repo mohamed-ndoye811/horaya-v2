@@ -1,0 +1,1 @@
+ALTER TABLE "tenant_settings" ADD COLUMN "cover_image_url" text;

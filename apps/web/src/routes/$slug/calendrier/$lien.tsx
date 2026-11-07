@@ -43,6 +43,7 @@ function CalendarLinkPage() {
         title={link.name}
         lead={`${events.length} événement${events.length > 1 ? "s" : ""} à venir`}
         font={workspace.displayFont}
+        cover={workspace.coverImageUrl}
       />
       <PublicEvents
         events={events}

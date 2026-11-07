@@ -6,6 +6,7 @@ describe("FILE_KEY", () => {
   it("accepte les clés rangées par l'app", () => {
     expect(FILE_KEY.test(`org_123/articles/${id}.webp`)).toBe(true);
     expect(FILE_KEY.test(`user-9/profils/${id}.png`)).toBe(true);
+    expect(FILE_KEY.test(`org_123/couvertures/${id}.jpg`)).toBe(true);
   });
   it("refuse les chemins détournés et les fichiers inattendus", () => {
     expect(FILE_KEY.test(`../articles/${id}.webp`)).toBe(false);

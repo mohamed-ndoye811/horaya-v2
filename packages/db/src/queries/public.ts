@@ -38,6 +38,7 @@ export async function getPublicWorkspace(db: Executor, slug: string) {
       name: organization.name,
       slug: organization.slug,
       logo: organization.logo,
+      coverImageUrl: tenantSettings.coverImageUrl,
       brandColor: sql<string>`coalesce(${tenantSettings.brandColor}, '#264489')`,
       displayFont: sql<string>`coalesce(${tenantSettings.displayFont}, 'display')`,
       description: tenantSettings.description,

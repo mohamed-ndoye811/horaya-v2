@@ -3,7 +3,7 @@ import type { EmailContent } from "./mailer";
 
 /** Ce que les e-mails aux participants affichent d'une réservation (déjà mis en forme). */
 export interface BookingMail {
-  workspace: { name: string; color: string; textColor: string };
+  workspace: { name: string; color: string; textColor: string; logo?: string | null };
   firstName: string;
   title: string;
   reference: string;

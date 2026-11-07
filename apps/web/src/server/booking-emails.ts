@@ -84,6 +84,7 @@ async function loadBooking(organizationId: string, bookingId: string) {
       name: workspace.name,
       color: workspace.brandColor,
       textColor: textOn(workspace.brandColor),
+      logo: workspace.logo ? absoluteUrl(workspace.logo) : null,
     },
     firstName: booking.customer.firstName,
     title,
