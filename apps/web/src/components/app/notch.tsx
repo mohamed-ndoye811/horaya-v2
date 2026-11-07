@@ -738,11 +738,11 @@ interface Choice {
   href: string;
   group: string;
   hit?: SearchHit;
-  kind: "event" | "customer" | "booking" | "action";
+  kind: "event" | "item" | "customer" | "booking" | "action";
   label: ReactNode;
 }
 
-const NO_RESULTS: SearchResults = { events: [], customers: [], bookings: [] };
+const NO_RESULTS: SearchResults = { events: [], items: [], customers: [], bookings: [] };
 
 function SearchPanel({ onClose, wide }: { onClose: () => void; wide: boolean }) {
   const router = useRouter();
@@ -793,6 +793,14 @@ function SearchPanel({ onClose, wide }: { onClose: () => void; wide: boolean }) 
       group: searching ? "Événements" : "Prochains événements",
       hit,
       kind: "event" as const,
+      label: <Highlight text={hit.title} query={trimmed} />,
+    })),
+    ...results.items.map((hit) => ({
+      key: hit.href,
+      href: hit.href,
+      group: "Matériel",
+      hit,
+      kind: "item" as const,
       label: <Highlight text={hit.title} query={trimmed} />,
     })),
     ...results.customers.map((hit) => ({
@@ -1018,7 +1026,13 @@ function SearchRow({
           className="flex size-10 shrink-0 items-center justify-center rounded-[10px] bg-white/8"
           style={{ color: hit?.color ?? "var(--color-notch-idle)" }}
         >
-          {kind === "booking" ? <ReceiptIcon size={18} /> : <TicketIcon size={18} />}
+          {kind === "booking" ? (
+            <ReceiptIcon size={18} />
+          ) : kind === "item" ? (
+            <BoxIcon size={18} />
+          ) : (
+            <TicketIcon size={18} />
+          )}
         </span>
       )}
       <span className="flex min-w-0 flex-1 flex-col gap-0.5">
