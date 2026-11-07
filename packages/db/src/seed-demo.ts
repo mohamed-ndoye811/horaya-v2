@@ -21,6 +21,7 @@ import {
   fromZonedParts,
   payBookingWithPass,
   publishEvent,
+  purchaseGiftCard,
   reportAbsenceAsCustomer,
   scheduleMaintenance,
   sellPass,
@@ -28,6 +29,7 @@ import {
   systemClock,
   toZonedParts,
   updateCustomer,
+  updateGiftCardSettings,
   updateSeriesEnrollment,
   updateTenantSettings,
 } from "@horaya/core";
@@ -42,6 +44,8 @@ import {
   event,
   eventSeries,
   eventType,
+  giftCard,
+  giftCardMovement,
   invitation,
   item,
   itemAllocation,
@@ -104,6 +108,8 @@ if (reset) {
     await tx.delete(member).where(and(eq(member.organizationId, org.id), ne(member.role, "owner")));
     for (const table of [
       notificationPreference,
+      giftCardMovement,
+      giftCard,
       passMovement,
       pass,
       passPlan,
@@ -845,6 +851,38 @@ await db.insert(invitation).values({
     }
   }
 }
+
+// Bons cadeaux (lot 32) : vente activée, un bon actif de 60 € pour Antoine (son e-mail est le
+// bénéficiaire), un bon de 50 € en attente de paiement.
+await updateGiftCardSettings(deps, actor, {
+  enabled: true,
+  amountsCents: [3000, 5000, 10000],
+  customAmount: true,
+  minCents: 2000,
+  maxCents: 30000,
+  validityMonths: 12,
+  message: "Un bon cadeau pour offrir un moment de création.",
+});
+await purchaseGiftCard(deps, actor, {
+  amountCents: 6000,
+  purchaserName: "Sophie Martin",
+  purchaserEmail: "sophie.martin@mail.com",
+  recipientName: "Antoine Leroy",
+  recipientEmail: "antoine.leroy@mail.com",
+  message: "Joyeux anniversaire !",
+  paid: true,
+});
+await purchaseGiftCard(
+  deps,
+  { type: "customer", organizationId: org.id },
+  {
+    amountCents: 5000,
+    purchaserName: "Camille Roux",
+    purchaserEmail: "camille.roux@mail.com",
+    recipientName: "Julie Moreau",
+    recipientEmail: null,
+  },
+);
 
 console.info(
   `Espace « ${org.name} » : ${Object.keys(types).length} types, ${plans.length} événements, ${bookingCount} réservations, ${Object.keys(items).length} articles, ${rentals.length} locations, ${teammates.length} coéquipiers.`,
