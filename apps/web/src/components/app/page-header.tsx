@@ -101,8 +101,9 @@ export function PageHeader({
       {toolbar && (
         <div
           // En ligne à partir de `lg` : entre 768 et 1023 px, recherche, filtres et liste ne
-          // tenaient pas sur une ligne (les filtres y restent en pilules défilantes).
-          className="reveal flex min-w-0 flex-col gap-3 lg:flex-row lg:items-center xl:ml-auto"
+          // tenaient pas sur une ligne (les filtres y restent en pilules défilantes). Faute de
+          // place (1024–1279 px), les filtres passent sous la recherche au lieu de l'écraser.
+          className="reveal flex min-w-0 flex-col gap-3 lg:flex-row lg:flex-wrap lg:items-center xl:ml-auto"
           style={stagger(3)}
         >
           {toolbar}

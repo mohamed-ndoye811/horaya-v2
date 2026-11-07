@@ -123,7 +123,7 @@ export function BookingsPage({
           counts.all > 0 && (
             <>
               <form
-                className="min-w-0 lg:flex-1 xl:max-w-[260px]"
+                className="min-w-0 lg:flex-1 lg:basis-60 xl:max-w-[260px]"
                 onSubmit={(event) => {
                   event.preventDefault();
                   const q = String(new FormData(event.currentTarget).get("q") ?? "").trim();
