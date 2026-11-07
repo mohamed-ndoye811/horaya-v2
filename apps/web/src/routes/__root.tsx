@@ -34,8 +34,16 @@ export const Route = createRootRoute({
 
 function RootDocument({ children }: { children: ReactNode }) {
   return (
-    <html lang="fr" className="h-full antialiased">
+    <html lang="fr" className="h-full antialiased" suppressHydrationWarning>
       <head>
+        {/* TEST police, à retirer avant la PR : `?police=…` choisit une variante (app.css). */}
+        <script
+          // biome-ignore lint/security/noDangerouslySetInnerHtml: test temporaire
+          dangerouslySetInnerHTML={{
+            __html:
+              'try{var p=new URLSearchParams(location.search).get("police");if(p!==null)localStorage.setItem("police",p);p=localStorage.getItem("police");if(p)document.documentElement.dataset.police=p}catch(e){}',
+          }}
+        />
         <HeadContent />
       </head>
       <body className="flex min-h-full flex-col">

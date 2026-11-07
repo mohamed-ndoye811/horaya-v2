@@ -633,3 +633,35 @@ dialog[open]::backdrop {
     display: none;
   }
 }
+
+/* TEST police, à retirer avant la PR : variantes choisies par `?police=…` (routes/__root.tsx). */
+/* 1. Urbanist plus gras : titres 700, texte d'un cran plus appuyé. */
+[data-police="urbanist-gras"] .font-headline {
+  font-weight: 700;
+  letter-spacing: -0.04em;
+}
+[data-police="urbanist-gras"] .font-section,
+[data-police="urbanist-gras"] .font-semibold {
+  font-weight: 700;
+}
+[data-police="urbanist-gras"] .font-medium {
+  font-weight: 600;
+}
+/* 2. Titres en Archivo large et gras (proche du logotype), texte en Urbanist. */
+[data-police="archivo-titres"] .font-headline,
+[data-police="archivo-titres"] .font-section {
+  font-family: "Archivo Variable", sans-serif;
+  font-stretch: 115%;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+/* 3. Tout en Archivo : titres larges et gras, texte en largeur normale. */
+[data-police="archivo"] {
+  --font-urbanist: "Archivo Variable";
+}
+[data-police="archivo"] .font-headline,
+[data-police="archivo"] .font-section {
+  font-stretch: 115%;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
