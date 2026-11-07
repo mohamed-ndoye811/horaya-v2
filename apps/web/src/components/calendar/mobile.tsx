@@ -4,6 +4,7 @@ import { cn } from "@/lib/cn";
 import { textOn } from "@/lib/colors";
 import { formatEventRange, formatHour, formatTimeRange, formatWeekdayShort } from "@/lib/format";
 import { Link } from "@/lib/navigation";
+import { calendarCard } from "./time-grid";
 import type { CalendarEvent } from "./types";
 
 /*
@@ -51,19 +52,39 @@ function Dots({ events, muted = false }: { events: CalendarEvent[]; muted?: bool
   return (
     <span aria-hidden="true" className={cn("flex gap-[3px]", muted && "opacity-50")}>
       {events.slice(0, 3).map((event) => (
-        <span key={event.id} className="size-1.5" style={{ backgroundColor: event.color }} />
+        <span
+          key={event.id}
+          className="size-1.5 rounded-full"
+          style={{ backgroundColor: event.color }}
+        />
       ))}
     </span>
   );
 }
 
-/** Numéro du jour ; encadré d'encre quand il est sélectionné. */
-function DayNumber({ day, selected, muted }: { day: number; selected: boolean; muted: boolean }) {
+/** Numéro du jour, comme le mois sur ordi : rond d'encre s'il est sélectionné, cerclé si c'est aujourd'hui. */
+function DayNumber({
+  day,
+  selected,
+  muted,
+  today = false,
+}: {
+  day: number;
+  selected: boolean;
+  muted: boolean;
+  today?: boolean;
+}) {
   return (
     <span
       className={cn(
-        "flex h-[22px] min-w-[26px] items-center justify-center px-1 text-sm font-bold leading-[18px]",
-        selected ? "bg-ink font-extrabold text-on-ink" : muted ? "text-ink-subtle" : "text-ink",
+        "flex size-[26px] items-center justify-center rounded-full text-sm font-bold leading-[18px]",
+        selected
+          ? "bg-ink text-on-ink"
+          : today
+            ? "text-ink ring-[1.5px] ring-ink"
+            : muted
+              ? "text-ink-subtle"
+              : "text-ink",
       )}
     >
       {day}
@@ -95,15 +116,16 @@ export function MonthCompact({
   const selectedKey = civilKey(selected);
 
   return (
-    <div className="border-b border-line-soft lg:hidden">
+    // La même carte que le mois sur ordi (MonthCalendar), en compact.
+    <div className={cn(calendarCard, "lg:hidden")}>
       <div aria-hidden="true" className="grid grid-cols-7 border-b border-line-soft">
         {LETTERS.map((letter, index) => (
           <span
             // biome-ignore lint/suspicious/noArrayIndexKey: deux « M » dans la semaine.
             key={index}
             className={cn(
-              "py-2 text-center font-mono text-[11px] font-semibold leading-[14px]",
-              index >= 5 ? "text-ink-muted" : "text-ink",
+              "py-2.5 text-center text-xs font-semibold uppercase leading-4 text-ink-subtle",
+              index >= 5 && "bg-band",
             )}
           >
             {letter}
@@ -113,7 +135,7 @@ export function MonthCompact({
       {weeks.map((week) => (
         <div
           key={civilKey(week[0] ?? today)}
-          className="grid grid-cols-7 border-b border-line-soft last:border-b-0"
+          className="grid grid-cols-7 border-b border-line-faint last:border-b-0"
         >
           {week.map((day, index) => {
             const key = civilKey(day);
@@ -127,17 +149,25 @@ export function MonthCompact({
                 aria-label={`${dayLabel(day)}, ${list.length} événement${list.length > 1 ? "s" : ""}`}
                 aria-current={key === selectedKey ? "date" : undefined}
                 className={cn(
-                  "flex h-[62px] flex-col items-center gap-1.5 border-r border-line-soft pt-1.5 last:border-r-0",
-                  key === todayKey ? "bg-today" : index >= 5 && "bg-weekend",
+                  "flex h-[62px] flex-col items-center gap-1 border-r border-line-faint pt-1.5 last:border-r-0",
+                  index >= 5 && "bg-band",
                 )}
               >
-                <DayNumber day={day.day} selected={key === selectedKey} muted={!day.inMonth} />
+                <DayNumber
+                  day={day.day}
+                  selected={key === selectedKey}
+                  today={key === todayKey}
+                  muted={!day.inMonth}
+                />
                 <Dots events={timed} muted={!day.inMonth} />
                 <span className="flex-1" />
                 {long[0] && (
                   <span
                     aria-hidden="true"
-                    className={cn("h-[5px] self-stretch", !day.inMonth && "opacity-50")}
+                    className={cn(
+                      "mx-1 mb-1 h-[5px] self-stretch rounded-full",
+                      !day.inMonth && "opacity-50",
+                    )}
                     style={{ backgroundColor: long[0].color }}
                   />
                 )}
@@ -167,7 +197,7 @@ export function WeekStrip({
   const byDay = groupByDay(events, timeZone);
   const todayKey = civilKey(today);
   return (
-    <div className="grid grid-cols-7 border-b border-line-soft lg:hidden">
+    <div className={cn(calendarCard, "grid grid-cols-7 lg:hidden")}>
       {days.map((day, index) => {
         const key = civilKey(day);
         const timed = (byDay.get(key) ?? []).filter((event) => !isAllDay(event, timeZone));
@@ -177,16 +207,11 @@ export function WeekStrip({
             href={dayHref(day)}
             aria-label={dayLabel(day)}
             className={cn(
-              "flex flex-col items-center gap-1 border-r border-line-soft py-2.5 last:border-r-0",
-              key === todayKey ? "bg-today" : index >= 5 && "bg-weekend",
+              "flex flex-col items-center gap-1 border-r border-line-faint py-2.5 last:border-r-0",
+              index >= 5 && "bg-band",
             )}
           >
-            <span
-              className={cn(
-                "font-mono text-[11px] font-semibold uppercase leading-[14px] tracking-[0.05em]",
-                index >= 5 ? "text-ink-muted" : "text-ink",
-              )}
-            >
+            <span className={cn("text-xs font-semibold uppercase leading-4 text-ink-subtle")}>
               {WEEKDAYS[index]}
             </span>
             <DayNumber day={day.day} selected={key === todayKey} muted={false} />
