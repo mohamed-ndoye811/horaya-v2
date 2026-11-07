@@ -24,7 +24,20 @@ function LoginPage() {
             }
           : { prompt: "Pas encore de compte ?", label: "Créer un espace", href: "/inscription" }
       }
-      footnote="En continuant, tu acceptes les conditions d'utilisation et la politique de confidentialité."
+      footnote={
+        <>
+          En continuant, tu acceptes les conditions d'utilisation et la{" "}
+          <a
+            href="/confidentialite"
+            target="_blank"
+            rel="noreferrer"
+            className="underline underline-offset-[3px]"
+          >
+            politique de confidentialité
+          </a>
+          .
+        </>
+      }
     >
       <LoginForm googleEnabled={googleEnabled} invitation={invitation ?? undefined} />
     </AuthShell>
