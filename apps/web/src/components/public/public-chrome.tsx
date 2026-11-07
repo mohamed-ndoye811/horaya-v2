@@ -1,4 +1,5 @@
 import type { CSSProperties } from "react";
+import { HorayaWordmark } from "@/components/app/logo";
 import { luminance, textOn } from "@/lib/colors";
 import { Link } from "@/lib/navigation";
 
@@ -55,7 +56,7 @@ export function contactHref(workspace: {
   return null;
 }
 
-/** Pied des pages publiques : coordonnées, mentions légales, « propulsées par Horaya ». */
+/** Pied des pages publiques : coordonnées, mentions légales, logo Horaya (« propulsées par »). */
 export function PublicFooter({
   workspace,
 }: {
@@ -83,8 +84,12 @@ export function PublicFooter({
           Mentions légales
         </Link>
       </p>
-      <Link href="/" className="tap-area w-fit text-xs font-semibold hover:text-ink">
-        Réservations propulsées par Horaya
+      <Link
+        href="/"
+        aria-label="Réservations propulsées par Horaya"
+        className="tap-area w-fit transition-colors hover:text-ink"
+      >
+        <HorayaWordmark height={13} />
       </Link>
     </footer>
   );
