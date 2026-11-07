@@ -1,4 +1,5 @@
 import handler, { createServerEntry } from "@tanstack/react-start/server-entry";
+import "./server/errors";
 import { scheduleReminders } from "./server/reminders";
 
 // Tâches de fond (rappels de la veille) : en production seulement, jamais sur un poste local.

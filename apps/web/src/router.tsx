@@ -1,4 +1,5 @@
 import { createRouter } from "@tanstack/react-router";
+import { reportClientError, watchClientErrors } from "./lib/report-error";
 import { routeTree } from "./routeTree.gen";
 
 /*
@@ -23,9 +24,17 @@ const SECTIONS = ["/app/parametres/"];
 const sameSection = (from: string, to: string) =>
   SECTIONS.some((prefix) => from.startsWith(prefix) && to.startsWith(prefix));
 
+let watching = false;
+
 /** Un routeur par requête (serveur) ou par onglet (navigateur). */
 export function getRouter() {
+  if (typeof window !== "undefined" && !watching) {
+    watching = true;
+    watchClientErrors();
+  }
   return createRouter({
+    // Erreur d'affichage d'un écran (attrapée par le routeur) : signalée au suivi des erreurs.
+    defaultOnCatch: (error) => reportClientError(error),
     routeTree,
     scrollRestoration: true,
     parseSearch,
