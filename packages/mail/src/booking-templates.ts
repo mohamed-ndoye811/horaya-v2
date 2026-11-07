@@ -12,7 +12,7 @@ export interface BookingMail {
   seats: number;
   /** « 240,00 € · à régler sur place », absent si gratuit. */
   amount?: string | null;
-  /** Lien « Gérer ma réservation », ou page « Mes réservations » pour en recevoir un neuf. */
+  /** Lien « Gérer ma réservation », ou connexion à l'espace client quand le jeton n'est pas gardé. */
   manageUrl: string;
 }
 
@@ -134,8 +134,7 @@ export function bookingCancelledEmail(
   });
 }
 
-/** Lien neuf demandé depuis « Mes réservations » (un e-mail par réservation). */
-/** Rappel la veille : `manageUrl` mène à « Mes réservations » (le lien d'origine n'est pas gardé). */
+/** Rappel la veille : `manageUrl` mène à la connexion de l'espace client (le lien d'origine n'est pas gardé). */
 export function bookingReminderEmail(mail: BookingMail): EmailContent {
   return bookingEmail(mail, {
     subject: `C'est demain : ${mail.title}`,
