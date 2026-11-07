@@ -44,6 +44,7 @@ export function CancelBooking({
   refund,
   policy,
   trigger = "Annuler",
+  asButton = false,
 }: {
   /** Action serveur d'annulation (lien « Gérer ma réservation » ou espace client). */
   cancel: () => Promise<FormState>;
@@ -54,6 +55,8 @@ export function CancelBooking({
   policy: string | null;
   /** Libellé du lien qui ouvre la confirmation. */
   trigger?: string;
+  /** Vrai bouton secondaire de ton danger plutôt que lien texte (espace client). */
+  asButton?: boolean;
 }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
@@ -61,13 +64,19 @@ export function CancelBooking({
   const [error, setError] = useState<string | null>(null);
   return (
     <>
-      <button
-        type="button"
-        onClick={() => setOpen(true)}
-        className="tap-area shrink-0 text-sm font-bold leading-[18px] text-danger underline-offset-2 hover:underline"
-      >
-        {trigger}
-      </button>
+      {asButton ? (
+        <Button variant="danger" onClick={() => setOpen(true)}>
+          {trigger}
+        </Button>
+      ) : (
+        <button
+          type="button"
+          onClick={() => setOpen(true)}
+          className="tap-area shrink-0 text-sm font-bold leading-[18px] text-danger underline-offset-2 hover:underline"
+        >
+          {trigger}
+        </button>
+      )}
       {open && (
         <Dialog
           open

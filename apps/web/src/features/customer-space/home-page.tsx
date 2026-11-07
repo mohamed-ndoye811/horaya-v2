@@ -104,8 +104,14 @@ export function CustomerHomePage({
                   </span>
                 </div>
               )}
-              <div className="flex min-w-0 flex-1 flex-col justify-between gap-4">
-                <div className="flex flex-col gap-1.5">
+              <div
+                className={
+                  slots.term
+                    ? "flex min-w-0 flex-1 flex-col justify-between gap-4"
+                    : "flex min-w-0 flex-1 items-center justify-between gap-6"
+                }
+              >
+                <div className="flex min-w-0 flex-col gap-1.5">
                   <div className="flex flex-wrap items-center gap-2">
                     <p className="text-[13px] font-semibold leading-4 text-ink-muted">
                       Ta prochaine réservation

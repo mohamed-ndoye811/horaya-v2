@@ -25,6 +25,7 @@ import {
   findCustomerAccountByCalendarToken,
   getAccountBooking,
   listAccountBookings,
+  listCandidatesForTypes,
   listRescheduleCandidates,
 } from "@horaya/db";
 import { customerLoginEmail } from "@horaya/mail";
@@ -68,7 +69,7 @@ async function requireAccount(slug: string | null): Promise<CustomerAccount> {
 }
 
 /** Carte d'une réservation (accueil, vue horaya.app) : paiement attendu, changement de date. */
-function toCard(row: AccountBooking, now: Date) {
+function toCard(row: AccountBooking, now: Date, candidates: Candidates) {
   const channel = workspacePaymentChannel(row.workspace, row.paymentMode, row.eventPaymentLinkUrl);
   const payable = channel !== null && awaitsOnlinePayment(row);
   return {
@@ -87,21 +88,54 @@ function toCard(row: AccountBooking, now: Date) {
     pay: payable
       ? { due: amountDueOnline(row), url: channel?.kind === "link" ? channel.url : null }
       : null,
+    // Même règle que le détail : délai, et au moins une autre date possible.
     reschedulable:
       row.kind === "event" &&
       row.startsAt !== null &&
+      row.eventId !== null &&
+      row.eventTypeId !== null &&
+      row.eventPaymentMode !== null &&
       rescheduleClosedReason({
         status: row.status,
         startsAt: row.startsAt,
         now,
         freeCancellationHours: row.workspace.freeCancellationHours,
-      }) === null,
+      }) === null &&
+      (candidates.get(row.eventTypeId) ?? []).some(
+        (to) =>
+          rescheduleTargetIssue({
+            from: {
+              id: row.eventId as string,
+              eventTypeId: row.eventTypeId as string,
+              priceCents: row.eventPriceCents ?? 0,
+              paymentMode: row.eventPaymentMode as NonNullable<typeof row.eventPaymentMode>,
+            },
+            to: { ...to, minAdvanceHours: to.bookingRules.minAdvanceHours },
+            seats: row.seats,
+            now,
+          }) === null,
+      ),
   };
 }
 export type CustomerBookingCard = ReturnType<typeof toCard>;
 
-function split(rows: AccountBooking[], now: Date) {
-  const cards = rows.map((row) => toCard(row, now));
+type Candidates = Map<string, Awaited<ReturnType<typeof listCandidatesForTypes>>>;
+
+/** Une seule requête pour les dates de remplacement de toutes les cartes. */
+async function split(rows: AccountBooking[], now: Date) {
+  const types = [
+    ...new Set(
+      rows.flatMap((row) =>
+        row.kind === "event" && row.startsAt && row.startsAt > now && row.eventTypeId
+          ? [row.eventTypeId]
+          : [],
+      ),
+    ),
+  ];
+  const candidates: Candidates = new Map();
+  for (const to of await listCandidatesForTypes(db, types, now))
+    candidates.set(to.eventTypeId, [...(candidates.get(to.eventTypeId) ?? []), to]);
+  const cards = rows.map((row) => toCard(row, now, candidates));
   return {
     upcoming: cards.filter((card) => isUpcoming(card, now)),
     // Le plus récent d'abord.
@@ -194,7 +228,7 @@ export async function customerHome(slug: string) {
   return {
     account,
     now,
-    ...split(rows, now),
+    ...(await split(rows, now)),
     freeCancellationHours: workspace.freeCancellationHours,
     feedUrl: feedUrl(account.calendarToken, slug),
   };
@@ -273,7 +307,7 @@ export async function allCustomerBookings() {
   const account = await requireAccount(null);
   const now = new Date();
   const rows = await listAccountBookings(db, account.email, null);
-  const { upcoming, history } = split(rows, now);
+  const { upcoming, history } = await split(rows, now);
   const workspaces = new Map<string, { name: string; slug: string; brandColor: string }>();
   for (const row of rows) workspaces.set(row.workspace.slug, row.workspace);
   return {

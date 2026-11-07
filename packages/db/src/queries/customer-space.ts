@@ -1,4 +1,4 @@
-import { and, asc, eq, gt, ne, sql } from "drizzle-orm";
+import { and, asc, eq, gt, inArray, sql } from "drizzle-orm";
 import type { Executor } from "../client";
 import {
   booking,
@@ -37,6 +37,8 @@ export async function listAccountBookings(
       eventId: booking.eventId,
       eventTitle: event.title,
       eventTypeId: event.eventTypeId,
+      eventPriceCents: event.priceCents,
+      eventPaymentMode: event.paymentMode,
       startsAt: sql<Date>`${startsAt}`.mapWith(event.startsAt),
       endsAt: sql<Date>`coalesce(${event.endsAt}, ${booking.rentalEndsAt})`.mapWith(event.endsAt),
       locationName: event.locationName,
@@ -79,6 +81,19 @@ export async function listRescheduleCandidates(
   current: { eventId: string; eventTypeId: string },
   now: Date,
 ) {
+  return (await listCandidatesForTypes(db, [current.eventTypeId], now, organizationId))
+    .filter((row) => row.id !== current.eventId)
+    .slice(0, 24);
+}
+
+/** Les dates à venir, publiques et publiées, de plusieurs types d'un coup (cartes de l'accueil). */
+export async function listCandidatesForTypes(
+  db: Executor,
+  eventTypeIds: string[],
+  now: Date,
+  organizationId?: string,
+) {
+  if (eventTypeIds.length === 0) return [];
   return db
     .select({
       id: event.id,
@@ -100,16 +115,15 @@ export async function listRescheduleCandidates(
     .innerJoin(eventType, eq(eventType.id, event.eventTypeId))
     .where(
       and(
-        eq(event.organizationId, organizationId),
-        eq(event.eventTypeId, current.eventTypeId),
-        ne(event.id, current.eventId),
+        organizationId ? eq(event.organizationId, organizationId) : undefined,
+        inArray(event.eventTypeId, eventTypeIds),
         eq(event.status, "published"),
         eq(event.visibility, "public"),
         gt(event.startsAt, now),
       ),
     )
     .orderBy(asc(event.startsAt))
-    .limit(24);
+    .limit(2000);
 }
 
 /** Agenda personnel d'un client : le compte de ce jeton, ou null. */

@@ -72,6 +72,7 @@ export function CustomerBookingPage({
     <CancelBooking
       cancel={() => cancelCustomerBookingAction(slug, booking.id)}
       trigger="Annuler ma réservation"
+      asButton
       description={`${booking.seats > 1 ? `Tes ${places}` : "Ta place"} pour « ${title} » ${booking.seats > 1 ? "seront libérées" : "sera libérée"} pour d'autres participants.`}
       refund={
         refund === null
@@ -254,63 +255,67 @@ function Reschedule({
       minute: "2-digit",
     }).format(deadline);
 
+  // Aucune autre date possible : une ligne discrète, pas de section vide.
+  if (closed || options.length === 0)
+    return (
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <p className="text-sm leading-5 text-ink-muted">
+          {closed ?? `Pas d'autre date de « ${title} » possible pour l'instant.`}
+        </p>
+        {cancel}
+      </div>
+    );
+
   return (
     <>
       <div className="flex flex-col gap-1">
         <h2 className="text-lg font-semibold leading-6 text-ink">Changer de date</h2>
         <p className="text-sm leading-5 text-ink-muted">
-          {closed
-            ? closed
-            : options.length === 0
-              ? `Pas d'autre date de « ${title} » avec assez de places pour l'instant.`
-              : `Possible jusqu'au ${until}, sans frais. Ta place actuelle est libérée pour quelqu'un d'autre.`}
+          Possible jusqu'au {until}, sans frais. Ta place actuelle est libérée pour quelqu'un
+          d'autre.
         </p>
       </div>
       {message && <FormAlert tone={message.tone}>{message.text}</FormAlert>}
-      {!closed && options.length > 0 && (
-        <div
-          role="radiogroup"
-          aria-label="Nouvelle date"
-          className="grid grid-cols-2 gap-2.5 sm:grid-cols-3"
-        >
-          {options.map((entry) => (
-            <label
-              key={entry.id}
+      <div
+        role="radiogroup"
+        aria-label="Nouvelle date"
+        className="grid grid-cols-2 gap-2.5 sm:grid-cols-3"
+      >
+        {options.map((entry) => (
+          <label
+            key={entry.id}
+            className={cn(
+              "flex cursor-pointer flex-col gap-0.5 rounded-2xl border bg-surface px-4 py-3.5 transition-colors hover:bg-field",
+              "has-checked:border-[1.5px] has-checked:border-ink has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-ink",
+              "border-line",
+            )}
+          >
+            <input
+              type="radio"
+              name="date"
+              value={entry.id}
+              checked={chosen === entry.id}
+              onChange={() => setChosen(entry.id)}
+              className="sr-only"
+            />
+            <span className="text-[15px] font-semibold leading-5 text-ink">{label(entry)}</span>
+            <span
               className={cn(
-                "flex cursor-pointer flex-col gap-0.5 rounded-2xl border bg-surface px-4 py-3.5 transition-colors hover:bg-field",
-                "has-checked:border-[1.5px] has-checked:border-ink has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-ink",
-                "border-line",
+                "text-[13px] leading-[18px]",
+                entry.remaining !== null && entry.remaining <= 1 ? "text-warning" : "text-success",
               )}
             >
-              <input
-                type="radio"
-                name="date"
-                value={entry.id}
-                checked={chosen === entry.id}
-                onChange={() => setChosen(entry.id)}
-                className="sr-only"
-              />
-              <span className="text-[15px] font-semibold leading-5 text-ink">{label(entry)}</span>
-              <span
-                className={cn(
-                  "text-[13px] leading-[18px]",
-                  entry.remaining !== null && entry.remaining <= 1
-                    ? "text-warning"
-                    : "text-success",
-                )}
-              >
-                {entry.remaining === null
-                  ? "Places libres"
-                  : entry.remaining === 1
-                    ? "Plus qu'une place"
-                    : `${entry.remaining} places libres`}
-              </span>
-            </label>
-          ))}
-        </div>
-      )}
+              {entry.remaining === null
+                ? "Places libres"
+                : entry.remaining === 1
+                  ? "Plus qu'une place"
+                  : `${entry.remaining} places libres`}
+            </span>
+          </label>
+        ))}
+      </div>
       <div className="flex flex-wrap items-center justify-between gap-3 pt-1.5">
-        {!closed && option ? (
+        {option ? (
           <Button
             pending={pending}
             onClick={async () => {
