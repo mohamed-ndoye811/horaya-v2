@@ -4,16 +4,17 @@ import { cardClasses } from "@/components/ui/section";
 import { Switch } from "@/components/ui/switch";
 import { saveNotificationsAction } from "@/functions/settings";
 import { cn } from "@/lib/cn";
+import { useSuccessToast } from "@/lib/toast";
 import { useFormAction } from "@/lib/use-form-action";
 import type { FormState } from "@/server/form-state";
 
 /** Préférences de notification du membre : par e-mail et dans l'app (cloche du notch). */
 export function NotificationsForm({ preferences }: { preferences: NotificationPreference[] }) {
   const { state, onSubmit } = useFormAction<FormState>(saveNotificationsAction, {});
+  useSuccessToast(state);
   return (
     <form id="notifications-form" onSubmit={onSubmit} className="flex flex-col gap-4">
       {state.error && <FormAlert>{state.error}</FormAlert>}
-      {state.success && <FormAlert tone="success">{state.success}</FormAlert>}
       <section aria-labelledby="notifications-title" className={cn(cardClasses, "min-w-0 sm:p-6")}>
         <div className="flex items-center gap-2.5 pb-3">
           <h2

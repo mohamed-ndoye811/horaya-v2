@@ -1,5 +1,5 @@
 import { NOTIFICATION_TYPES, type NotificationType } from "@horaya/core";
-import { and, desc, eq, isNull, sql } from "drizzle-orm";
+import { and, desc, eq, gt, isNull, sql } from "drizzle-orm";
 import type { Executor } from "../client";
 import { member, notification, notificationPreference } from "../schema";
 
@@ -66,6 +66,36 @@ export async function listNotifications(
     .where(eq(notification.memberId, memberId))
     .orderBy(desc(notification.createdAt))
     .limit(limit);
+}
+
+/** Notifications non lues arrivées après `since` (affichage en direct), les plus anciennes d'abord. */
+export async function listNotificationsSince(
+  db: Executor,
+  memberId: string,
+  since: Date,
+  limit = 5,
+): Promise<NotificationRow[]> {
+  const rows = await db
+    .select({
+      id: notification.id,
+      type: notification.type,
+      title: notification.title,
+      body: notification.body,
+      link: notification.link,
+      readAt: notification.readAt,
+      createdAt: notification.createdAt,
+    })
+    .from(notification)
+    .where(
+      and(
+        eq(notification.memberId, memberId),
+        isNull(notification.readAt),
+        gt(notification.createdAt, since),
+      ),
+    )
+    .orderBy(desc(notification.createdAt))
+    .limit(limit);
+  return rows.reverse();
 }
 
 export async function countUnreadNotifications(db: Executor, memberId: string) {

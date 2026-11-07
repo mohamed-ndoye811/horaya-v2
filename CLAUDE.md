@@ -5,7 +5,7 @@ Refonte complète d'Horaya, menée lot par lot avec Moh. Tout est en français :
 
 - Architecture et décisions : vault → `Projets/Horaya/Refonte v2/Horaya v2 · Architecture.md`
 - Avancement des lots : vault → `Projets/Horaya/Refonte v2/Horaya v2 · Feuille de route.md`
-- Maquettes : fichier Paper `HORAYA` (fileId `01M482V27PJ1B95FS517QHZRP4`)
+- Maquettes : fichier Paper `HORAYA` (fileId `01M5EP63QCD615NBH58QY2AMZG`)
 
 Le vault Obsidian de Moh : `/Volumes/moh-drive/hub/notes/hub` (synchronisé avec le VPS, l'iPhone et le Mac).
 

@@ -4,6 +4,7 @@ import { FormAlert } from "@/components/ui/form-alert";
 import { FormSection } from "@/components/ui/section";
 import { Select } from "@/components/ui/select";
 import { savePaymentsAction } from "@/functions/settings";
+import { useSuccessToast } from "@/lib/toast";
 import { useFormAction } from "@/lib/use-form-action";
 import type { FormState } from "@/server/form-state";
 
@@ -33,6 +34,7 @@ export function PaymentsForm({
   showPaymentLink: boolean;
 }) {
   const { state, onSubmit } = useFormAction<FormState>(savePaymentsAction, {});
+  useSuccessToast(state);
   const errors = state.fieldErrors ?? {};
   const hours = FREE_CANCELLATION_HOURS.includes(
     initial.freeCancellationHours as (typeof FREE_CANCELLATION_HOURS)[number],
@@ -46,7 +48,6 @@ export function PaymentsForm({
   return (
     <form id="payments-form" onSubmit={onSubmit} className="flex flex-col gap-4">
       {state.error && <FormAlert>{state.error}</FormAlert>}
-      {state.success && <FormAlert tone="success">{state.success}</FormAlert>}
       <div className="flex flex-col gap-4">
         <fieldset disabled={!editable} className="min-w-0">
           <FormSection number={1} title="Réglages">

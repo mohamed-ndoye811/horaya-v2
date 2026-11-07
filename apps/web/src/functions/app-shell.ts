@@ -1,8 +1,10 @@
 import { getCurrentPlan } from "@horaya/core";
 import { countPendingBookings, countUnreadNotifications } from "@horaya/db";
 import { createServerFn } from "@tanstack/react-start";
+import { z } from "zod";
 import { requireWorkspace } from "@/server/auth";
 import { db } from "@/server/db";
+import { pollShell } from "@/server/notch";
 import { isPlatformAdmin } from "@/server/platform";
 import { deps, requireMember } from "@/server/services";
 
@@ -32,5 +34,14 @@ export const getAppShell = createServerFn({ method: "GET" }).handler(async () =>
     plan: current.plan,
     /** « Se connecter en tant que » en cours (équipe Horaya) : bandeau de retour. */
     impersonating: Boolean((session as { impersonatedBy?: string | null }).impersonatedBy),
+    /** Départ de l'affichage en direct (voir pollAppShell). */
+    now: new Date().toISOString(),
   };
 });
+
+const pollFn = createServerFn({ method: "POST" })
+  .validator(z.iso.datetime())
+  .handler(({ data }) => pollShell(new Date(data)));
+
+/** Coque en direct, toutes les 20 s : compteurs et notifications arrivées depuis `since`. */
+export const pollAppShell = (since: string) => pollFn({ data: since });
