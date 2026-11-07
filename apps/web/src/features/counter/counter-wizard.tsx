@@ -1,13 +1,18 @@
 import type { CounterBookingInput, PaymentMethod } from "@horaya/core";
-import { AnimatePresence, motion, type Variants } from "motion/react";
 import { type FormEvent, type ReactNode, useEffect, useRef, useState, useTransition } from "react";
 import { WordsReveal } from "@/components/motion/words";
+import { ActionBar } from "@/components/ui/action-bar";
 import { Avatar } from "@/components/ui/avatar";
 import { StatusBadge } from "@/components/ui/badge";
-import { Button, ButtonLink } from "@/components/ui/button";
+import { Button, ButtonLink, IconButton, textLinkSmClasses } from "@/components/ui/button";
+import { AddButton } from "@/components/ui/chip";
 import { Field, inputClasses } from "@/components/ui/field";
 import { FormAlert } from "@/components/ui/form-alert";
+import { CloseIcon } from "@/components/ui/icons";
 import { SearchInput } from "@/components/ui/search-input";
+import { dashedClasses, inkCardClasses } from "@/components/ui/section";
+import { SegmentedControl } from "@/components/ui/segmented";
+import { Stepper } from "@/components/ui/stepper";
 import {
   type CounterResult,
   counterItemsAction,
@@ -68,13 +73,6 @@ const METHODS: Array<{ value: PaymentMethod; label: string }> = [
   { value: "check", label: "Chèque" },
   { value: "transfer", label: "Virement" },
 ];
-
-/** Chiffre qui roule d'une hauteur entière (jamais deux chiffres superposés) : `custom` vaut 1 quand on ajoute, -1 quand on retire. */
-const ROLL: Variants = {
-  enter: (rise: number) => ({ y: `${100 * rise}%`, opacity: 0 }),
-  center: { y: 0, opacity: 1 },
-  exit: (rise: number) => ({ y: `${-100 * rise}%`, opacity: 0 }),
-};
 
 const EMPTY_CONTACT = { firstName: "", lastName: "", phone: "", email: "" };
 
@@ -244,27 +242,19 @@ export function CounterWizard({
           number={1}
           title="Séance"
           aside={
-            <div className="flex gap-1 rounded-full bg-[#f2f2f0] p-[3px]">
-              {DAYS.map((entry) => (
-                <button
-                  key={entry.value}
-                  type="button"
-                  aria-pressed={!needle && day === entry.value}
-                  onClick={() => {
-                    setDay(entry.value as CounterEvent["day"]);
-                    setSessionSearch("");
-                  }}
-                  className={cn(
-                    "flex h-[30px] items-center rounded-full px-3 text-[13px] font-semibold leading-4",
-                    !needle && day === entry.value
-                      ? "bg-ink text-on-ink"
-                      : "text-ink hover:bg-surface",
-                  )}
-                >
-                  {entry.label}
-                </button>
-              ))}
-            </div>
+            // Pendant une recherche, aucun jour n'est choisi : elle parcourt tous les jours.
+            <SegmentedControl
+              size="xs"
+              fill={false}
+              name="jour"
+              label="Jour de la séance"
+              segments={DAYS}
+              value={needle ? "" : day}
+              onChange={(value) => {
+                setDay(value as CounterEvent["day"]);
+                setSessionSearch("");
+              }}
+            />
           }
         >
           <SearchInput
@@ -288,7 +278,12 @@ export function CounterWizard({
               />
             ))}
             {sessions.length === 0 && (
-              <p className="rounded-[14px] border border-dashed border-line px-4 py-5 text-center text-sm text-ink-muted">
+              <p
+                className={cn(
+                  dashedClasses,
+                  "rounded-[14px] px-4 py-5 text-center text-sm text-ink-muted",
+                )}
+              >
                 {needle ? "Aucune séance ne correspond." : "Aucune séance ce jour-là."}
               </p>
             )}
@@ -303,7 +298,7 @@ export function CounterWizard({
               <button
                 type="button"
                 onClick={() => setCreating(!creating)}
-                className="text-[13px] font-bold leading-4 text-ink hover:underline"
+                className={textLinkSmClasses}
               >
                 {creating ? "Chercher un client" : "+ Nouveau client"}
               </button>
@@ -327,13 +322,9 @@ export function CounterWizard({
                     .join(" · ")}
                 </span>
               </span>
-              <button
-                type="button"
-                onClick={() => setCustomer(null)}
-                className="flex h-8 shrink-0 items-center rounded-full border border-line bg-surface px-3 text-xs font-semibold text-ink hover:bg-field"
-              >
+              <Button variant="secondary" size="xs" onClick={() => setCustomer(null)}>
                 Changer
-              </button>
+              </Button>
             </div>
           ) : creating ? (
             <fieldset className="grid gap-3 sm:grid-cols-2">
@@ -417,25 +408,26 @@ export function CounterWizard({
             {chosenItems.map(([id, quantity]) => (
               <span
                 key={id}
-                className="flex h-9 items-center gap-2 rounded-full bg-field pr-1.5 pl-3 text-[13px] font-semibold leading-4 text-ink"
+                className="flex h-9 items-center gap-2 rounded-full bg-field pr-0.5 pl-3 text-[13px] font-semibold leading-4 text-ink"
               >
                 {itemName(id)} ×{quantity}
-                <button
-                  type="button"
-                  aria-label={`Retirer ${itemName(id)}`}
+                {/* 32 px dans la pastille, zone de toucher agrandie à 48 px de haut. */}
+                <IconButton
+                  label={`Retirer ${itemName(id)}`}
+                  size="sm"
+                  className="tap-area"
                   onClick={() => setQuantities({ ...quantities, [id]: 0 })}
-                  className="flex size-6 items-center justify-center rounded-full bg-surface text-[13px] text-ink-subtle hover:text-ink"
                 >
-                  ✕
-                </button>
+                  <CloseIcon size={10} />
+                </IconButton>
               </span>
             ))}
-            <button
-              type="button"
+            <AddButton
+              size="sm"
+              icon={Boolean(items?.length)}
               disabled={!event || items === null || items.length === 0}
               aria-expanded={pickingItems}
               onClick={() => setPickingItems(!pickingItems)}
-              className="flex h-9 items-center rounded-full border-[1.5px] border-dashed border-[#d6d6d2] px-3 text-[13px] font-semibold leading-4 text-ink-muted hover:text-ink disabled:hover:text-ink-muted"
             >
               {!event
                 ? "Choisis d'abord une séance"
@@ -443,8 +435,8 @@ export function CounterWizard({
                   ? "Chargement du matériel…"
                   : items.length === 0
                     ? "Aucun matériel libre sur cette séance"
-                    : "+ Ajouter du matériel"}
-            </button>
+                    : "Ajouter du matériel"}
+            </AddButton>
           </div>
           {pickingItems && items && items.length > 0 && (
             // Cartes du matériel : choisies, elles prennent le contour noir des séances.
@@ -486,7 +478,7 @@ export function CounterWizard({
                       <span className="line-clamp-2 min-w-0 text-base font-semibold leading-5">
                         {item.name}
                       </span>
-                      <QuantityStepper
+                      <Stepper
                         value={quantity}
                         min={0}
                         max={item.free}
@@ -529,7 +521,7 @@ export function CounterWizard({
                     <span
                       className={cn(
                         "text-[13px] font-semibold leading-4",
-                        paid === option.value ? "text-white" : "text-ink",
+                        paid === option.value ? "text-on-ink" : "text-ink",
                       )}
                     >
                       {option.label}
@@ -537,7 +529,7 @@ export function CounterWizard({
                     <span
                       className={cn(
                         "text-[11px] leading-[14px]",
-                        paid === option.value ? "text-[#9a9ea8]" : "text-ink-subtle",
+                        paid === option.value ? "text-on-ink-muted" : "text-ink-subtle",
                       )}
                     >
                       {option.detail}
@@ -577,7 +569,12 @@ export function CounterWizard({
         </Section>
       </div>
 
-      <aside className="flex w-full shrink-0 flex-col justify-between gap-6 rounded-3xl bg-ink p-[22px] lg:sticky lg:top-[62px] lg:w-[360px] lg:self-start">
+      <aside
+        className={cn(
+          inkCardClasses,
+          "flex w-full shrink-0 flex-col justify-between gap-6 rounded-3xl p-[22px] lg:sticky lg:top-[62px] lg:w-[360px] lg:self-start",
+        )}
+      >
         <div className="flex flex-col gap-4">
           <div className="flex items-center justify-between">
             <p className="font-mono text-[11px] font-semibold leading-[14px] tracking-[0.06em] text-ink-subtle">
@@ -586,7 +583,7 @@ export function CounterWizard({
             <button
               type="button"
               onClick={restart}
-              className="text-xs font-semibold text-[#9a9ea8] hover:text-white"
+              className="tap-area text-xs font-semibold text-on-ink-muted hover:text-on-ink"
             >
               Tout effacer
             </button>
@@ -599,8 +596,8 @@ export function CounterWizard({
                 style={{ backgroundColor: event.color }}
               />
               <div className="flex flex-col gap-[3px]">
-                <p className="text-lg font-semibold leading-[22px] text-white">{event.title}</p>
-                <p className="text-[13px] leading-[18px] text-[#9a9ea8]">
+                <p className="text-lg font-semibold leading-[22px] text-on-ink">{event.title}</p>
+                <p className="text-[13px] leading-[18px] text-on-ink-muted">
                   {event.date} · {event.range}
                   {event.location && (
                     <>
@@ -612,9 +609,9 @@ export function CounterWizard({
               </div>
             </div>
           ) : (
-            <p className="text-sm text-[#9a9ea8]">Choisis une séance.</p>
+            <p className="text-sm text-on-ink-muted">Choisis une séance.</p>
           )}
-          <dl className="flex flex-col border-t border-[#2a2a2a]">
+          <dl className="flex flex-col border-t border-ink-line">
             <SummaryLine
               label={
                 event && event.priceCents > 0
@@ -631,9 +628,9 @@ export function CounterWizard({
           </dl>
         </div>
         <div className="flex flex-col gap-3.5">
-          <div className="flex items-end justify-between border-t border-[#2a2a2a] pt-3.5">
-            <span className="text-[13px] leading-4 text-[#9a9ea8]">Total</span>
-            <span className="text-[40px] font-medium leading-[42px] tracking-[-0.03em] text-white">
+          <div className="flex items-end justify-between border-t border-ink-line pt-3.5">
+            <span className="text-[13px] leading-4 text-on-ink-muted">Total</span>
+            <span className="text-[40px] font-medium leading-[42px] tracking-[-0.03em] text-on-ink">
               {total > 0 ? (
                 <>
                   {formatMoney(total).replace(/\s?€$/, "")}{" "}
@@ -646,19 +643,31 @@ export function CounterWizard({
               )}
             </span>
           </div>
-          <button
-            type="submit"
-            disabled={pending}
-            aria-busy={pending}
-            className="flex h-[52px] items-center justify-center rounded-full bg-white text-base font-semibold text-ink transition-colors hover:bg-field disabled:opacity-70"
-          >
-            {pending ? "Enregistrement…" : "Enregistrer la réservation"}
-          </button>
-          <p className="hidden text-center text-xs leading-4 text-ink-muted lg:block">
-            ou ⌘ Entrée
-          </p>
+          {/* Sur mobile, le bouton est dans la barre collée en bas (ActionBar ci-dessous). */}
+          <div className="hidden flex-col gap-3.5 lg:flex">
+            <Button type="submit" variant="inverse" size="lg" pending={pending}>
+              {pending ? "Enregistrement…" : "Enregistrer la réservation"}
+            </Button>
+            <p className="text-center text-xs leading-4 text-ink-muted">ou ⌘ Entrée</p>
+          </div>
         </div>
       </aside>
+
+      {/* Mobile : total et enregistrement toujours à portée, en bas de l'écran (pas d'onglets ici). */}
+      <div className="lg:hidden">
+        <ActionBar
+          message={
+            <>
+              Total <strong>{total > 0 ? formatMoney(total) : event ? "Gratuit" : "—"}</strong>
+              {paymentLabel && total > 0 ? ` · ${paymentLabel}` : ""}
+            </>
+          }
+        >
+          <Button type="submit" variant="inverse" pending={pending}>
+            {pending ? "Enregistrement…" : "Enregistrer la réservation"}
+          </Button>
+        </ActionBar>
+      </div>
     </form>
   );
 }
@@ -675,7 +684,7 @@ function Section({
   children: ReactNode;
 }) {
   return (
-    <section className="flex flex-col gap-3 border-t border-[#f4f4f2] px-5 py-5 first:border-t-0 sm:px-6">
+    <section className="flex flex-col gap-3 border-t border-line-faint px-5 py-5 first:border-t-0 sm:px-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h2 className="flex items-center gap-2.5">
           <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-ink text-[11px] font-bold leading-[14px] text-on-ink">
@@ -740,7 +749,7 @@ function SessionRow({
             {full ? "Complet · liste d'attente" : remaining}
           </span>
         </span>
-        <QuantityStepper value={seats} onChange={onSeats} min={1} max={99} />
+        <Stepper value={seats} onChange={onSeats} min={1} max={99} label="Places" />
       </div>
     );
   }
@@ -758,9 +767,9 @@ function SessionRow({
         <span className="flex items-center gap-1.5">
           <span className="text-[13px] font-bold leading-4 text-danger">Complet</span>
           {event.waitlist && (
-            <span className="rounded-full bg-info-bg px-[7px] py-0.5 text-[11px] font-bold leading-[14px] text-info">
+            <StatusBadge tone="info" size="sm">
               attente
-            </span>
+            </StatusBadge>
           )}
         </span>
       ) : (
@@ -790,83 +799,15 @@ function SummaryLine({
 }) {
   return (
     <div className="flex h-10 items-center justify-between gap-4">
-      <dt className="truncate text-[13px] leading-4 text-[#9a9ea8]">{label}</dt>
+      <dt className="truncate text-[13px] leading-4 text-on-ink-muted">{label}</dt>
       <dd
         className={cn(
           "truncate text-sm font-semibold leading-[18px]",
-          value ? (accent ? "text-accent" : "text-white") : "text-ink-muted",
+          value ? (accent ? "text-accent" : "text-on-ink") : "text-ink-muted",
         )}
       >
         {value ?? "—"}
       </dd>
-    </div>
-  );
-}
-
-/** Compteur − n + (places, exemplaires) : pilule blanche, « + » en noir (maquette 1.6b). */
-function QuantityStepper({
-  value,
-  onChange,
-  min,
-  max,
-  label = "Places",
-}: {
-  value: number;
-  onChange: (value: number) => void;
-  min: number;
-  max: number;
-  label?: string;
-}) {
-  // Le chiffre roule : il arrive par le bas quand on ajoute, par le haut quand on retire.
-  const previous = useRef(value);
-  const rise = value >= previous.current ? 1 : -1;
-  useEffect(() => {
-    previous.current = value;
-  }, [value]);
-  const round =
-    "flex size-8 items-center justify-center rounded-full text-lg leading-[18px] transition-[color,background-color,scale] active:scale-90";
-  return (
-    <div className="flex shrink-0 items-center gap-2.5 rounded-full border border-bg bg-surface p-1">
-      <button
-        type="button"
-        aria-label={`Moins (${label})`}
-        disabled={value <= min}
-        onClick={() => onChange(value - 1)}
-        className={cn(round, "border border-line text-ink disabled:text-ink-subtle")}
-      >
-        −
-      </button>
-      <output
-        aria-label={label}
-        className={cn(
-          "relative flex min-w-4 justify-center overflow-hidden text-[17px] font-semibold leading-5",
-          value === 0 ? "text-ink-subtle" : "text-ink",
-        )}
-      >
-        {/* L'ancien chiffre sort pendant que le nouveau arrive (popLayout : il ne prend plus de place). */}
-        <AnimatePresence initial={false} mode="popLayout" custom={rise}>
-          <motion.span
-            key={value}
-            custom={rise}
-            variants={ROLL}
-            initial="enter"
-            animate="center"
-            exit="exit"
-            transition={{ type: "spring", visualDuration: 0.2, bounce: 0 }}
-          >
-            {value}
-          </motion.span>
-        </AnimatePresence>
-      </output>
-      <button
-        type="button"
-        aria-label={`Plus (${label})`}
-        disabled={value >= max}
-        onClick={() => onChange(value + 1)}
-        className={cn(round, "bg-ink text-on-ink disabled:bg-line-soft disabled:text-ink-subtle")}
-      >
-        +
-      </button>
     </div>
   );
 }
@@ -990,16 +931,11 @@ function CounterDone({
                 {formatMoney(done.amountCents)}
               </span>
             )}
-            <span
-              className={cn(
-                "rounded-full px-2.5 py-0.5 text-xs font-bold leading-[18px]",
-                done.paymentStatus === "paid" || done.amountCents === 0
-                  ? "bg-success-bg text-success"
-                  : "bg-warning-bg text-warning",
-              )}
+            <StatusBadge
+              tone={done.paymentStatus === "paid" || done.amountCents === 0 ? "success" : "warning"}
             >
               {paidLabel}
-            </span>
+            </StatusBadge>
           </span>
         </DoneRow>
       </dl>
@@ -1025,7 +961,7 @@ function DoneRow({
   last?: boolean;
 }) {
   return (
-    <div className={cn("flex gap-3 p-3.5", !last && "border-b border-[#f4f4f2]")}>
+    <div className={cn("flex gap-3 p-3.5", !last && "border-b border-line-faint")}>
       <dt className="w-[84px] shrink-0 text-sm leading-5 text-ink-subtle">{label}</dt>
       <dd className="flex min-w-0 flex-1 flex-col gap-0.5">{children}</dd>
     </div>
