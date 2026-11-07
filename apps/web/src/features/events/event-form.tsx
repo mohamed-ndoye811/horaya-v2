@@ -3,7 +3,14 @@ import { type ReactNode, useMemo, useState } from "react";
 import { ActionBar } from "@/components/ui/action-bar";
 import { CategorySwatch } from "@/components/ui/avatar";
 import { ChoiceCards } from "@/components/ui/choice-cards";
-import { AffixInput, Checkbox, Field, inputClasses, textareaClasses } from "@/components/ui/field";
+import {
+  AffixInput,
+  Checkbox,
+  Field,
+  FieldError,
+  inputClasses,
+  textareaClasses,
+} from "@/components/ui/field";
 import { FormAlert } from "@/components/ui/form-alert";
 import { CalendarIcon, Check, PinIcon } from "@/components/ui/icons";
 import { FormSection } from "@/components/ui/section";
@@ -174,6 +181,27 @@ export function EventForm({
     },
   ];
   const ready = checklist.filter((item) => item.done).length;
+  /*
+   * Sous xl, la colonne de droite passe après tout le formulaire : la visibilité monte dans la
+   * section 1. Deux exemplaires, un seul affiché : des radios de même nom formeraient un seul
+   * groupe, et le serveur lit le premier `visibility` (celui de la section 1, toujours à jour).
+   */
+  const visibilityField = (name: string) => (
+    <Field label="Visibilité" group>
+      {() => (
+        <SegmentedControl
+          name={name}
+          label="Visibilité"
+          value={values.visibility}
+          onChange={(visibility) => set({ visibility })}
+          segments={[
+            { value: "public", label: "Public" },
+            { value: "invite_only", label: "Sur invitation" },
+          ]}
+        />
+      )}
+    </Field>
+  );
 
   return (
     <form
@@ -264,6 +292,7 @@ export function EventForm({
               />
             )}
           </Field>
+          <div className="xl:hidden">{visibilityField("visibility")}</div>
         </FormSection>
 
         <FormSection number={2} title="Date & lieu">
@@ -365,7 +394,7 @@ export function EventForm({
                       max={104}
                       value={count}
                       onChange={(event) => setCount(event.target.value)}
-                      className={cn(inputClasses("md"), "h-10 w-20 font-mono")}
+                      className={cn(inputClasses("sm"), "w-20 font-mono")}
                     />
                     fois
                   </label>
@@ -374,9 +403,7 @@ export function EventForm({
             </div>
           )}
           {(countInvalid.message ?? errors.recurrence) && (
-            <p className="text-[13px] font-semibold text-danger">
-              {countInvalid.message ?? errors.recurrence}
-            </p>
+            <FieldError>{countInvalid.message ?? errors.recurrence}</FieldError>
           )}
 
           <div className="grid gap-4 sm:grid-cols-2">
@@ -591,20 +618,7 @@ export function EventForm({
         </div>
 
         <div className="flex flex-col gap-3 rounded-3xl bg-surface p-5">
-          <Field label="Visibilité" group>
-            {() => (
-              <SegmentedControl
-                name="visibility"
-                label="Visibilité"
-                value={values.visibility}
-                onChange={(visibility) => set({ visibility })}
-                segments={[
-                  { value: "public", label: "Public" },
-                  { value: "invite_only", label: "Sur invitation" },
-                ]}
-              />
-            )}
-          </Field>
+          <div className="hidden xl:block">{visibilityField("visibilityAside")}</div>
           <p className="text-xs leading-4 text-ink-muted">
             Horaires dans le fuseau de l'espace ({timeZone.replace("_", " ")}).
           </p>

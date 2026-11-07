@@ -1,3 +1,4 @@
+import { rowLinkClasses } from "@/components/ui/button";
 import { type CivilDate, civilKey, groupByDay, isAllDay, monthGrid } from "@/lib/calendar";
 import { cn } from "@/lib/cn";
 import { formatHour } from "@/lib/format";
@@ -44,7 +45,7 @@ export function MonthCalendar({
   const todayKey = civilKey(today);
 
   return (
-    <div className={cn(calendarCard, "flex flex-1 flex-col")}>
+    <div className={cn(calendarCard, "flex-1")}>
       <div className="flex-1 overflow-x-auto">
         {/* Plus haut que ses lignes : les semaines se partagent la hauteur (124 px au moins). */}
         <table
@@ -73,7 +74,7 @@ export function MonthCalendar({
                 key={civilKey(week[0] ?? today)}
                 // Part égale de la hauteur : sinon la semaine la plus remplie prend le surplus.
                 style={{ height: `${100 / weeks.length}%` }}
-                className="border-b border-[#f4f4f2] last:border-b-0"
+                className="border-b border-line-faint last:border-b-0"
               >
                 {week.map((day, index) => {
                   const key = civilKey(day);
@@ -90,7 +91,7 @@ export function MonthCalendar({
                       key={key}
                       aria-current={isToday ? "date" : undefined}
                       className={cn(
-                        "h-[124px] border-r border-[#f4f4f2] px-2 py-2 align-top last:border-r-0",
+                        "h-[124px] border-r border-line-faint px-2 py-2 align-top last:border-r-0",
                         index >= 5 && "bg-band",
                       )}
                     >
@@ -129,7 +130,7 @@ export function MonthCalendar({
                           (moreHref ? (
                             <a
                               href={moreHref(day)}
-                              className="px-0.5 text-label font-bold text-ink hover:underline"
+                              className={cn(rowLinkClasses, "px-0.5 text-label")}
                             >
                               + {hidden} autre{hidden > 1 ? "s" : ""}
                             </a>

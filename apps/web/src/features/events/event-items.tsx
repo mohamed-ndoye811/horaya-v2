@@ -1,11 +1,13 @@
 import { useId, useState, useTransition } from "react";
 import { ItemTile } from "@/components/app/item-tile";
-import { Button, IconButton, textLinkClasses } from "@/components/ui/button";
+import { Button, IconButton, rowLinkClasses, textLinkClasses } from "@/components/ui/button";
 import { MonoCaption } from "@/components/ui/cells";
 import { inputClasses } from "@/components/ui/field";
 import { FormAlert } from "@/components/ui/form-alert";
+import { dashedClasses } from "@/components/ui/section";
 import { Select } from "@/components/ui/select";
 import { removeEventItemAction, setEventItemAction } from "@/functions/events";
+import { cn } from "@/lib/cn";
 import { compactUnitLabels } from "@/lib/format";
 import { Link, useRouter } from "@/lib/navigation";
 
@@ -66,7 +68,9 @@ export function EventItems({
     <div className="flex flex-col gap-6 px-4 py-8">
       {error && <FormAlert>{error}</FormAlert>}
       {reserved.length === 0 ? (
-        <p className="border-2 border-dashed border-ink-subtle px-5 py-8 text-center text-sm font-medium text-ink-muted">
+        <p
+          className={cn(dashedClasses, "px-5 py-8 text-center text-sm font-medium text-ink-muted")}
+        >
           Aucun matériel réservé pour cet événement. Les exemplaires ajoutés sont bloqués sur ses
           dates et suivent l'événement s'il change d'horaire.
         </p>
@@ -81,7 +85,7 @@ export function EventItems({
               <div className="flex min-w-0 flex-1 flex-col gap-1">
                 <Link
                   href={`/app/materiel/${entry.itemId}`}
-                  className="truncate text-base font-bold text-ink hover:underline"
+                  className={cn(rowLinkClasses, "truncate text-base")}
                 >
                   {entry.name}
                 </Link>
