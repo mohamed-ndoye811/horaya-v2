@@ -1,5 +1,6 @@
 import type { DashboardOverview, EventRow, LatestBookingRow, TodayEntry } from "@horaya/db";
 import type { ReactNode } from "react";
+import { ProgramCard, ProgramRow } from "@/components/app/program-card";
 import { Avatar } from "@/components/ui/avatar";
 import { StatusBadge } from "@/components/ui/badge";
 import { BoxIcon, TicketIcon } from "@/components/ui/icons";
@@ -682,49 +683,31 @@ export function MobileSummary({
         )}
       </div>
 
-      <section className="flex flex-col overflow-hidden rounded-[22px] bg-surface">
-        <h2 className="flex h-11 items-center justify-between bg-band px-4">
-          <span className="text-[13px] font-bold leading-4 text-ink">Aujourd'hui</span>
-          {today.length > 0 && (
-            <span className="text-xs leading-4 text-ink-subtle">{today.length} au programme</span>
-          )}
-        </h2>
-        {today.length === 0 && (
-          <p className="border-t border-line-faint px-4 py-4 text-sm leading-[18px] text-ink-subtle">
-            Rien au programme aujourd'hui.
-          </p>
-        )}
+      <ProgramCard
+        title="Aujourd'hui"
+        count={today.length > 0 ? `${today.length} au programme` : undefined}
+        empty={today.length === 0 ? "Rien au programme aujourd'hui." : undefined}
+      >
         {today.map((entry) => {
-          const href =
-            entry.kind === "event"
-              ? `/app/evenements/${entry.id}`
-              : `/app/reservations/${entry.id}`;
           const full = entry.capacity !== null && entry.seatsHeld >= entry.capacity;
           return (
-            <Link
+            <ProgramRow
               key={`${entry.kind}-${entry.id}`}
-              href={href}
-              className="flex min-h-[62px] items-center gap-3 border-t border-line-faint px-4 py-2.5"
-            >
-              <span className="w-11 shrink-0 font-mono text-xs font-semibold leading-4 text-ink">
-                {formatHour(entry.startsAt, timeZone)}
-              </span>
-              <span
-                aria-hidden="true"
-                className="h-8 w-[3px] shrink-0 rounded-[2px]"
-                style={{ backgroundColor: entry.color ?? "var(--color-info)" }}
-              />
-              <span className="flex min-w-0 flex-1 flex-col gap-0.5">
-                <span className="truncate text-[15px] font-semibold leading-5 text-ink">
-                  {entry.title}
-                </span>
-                <span className="truncate text-xs leading-4 text-ink-subtle">
-                  {entry.kind === "event"
-                    ? (entry.locationName ?? stateOf(entry, now).label)
-                    : `Retour · ${entry.customerName ?? ""}`}
-                </span>
-              </span>
-              {entry.kind === "event" &&
+              href={
+                entry.kind === "event"
+                  ? `/app/evenements/${entry.id}`
+                  : `/app/reservations/${entry.id}`
+              }
+              time={formatHour(entry.startsAt, timeZone)}
+              color={entry.color ?? "var(--color-info)"}
+              title={entry.title}
+              detail={
+                entry.kind === "event"
+                  ? (entry.locationName ?? stateOf(entry, now).label)
+                  : `Retour · ${entry.customerName ?? ""}`
+              }
+              trailing={
+                entry.kind === "event" &&
                 (full ? (
                   <StatusBadge tone="success" size="sm">
                     Complet
@@ -734,11 +717,12 @@ export function MobileSummary({
                     {entry.seatsHeld}
                     {entry.capacity !== null && `/${entry.capacity}`}
                   </span>
-                ))}
-            </Link>
+                ))
+              }
+            />
           );
         })}
-      </section>
+      </ProgramCard>
     </div>
   );
 }

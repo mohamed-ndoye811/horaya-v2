@@ -1,7 +1,7 @@
 import { weekdayOf } from "@horaya/core";
+import { ProgramCard, ProgramRow } from "@/components/app/program-card";
 import { type CivilDate, civilKey, groupByDay, isAllDay, monthGrid } from "@/lib/calendar";
 import { cn } from "@/lib/cn";
-import { textOn } from "@/lib/colors";
 import { formatEventRange, formatHour, formatTimeRange, formatWeekdayShort } from "@/lib/format";
 import { Link } from "@/lib/navigation";
 import { calendarCard } from "./time-grid";
@@ -225,55 +225,23 @@ export function WeekStrip({
   );
 }
 
-/** Une ligne d'agenda : heure à gauche, carte à filet de couleur (pleine si plusieurs jours). */
+/** Une ligne d'agenda dans le style des cartes de programme : « Jour » pour plusieurs jours. */
 function AgendaRow({ event, timeZone }: { event: CalendarEvent; timeZone: string }) {
   const long = isAllDay(event, timeZone);
-  const style = long
-    ? { backgroundColor: event.color, color: textOn(event.color) }
-    : { borderLeftColor: event.color };
-  const body = (
-    <>
-      <span className={cn("truncate text-[15px] font-bold leading-[19px]", !long && "text-ink")}>
-        {event.title}
-      </span>
-      <span
-        className={cn(
-          "truncate text-[13px] font-medium leading-[17px]",
-          long ? "opacity-85" : "text-ink-muted",
-        )}
-      >
-        {long
+  return (
+    <ProgramRow
+      href={event.href}
+      time={long ? "Jour" : formatHour(event.startsAt, timeZone)}
+      color={event.color}
+      title={event.title}
+      detail={
+        long
           ? formatEventRange(event.startsAt, event.endsAt, timeZone)
           : [formatTimeRange(event.startsAt, event.endsAt, timeZone), event.detail]
               .filter(Boolean)
-              .join(" · ")}
-      </span>
-    </>
-  );
-  const className = cn(
-    "flex min-w-0 flex-1 flex-col gap-0.5 px-3 py-2.5",
-    long ? "" : "border-l-[3px] bg-surface",
-  );
-  return (
-    <li className="flex items-center gap-3">
-      <span
-        className={cn(
-          "w-12 shrink-0 font-mono font-semibold",
-          long ? "text-[11px] uppercase tracking-[0.05em] text-ink-muted" : "text-xs text-ink",
-        )}
-      >
-        {long ? "Jour" : formatHour(event.startsAt, timeZone)}
-      </span>
-      {event.href ? (
-        <Link href={event.href} className={className} style={style}>
-          {body}
-        </Link>
-      ) : (
-        <div className={className} style={style}>
-          {body}
-        </div>
-      )}
-    </li>
+              .join(" · ")
+      }
+    />
   );
 }
 
@@ -286,7 +254,9 @@ function eventsOf(day: CivilDate, events: CalendarEvent[], timeZone: string) {
   ];
 }
 
-/** M14 : agenda du jour sélectionné sous la grille du mois. */
+const countLabel = (count: number) => `${count} événement${count > 1 ? "s" : ""}`;
+
+/** M14 : agenda du jour sélectionné sous la grille du mois, en carte de programme. */
 export function DayAgenda({
   day,
   events,
@@ -298,30 +268,21 @@ export function DayAgenda({
 }) {
   const list = eventsOf(day, events, timeZone);
   return (
-    <section
-      aria-label={`Agenda du ${dayLabel(day)}`}
-      className="flex flex-col gap-2.5 px-4 pt-5 lg:hidden"
-    >
-      <div className="flex items-baseline justify-between gap-3 border-b border-line-soft pb-2.5">
-        <h2 className="font-section text-section uppercase leading-7 text-ink">{dayLabel(day)}</h2>
-        <span className="font-mono text-label font-semibold uppercase tracking-[0.055em] text-ink-muted">
-          {list.length} événement{list.length > 1 ? "s" : ""}
-        </span>
-      </div>
-      {list.length === 0 ? (
-        <p className="py-2 text-sm font-medium text-ink-muted">Rien de prévu ce jour-là.</p>
-      ) : (
-        <ul className="flex flex-col gap-2.5">
-          {list.map((event) => (
-            <AgendaRow key={event.id} event={event} timeZone={timeZone} />
-          ))}
-        </ul>
-      )}
-    </section>
+    <div className="px-4 pt-4 lg:hidden">
+      <ProgramCard
+        title={dayLabel(day)}
+        count={list.length > 0 ? countLabel(list.length) : undefined}
+        empty={list.length === 0 ? "Rien de prévu ce jour-là." : undefined}
+      >
+        {list.map((event) => (
+          <AgendaRow key={event.id} event={event} timeZone={timeZone} />
+        ))}
+      </ProgramCard>
+    </div>
   );
 }
 
-/** M15 : la semaine en agenda groupé par jour, précédé des événements sur plusieurs jours. */
+/** M15 : la semaine en cartes de programme, une par jour, après les événements sur plusieurs jours. */
 export function WeekAgenda({
   days,
   events,
@@ -337,65 +298,40 @@ export function WeekAgenda({
   const timed = events.filter((event) => !isAllDay(event, timeZone));
   const todayKey = civilKey(today);
   return (
-    <div className="flex flex-col lg:hidden">
+    <div className="flex flex-col gap-3 px-4 pt-4 lg:hidden">
       {long.length > 0 && (
-        <ul className="flex flex-col gap-1.5 border-b border-line-soft px-4 py-3">
-          {long.map((event) => {
-            const style = { backgroundColor: event.color, color: textOn(event.color) };
-            const content = (
-              <>
-                <span className="truncate text-[13px] font-bold leading-4">{event.title}</span>
-                <span className="shrink-0 font-mono text-[11px] font-medium opacity-85">
-                  {shortSpan(event, timeZone)}
-                </span>
-              </>
-            );
-            return (
-              <li key={event.id}>
-                {event.href ? (
-                  <Link
-                    href={event.href}
-                    className="flex h-7 items-center justify-between gap-3 px-2.5"
-                    style={style}
-                  >
-                    {content}
-                  </Link>
-                ) : (
-                  <div className="flex h-7 items-center justify-between gap-3 px-2.5" style={style}>
-                    {content}
-                  </div>
-                )}
-              </li>
-            );
-          })}
-        </ul>
+        <ProgramCard title="Sur plusieurs jours" count={countLabel(long.length)}>
+          {long.map((event) => (
+            <ProgramRow
+              key={event.id}
+              href={event.href}
+              time="Jour"
+              color={event.color}
+              title={event.title}
+              detail={shortSpan(event, timeZone)}
+            />
+          ))}
+        </ProgramCard>
       )}
-      <div className="flex flex-col gap-5 px-4 pt-4">
-        {days.map((day) => {
-          const list = eventsOf(day, timed, timeZone);
-          return (
-            <section key={civilKey(day)} aria-label={dayLabel(day)} className="flex flex-col gap-2">
-              <h2 className="flex items-center gap-2.5 border-b border-line-soft pb-2 font-mono text-label font-semibold uppercase tracking-[0.055em] text-ink">
-                {dayLabel(day, true)}
-                {civilKey(day) === todayKey && (
-                  <span className="bg-ink px-1.5 py-0.5 text-[11px] leading-[14px] text-on-ink">
-                    Aujourd'hui
-                  </span>
-                )}
-              </h2>
-              {list.length === 0 ? (
-                <p className="text-sm font-medium text-ink-subtle">Rien de prévu.</p>
-              ) : (
-                <ul className="flex flex-col gap-2">
-                  {list.map((event) => (
-                    <AgendaRow key={event.id} event={event} timeZone={timeZone} />
-                  ))}
-                </ul>
-              )}
-            </section>
-          );
-        })}
-      </div>
+      {days.map((day) => {
+        const list = eventsOf(day, timed, timeZone);
+        return (
+          <ProgramCard
+            key={civilKey(day)}
+            title={
+              civilKey(day) === todayKey
+                ? `${dayLabel(day, true)} · Aujourd'hui`
+                : dayLabel(day, true)
+            }
+            count={list.length > 0 ? countLabel(list.length) : undefined}
+            empty={list.length === 0 ? "Rien de prévu." : undefined}
+          >
+            {list.map((event) => (
+              <AgendaRow key={event.id} event={event} timeZone={timeZone} />
+            ))}
+          </ProgramCard>
+        );
+      })}
     </div>
   );
 }
