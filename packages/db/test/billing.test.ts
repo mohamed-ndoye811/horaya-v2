@@ -2,6 +2,7 @@ import {
   applySubscription,
   assertSeatAvailable,
   createItem,
+  endSubscription,
   getBillingOverview,
   getCurrentPlan,
   grantPlan,
@@ -98,5 +99,24 @@ describe("formules et licences", () => {
     expect(overview.seats).toEqual({ used: 1, limit: null });
     expect(overview.bookings).toMatchObject({ limit: null, thisMonth: 0, over: false });
     expect(overview.canManage).toBe(true);
+  });
+
+  it("arrête l'abonnement passé sur un produit hors Horaya, pas un autre", async () => {
+    const organizationId = await createOrganization("FIN", { plan: "libre" });
+    const deps = testDeps(fixedClock());
+    await applySubscription(deps, organizationId, {
+      plan: "equipe",
+      interval: "month",
+      status: "active",
+      polarCustomerId: `cus_${organizationId}`,
+      polarSubscriptionId: `sub_${organizationId}`,
+      currentPeriodEnd: new Date("2099-01-01T00:00:00Z"),
+      cancelAtPeriodEnd: false,
+    });
+    expect(await endSubscription(deps, organizationId, "sub_autre")).toBe(false);
+    expect((await getCurrentPlan(deps, organizationId)).plan).toBe("equipe");
+
+    expect(await endSubscription(deps, organizationId, `sub_${organizationId}`)).toBe(true);
+    expect((await getCurrentPlan(deps, organizationId)).plan).toBe("libre");
   });
 });

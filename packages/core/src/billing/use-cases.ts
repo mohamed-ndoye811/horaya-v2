@@ -172,6 +172,38 @@ export async function applySubscription(
   });
 }
 
+/**
+ * Webhook Polar : l'abonnement de l'espace est passé sur un produit qui n'est pas une formule
+ * Horaya (changement de formule depuis le portail). La formule s'arrête tout de suite ;
+ * un autre abonnement que celui de l'espace ne change rien.
+ */
+export async function endSubscription(
+  deps: Deps,
+  organizationId: string,
+  polarSubscriptionId: string,
+): Promise<boolean> {
+  const actor: Actor = { type: "system", organizationId };
+  return deps.uow.run(async (repositories) => {
+    const { subscription } = await repositories.billing.get(organizationId);
+    if (subscription?.polarSubscriptionId !== polarSubscriptionId) return false;
+    await repositories.billing.saveSubscription(organizationId, {
+      ...subscription,
+      status: "canceled",
+      currentPeriodEnd: deps.clock.now(),
+      cancelAtPeriodEnd: false,
+    });
+    await repositories.activity.record({
+      organizationId,
+      entityType: "billing",
+      entityId: organizationId,
+      action: "billing.subscription_updated",
+      ...actorRef(actor),
+      data: { plan: subscription.plan, interval: subscription.interval, status: "canceled" },
+    });
+    return true;
+  });
+}
+
 /** Espace dont le client Polar est celui-ci (webhooks sans métadonnée). */
 export function organizationOfPolarCustomer(
   deps: Deps,
