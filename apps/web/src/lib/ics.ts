@@ -1,4 +1,4 @@
-/** Fichier iCalendar d'un événement réservé (« Ajouter à ton agenda », écran 19). */
+/** Fichiers iCalendar : événement réservé (« Ajouter à ton agenda », écran 19) et flux d'agenda des membres. */
 
 const escapeText = (value: string) =>
   value
@@ -32,7 +32,7 @@ function fold(line: string): string {
   return parts.join("\r\n ");
 }
 
-export function buildIcs(event: {
+export interface IcsEvent {
   uid: string;
   title: string;
   startsAt: Date;
@@ -40,28 +40,53 @@ export function buildIcs(event: {
   location?: string | null;
   description?: string | null;
   url?: string | null;
+  /** Événement annulé : l'agenda abonné le retire ou le barre. */
+  cancelled?: boolean;
+}
+
+const eventLines = (event: IcsEvent, now: Date) => [
+  "BEGIN:VEVENT",
+  `UID:${event.uid}`,
+  `DTSTAMP:${icsDate(now)}`,
+  `DTSTART:${icsDate(event.startsAt)}`,
+  `DTEND:${icsDate(event.endsAt)}`,
+  `SUMMARY:${escapeText(event.title)}`,
+  ...(event.cancelled ? ["STATUS:CANCELLED"] : []),
+  ...(event.location ? [`LOCATION:${escapeText(event.location)}`] : []),
+  ...(event.description ? [`DESCRIPTION:${escapeText(event.description)}`] : []),
+  ...(event.url ? [`URL:${event.url}`] : []),
+  "END:VEVENT",
+];
+
+/** Calendrier de plusieurs événements ; avec `name`, un flux d'abonnement (rafraîchi chaque heure). */
+export function buildIcsCalendar(calendar: {
   organizer: string;
+  name?: string;
+  events: IcsEvent[];
   now?: Date;
 }): string {
+  const now = calendar.now ?? new Date();
   const lines = [
     "BEGIN:VCALENDAR",
     "VERSION:2.0",
-    `PRODID:-//Horaya//${escapeText(event.organizer)}//FR`,
+    `PRODID:-//Horaya//${escapeText(calendar.organizer)}//FR`,
     "CALSCALE:GREGORIAN",
     "METHOD:PUBLISH",
-    "BEGIN:VEVENT",
-    `UID:${event.uid}`,
-    `DTSTAMP:${icsDate(event.now ?? new Date())}`,
-    `DTSTART:${icsDate(event.startsAt)}`,
-    `DTEND:${icsDate(event.endsAt)}`,
-    `SUMMARY:${escapeText(event.title)}`,
-    ...(event.location ? [`LOCATION:${escapeText(event.location)}`] : []),
-    ...(event.description ? [`DESCRIPTION:${escapeText(event.description)}`] : []),
-    ...(event.url ? [`URL:${event.url}`] : []),
-    "END:VEVENT",
+    ...(calendar.name
+      ? [
+          `X-WR-CALNAME:${escapeText(calendar.name)}`,
+          "REFRESH-INTERVAL;VALUE=DURATION:PT1H",
+          "X-PUBLISHED-TTL:PT1H",
+        ]
+      : []),
+    ...calendar.events.flatMap((event) => eventLines(event, now)),
     "END:VCALENDAR",
   ];
   return `${lines.map(fold).join("\r\n")}\r\n`;
+}
+
+export function buildIcs(event: IcsEvent & { organizer: string; now?: Date }): string {
+  return buildIcsCalendar({ organizer: event.organizer, now: event.now, events: [event] });
 }
 
 /** Lien « Ajouter à Google Agenda ». */

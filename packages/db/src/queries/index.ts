@@ -1,4 +1,5 @@
 export * from "./bookings";
+export * from "./calendar-feeds";
 export * from "./calendar-links";
 export * from "./customers";
 export * from "./dashboard";

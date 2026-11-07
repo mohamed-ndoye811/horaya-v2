@@ -6,6 +6,7 @@ import { z } from "zod";
  */
 export const RESERVED_SLUGS: ReadonlySet<string> = new Set([
   "admin",
+  "agenda",
   "aide",
   "api",
   "app",
