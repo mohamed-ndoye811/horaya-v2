@@ -5,9 +5,10 @@ import {
   type MemberRole,
   PASSWORD_MAX_LENGTH,
   PASSWORD_MIN_LENGTH,
+  startTrial,
   ValidationError,
 } from "@horaya/core";
-import { type Db, schema, tenantSettingsRepository } from "@horaya/db";
+import { createDeps, type Db, schema, tenantSettingsRepository } from "@horaya/db";
 import {
   emailVerificationEmail,
   invitationEmail,
@@ -159,6 +160,8 @@ export function createAuth(db: Db, options: AuthOptions) {
         organizationHooks: {
           afterCreateOrganization: async ({ organization: org }) => {
             await tenantSettings.ensureExists(org.id);
+            // 14 jours de Pro, sans carte : l'espace repasse ensuite en Libre sans rien perdre.
+            await startTrial(createDeps(db), org.id);
           },
         },
       }),

@@ -1,6 +1,7 @@
 /** Paramètres : logique serveur des formulaires et actions (voir functions/settings.ts). */
 import {
   assertMemberCan,
+  assertSeatAvailable,
   checkPassword,
   connectPaymentAccount,
   createWorkspaceSchema,
@@ -214,6 +215,11 @@ export async function inviteMember(form: FormData): Promise<FormState> {
     return { error: "Vérifie les champs en rouge.", fieldErrors };
   }
   const { email, role } = parsed.data;
+  try {
+    await assertSeatAvailable(deps, (await getWorkspaceContext()).workspace.id);
+  } catch (error) {
+    return toFormState(error);
+  }
   return runTeam(
     (organizationId, headers) =>
       auth.api.createInvitation({ body: { email, role, organizationId }, headers }),
@@ -267,6 +273,11 @@ export async function createJoinLink(role: AssignableRole): Promise<FormState> {
   if (!manager) return { error: "Seuls le propriétaire et les admins gèrent l'équipe." };
   if (!(JOIN_LINK_ROLES as readonly string[]).includes(role))
     return { error: "Rôle non autorisé." };
+  try {
+    await assertSeatAvailable(deps, manager.workspace.id);
+  } catch (error) {
+    return toFormState(error);
+  }
   await saveJoinLink(db, {
     organizationId: manager.workspace.id,
     token: generateToken(),

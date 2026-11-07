@@ -36,6 +36,7 @@ import { Route as authInscriptionIndexRouteImport } from './routes/(auth)/inscri
 import { Route as authInscriptionEspaceRouteImport } from './routes/(auth)/inscription/espace'
 import { Route as authInscriptionPaiementsRouteImport } from './routes/(auth)/inscription/paiements'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
+import { Route as ApiPolarWebhookRouteImport } from './routes/api/polar/webhook'
 import { Route as ApiStripeWebhookRouteImport } from './routes/api/stripe/webhook'
 import { Route as AppClientsIndexRouteImport } from './routes/app/clients/index'
 import { Route as AppClientsExportRouteImport } from './routes/app/clients/export'
@@ -48,6 +49,7 @@ import { Route as AppMaterielIndexRouteImport } from './routes/app/materiel/inde
 import { Route as AppMaterielModeleImportRouteImport } from './routes/app/materiel/modele-import'
 import { Route as AppMaterielNouveauRouteImport } from './routes/app/materiel/nouveau'
 import { Route as AppParametresIndexRouteImport } from './routes/app/parametres/index'
+import { Route as AppParametresAbonnementRouteImport } from './routes/app/parametres/abonnement'
 import { Route as AppParametresIntegrationsRouteImport } from './routes/app/parametres/integrations'
 import { Route as AppParametresMembresRouteImport } from './routes/app/parametres/membres'
 import { Route as AppParametresNotificationsRouteImport } from './routes/app/parametres/notifications'
@@ -206,6 +208,11 @@ const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
   path: '/api/auth/$',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPolarWebhookRoute = ApiPolarWebhookRouteImport.update({
+  id: '/api/polar/webhook',
+  path: '/api/polar/webhook',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiStripeWebhookRoute = ApiStripeWebhookRouteImport.update({
   id: '/api/stripe/webhook',
   path: '/api/stripe/webhook',
@@ -264,6 +271,11 @@ const AppMaterielNouveauRoute = AppMaterielNouveauRouteImport.update({
 const AppParametresIndexRoute = AppParametresIndexRouteImport.update({
   id: '/parametres/',
   path: '/parametres/',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppParametresAbonnementRoute = AppParametresAbonnementRouteImport.update({
+  id: '/parametres/abonnement',
+  path: '/parametres/abonnement',
   getParentRoute: () => AppRoute,
 } as any)
 const AppParametresIntegrationsRoute =
@@ -400,6 +412,7 @@ export interface FileRoutesByFullPath {
   '/inscription/espace': typeof authInscriptionEspaceRoute
   '/inscription/paiements': typeof authInscriptionPaiementsRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/api/polar/webhook': typeof ApiPolarWebhookRoute
   '/api/stripe/webhook': typeof ApiStripeWebhookRoute
   '/app/clients/export': typeof AppClientsExportRoute
   '/app/clients/nouveau': typeof AppClientsNouveauRoute
@@ -408,6 +421,7 @@ export interface FileRoutesByFullPath {
   '/app/evenements/types': typeof AppEvenementsTypesRoute
   '/app/materiel/modele-import': typeof AppMaterielModeleImportRoute
   '/app/materiel/nouveau': typeof AppMaterielNouveauRoute
+  '/app/parametres/abonnement': typeof AppParametresAbonnementRoute
   '/app/parametres/integrations': typeof AppParametresIntegrationsRoute
   '/app/parametres/membres': typeof AppParametresMembresRoute
   '/app/parametres/notifications': typeof AppParametresNotificationsRoute
@@ -459,6 +473,7 @@ export interface FileRoutesByTo {
   '/inscription/espace': typeof authInscriptionEspaceRoute
   '/inscription/paiements': typeof authInscriptionPaiementsRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/api/polar/webhook': typeof ApiPolarWebhookRoute
   '/api/stripe/webhook': typeof ApiStripeWebhookRoute
   '/app/clients/export': typeof AppClientsExportRoute
   '/app/clients/nouveau': typeof AppClientsNouveauRoute
@@ -467,6 +482,7 @@ export interface FileRoutesByTo {
   '/app/evenements/types': typeof AppEvenementsTypesRoute
   '/app/materiel/modele-import': typeof AppMaterielModeleImportRoute
   '/app/materiel/nouveau': typeof AppMaterielNouveauRoute
+  '/app/parametres/abonnement': typeof AppParametresAbonnementRoute
   '/app/parametres/integrations': typeof AppParametresIntegrationsRoute
   '/app/parametres/membres': typeof AppParametresMembresRoute
   '/app/parametres/notifications': typeof AppParametresNotificationsRoute
@@ -521,6 +537,7 @@ export interface FileRoutesById {
   '/(auth)/inscription/espace': typeof authInscriptionEspaceRoute
   '/(auth)/inscription/paiements': typeof authInscriptionPaiementsRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/api/polar/webhook': typeof ApiPolarWebhookRoute
   '/api/stripe/webhook': typeof ApiStripeWebhookRoute
   '/app/clients/export': typeof AppClientsExportRoute
   '/app/clients/nouveau': typeof AppClientsNouveauRoute
@@ -529,6 +546,7 @@ export interface FileRoutesById {
   '/app/evenements/types': typeof AppEvenementsTypesRoute
   '/app/materiel/modele-import': typeof AppMaterielModeleImportRoute
   '/app/materiel/nouveau': typeof AppMaterielNouveauRoute
+  '/app/parametres/abonnement': typeof AppParametresAbonnementRoute
   '/app/parametres/integrations': typeof AppParametresIntegrationsRoute
   '/app/parametres/membres': typeof AppParametresMembresRoute
   '/app/parametres/notifications': typeof AppParametresNotificationsRoute
@@ -584,6 +602,7 @@ export interface FileRouteTypes {
     | '/inscription/espace'
     | '/inscription/paiements'
     | '/api/auth/$'
+    | '/api/polar/webhook'
     | '/api/stripe/webhook'
     | '/app/clients/export'
     | '/app/clients/nouveau'
@@ -592,6 +611,7 @@ export interface FileRouteTypes {
     | '/app/evenements/types'
     | '/app/materiel/modele-import'
     | '/app/materiel/nouveau'
+    | '/app/parametres/abonnement'
     | '/app/parametres/integrations'
     | '/app/parametres/membres'
     | '/app/parametres/notifications'
@@ -643,6 +663,7 @@ export interface FileRouteTypes {
     | '/inscription/espace'
     | '/inscription/paiements'
     | '/api/auth/$'
+    | '/api/polar/webhook'
     | '/api/stripe/webhook'
     | '/app/clients/export'
     | '/app/clients/nouveau'
@@ -651,6 +672,7 @@ export interface FileRouteTypes {
     | '/app/evenements/types'
     | '/app/materiel/modele-import'
     | '/app/materiel/nouveau'
+    | '/app/parametres/abonnement'
     | '/app/parametres/integrations'
     | '/app/parametres/membres'
     | '/app/parametres/notifications'
@@ -704,6 +726,7 @@ export interface FileRouteTypes {
     | '/(auth)/inscription/espace'
     | '/(auth)/inscription/paiements'
     | '/api/auth/$'
+    | '/api/polar/webhook'
     | '/api/stripe/webhook'
     | '/app/clients/export'
     | '/app/clients/nouveau'
@@ -712,6 +735,7 @@ export interface FileRouteTypes {
     | '/app/evenements/types'
     | '/app/materiel/modele-import'
     | '/app/materiel/nouveau'
+    | '/app/parametres/abonnement'
     | '/app/parametres/integrations'
     | '/app/parametres/membres'
     | '/app/parametres/notifications'
@@ -757,6 +781,7 @@ export interface RootRouteChildren {
   authInscriptionEspaceRoute: typeof authInscriptionEspaceRoute
   authInscriptionPaiementsRoute: typeof authInscriptionPaiementsRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
+  ApiPolarWebhookRoute: typeof ApiPolarWebhookRoute
   ApiStripeWebhookRoute: typeof ApiStripeWebhookRoute
   authInscriptionIndexRoute: typeof authInscriptionIndexRoute
 }
@@ -952,6 +977,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiAuthSplatRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/polar/webhook': {
+      id: '/api/polar/webhook'
+      path: '/api/polar/webhook'
+      fullPath: '/api/polar/webhook'
+      preLoaderRoute: typeof ApiPolarWebhookRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/stripe/webhook': {
       id: '/api/stripe/webhook'
       path: '/api/stripe/webhook'
@@ -1034,6 +1066,13 @@ declare module '@tanstack/react-router' {
       path: '/parametres'
       fullPath: '/app/parametres/'
       preLoaderRoute: typeof AppParametresIndexRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/parametres/abonnement': {
+      id: '/app/parametres/abonnement'
+      path: '/parametres/abonnement'
+      fullPath: '/app/parametres/abonnement'
+      preLoaderRoute: typeof AppParametresAbonnementRouteImport
       parentRoute: typeof AppRoute
     }
     '/app/parametres/integrations': {
@@ -1215,6 +1254,7 @@ interface AppRouteChildren {
   AppEvenementsTypesRoute: typeof AppEvenementsTypesRoute
   AppMaterielModeleImportRoute: typeof AppMaterielModeleImportRoute
   AppMaterielNouveauRoute: typeof AppMaterielNouveauRoute
+  AppParametresAbonnementRoute: typeof AppParametresAbonnementRoute
   AppParametresIntegrationsRoute: typeof AppParametresIntegrationsRoute
   AppParametresMembresRoute: typeof AppParametresMembresRoute
   AppParametresNotificationsRoute: typeof AppParametresNotificationsRoute
@@ -1251,6 +1291,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppEvenementsTypesRoute: AppEvenementsTypesRoute,
   AppMaterielModeleImportRoute: AppMaterielModeleImportRoute,
   AppMaterielNouveauRoute: AppMaterielNouveauRoute,
+  AppParametresAbonnementRoute: AppParametresAbonnementRoute,
   AppParametresIntegrationsRoute: AppParametresIntegrationsRoute,
   AppParametresMembresRoute: AppParametresMembresRoute,
   AppParametresNotificationsRoute: AppParametresNotificationsRoute,
@@ -1294,6 +1335,7 @@ const rootRouteChildren: RootRouteChildren = {
   authInscriptionEspaceRoute: authInscriptionEspaceRoute,
   authInscriptionPaiementsRoute: authInscriptionPaiementsRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
+  ApiPolarWebhookRoute: ApiPolarWebhookRoute,
   ApiStripeWebhookRoute: ApiStripeWebhookRoute,
   authInscriptionIndexRoute: authInscriptionIndexRoute,
 }

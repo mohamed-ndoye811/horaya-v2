@@ -582,6 +582,11 @@ const ACCOUNT_LINKS = [
   { href: "/app/parametres/membres", label: "Membres", detail: "Ton équipe et les invitations" },
   { href: "/app/parametres/paiements", label: "Paiements", detail: "Encaissement, acompte, TVA" },
   {
+    href: "/app/parametres/abonnement",
+    label: "Abonnement",
+    detail: "Ta formule Horaya, tes factures",
+  },
+  {
     href: "/app/parametres/notifications",
     label: "Notifications",
     detail: "Ce qui te prévient, et comment",

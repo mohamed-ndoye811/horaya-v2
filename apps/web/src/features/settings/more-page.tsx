@@ -65,6 +65,7 @@ export function MorePage({ data }: { data: Awaited<ReturnType<typeof getMoreMenu
           Membres &amp; rôles
         </Row>
         <Row href="/app/parametres/paiements">Paiements</Row>
+        <Row href="/app/parametres/abonnement">Abonnement</Row>
         <Row href="/app/parametres/notifications">Notifications</Row>
         <Row
           href="/app/parametres/integrations"

@@ -1,3 +1,4 @@
+import type { BillingRepository } from "../billing/ports";
 import type {
   ActivityLog,
   BookingRepository,
@@ -27,6 +28,7 @@ export interface Repositories {
   payments: PaymentRepository;
   calendarLinks: CalendarLinkRepository;
   calendarFeeds: CalendarFeedRepository;
+  billing: BillingRepository;
 }
 
 /** Exécute un travail dans une transaction : tout est validé, ou rien. */

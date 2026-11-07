@@ -1,4 +1,5 @@
 /** Invitations (par e-mail et lien général) : logique serveur (voir functions/invitations.ts). */
+import { assertSeatAvailable, PlanLimitError } from "@horaya/core";
 import { findUsableJoinLink, getInvitationSummary } from "@horaya/db";
 import { redirect } from "@tanstack/react-router";
 import { auth, getSession, listMyWorkspaces, requestHeaders } from "./auth";
@@ -6,6 +7,7 @@ import { authApiFormState } from "./auth-errors";
 import { db } from "./db";
 import type { FormState } from "./form-state";
 import { isInvitationId, isJoinToken } from "./invitation";
+import { deps } from "./services";
 
 /** Page ouverte depuis l'e-mail d'invitation. */
 export async function invitationPage(id: string) {
@@ -75,6 +77,15 @@ export async function joinWithLink(token: string): Promise<FormState> {
   if (!session) throw redirect({ href: `/connexion?rejoindre=${token}` });
   const link = isJoinToken(token) ? await findUsableJoinLink(db, token, new Date()) : null;
   if (!link) return { error: "Ce lien n'est plus valable : demande-en un nouveau à l'équipe." };
+  try {
+    await assertSeatAvailable(deps, link.organizationId);
+  } catch (error) {
+    if (!(error instanceof PlanLimitError)) throw error;
+    return {
+      error:
+        "L'équipe de cet espace est au complet pour sa formule : préviens la personne qui t'a envoyé le lien.",
+    };
+  }
   try {
     // Ajout côté serveur uniquement : le lien tient lieu d'invitation.
     await auth.api.addMember({

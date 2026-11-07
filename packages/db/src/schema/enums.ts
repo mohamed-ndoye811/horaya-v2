@@ -2,6 +2,8 @@
 import {
   ACTOR_TYPES,
   ALLOCATION_KINDS,
+  BILLING_INTERVALS,
+  BILLING_RATES,
   BOOKING_KINDS,
   BOOKING_PAYMENT_STATUSES,
   BOOKING_SOURCES,
@@ -14,7 +16,10 @@ import {
   PAYMENT_METHODS,
   PAYMENT_MODES,
   PAYMENT_RECORD_STATUSES,
+  PLAN_GRANT_KINDS,
+  PLAN_IDS,
   STRIPE_ACCOUNT_STATUSES,
+  SUBSCRIPTION_STATUSES,
 } from "@horaya/core";
 import { pgEnum } from "drizzle-orm/pg-core";
 
@@ -33,3 +38,8 @@ export const itemUnitStatus = pgEnum("item_unit_status", ITEM_UNIT_STATUSES);
 export const allocationKind = pgEnum("allocation_kind", ALLOCATION_KINDS);
 export const actorType = pgEnum("actor_type", ACTOR_TYPES);
 export const calendarLinkFilter = pgEnum("calendar_link_filter", CALENDAR_LINK_FILTERS);
+export const planId = pgEnum("plan_id", PLAN_IDS);
+export const billingInterval = pgEnum("billing_interval", BILLING_INTERVALS);
+export const billingRate = pgEnum("billing_rate", BILLING_RATES);
+export const planGrantKind = pgEnum("plan_grant_kind", PLAN_GRANT_KINDS);
+export const subscriptionStatus = pgEnum("subscription_status", SUBSCRIPTION_STATUSES);

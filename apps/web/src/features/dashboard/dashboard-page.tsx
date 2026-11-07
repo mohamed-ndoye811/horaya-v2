@@ -1,5 +1,6 @@
 import { daysInMonth } from "@horaya/core";
 import { PageHeader } from "@/components/app/page-header";
+import { Banner } from "@/components/ui/banner";
 import { ButtonLink } from "@/components/ui/button";
 import { PlusIcon } from "@/components/ui/icons";
 import { SectionHeading } from "@/components/ui/section";
@@ -152,6 +153,29 @@ export function DashboardPage({ data }: { data: Awaited<ReturnType<typeof getDas
       {!user.emailVerified && (
         <div className="px-4 pb-4">
           <VerifyEmailBanner email={user.email} />
+        </div>
+      )}
+      {(data.billing.over || data.billing.trialUntil) && (
+        <div className="pb-4">
+          <Banner
+            tone={data.billing.suggestUpgrade ? "warning" : "info"}
+            action={<Link href="/app/parametres/abonnement">Voir les formules</Link>}
+          >
+            {data.billing.over ? (
+              <>
+                <strong>{data.billing.limit} réservations par mois dépassées.</strong> Tes clients
+                réservent toujours normalement
+                {data.billing.suggestUpgrade
+                  ? " ; deux mois de suite, la formule supérieure te correspondrait mieux."
+                  : "."}
+              </>
+            ) : (
+              <>
+                <strong>Essai Pro jusqu'au {data.billing.trialUntil}.</strong> Ensuite, ton espace
+                repasse en Libre sans rien perdre, sauf si tu choisis une formule.
+              </>
+            )}
+          </Banner>
         </div>
       )}
 
