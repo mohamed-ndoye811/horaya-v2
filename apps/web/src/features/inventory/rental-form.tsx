@@ -5,8 +5,9 @@ import { Button } from "@/components/ui/button";
 import { AffixInput, Field, inputClasses } from "@/components/ui/field";
 import { FormAlert } from "@/components/ui/form-alert";
 import { BoxIcon } from "@/components/ui/icons";
-import { FormSection } from "@/components/ui/section";
+import { FormSection, inkCardClasses } from "@/components/ui/section";
 import { createRentalAction } from "@/functions/inventory";
+import { cn } from "@/lib/cn";
 import { formatMoney } from "@/lib/format";
 import { useFormAction } from "@/lib/use-form-action";
 import type { FormState } from "@/server/form-state";
@@ -145,11 +146,11 @@ export function RentalForm({
               height="16"
               viewBox="0 0 24 24"
               fill="none"
-              stroke="#6b6b6b"
+              stroke="currentColor"
               strokeWidth="1.75"
               strokeLinecap="round"
               strokeLinejoin="round"
-              className="shrink-0"
+              className="shrink-0 text-ink-muted"
             >
               <path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z" />
               <path d="M8 8h8M8 12h8M8 16h5" />
@@ -179,16 +180,21 @@ export function RentalForm({
         </FormSection>
       </div>
 
-      <aside className="flex flex-col gap-4 rounded-3xl bg-ink p-2 pb-5 xl:sticky xl:top-4">
+      <aside
+        className={cn(
+          inkCardClasses,
+          "flex flex-col gap-4 rounded-3xl p-2 pb-5 xl:sticky xl:top-4",
+        )}
+      >
         <div
           aria-hidden="true"
-          className="flex h-[180px] items-center justify-center rounded-[18px] bg-white/5 text-white/40"
+          className="flex h-[180px] items-center justify-center rounded-[18px] bg-white/5 text-on-ink/40"
         >
           <BoxIcon size={48} />
         </div>
         <div className="flex flex-col gap-0.5 px-3.5">
-          <p className="text-[17px] font-semibold leading-[22px] text-white">{name}</p>
-          <p className="text-[13px] leading-[17px] text-[#9a9ea8]">
+          <p className="text-[17px] font-semibold leading-[22px] text-on-ink">{name}</p>
+          <p className="text-[13px] leading-[17px] text-on-ink-muted">
             Réf. {reference}
             {dailyRateCents !== null ? ` · ${formatMoney(dailyRateCents)} / jour` : ""}
           </p>
@@ -200,14 +206,14 @@ export function RentalForm({
             ["Caution", depositCents === null ? "—" : formatMoney(depositCents * count)],
           ].map(([label, value]) => (
             <div key={label} className="flex items-center justify-between gap-4 py-1.5">
-              <dt className="text-sm leading-[18px] text-[#9a9ea8]">{label}</dt>
-              <dd className="text-sm font-semibold leading-[18px] text-white">{value}</dd>
+              <dt className="text-sm leading-[18px] text-on-ink-muted">{label}</dt>
+              <dd className="text-sm font-semibold leading-[18px] text-on-ink">{value}</dd>
             </div>
           ))}
         </dl>
         <div className="flex items-end justify-between px-3.5">
-          <span className="pb-1.5 text-sm leading-[18px] text-[#9a9ea8]">Total</span>
-          <span className="font-headline text-[40px] leading-[44px] tracking-[-0.03em] text-white">
+          <span className="pb-1.5 text-sm leading-[18px] text-on-ink-muted">Total</span>
+          <span className="font-headline text-[40px] leading-[44px] tracking-[-0.03em] text-on-ink">
             {valid ? formatMoney(totalCents).replace(/\s?€$/, "") : "—"}
             {valid && <span className="ml-1 text-lg font-light tracking-normal">€</span>}
           </span>

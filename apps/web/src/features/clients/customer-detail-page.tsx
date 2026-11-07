@@ -3,10 +3,11 @@ import { RENTAL_COLOR } from "@/components/app/availability-grid";
 import { PageHeader } from "@/components/app/page-header";
 import { Avatar } from "@/components/ui/avatar";
 import { StatusBadge } from "@/components/ui/badge";
-import { ButtonLink } from "@/components/ui/button";
+import { ButtonLink, rowLinkClasses, textLinkSmClasses } from "@/components/ui/button";
 import { DateBlock } from "@/components/ui/cells";
 import { PlusIcon } from "@/components/ui/icons";
-import { cardClasses, cardShellClasses } from "@/components/ui/section";
+import { ActionMenu } from "@/components/ui/menu";
+import { cardClasses, cardShellClasses, dashedClasses } from "@/components/ui/section";
 import { MiniStat, ProgressRing } from "@/components/ui/stat";
 import { ATTENDANCE_BADGE, BOOKING_STATUS_BADGE } from "@/components/ui/status";
 import { Tag } from "@/components/ui/tag";
@@ -88,9 +89,11 @@ export function CustomerDetailPage({ data }: { data: Awaited<ReturnType<typeof g
         actions={
           <>
             {customer.email && (
-              <ButtonLink href={`mailto:${customer.email}`} variant="secondary">
-                Envoyer un e-mail
-              </ButtonLink>
+              <div className="hidden lg:flex">
+                <ButtonLink href={`mailto:${customer.email}`} variant="secondary">
+                  Envoyer un e-mail
+                </ButtonLink>
+              </div>
             )}
             <ButtonLink
               href={`/app/reservations/nouvelle?client=${customer.id}`}
@@ -98,6 +101,19 @@ export function CustomerDetailPage({ data }: { data: Awaited<ReturnType<typeof g
             >
               Créer une réservation
             </ButtonLink>
+            {/* Sous `lg`, les actions secondaires passent dans un menu « … ». */}
+            <div className="flex lg:hidden">
+              <ActionMenu
+                variant="outline"
+                label="Autres actions"
+                items={[
+                  { label: "Modifier la fiche", href: `/app/clients/${customer.id}/modifier` },
+                  ...(customer.email
+                    ? [{ label: "Envoyer un e-mail", href: `mailto:${customer.email}` }]
+                    : []),
+                ]}
+              />
+            </div>
           </>
         }
       />
@@ -142,35 +158,42 @@ export function CustomerDetailPage({ data }: { data: Awaited<ReturnType<typeof g
           <section className={cn(cardClasses, "gap-1")}>
             <div className="flex items-baseline justify-between pb-2">
               <h2 className="text-base font-semibold leading-5 text-ink">Coordonnées</h2>
-              <Link
-                href={`/app/clients/${customer.id}/modifier`}
-                className="text-[13px] font-semibold leading-[17px] text-ink hover:underline"
-              >
+              <Link href={`/app/clients/${customer.id}/modifier`} className={textLinkSmClasses}>
                 Modifier
               </Link>
             </div>
             <dl className="flex flex-col">
               {[
-                ["E-mail", customer.email],
-                ["Téléphone", customer.phone],
-                ["Entreprise", customer.company],
-              ].map(([label, value]) => (
+                ["E-mail", customer.email, customer.email && `mailto:${customer.email}`],
+                [
+                  "Téléphone",
+                  customer.phone,
+                  customer.phone && `tel:${customer.phone.replace(/[^\d+]/g, "")}`,
+                ],
+                ["Entreprise", customer.company, null],
+              ].map(([label, value, href]) => (
                 <div
                   key={label}
-                  className="flex min-h-10 items-center justify-between gap-4 border-t border-[#f4f4f2] py-2"
+                  className="flex min-h-10 items-center justify-between gap-4 border-t border-line-faint py-2"
                 >
                   <dt className="text-[13px] leading-[17px] text-ink-subtle">{label}</dt>
                   <dd
                     className={cn(
                       "min-w-0 break-words text-right text-sm font-medium leading-[18px]",
-                      value ? "text-ink" : "text-[#ababa6]",
+                      value ? "text-ink" : "text-ink-faint",
                     )}
                   >
-                    {value || "—"}
+                    {href ? (
+                      <a href={href} className={rowLinkClasses}>
+                        {value}
+                      </a>
+                    ) : (
+                      value || "—"
+                    )}
                   </dd>
                 </div>
               ))}
-              <div className="flex min-h-10 items-center justify-between gap-4 border-t border-[#f4f4f2] py-2">
+              <div className="flex min-h-10 items-center justify-between gap-4 border-t border-line-faint py-2">
                 <dt className="text-[13px] leading-[17px] text-ink-subtle">Actualités</dt>
                 <dd
                   className={cn(
@@ -194,13 +217,13 @@ export function CustomerDetailPage({ data }: { data: Awaited<ReturnType<typeof g
                 key={note.id}
                 className={cn(
                   "flex flex-col gap-1.5 rounded-[14px] border-l-[3px] px-3.5 py-3",
-                  note.pinned ? "border-warning bg-warning-bg" : "border-[#dcdcd8] bg-field",
+                  note.pinned ? "border-warning bg-warning-bg" : "border-line-strong bg-field",
                 )}
               >
                 <p
                   className={cn(
                     "whitespace-pre-line text-sm leading-5",
-                    note.pinned ? "text-[#3a2e10]" : "text-[#333]",
+                    note.pinned ? "text-warning-strong" : "text-ink-soft",
                   )}
                 >
                   {note.body}
@@ -208,7 +231,7 @@ export function CustomerDetailPage({ data }: { data: Awaited<ReturnType<typeof g
                 <p
                   className={cn(
                     "text-[11px] font-bold uppercase leading-[14px] tracking-[0.04em]",
-                    note.pinned ? "text-[#8a6a2a]" : "text-ink-subtle",
+                    note.pinned ? "text-warning-strong" : "text-ink-subtle",
                   )}
                 >
                   {note.pinned ? "Épinglée · " : ""}
@@ -227,7 +250,7 @@ export function CustomerDetailPage({ data }: { data: Awaited<ReturnType<typeof g
             </span>
           </h2>
           {bookings.length === 0 && (
-            <p className="border-t border-[#f4f4f2] px-5 py-6 text-sm text-ink-subtle">
+            <p className="border-t border-line-faint px-5 py-6 text-sm text-ink-subtle">
               Aucune réservation pour l'instant.
             </p>
           )}
@@ -244,7 +267,7 @@ export function CustomerDetailPage({ data }: { data: Awaited<ReturnType<typeof g
               return (
                 <li
                   key={entry.id}
-                  className="relative flex min-h-[60px] items-center gap-3.5 border-t border-[#f4f4f2] px-5 py-2.5 hover:bg-band"
+                  className="relative flex min-h-[60px] items-center gap-3.5 border-t border-line-faint px-5 py-2.5 hover:bg-band"
                 >
                   {entry.eventId && entry.eventStartsAt ? (
                     <DateBlock
@@ -255,7 +278,10 @@ export function CustomerDetailPage({ data }: { data: Awaited<ReturnType<typeof g
                   ) : (
                     <span
                       aria-hidden="true"
-                      className="flex size-10 shrink-0 items-center justify-center rounded-[10px] border-[1.5px] border-dashed border-[#dcdcd8]"
+                      className={cn(
+                        dashedClasses,
+                        "flex size-10 shrink-0 items-center justify-center rounded-[10px] text-ink-subtle",
+                      )}
                     >
                       <svg
                         aria-hidden="true"
@@ -263,7 +289,7 @@ export function CustomerDetailPage({ data }: { data: Awaited<ReturnType<typeof g
                         height="16"
                         viewBox="0 0 24 24"
                         fill="none"
-                        stroke="#8a8a8a"
+                        stroke="currentColor"
                       >
                         <path
                           d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"
@@ -283,17 +309,17 @@ export function CustomerDetailPage({ data }: { data: Awaited<ReturnType<typeof g
                     >
                       <span
                         aria-hidden="true"
-                        className="size-[7px] shrink-0 rounded-full"
-                        style={{
-                          backgroundColor: off ? "#ababa6" : (entry.typeColor ?? RENTAL_COLOR),
-                        }}
+                        className={cn("size-[7px] shrink-0 rounded-full", off && "bg-ink-faint")}
+                        style={
+                          off ? undefined : { backgroundColor: entry.typeColor ?? RENTAL_COLOR }
+                        }
                       />
                       <span className="truncate">{entry.eventTitle ?? "Location"}</span>
                     </Link>
                     <span
                       className={cn(
                         "truncate text-xs leading-4",
-                        off ? "text-[#ababa6]" : "text-ink-subtle",
+                        off ? "text-ink-faint" : "text-ink-subtle",
                       )}
                     >
                       {entry.seats} place{entry.seats > 1 ? "s" : ""} ·{" "}
@@ -303,7 +329,7 @@ export function CustomerDetailPage({ data }: { data: Awaited<ReturnType<typeof g
                   <span
                     className={cn(
                       "w-20 shrink-0 text-right text-sm font-semibold leading-[18px]",
-                      off ? "text-[#ababa6] line-through" : "text-ink",
+                      off ? "text-ink-faint line-through" : "text-ink",
                     )}
                   >
                     {formatMoney(entry.amountCents)}
