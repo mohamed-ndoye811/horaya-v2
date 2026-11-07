@@ -16,7 +16,12 @@ import {
 } from "@horaya/core";
 import { eq } from "drizzle-orm";
 import { afterAll, beforeEach, describe, expect, it } from "vitest";
-import { getCustomerPassSummary, listCustomerPasses, listUsablePasses } from "../src/queries";
+import {
+  findCustomerIdByEmail,
+  getCustomerPassSummary,
+  listCustomerPasses,
+  listUsablePasses,
+} from "../src/queries";
 import { booking, customer, payment, tenantSettings } from "../src/schema";
 import { createMember, createOrganization, db, fixedClock, testDeps } from "./helpers";
 
@@ -183,6 +188,13 @@ describe("concurrence", () => {
     ]);
     expect(results.filter((result) => result.status === "fulfilled")).toHaveLength(1);
     expect(await balanceOf(customerId, pass.id)).toBe(4);
+  });
+
+  it("retrouve la fiche du client connecté par l'e-mail de son compte, dans cet espace seulement", async () => {
+    const mine = await newCustomer("Lea@Mail.com");
+    expect(await findCustomerIdByEmail(db, organizationId, "lea@mail.com")).toBe(mine.id);
+    const other = await createOrganization();
+    expect(await findCustomerIdByEmail(db, other, "lea@mail.com")).toBeNull();
   });
 
   it("un client ne règle que ses propres réservations", async () => {

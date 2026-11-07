@@ -18,7 +18,7 @@ import { googleCalendarUrl } from "@/lib/ics";
 import { Link, useRouter } from "@/lib/navigation";
 import { cancellationPolicy } from "@/lib/public-booking";
 import { CancelBooking } from "../public/manage-actions";
-import { PayAction } from "./actions";
+import { PayAction, PayWithPassAction } from "./actions";
 import { SpaceAside, SpaceTitle } from "./space-layout";
 
 type Data = Awaited<ReturnType<typeof getCustomerBookingPage>>;
@@ -49,7 +49,8 @@ export function CustomerBookingPage({
   data: Data;
   paymentReturn: string | undefined;
 }) {
-  const { booking, now, awaitsPayment, due, channel, paid, refund, reschedule, enrollment } = data;
+  const { booking, now, awaitsPayment, due, channel, paid, refund, reschedule, enrollment, pass } =
+    data;
   const slug = workspace.slug;
   const tz = workspace.timezone;
   const title = booking.eventTitle ?? "Location de matériel";
@@ -70,7 +71,9 @@ export function CustomerBookingPage({
       ? { label: `À payer · ${formatMoney(due)}`, tone: "warning" }
       : booking.paymentStatus === "paid"
         ? { label: "Payée", tone: "success" }
-        : { label: "Confirmée", tone: "success" });
+        : booking.paymentStatus === "paid_with_pass"
+          ? { label: "Payée avec ta carte", tone: "success" }
+          : { label: "Confirmée", tone: "success" });
   const where = [booking.locationName, booking.locationAddress].filter(Boolean).join(", ");
   const cancel = startsAt && startsAt > now && (
     <CancelBooking
@@ -144,6 +147,9 @@ export function CustomerBookingPage({
                   size="lg"
                   pay={{ due, url: channel.kind === "link" ? channel.url : null }}
                 />
+              )}
+              {pass && (
+                <PayWithPassAction slug={slug} bookingId={booking.id} pass={pass} size="lg" />
               )}
               {startsAt && endsAt && (
                 <AgendaButton

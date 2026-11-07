@@ -14,9 +14,10 @@ import {
   setPassPlanArchived,
   updatePassPlan,
 } from "@horaya/core";
-import { getEventTypeById, listUsablePasses } from "@horaya/db";
+import { findCustomerIdByEmail, getEventTypeById, listUsablePasses } from "@horaya/db";
 import { redirect } from "@tanstack/react-router";
 import { parseEuroToCents } from "@/lib/money";
+import { currentCustomerAccount } from "./customer-space";
 import { db } from "./db";
 import { type FormState, toFormState } from "./form-state";
 import { getWorkspaceBySlug } from "./public";
@@ -166,13 +167,15 @@ export async function purchasePassImpl(slug: string, form: FormData): Promise<Fo
 }
 
 /**
- * POINT D'ACCROCHE du lot 29 (espace client) : renvoie le client connecté à son espace pour
- * cet espace de travail, ou null. À brancher sur la session client une fois qu'elle existe.
+ * Client connecté à son espace (session du lot 29) : sa fiche client dans cet espace de
+ * travail, retrouvée par l'e-mail du compte, ou null. Jamais un identifiant venu du navigateur.
  */
 export async function currentCustomerIdentity(
-  _organizationId: string,
+  organizationId: string,
 ): Promise<{ customerId: string } | null> {
-  return null;
+  const account = await currentCustomerAccount();
+  const customerId = account && (await findCustomerIdByEmail(db, organizationId, account.email));
+  return customerId ? { customerId } : null;
 }
 
 /** Le client connecté règle sa réservation avec une séance de sa carte. */
