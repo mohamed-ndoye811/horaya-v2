@@ -1,5 +1,6 @@
 import nodemailer from "nodemailer";
 import { LOGOTYPE_CID, LOGOTYPE_PNG_BASE64 } from "./logotype";
+import { NOTCH_CID_PATTERN, notchFlankPng } from "./notch";
 
 /** Le logotype voyage dans l'e-mail (image intégrée) : rien à héberger, affiché par Gmail. */
 const logotype = {
@@ -19,6 +20,19 @@ export interface Mailer {
   send(to: string, content: EmailContent): Promise<void>;
 }
 
+/** Images intégrées que l'e-mail appelle : logotype et flancs du notch (à la couleur demandée). */
+export function inlineImages(html: string) {
+  const flanks = [
+    ...new Map([...html.matchAll(NOTCH_CID_PATTERN)].map((match) => [match[1], match])).values(),
+  ].map(([, cid = "", side, hex]) => ({
+    filename: `${cid}.png`,
+    content: notchFlankPng(side === "right" ? "right" : "left", `#${hex}`),
+    contentType: "image/png",
+    cid,
+  }));
+  return [...(html.includes(`cid:${LOGOTYPE_CID}`) ? [logotype] : []), ...flanks];
+}
+
 /** Envoi SMTP : Mailpit en local, n'importe quel fournisseur SMTP en production. */
 export function createSmtpMailer(options: { url: string; from: string }): Mailer {
   const transport = nodemailer.createTransport(options.url);
@@ -30,7 +44,7 @@ export function createSmtpMailer(options: { url: string; from: string }): Mailer
         subject,
         html,
         text,
-        attachments: html.includes(`cid:${LOGOTYPE_CID}`) ? [logotype] : [],
+        attachments: inlineImages(html),
       });
     },
   };

@@ -1,4 +1,5 @@
 import { LOGOTYPE_CID } from "./logotype";
+import { NOTCH_FLANK, notchCid } from "./notch";
 
 /*
  * Gabarit des e-mails, dans la DA de l'app (notch v4, tokens de apps/web/src/styles/app.css) :
@@ -74,32 +75,11 @@ function palette(brand: LayoutInput["brand"]) {
   };
 }
 
-/**
- * Notch replié de l'app (notch-shape.ts) : chaque flanc est un S de 44 × 50 px sous le cadre.
- * Sans SVG dans les clients mail, le S est rendu par deux quarts d'ellipse de 22 × 25 px en
- * border-radius : raccord concave en haut, coin convexe en bas, tangents à la verticale.
- */
-function notchHtml(content: string, frame: string, bg: string): string {
-  const cell = (width: number, background: string, inner = "") =>
-    `<td width="${width}" height="25" style="width:${width}px;height:25px;padding:0;font-size:0;line-height:0;background:${background}">${inner}</td>`;
-  const curve = (background: string, radius: string) =>
-    `<div style="height:25px;font-size:0;line-height:0;background:${background};${radius}"></div>`;
-  const flank = (side: "left" | "right") => {
-    const concave = cell(
-      22,
-      frame,
-      curve(bg, `border-top-${side === "left" ? "right" : "left"}-radius:22px 25px`),
-    );
-    const convex = cell(
-      22,
-      bg,
-      curve(frame, `border-bottom-${side === "left" ? "left" : "right"}-radius:22px 25px`),
-    );
-    const top = side === "left" ? concave + cell(22, frame) : cell(22, frame) + concave;
-    const bottom = side === "left" ? cell(22, bg) + convex : convex + cell(22, bg);
-    return `<td width="44" style="width:44px;padding:0;vertical-align:top"><table role="presentation" cellpadding="0" cellspacing="0" style="border-collapse:collapse"><tr>${top}</tr><tr>${bottom}</tr></table></td>`;
-  };
-  return `<table role="presentation" cellpadding="0" cellspacing="0" style="border-collapse:collapse"><tr>${flank("left")}<td height="46" style="height:46px;padding:0 10px 4px;background:${frame};vertical-align:middle;white-space:nowrap">${content}</td>${flank("right")}</tr></table>`;
+/** Notch replié de l'app : les deux flancs en S (images de notch.ts) et le centre plein. */
+function notchHtml(content: string, frame: string): string {
+  const flank = (side: "left" | "right") =>
+    `<td width="${NOTCH_FLANK.width}" style="width:${NOTCH_FLANK.width}px;padding:0;font-size:0;line-height:0;vertical-align:top"><img src="cid:${notchCid(side, frame)}" width="${NOTCH_FLANK.width}" height="${NOTCH_FLANK.height}" alt="" style="display:block;width:${NOTCH_FLANK.width}px;height:${NOTCH_FLANK.height}px;border:0"></td>`;
+  return `<table role="presentation" cellpadding="0" cellspacing="0" style="border-collapse:collapse"><tr>${flank("left")}<td height="${NOTCH_FLANK.height}" style="height:${NOTCH_FLANK.height}px;padding:0 4px;background:${frame};vertical-align:middle;white-space:nowrap">${content}</td>${flank("right")}</tr></table>`;
 }
 
 /** Gabarit commun des e-mails transactionnels. */
@@ -133,8 +113,8 @@ export function renderEmail({
 </td></tr></table>`
     : "";
   const notch = brand
-    ? `${brand.logo ? `<img src="${escapeHtml(brand.logo)}" width="24" height="24" alt="" style="display:inline-block;width:24px;height:24px;border:0;border-radius:7px;vertical-align:middle;margin-right:10px">` : ""}<span style="font-size:15px;line-height:24px;font-weight:600;vertical-align:middle;color:#F7F5F3">${escapeHtml(brand.name)}</span>`
-    : `<img src="cid:${LOGOTYPE_CID}" width="112" height="18" alt="Horaya" style="display:block;width:112px;height:18px;border:0">`;
+    ? `${brand.logo ? `<img src="${escapeHtml(brand.logo)}" width="24" height="24" alt="" style="display:inline-block;width:24px;height:24px;border:0;border-radius:7px;vertical-align:middle;margin-right:10px">` : ""}<span style="font-size:14px;line-height:24px;font-weight:600;vertical-align:middle;color:#F7F5F3">${escapeHtml(brand.name)}</span>`
+    : `<img src="cid:${LOGOTYPE_CID}" width="88" height="14" alt="Horaya" style="display:block;width:88px;height:14px;border:0">`;
   const footer = brand
     ? `<tr><td align="center" style="padding:16px 0 0;font-size:12px;line-height:18px;color:${color.muted}">Réservations propulsées par Horaya</td></tr>`
     : "";
@@ -150,7 +130,7 @@ export function renderEmail({
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px">
 <tr><td style="background:${color.frame};border-radius:28px;padding:6px">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:${color.bg};border-radius:22px">
-<tr><td align="center" style="padding:0">${notchHtml(notch, color.frame, color.bg)}</td></tr>
+<tr><td align="center" style="padding:0">${notchHtml(notch, color.frame)}</td></tr>
 <tr><td style="padding:36px 28px 30px">
 <h1 style="margin:0 0 20px;font-family:${FONT};font-weight:500;font-size:32px;line-height:38px;letter-spacing:-0.02em;color:${color.ink}">${escapeHtml(title)}</h1>
 ${body}

@@ -7,6 +7,8 @@ import {
   weeklyDigestEmail,
 } from "./booking-templates";
 import { mixColors } from "./layout";
+import { inlineImages } from "./mailer";
+import { notchFlankPng } from "./notch";
 
 const mail: BookingMail = {
   workspace: { name: "Cabinet Vidal", color: "#528D74", textColor: "#F7F5F3" },
@@ -47,7 +49,7 @@ describe("e-mails aux participants", () => {
       "https://staging.horaya.app/fichiers/org/logos/0f3c2a4e-5b6d-4e7f-8a9b-0c1d2e3f4a5b.webp";
     const email = bookingConfirmedEmail({ ...mail, workspace: { ...mail.workspace, logo } });
     expect(email.html).toContain(`<img src="${logo}"`);
-    expect(bookingConfirmedEmail(mail).html).not.toContain("<img");
+    expect(bookingConfirmedEmail(mail).html).not.toMatch(/<img src="(?!cid:)/);
   });
 });
 
@@ -105,5 +107,16 @@ describe("gabarit", () => {
       url: "u",
     });
     expect(team.html).toContain('src="cid:horaya-logotype"');
+  });
+});
+
+describe("notch", () => {
+  it("joint les flancs du notch à la couleur du cadre, tracés comme dans l'app", () => {
+    const images = inlineImages(bookingConfirmedEmail(mail).html);
+    const tone = mixColors("#528D74", "#111111", 0.16).slice(1).toLowerCase();
+    expect(images.map((image) => image.cid)).toEqual([`notch-left-${tone}`, `notch-right-${tone}`]);
+    const png = notchFlankPng("left", "#111111");
+    expect(png.subarray(1, 4).toString()).toBe("PNG");
+    expect([png.readUInt32BE(16), png.readUInt32BE(20)]).toEqual([88, 100]);
   });
 });
