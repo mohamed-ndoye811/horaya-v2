@@ -655,6 +655,15 @@ dialog[open]::backdrop {
   font-weight: 800;
   letter-spacing: -0.02em;
 }
+/* 2 bis. Pareil, en capitales (comme le logotype). */
+[data-police="archivo-caps"] .font-headline,
+[data-police="archivo-caps"] .font-section {
+  font-family: "Archivo Variable", sans-serif;
+  font-stretch: 115%;
+  font-weight: 800;
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
 /* 3. Tout en Archivo : titres larges et gras, texte en largeur normale. */
 [data-police="archivo"] {
   --font-urbanist: "Archivo Variable";
