@@ -23,7 +23,7 @@ export function BottomNotch({ label, children }: { label?: string; children: Rea
       <nav
         aria-label={label}
         data-bottom-bar
-        className="fixed bottom-[calc(12px+env(safe-area-inset-bottom))] left-1/2 z-30 [view-transition-name:tab-bar] flex min-w-[250px] -translate-x-1/2 items-center justify-between gap-3 rounded-[24px] bg-ink p-1.5 lg:hidden"
+        className="fixed bottom-[calc(12px+env(safe-area-inset-bottom))] left-1/2 z-30 [view-transition-name:tab-bar] flex -translate-x-1/2 rounded-full bg-ink lg:hidden"
       >
         {children}
       </nav>

@@ -3,13 +3,22 @@
 import {
   AnimatePresence,
   animate,
+  type MotionValue,
   motion,
   useMotionValue,
   usePresence,
   useReducedMotion,
   useTransform,
 } from "motion/react";
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import {
+  type ReactNode,
+  type RefObject,
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from "react";
 import { SOFT } from "@/components/motion/indicator";
 import { Button } from "@/components/ui/button";
 import {
@@ -17,11 +26,15 @@ import {
   CalendarIcon,
   ChevronLeft,
   ChevronRight,
+  CloseIcon,
   ExternalIcon,
+  MenuIcon,
   TicketIcon,
 } from "@/components/ui/icons";
 import { cn } from "@/lib/cn";
 import { Link, usePathname } from "@/lib/navigation";
+import { BottomNotch } from "./bottom-notch";
+import { HorayaMark } from "./logo";
 import {
   AccountPanel,
   type AccountUser,
@@ -41,33 +54,39 @@ const SCREENS: NavItem[] = [
 ];
 
 export interface MobileMenuProps {
-  open: boolean;
-  onClose: () => void;
   user: AccountUser;
   workspace: { name: string; slug: string };
   unread: number;
-  /** Notifications ouvertes : tout passe en lu (doit rester stable, comme dans le notch). */
-  onRead: () => void;
+  pending: number;
 }
 
 /**
- * Grand menu mobile (sous `lg`, ouvert par l'onglet « Plus » de la capsule) : tout ce que fait le
- * notch du haut sur ordi (recherche, créations, notifications, compte), plus la navigation
- * complète. La capsule du bas s'ouvre en panneau noir flottant (même marge de 12 px qu'elle) sur
- * un <dialog> natif (focus piégé, Échap, fond inerte) ; se referme dans la capsule en tirant la
- * poignée vers le bas, en touchant à côté ou avec « Fermer ».
+ * Menu mobile (sous `lg`, repris de la V1) : une pilule noire en bas de l'écran, qui grandit vers
+ * le haut et devient le menu entier, comme le notch du bureau. Tout ce que fait le notch
+ * (recherche, créations, notifications, compte) plus la navigation complète. La pilule garde sa
+ * place au pied du panneau, son icône passe de ☰ à ✕. Ouvert, c'est un <dialog> natif (focus
+ * piégé, Échap, fond inerte) ; se ferme sur la pilule, en touchant à côté ou avec Échap.
  */
-export function MobileMenu({ open, onClose, ...content }: MobileMenuProps) {
+export function MobileMenu({ user, workspace, unread: unreadAtLoad, pending }: MobileMenuProps) {
+  const pathname = usePathname();
+  const [open, setOpen] = useState(false);
+  const [unread, setUnread] = useState(unreadAtLoad);
+  useEffect(() => setUnread(unreadAtLoad), [unreadAtLoad]);
+  const close = useCallback(() => setOpen(false), []);
+  const markRead = useCallback(() => setUnread(0), []);
+  // Changement de page (lien du menu, recherche) : le menu se referme.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: déclenché par la navigation
+  useEffect(() => setOpen(false), [pathname]);
+
   const ref = useRef<HTMLDialogElement>(null);
-  const opener = useRef<Element | null>(null);
+  const pill = useRef<HTMLButtonElement>(null);
 
   // Avant le dessin et avant l'effet du panneau, qui mesure la fenêtre ouverte.
   useLayoutEffect(() => {
     const dialog = ref.current;
     if (!dialog || !open || dialog.open) return;
-    opener.current = document.activeElement;
     dialog.showModal();
-    // Premier focus sur « Fermer », pas sur la recherche (le clavier cacherait le menu), sans
+    // Focus sur la pilule du panneau, pas sur la recherche (le clavier cacherait le menu), sans
     // défilement : Safari ferait défiler la fenêtre pendant l'ouverture pour le montrer.
     dialog.querySelector<HTMLElement>("[data-menu-close]")?.focus({ preventScroll: true });
     document.documentElement.style.overflow = "hidden";
@@ -78,85 +97,164 @@ export function MobileMenu({ open, onClose, ...content }: MobileMenuProps) {
     if (!open) return;
     const wide = window.matchMedia("(min-width: 64rem)");
     const onChange = () => {
-      if (wide.matches) onClose();
+      if (wide.matches) close();
     };
     wide.addEventListener("change", onChange);
     return () => wide.removeEventListener("change", onChange);
-  }, [open, onClose]);
+  }, [open, close]);
 
-  /** Fin de la sortie : la fenêtre se ferme, la page défile de nouveau, le focus revient. */
+  /** Fin de la fermeture : la fenêtre se ferme, la page défile de nouveau, le focus revient. */
   function closed() {
     ref.current?.close();
     document.documentElement.style.overflow = "";
-    if (opener.current instanceof HTMLElement) opener.current.focus();
+    pill.current?.focus({ preventScroll: true });
   }
 
+  const dot = unread > 0 || pending > 0;
+  const notices = [
+    unread > 0 && `${unread} notification${unread > 1 ? "s" : ""} non lue${unread > 1 ? "s" : ""}`,
+    pending > 0 && `${pending} réservation${pending > 1 ? "s" : ""} à valider`,
+  ].filter(Boolean);
+
   return (
-    <dialog
-      ref={ref}
-      aria-label="Menu"
-      aria-modal="true"
-      onCancel={(event) => {
-        // Échap : on garde la fenêtre le temps de l'animation de sortie.
-        event.preventDefault();
-        onClose();
-      }}
-      onClose={onClose}
-      // `overflow-clip` : aucun défilement possible, même provoqué par le focus pendant l'animation.
-      className="m-0 size-full max-h-none max-w-none overflow-clip bg-transparent p-0 backdrop:bg-transparent"
-    >
-      <AnimatePresence onExitComplete={closed}>
-        {open && <Panel key="menu" onClose={onClose} {...content} />}
-      </AnimatePresence>
-    </dialog>
+    <>
+      <BottomNotch label="Navigation principale">
+        <button
+          ref={pill}
+          type="button"
+          onClick={() => setOpen(true)}
+          aria-haspopup="dialog"
+          aria-expanded={open}
+          aria-label={["Menu", ...notices].join(", ")}
+          className={pillClasses}
+        >
+          <PillContent name={workspace.name} dot={dot} icon={<MenuIcon />} />
+        </button>
+      </BottomNotch>
+      <dialog
+        ref={ref}
+        aria-label="Menu"
+        aria-modal="true"
+        onCancel={(event) => {
+          // Échap : on garde la fenêtre le temps de l'animation de fermeture.
+          event.preventDefault();
+          close();
+        }}
+        onClose={close}
+        // `overflow-clip` : aucun défilement possible, même provoqué par le focus pendant l'animation.
+        className="m-0 size-full max-h-none max-w-none overflow-clip bg-transparent p-0 backdrop:bg-transparent"
+      >
+        <AnimatePresence onExitComplete={closed}>
+          {open && (
+            <Panel
+              key="menu"
+              pill={pill}
+              dot={dot}
+              onClose={close}
+              onRead={markRead}
+              user={user}
+              workspace={workspace}
+              unread={unread}
+            />
+          )}
+        </AnimatePresence>
+      </dialog>
+    </>
   );
 }
 
-/** Rayons de la capsule (bottom-notch.tsx) et du panneau ouvert. */
-const CAPSULE_RADIUS = 24;
-const PANEL_RADIUS = 28;
+const pillClasses =
+  "flex h-[54px] w-full items-center justify-center gap-2.5 rounded-full px-5 text-on-ink";
 
-function Panel({ onClose, user, workspace, unread, onRead }: Omit<MobileMenuProps, "open">) {
+/** Contenu de la pilule, identique fermée et au pied du panneau : il ne bouge pas d'un pixel. */
+function PillContent({ name, dot, icon }: { name: string; dot: boolean; icon: ReactNode }) {
+  return (
+    <>
+      <span className="relative shrink-0">
+        <HorayaMark size={20} />
+        {dot && (
+          <span className="absolute -top-1 -right-1.5 size-[9px] rounded-full border-2 border-ink bg-accent" />
+        )}
+      </span>
+      <span className="max-w-[180px] truncate text-[15px] font-semibold leading-5">{name}</span>
+      <span className="flex size-5 shrink-0 items-center justify-center text-notch-idle">
+        {icon}
+      </span>
+    </>
+  );
+}
+
+/** ☰ qui laisse place à ✕ au fil de l'ouverture. */
+function MenuCloseIcon({ progress }: { progress: MotionValue<number> }) {
+  const menu = useTransform(progress, [0, 0.5], [1, 0]);
+  const cross = useTransform(progress, [0.5, 1], [0, 1]);
+  const turn = useTransform(progress, [0.5, 1], [-90, 0]);
+  return (
+    <span className="relative flex size-5 items-center justify-center">
+      <motion.span style={{ opacity: menu }} className="absolute">
+        <MenuIcon />
+      </motion.span>
+      <motion.span style={{ opacity: cross, rotate: turn }} className="absolute">
+        <CloseIcon size={13} />
+      </motion.span>
+    </span>
+  );
+}
+
+function Panel({
+  pill,
+  dot,
+  onClose,
+  onRead,
+  user,
+  workspace,
+  unread,
+}: Omit<MobileMenuProps, "pending"> & {
+  pill: RefObject<HTMLButtonElement | null>;
+  dot: boolean;
+  onClose: () => void;
+  /** Notifications ouvertes : tout passe en lu (doit rester stable, comme dans le notch). */
+  onRead: () => void;
+}) {
   const [isPresent, safeToRemove] = usePresence();
   const panel = useRef<HTMLDivElement>(null);
   const [view, setView] = useState<"menu" | "notifications">("menu");
   /** Retour des notifications : le focus revient sur leur ligne. */
   const [back, setBack] = useState(false);
   const reduce = useReducedMotion();
-  const transition = reduce ? { duration: 0 } : SOFT;
 
   /*
    * Comme le notch du bureau : le panneau est à sa taille finale et un `clip-path` le découpe,
-   * de la capsule (0) au panneau entier (1). Rien n'est mis à l'échelle, le texte reste net.
+   * de la pilule (0) au panneau entier (1). Rien n'est mis à l'échelle, le texte reste net.
    */
   const progress = useMotionValue(0);
-  /** Écarts haut, droite, bas, gauche entre le panneau et la capsule. */
-  const gap = useRef<number[] | null>(null);
+  /** Écarts haut, droite, bas, gauche entre le panneau et la pilule, et rayon de la pilule. */
+  const from = useRef<{ gap: number[]; radius: number } | null>(null);
   const clipPath = useTransform(progress, (v) => {
-    if (!gap.current) return "inset(50%)";
-    const [top, right, bottom, left] = gap.current.map((n) => n * (1 - v));
-    const radius = CAPSULE_RADIUS + (PANEL_RADIUS - CAPSULE_RADIUS) * v;
+    if (!from.current) return "inset(50%)";
+    const [top, right, bottom, left] = from.current.gap.map((n) => n * (1 - v));
+    const radius = from.current.radius + (PANEL_RADIUS - from.current.radius) * v;
     return `inset(${top}px ${right}px ${bottom}px ${left}px round ${radius}px)`;
   });
-  const contentOpacity = useTransform(progress, [0.35, 1], [0, 1]);
-  const contentY = useTransform(progress, [0, 1], [24, 0]);
+  const contentOpacity = useTransform(progress, [0.3, 1], [0, 1]);
+  const contentY = useTransform(progress, [0, 1], [32, 0]);
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: ouverture puis fermeture, une fois chacune
   useEffect(() => {
     const box = panel.current?.getBoundingClientRect();
-    const capsule = document.querySelector("nav[data-bottom-bar]")?.getBoundingClientRect();
-    if (box) {
-      gap.current = capsule?.width
-        ? [
-            capsule.top - box.top,
-            box.right - capsule.right,
-            box.bottom - capsule.bottom,
-            capsule.left - box.left,
-          ]
-        : // Sans capsule visible : le panneau naît du bas, au centre.
-          [box.height, box.width / 2, 0, box.width / 2];
+    const start = pill.current?.getBoundingClientRect();
+    if (box && start?.width) {
+      from.current = {
+        gap: [
+          start.top - box.top,
+          box.right - start.right,
+          box.bottom - start.bottom,
+          start.left - box.left,
+        ],
+        radius: start.height / 2,
+      };
     }
-    const controls = animate(progress, isPresent ? 1 : 0, transition);
+    const controls = animate(progress, isPresent ? 1 : 0, reduce ? { duration: 0 } : SOFT);
     if (!isPresent) controls.then(safeToRemove);
     return () => controls.stop();
   }, [isPresent]);
@@ -174,102 +272,96 @@ function Panel({ onClose, user, workspace, unread, onRead }: Omit<MobileMenuProp
       <motion.div
         ref={panel}
         style={{ clipPath }}
-        className="absolute inset-x-3 top-[calc(env(safe-area-inset-top)+12px)] bottom-[calc(12px+env(safe-area-inset-bottom))] flex flex-col overflow-hidden rounded-[28px] bg-ink text-on-ink"
+        className="absolute inset-x-3 bottom-[calc(12px+env(safe-area-inset-bottom))] flex max-h-[calc(100%-24px-env(safe-area-inset-top)-env(safe-area-inset-bottom))] flex-col rounded-[28px] bg-ink text-on-ink"
       >
         <motion.div
           style={{ opacity: contentOpacity, y: contentY }}
-          className="flex min-h-0 flex-1 flex-col"
+          className="min-h-0 flex-1 overflow-y-auto overscroll-contain scrollbar-none px-4 pt-4 pb-1"
         >
-          {/* Poignée : tirée vers le bas, le panneau rentre dans la capsule sous le doigt. */}
-          <motion.div
-            onPan={(_, info) => {
-              const top = gap.current?.[0];
-              if (top) progress.set(Math.min(1, Math.max(0, 1 - info.offset.y / top)));
-            }}
-            onPanEnd={(_, info) => {
-              if (info.offset.y > 120 || info.velocity.y > 500) onClose();
-              else animate(progress, 1, transition);
-            }}
-            className="shrink-0 touch-none px-4 pt-2 pb-3"
-          >
-            <div aria-hidden="true" className="mx-auto h-1 w-10 rounded-full bg-on-ink/20" />
-            <div className="mt-3 flex items-center justify-between gap-3">
-              {view === "menu" ? (
-                <h2 className="px-2 text-base font-semibold leading-5">Menu</h2>
-              ) : (
-                <Button
-                  variant="inverse-outline"
-                  size="xs"
-                  icon={<ChevronLeft />}
-                  onClick={() => {
-                    setBack(true);
-                    setView("menu");
-                  }}
-                  autoFocus
-                >
-                  Menu
-                </Button>
-              )}
-              <Button variant="inverse-outline" size="xs" onClick={onClose} data-menu-close>
-                Fermer
-              </Button>
-            </div>
-          </motion.div>
-          <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain scrollbar-none px-4 pb-4">
-            {view === "menu" ? (
-              <div className="flex flex-col gap-3.5">
-                <SearchPanel
-                  sheet
-                  wide={false}
-                  onClose={onClose}
-                  idle={
-                    <>
-                      <button
-                        type="button"
-                        onClick={() => setView("notifications")}
-                        // biome-ignore lint/a11y/noAutofocus: retour des notifications
-                        autoFocus={back}
-                        className="flex h-14 items-center gap-3 rounded-[14px] px-2 text-left transition-colors hover:bg-white/8"
+          {view === "menu" ? (
+            <div className="flex flex-col gap-3.5">
+              <SearchPanel
+                sheet
+                wide={false}
+                onClose={onClose}
+                idle={
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => setView("notifications")}
+                      // biome-ignore lint/a11y/noAutofocus: retour des notifications
+                      autoFocus={back}
+                      className="flex h-14 items-center gap-3 rounded-[14px] px-2 text-left transition-colors hover:bg-white/8"
+                    >
+                      <span
+                        aria-hidden="true"
+                        className="relative flex size-10 shrink-0 items-center justify-center rounded-[10px] bg-white/8 text-notch-idle"
                       >
-                        <span
-                          aria-hidden="true"
-                          className="relative flex size-10 shrink-0 items-center justify-center rounded-[10px] bg-white/8 text-notch-idle"
-                        >
-                          <BellIcon size={18} />
-                          {unread > 0 && (
-                            <span className="absolute -top-0.5 -right-0.5 size-[9px] rounded-full border-2 border-ink bg-accent" />
-                          )}
-                        </span>
-                        <span className="flex-1 text-[15px] font-semibold leading-[19px]">
-                          Notifications
-                        </span>
+                        <BellIcon size={18} />
                         {unread > 0 && (
-                          <span className="flex h-5 items-center rounded-full bg-accent px-2 text-xs font-bold leading-4 text-ink">
-                            {unread} non lue{unread > 1 ? "s" : ""}
-                          </span>
+                          <span className="absolute -top-0.5 -right-0.5 size-[9px] rounded-full border-2 border-ink bg-accent" />
                         )}
-                        <ChevronRight className="text-on-ink-subtle" />
-                      </button>
-                      <Screens slug={workspace.slug} onClose={onClose} />
-                      <AccountPanel
-                        user={user}
-                        workspace={workspace}
-                        onClose={onClose}
-                        wide={false}
-                      />
-                    </>
-                  }
-                />
-              </div>
-            ) : (
+                      </span>
+                      <span className="flex-1 text-[15px] font-semibold leading-[19px]">
+                        Notifications
+                      </span>
+                      {unread > 0 && (
+                        <span className="flex h-5 items-center rounded-full bg-accent px-2 text-xs font-bold leading-4 text-ink">
+                          {unread} non lue{unread > 1 ? "s" : ""}
+                        </span>
+                      )}
+                      <ChevronRight className="text-on-ink-subtle" />
+                    </button>
+                    <Screens slug={workspace.slug} onClose={onClose} />
+                    <AccountPanel
+                      user={user}
+                      workspace={workspace}
+                      onClose={onClose}
+                      wide={false}
+                    />
+                  </>
+                }
+              />
+            </div>
+          ) : (
+            <div className="flex flex-col gap-3">
+              <Button
+                variant="inverse-outline"
+                size="xs"
+                icon={<ChevronLeft />}
+                onClick={() => {
+                  setBack(true);
+                  setView("menu");
+                }}
+                autoFocus
+                className="self-start"
+              >
+                Menu
+              </Button>
               <NotificationsPanel onClose={onClose} onLoaded={onRead} wide={false} />
-            )}
-          </div>
+            </div>
+          )}
         </motion.div>
+        {/* La pilule, restée à sa place : la toucher referme. */}
+        <button
+          type="button"
+          onClick={onClose}
+          aria-label="Fermer le menu"
+          data-menu-close
+          className={cn(pillClasses, "shrink-0")}
+        >
+          <PillContent
+            name={workspace.name}
+            dot={dot}
+            icon={<MenuCloseIcon progress={progress} />}
+          />
+        </button>
       </motion.div>
     </>
   );
 }
+
+const PANEL_RADIUS = 28;
 
 /** Toute la navigation, en tuiles ; la plus précise des correspondances est allumée. */
 function Screens({ slug, onClose }: { slug: string; onClose: () => void }) {
