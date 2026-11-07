@@ -50,6 +50,7 @@ export async function getPublicWorkspace(db: Executor, slug: string) {
       onlinePayments: sql<boolean>`coalesce(${tenantSettings.stripeAccountStatus} = 'active', false)`,
       /** Lien de paiement externe par défaut de l'espace. */
       paymentLinkUrl: tenantSettings.paymentLinkUrl,
+      giftCardsEnabled: sql<boolean>`coalesce((${tenantSettings.giftCards}->>'enabled')::boolean, false)`,
       contactEmail: tenantSettings.contactEmail,
       contactPhone: tenantSettings.contactPhone,
       address: tenantSettings.address,

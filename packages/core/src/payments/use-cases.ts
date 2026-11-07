@@ -6,7 +6,13 @@ import { ConflictError, NotFoundError, ValidationError } from "../shared/errors"
 import type { Deps, Repositories } from "../shared/unit-of-work";
 import type { StripeAccountStatus } from "../tenants/types";
 import type { PaymentGateway } from "./ports";
-import { amountDueOnline, awaitsOnlinePayment, paidCents, refundForCancellation } from "./rules";
+import {
+  amountDueOnline,
+  awaitsOnlinePayment,
+  externalPaidCents,
+  paidCents,
+  refundForCancellation,
+} from "./rules";
 
 /** Dépendances des cas d'usage de paiement : les habituelles, plus la passerelle. */
 export type PaymentDeps = Deps & { payments: PaymentGateway };
@@ -69,10 +75,11 @@ export async function startCheckout(
   bookingId: string,
   input: { description: string; successUrl: string; cancelUrl: string },
 ): Promise<{ url: string }> {
-  const { booking, customerEmail, accountId } = await deps.uow.run(async (repositories) => {
+  const { booking, customerEmail, accountId, paid } = await deps.uow.run(async (repositories) => {
     const found = await repositories.bookings.find(organizationId, bookingId);
     if (!found) throw new NotFoundError("Réservation", bookingId);
-    if (!awaitsOnlinePayment(found))
+    const paid = paidCents(await repositories.payments.listForBooking(bookingId));
+    if (!awaitsOnlinePayment(found, paid))
       throw new ConflictError("Cette réservation n'a rien à payer en ligne");
     const settings = await repositories.settings.get(organizationId);
     if (!settings.paymentAccountId || settings.paymentAccountStatus !== "active") {
@@ -85,10 +92,11 @@ export async function startCheckout(
       booking: found,
       customerEmail: customer?.email ?? "",
       accountId: settings.paymentAccountId,
+      paid,
     };
   });
 
-  const amountCents = amountDueOnline(booking);
+  const amountCents = amountDueOnline(booking, paid);
   const checkout = await deps.payments.createCheckout({
     accountId,
     bookingId: booking.id,
@@ -196,7 +204,7 @@ export async function refundBooking(
     const booking = await repositories.bookings.find(actor.organizationId, bookingId);
     if (!booking) throw new NotFoundError("Réservation", bookingId);
     const payments = await repositories.payments.listForBooking(bookingId);
-    const paid = paidCents(payments);
+    const paid = externalPaidCents(payments);
     const settings = await repositories.settings.get(actor.organizationId);
     const charge = payments.find(
       (payment) =>
@@ -229,7 +237,7 @@ export async function refundBooking(
       providerReference: refundId,
       checkoutReference: null,
     });
-    const remaining = paidCents(await repositories.payments.listForBooking(bookingId));
+    const remaining = externalPaidCents(await repositories.payments.listForBooking(bookingId));
     await repositories.bookings.updatePaymentStatus(
       actor.organizationId,
       bookingId,
@@ -263,7 +271,7 @@ export async function refundAfterCancellation(
       booking.eventId ? repositories.events.find(organizationId, booking.eventId) : null,
     ]);
     return refundForCancellation({
-      paidCents: paidCents(payments),
+      paidCents: externalPaidCents(payments),
       cancelledBy,
       startsAt: event?.startsAt ?? booking.rentalStartsAt,
       now: deps.clock.now(),
@@ -357,7 +365,7 @@ export async function recordManualRefund(
   await deps.uow.run(async (repositories) => {
     const booking = await repositories.bookings.find(actor.organizationId, bookingId);
     if (!booking) throw new NotFoundError("Réservation", bookingId);
-    const paid = paidCents(await repositories.payments.listForBooking(bookingId));
+    const paid = externalPaidCents(await repositories.payments.listForBooking(bookingId));
     if (amountCents > paid)
       throw new ConflictError("On ne peut pas rembourser plus que ce qui a été payé");
     await repositories.payments.insert({

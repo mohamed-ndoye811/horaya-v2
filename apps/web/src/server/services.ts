@@ -4,6 +4,7 @@ import { redirect } from "@tanstack/react-router";
 import { auth, requestHeaders, requireSession } from "./auth";
 import { notifyFromActivity } from "./booking-emails";
 import { db } from "./db";
+import { notifyGiftCardActivity } from "./gift-card-emails";
 
 /**
  * Dépendances des cas d'usage du core : l'app web les appelle directement, sans passer par l'API.
@@ -12,6 +13,7 @@ import { db } from "./db";
 export const deps: Deps = createDeps(db, {
   async afterCommit(entries) {
     await notifyFromActivity(entries);
+    await notifyGiftCardActivity(entries);
     // Import différé : les effets de paiement dépendent eux-mêmes de `deps`.
     const { paymentEffects } = await import("./payments/effects");
     await paymentEffects(entries);

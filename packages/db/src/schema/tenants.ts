@@ -1,3 +1,4 @@
+import type { GiftCardSettings } from "@horaya/core";
 import {
   boolean,
   index,
@@ -49,6 +50,8 @@ export const tenantSettings = pgTable("tenant_settings", {
   bookingReferencePrefix: text().notNull().default("HRY"),
   /** Lien de paiement externe par défaut (paiement hors Horaya). */
   paymentLinkUrl: text(),
+  /** Réglages des bons cadeaux (GiftCardSettings du core) ; vide : valeurs par défaut. */
+  giftCards: jsonb().$type<GiftCardSettings>(),
   stripeAccountId: text(),
   stripeAccountStatus: stripeAccountStatus().notNull().default("not_connected"),
   /** Dernier récap hebdomadaire envoyé à l'équipe (le lundi matin). */

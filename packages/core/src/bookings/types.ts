@@ -31,6 +31,6 @@ export type PaymentKind = (typeof PAYMENT_KINDS)[number];
 export const PAYMENT_RECORD_STATUSES = ["pending", "succeeded", "failed"] as const;
 export type PaymentRecordStatus = (typeof PAYMENT_RECORD_STATUSES)[number];
 
-/** Moyen d'un paiement noté par l'équipe (hors Horaya). */
-export const PAYMENT_METHODS = ["cash", "card", "check", "transfer"] as const;
+/** Moyen d'un paiement noté par l'équipe (hors Horaya), ou bon cadeau déduit. */
+export const PAYMENT_METHODS = ["cash", "card", "check", "transfer", "gift_card"] as const;
 export type PaymentMethod = (typeof PAYMENT_METHODS)[number];

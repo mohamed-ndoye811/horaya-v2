@@ -115,6 +115,7 @@ export function CounterWizard({
   >([]);
   const [passId, setPassId] = useState<string | null>(null);
   const [method, setMethod] = useState<PaymentMethod>("card");
+  const [giftCode, setGiftCode] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [done, setDone] = useState<Done | null>(null);
@@ -219,6 +220,7 @@ export function CounterWizard({
       paid: total > 0 && paid && !passId,
       paymentMethod: total > 0 && paid && !passId ? method : null,
       passId: total > 0 ? passId : null,
+      giftCardCode: total > 0 && !passId ? giftCode.trim() || null : null,
     };
     startTransition(async () => {
       const result = await createCounterBookingAction(input);
@@ -242,6 +244,7 @@ export function CounterWizard({
     setContact(EMPTY_CONTACT);
     setSearch("");
     setSessionSearch("");
+    setGiftCode("");
     setError(null);
     setFieldErrors({});
   }
@@ -617,6 +620,30 @@ export function CounterWizard({
           )}
           {total > 0 && !passId && (
             <>
+              {!enrolling && (
+                <Field
+                  label="Bon cadeau"
+                  error={fieldErrors.giftCardCode}
+                  hint={
+                    <p className="text-xs leading-4 text-ink-subtle">
+                      Le montant du bon est déduit ; le reste se paie normalement.
+                    </p>
+                  }
+                >
+                  {(field) => (
+                    <input
+                      {...field}
+                      value={giftCode}
+                      onChange={(event) => setGiftCode(event.target.value)}
+                      maxLength={40}
+                      autoComplete="off"
+                      spellCheck={false}
+                      placeholder="TERRE-8K2F"
+                      className={cn(inputClasses(), "font-mono uppercase placeholder:normal-case")}
+                    />
+                  )}
+                </Field>
+              )}
               <OptionCards
                 legend="Paiement"
                 value={paid}

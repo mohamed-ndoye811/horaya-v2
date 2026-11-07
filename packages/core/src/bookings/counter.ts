@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { requireFeature } from "../billing/use-cases";
+import { applyGiftCardToBooking } from "../gift-cards/use-cases";
 import { type AssignedItem, assignEventItems } from "../inventory/use-cases";
 import { payBookingWithPassIn } from "../passes/use-cases";
 import { recordManualPaymentIn } from "../payments/use-cases";
@@ -68,6 +69,8 @@ export const counterBookingSchema = z
     paymentMethod: z.enum(PAYMENT_METHODS).nullish(),
     /** Payé avec une séance par place d'une carte du client. */
     passId: z.uuid().nullish(),
+    /** Bon cadeau à déduire du prix ; le reste est payé sur place ou à payer. */
+    giftCardCode: optionalText(40),
   })
   .superRefine((input, context) => {
     refineCounterCustomer(input, context);
@@ -152,7 +155,10 @@ export async function createCounterBooking(
       customerMessage: null,
       manageTokenHash,
     });
-    if (booking.status !== "confirmed" && (data.items.length > 0 || data.paid || data.passId)) {
+    if (
+      booking.status !== "confirmed" &&
+      (data.items.length > 0 || data.paid || data.passId || data.giftCardCode)
+    ) {
       throw new ConflictError(
         "La séance est complète : la réservation irait en liste d'attente, sans matériel ni paiement",
       );
@@ -161,12 +167,15 @@ export async function createCounterBooking(
       data.items.length > 0
         ? await assignEventItems(repositories, actor, locked.event, booking.id, data.items)
         : [];
-    if (data.paid && booking.amountCents > 0) {
+    const byGiftCard = data.giftCardCode
+      ? await applyGiftCardToBooking(repositories, actor, booking, data.giftCardCode, now)
+      : 0;
+    if (data.paid && booking.amountCents - byGiftCard > 0) {
       await recordManualPaymentIn(
         repositories,
         actor,
         booking,
-        booking.amountCents,
+        booking.amountCents - byGiftCard,
         data.paymentMethod ?? null,
       );
     }

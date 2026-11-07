@@ -39,6 +39,8 @@ import { Route as RejoindreTokenRouteImport } from './routes/rejoindre/$token'
 import { Route as SlugEventIndexRouteImport } from './routes/$slug/$event/index'
 import { Route as SlugEventInscriptionRouteImport } from './routes/$slug/$event/inscription'
 import { Route as SlugEventReserverRouteImport } from './routes/$slug/$event/reserver'
+import { Route as SlugBonCadeauIndexRouteImport } from './routes/$slug/bon-cadeau/index'
+import { Route as SlugBonCadeauTokenRouteImport } from './routes/$slug/bon-cadeau/$token'
 import { Route as SlugCalendrierLienRouteImport } from './routes/$slug/calendrier/$lien'
 import { Route as SlugCartesIndexRouteImport } from './routes/$slug/cartes/index'
 import { Route as SlugCartesMerciRouteImport } from './routes/$slug/cartes/merci'
@@ -52,6 +54,9 @@ import { Route as AgendaClientChar123tokenChar125DoticsRouteImport } from './rou
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 import { Route as ApiPolarWebhookRouteImport } from './routes/api/polar/webhook'
 import { Route as ApiStripeWebhookRouteImport } from './routes/api/stripe/webhook'
+import { Route as AppBonsCadeauxIndexRouteImport } from './routes/app/bons-cadeaux/index'
+import { Route as AppBonsCadeauxIdRouteImport } from './routes/app/bons-cadeaux/$id'
+import { Route as AppBonsCadeauxNouveauRouteImport } from './routes/app/bons-cadeaux/nouveau'
 import { Route as AppClientsIndexRouteImport } from './routes/app/clients/index'
 import { Route as AppClientsExportRouteImport } from './routes/app/clients/export'
 import { Route as AppClientsNouveauRouteImport } from './routes/app/clients/nouveau'
@@ -64,6 +69,7 @@ import { Route as AppMaterielModeleImportRouteImport } from './routes/app/materi
 import { Route as AppMaterielNouveauRouteImport } from './routes/app/materiel/nouveau'
 import { Route as AppParametresIndexRouteImport } from './routes/app/parametres/index'
 import { Route as AppParametresAbonnementRouteImport } from './routes/app/parametres/abonnement'
+import { Route as AppParametresBonsCadeauxRouteImport } from './routes/app/parametres/bons-cadeaux'
 import { Route as AppParametresIntegrationsRouteImport } from './routes/app/parametres/integrations'
 import { Route as AppParametresMembresRouteImport } from './routes/app/parametres/membres'
 import { Route as AppParametresNotificationsRouteImport } from './routes/app/parametres/notifications'
@@ -241,6 +247,16 @@ const SlugEventReserverRoute = SlugEventReserverRouteImport.update({
   path: '/$event/reserver',
   getParentRoute: () => SlugRoute,
 } as any)
+const SlugBonCadeauIndexRoute = SlugBonCadeauIndexRouteImport.update({
+  id: '/bon-cadeau/',
+  path: '/bon-cadeau/',
+  getParentRoute: () => SlugRoute,
+} as any)
+const SlugBonCadeauTokenRoute = SlugBonCadeauTokenRouteImport.update({
+  id: '/bon-cadeau/$token',
+  path: '/bon-cadeau/$token',
+  getParentRoute: () => SlugRoute,
+} as any)
 const SlugCalendrierLienRoute = SlugCalendrierLienRouteImport.update({
   id: '/calendrier/$lien',
   path: '/calendrier/$lien',
@@ -308,6 +324,21 @@ const ApiStripeWebhookRoute = ApiStripeWebhookRouteImport.update({
   path: '/api/stripe/webhook',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AppBonsCadeauxIndexRoute = AppBonsCadeauxIndexRouteImport.update({
+  id: '/bons-cadeaux/',
+  path: '/bons-cadeaux/',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppBonsCadeauxIdRoute = AppBonsCadeauxIdRouteImport.update({
+  id: '/bons-cadeaux/$id',
+  path: '/bons-cadeaux/$id',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppBonsCadeauxNouveauRoute = AppBonsCadeauxNouveauRouteImport.update({
+  id: '/bons-cadeaux/nouveau',
+  path: '/bons-cadeaux/nouveau',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppClientsIndexRoute = AppClientsIndexRouteImport.update({
   id: '/clients/',
   path: '/clients/',
@@ -368,6 +399,12 @@ const AppParametresAbonnementRoute = AppParametresAbonnementRouteImport.update({
   path: '/parametres/abonnement',
   getParentRoute: () => AppRoute,
 } as any)
+const AppParametresBonsCadeauxRoute =
+  AppParametresBonsCadeauxRouteImport.update({
+    id: '/parametres/bons-cadeaux',
+    path: '/parametres/bons-cadeaux',
+    getParentRoute: () => AppRoute,
+  } as any)
 const AppParametresIntegrationsRoute =
   AppParametresIntegrationsRouteImport.update({
     id: '/parametres/integrations',
@@ -534,6 +571,7 @@ export interface FileRoutesByFullPath {
   '/mon-espace/': typeof MonEspaceIndexRoute
   '/$slug/$event/inscription': typeof SlugEventInscriptionRoute
   '/$slug/$event/reserver': typeof SlugEventReserverRoute
+  '/$slug/bon-cadeau/$token': typeof SlugBonCadeauTokenRoute
   '/$slug/calendrier/$lien': typeof SlugCalendrierLienRoute
   '/$slug/cartes/merci': typeof SlugCartesMerciRoute
   '/$slug/mon-espace/connexion': typeof SlugMonEspaceConnexionRoute
@@ -544,6 +582,8 @@ export interface FileRoutesByFullPath {
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/polar/webhook': typeof ApiPolarWebhookRoute
   '/api/stripe/webhook': typeof ApiStripeWebhookRoute
+  '/app/bons-cadeaux/$id': typeof AppBonsCadeauxIdRoute
+  '/app/bons-cadeaux/nouveau': typeof AppBonsCadeauxNouveauRoute
   '/app/clients/export': typeof AppClientsExportRoute
   '/app/clients/nouveau': typeof AppClientsNouveauRoute
   '/app/evenements/liens': typeof AppEvenementsLiensRoute
@@ -552,6 +592,7 @@ export interface FileRoutesByFullPath {
   '/app/materiel/modele-import': typeof AppMaterielModeleImportRoute
   '/app/materiel/nouveau': typeof AppMaterielNouveauRoute
   '/app/parametres/abonnement': typeof AppParametresAbonnementRoute
+  '/app/parametres/bons-cadeaux': typeof AppParametresBonsCadeauxRoute
   '/app/parametres/integrations': typeof AppParametresIntegrationsRoute
   '/app/parametres/membres': typeof AppParametresMembresRoute
   '/app/parametres/notifications': typeof AppParametresNotificationsRoute
@@ -562,9 +603,11 @@ export interface FileRoutesByFullPath {
   '/app/reservations/export': typeof AppReservationsExportRoute
   '/app/reservations/nouvelle': typeof AppReservationsNouvelleRoute
   '/$slug/$event/': typeof SlugEventIndexRoute
+  '/$slug/bon-cadeau/': typeof SlugBonCadeauIndexRoute
   '/$slug/cartes/': typeof SlugCartesIndexRoute
   '/$slug/mon-espace/': typeof SlugMonEspaceIndexRoute
   '/inscription/': typeof authInscriptionIndexRoute
+  '/app/bons-cadeaux/': typeof AppBonsCadeauxIndexRoute
   '/app/clients/': typeof AppClientsIndexRoute
   '/app/evenements/': typeof AppEvenementsIndexRoute
   '/app/materiel/': typeof AppMaterielIndexRoute
@@ -613,6 +656,7 @@ export interface FileRoutesByTo {
   '/mon-espace': typeof MonEspaceIndexRoute
   '/$slug/$event/inscription': typeof SlugEventInscriptionRoute
   '/$slug/$event/reserver': typeof SlugEventReserverRoute
+  '/$slug/bon-cadeau/$token': typeof SlugBonCadeauTokenRoute
   '/$slug/calendrier/$lien': typeof SlugCalendrierLienRoute
   '/$slug/cartes/merci': typeof SlugCartesMerciRoute
   '/$slug/mon-espace/connexion': typeof SlugMonEspaceConnexionRoute
@@ -623,6 +667,8 @@ export interface FileRoutesByTo {
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/polar/webhook': typeof ApiPolarWebhookRoute
   '/api/stripe/webhook': typeof ApiStripeWebhookRoute
+  '/app/bons-cadeaux/$id': typeof AppBonsCadeauxIdRoute
+  '/app/bons-cadeaux/nouveau': typeof AppBonsCadeauxNouveauRoute
   '/app/clients/export': typeof AppClientsExportRoute
   '/app/clients/nouveau': typeof AppClientsNouveauRoute
   '/app/evenements/liens': typeof AppEvenementsLiensRoute
@@ -631,6 +677,7 @@ export interface FileRoutesByTo {
   '/app/materiel/modele-import': typeof AppMaterielModeleImportRoute
   '/app/materiel/nouveau': typeof AppMaterielNouveauRoute
   '/app/parametres/abonnement': typeof AppParametresAbonnementRoute
+  '/app/parametres/bons-cadeaux': typeof AppParametresBonsCadeauxRoute
   '/app/parametres/integrations': typeof AppParametresIntegrationsRoute
   '/app/parametres/membres': typeof AppParametresMembresRoute
   '/app/parametres/notifications': typeof AppParametresNotificationsRoute
@@ -641,9 +688,11 @@ export interface FileRoutesByTo {
   '/app/reservations/export': typeof AppReservationsExportRoute
   '/app/reservations/nouvelle': typeof AppReservationsNouvelleRoute
   '/$slug/$event': typeof SlugEventIndexRoute
+  '/$slug/bon-cadeau': typeof SlugBonCadeauIndexRoute
   '/$slug/cartes': typeof SlugCartesIndexRoute
   '/$slug/mon-espace': typeof SlugMonEspaceIndexRoute
   '/inscription': typeof authInscriptionIndexRoute
+  '/app/bons-cadeaux': typeof AppBonsCadeauxIndexRoute
   '/app/clients': typeof AppClientsIndexRoute
   '/app/evenements': typeof AppEvenementsIndexRoute
   '/app/materiel': typeof AppMaterielIndexRoute
@@ -696,6 +745,7 @@ export interface FileRoutesById {
   '/mon-espace/': typeof MonEspaceIndexRoute
   '/$slug/$event/inscription': typeof SlugEventInscriptionRoute
   '/$slug/$event/reserver': typeof SlugEventReserverRoute
+  '/$slug/bon-cadeau/$token': typeof SlugBonCadeauTokenRoute
   '/$slug/calendrier/$lien': typeof SlugCalendrierLienRoute
   '/$slug/cartes/merci': typeof SlugCartesMerciRoute
   '/$slug/mon-espace/connexion': typeof SlugMonEspaceConnexionRoute
@@ -706,6 +756,8 @@ export interface FileRoutesById {
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/polar/webhook': typeof ApiPolarWebhookRoute
   '/api/stripe/webhook': typeof ApiStripeWebhookRoute
+  '/app/bons-cadeaux/$id': typeof AppBonsCadeauxIdRoute
+  '/app/bons-cadeaux/nouveau': typeof AppBonsCadeauxNouveauRoute
   '/app/clients/export': typeof AppClientsExportRoute
   '/app/clients/nouveau': typeof AppClientsNouveauRoute
   '/app/evenements/liens': typeof AppEvenementsLiensRoute
@@ -714,6 +766,7 @@ export interface FileRoutesById {
   '/app/materiel/modele-import': typeof AppMaterielModeleImportRoute
   '/app/materiel/nouveau': typeof AppMaterielNouveauRoute
   '/app/parametres/abonnement': typeof AppParametresAbonnementRoute
+  '/app/parametres/bons-cadeaux': typeof AppParametresBonsCadeauxRoute
   '/app/parametres/integrations': typeof AppParametresIntegrationsRoute
   '/app/parametres/membres': typeof AppParametresMembresRoute
   '/app/parametres/notifications': typeof AppParametresNotificationsRoute
@@ -724,9 +777,11 @@ export interface FileRoutesById {
   '/app/reservations/export': typeof AppReservationsExportRoute
   '/app/reservations/nouvelle': typeof AppReservationsNouvelleRoute
   '/$slug/$event/': typeof SlugEventIndexRoute
+  '/$slug/bon-cadeau/': typeof SlugBonCadeauIndexRoute
   '/$slug/cartes/': typeof SlugCartesIndexRoute
   '/$slug/mon-espace/': typeof SlugMonEspaceIndexRoute
   '/(auth)/inscription/': typeof authInscriptionIndexRoute
+  '/app/bons-cadeaux/': typeof AppBonsCadeauxIndexRoute
   '/app/clients/': typeof AppClientsIndexRoute
   '/app/evenements/': typeof AppEvenementsIndexRoute
   '/app/materiel/': typeof AppMaterielIndexRoute
@@ -780,6 +835,7 @@ export interface FileRouteTypes {
     | '/mon-espace/'
     | '/$slug/$event/inscription'
     | '/$slug/$event/reserver'
+    | '/$slug/bon-cadeau/$token'
     | '/$slug/calendrier/$lien'
     | '/$slug/cartes/merci'
     | '/$slug/mon-espace/connexion'
@@ -790,6 +846,8 @@ export interface FileRouteTypes {
     | '/api/auth/$'
     | '/api/polar/webhook'
     | '/api/stripe/webhook'
+    | '/app/bons-cadeaux/$id'
+    | '/app/bons-cadeaux/nouveau'
     | '/app/clients/export'
     | '/app/clients/nouveau'
     | '/app/evenements/liens'
@@ -798,6 +856,7 @@ export interface FileRouteTypes {
     | '/app/materiel/modele-import'
     | '/app/materiel/nouveau'
     | '/app/parametres/abonnement'
+    | '/app/parametres/bons-cadeaux'
     | '/app/parametres/integrations'
     | '/app/parametres/membres'
     | '/app/parametres/notifications'
@@ -808,9 +867,11 @@ export interface FileRouteTypes {
     | '/app/reservations/export'
     | '/app/reservations/nouvelle'
     | '/$slug/$event/'
+    | '/$slug/bon-cadeau/'
     | '/$slug/cartes/'
     | '/$slug/mon-espace/'
     | '/inscription/'
+    | '/app/bons-cadeaux/'
     | '/app/clients/'
     | '/app/evenements/'
     | '/app/materiel/'
@@ -859,6 +920,7 @@ export interface FileRouteTypes {
     | '/mon-espace'
     | '/$slug/$event/inscription'
     | '/$slug/$event/reserver'
+    | '/$slug/bon-cadeau/$token'
     | '/$slug/calendrier/$lien'
     | '/$slug/cartes/merci'
     | '/$slug/mon-espace/connexion'
@@ -869,6 +931,8 @@ export interface FileRouteTypes {
     | '/api/auth/$'
     | '/api/polar/webhook'
     | '/api/stripe/webhook'
+    | '/app/bons-cadeaux/$id'
+    | '/app/bons-cadeaux/nouveau'
     | '/app/clients/export'
     | '/app/clients/nouveau'
     | '/app/evenements/liens'
@@ -877,6 +941,7 @@ export interface FileRouteTypes {
     | '/app/materiel/modele-import'
     | '/app/materiel/nouveau'
     | '/app/parametres/abonnement'
+    | '/app/parametres/bons-cadeaux'
     | '/app/parametres/integrations'
     | '/app/parametres/membres'
     | '/app/parametres/notifications'
@@ -887,9 +952,11 @@ export interface FileRouteTypes {
     | '/app/reservations/export'
     | '/app/reservations/nouvelle'
     | '/$slug/$event'
+    | '/$slug/bon-cadeau'
     | '/$slug/cartes'
     | '/$slug/mon-espace'
     | '/inscription'
+    | '/app/bons-cadeaux'
     | '/app/clients'
     | '/app/evenements'
     | '/app/materiel'
@@ -941,6 +1008,7 @@ export interface FileRouteTypes {
     | '/mon-espace/'
     | '/$slug/$event/inscription'
     | '/$slug/$event/reserver'
+    | '/$slug/bon-cadeau/$token'
     | '/$slug/calendrier/$lien'
     | '/$slug/cartes/merci'
     | '/$slug/mon-espace/connexion'
@@ -951,6 +1019,8 @@ export interface FileRouteTypes {
     | '/api/auth/$'
     | '/api/polar/webhook'
     | '/api/stripe/webhook'
+    | '/app/bons-cadeaux/$id'
+    | '/app/bons-cadeaux/nouveau'
     | '/app/clients/export'
     | '/app/clients/nouveau'
     | '/app/evenements/liens'
@@ -959,6 +1029,7 @@ export interface FileRouteTypes {
     | '/app/materiel/modele-import'
     | '/app/materiel/nouveau'
     | '/app/parametres/abonnement'
+    | '/app/parametres/bons-cadeaux'
     | '/app/parametres/integrations'
     | '/app/parametres/membres'
     | '/app/parametres/notifications'
@@ -969,9 +1040,11 @@ export interface FileRouteTypes {
     | '/app/reservations/export'
     | '/app/reservations/nouvelle'
     | '/$slug/$event/'
+    | '/$slug/bon-cadeau/'
     | '/$slug/cartes/'
     | '/$slug/mon-espace/'
     | '/(auth)/inscription/'
+    | '/app/bons-cadeaux/'
     | '/app/clients/'
     | '/app/evenements/'
     | '/app/materiel/'
@@ -1232,6 +1305,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SlugEventReserverRouteImport
       parentRoute: typeof SlugRoute
     }
+    '/$slug/bon-cadeau/': {
+      id: '/$slug/bon-cadeau/'
+      path: '/bon-cadeau'
+      fullPath: '/$slug/bon-cadeau/'
+      preLoaderRoute: typeof SlugBonCadeauIndexRouteImport
+      parentRoute: typeof SlugRoute
+    }
+    '/$slug/bon-cadeau/$token': {
+      id: '/$slug/bon-cadeau/$token'
+      path: '/bon-cadeau/$token'
+      fullPath: '/$slug/bon-cadeau/$token'
+      preLoaderRoute: typeof SlugBonCadeauTokenRouteImport
+      parentRoute: typeof SlugRoute
+    }
     '/$slug/calendrier/$lien': {
       id: '/$slug/calendrier/$lien'
       path: '/calendrier/$lien'
@@ -1323,6 +1410,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiStripeWebhookRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/app/bons-cadeaux/': {
+      id: '/app/bons-cadeaux/'
+      path: '/bons-cadeaux'
+      fullPath: '/app/bons-cadeaux/'
+      preLoaderRoute: typeof AppBonsCadeauxIndexRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/bons-cadeaux/$id': {
+      id: '/app/bons-cadeaux/$id'
+      path: '/bons-cadeaux/$id'
+      fullPath: '/app/bons-cadeaux/$id'
+      preLoaderRoute: typeof AppBonsCadeauxIdRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/bons-cadeaux/nouveau': {
+      id: '/app/bons-cadeaux/nouveau'
+      path: '/bons-cadeaux/nouveau'
+      fullPath: '/app/bons-cadeaux/nouveau'
+      preLoaderRoute: typeof AppBonsCadeauxNouveauRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/app/clients/': {
       id: '/app/clients/'
       path: '/clients'
@@ -1405,6 +1513,13 @@ declare module '@tanstack/react-router' {
       path: '/parametres/abonnement'
       fullPath: '/app/parametres/abonnement'
       preLoaderRoute: typeof AppParametresAbonnementRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/parametres/bons-cadeaux': {
+      id: '/app/parametres/bons-cadeaux'
+      path: '/parametres/bons-cadeaux'
+      fullPath: '/app/parametres/bons-cadeaux'
+      preLoaderRoute: typeof AppParametresBonsCadeauxRouteImport
       parentRoute: typeof AppRoute
     }
     '/app/parametres/integrations': {
@@ -1591,11 +1706,13 @@ interface SlugRouteChildren {
   SlugIndexRoute: typeof SlugIndexRoute
   SlugEventInscriptionRoute: typeof SlugEventInscriptionRoute
   SlugEventReserverRoute: typeof SlugEventReserverRoute
+  SlugBonCadeauTokenRoute: typeof SlugBonCadeauTokenRoute
   SlugCalendrierLienRoute: typeof SlugCalendrierLienRoute
   SlugCartesMerciRoute: typeof SlugCartesMerciRoute
   SlugMonEspaceConnexionRoute: typeof SlugMonEspaceConnexionRoute
   SlugMonEspaceProfilRoute: typeof SlugMonEspaceProfilRoute
   SlugEventIndexRoute: typeof SlugEventIndexRoute
+  SlugBonCadeauIndexRoute: typeof SlugBonCadeauIndexRoute
   SlugCartesIndexRoute: typeof SlugCartesIndexRoute
   SlugMonEspaceIndexRoute: typeof SlugMonEspaceIndexRoute
   SlugMonEspaceReservationAgendaDoticsRoute: typeof SlugMonEspaceReservationAgendaDoticsRoute
@@ -1610,11 +1727,13 @@ const SlugRouteChildren: SlugRouteChildren = {
   SlugIndexRoute: SlugIndexRoute,
   SlugEventInscriptionRoute: SlugEventInscriptionRoute,
   SlugEventReserverRoute: SlugEventReserverRoute,
+  SlugBonCadeauTokenRoute: SlugBonCadeauTokenRoute,
   SlugCalendrierLienRoute: SlugCalendrierLienRoute,
   SlugCartesMerciRoute: SlugCartesMerciRoute,
   SlugMonEspaceConnexionRoute: SlugMonEspaceConnexionRoute,
   SlugMonEspaceProfilRoute: SlugMonEspaceProfilRoute,
   SlugEventIndexRoute: SlugEventIndexRoute,
+  SlugBonCadeauIndexRoute: SlugBonCadeauIndexRoute,
   SlugCartesIndexRoute: SlugCartesIndexRoute,
   SlugMonEspaceIndexRoute: SlugMonEspaceIndexRoute,
   SlugMonEspaceReservationAgendaDoticsRoute:
@@ -1632,6 +1751,8 @@ interface AppRouteChildren {
   AppDesignSystemRoute: typeof AppDesignSystemRoute
   AppPlusRoute: typeof AppPlusRoute
   AppIndexRoute: typeof AppIndexRoute
+  AppBonsCadeauxIdRoute: typeof AppBonsCadeauxIdRoute
+  AppBonsCadeauxNouveauRoute: typeof AppBonsCadeauxNouveauRoute
   AppClientsExportRoute: typeof AppClientsExportRoute
   AppClientsNouveauRoute: typeof AppClientsNouveauRoute
   AppEvenementsLiensRoute: typeof AppEvenementsLiensRoute
@@ -1640,6 +1761,7 @@ interface AppRouteChildren {
   AppMaterielModeleImportRoute: typeof AppMaterielModeleImportRoute
   AppMaterielNouveauRoute: typeof AppMaterielNouveauRoute
   AppParametresAbonnementRoute: typeof AppParametresAbonnementRoute
+  AppParametresBonsCadeauxRoute: typeof AppParametresBonsCadeauxRoute
   AppParametresIntegrationsRoute: typeof AppParametresIntegrationsRoute
   AppParametresMembresRoute: typeof AppParametresMembresRoute
   AppParametresNotificationsRoute: typeof AppParametresNotificationsRoute
@@ -1649,6 +1771,7 @@ interface AppRouteChildren {
   AppReservationsIdRoute: typeof AppReservationsIdRoute
   AppReservationsExportRoute: typeof AppReservationsExportRoute
   AppReservationsNouvelleRoute: typeof AppReservationsNouvelleRoute
+  AppBonsCadeauxIndexRoute: typeof AppBonsCadeauxIndexRoute
   AppClientsIndexRoute: typeof AppClientsIndexRoute
   AppEvenementsIndexRoute: typeof AppEvenementsIndexRoute
   AppMaterielIndexRoute: typeof AppMaterielIndexRoute
@@ -1673,6 +1796,8 @@ const AppRouteChildren: AppRouteChildren = {
   AppDesignSystemRoute: AppDesignSystemRoute,
   AppPlusRoute: AppPlusRoute,
   AppIndexRoute: AppIndexRoute,
+  AppBonsCadeauxIdRoute: AppBonsCadeauxIdRoute,
+  AppBonsCadeauxNouveauRoute: AppBonsCadeauxNouveauRoute,
   AppClientsExportRoute: AppClientsExportRoute,
   AppClientsNouveauRoute: AppClientsNouveauRoute,
   AppEvenementsLiensRoute: AppEvenementsLiensRoute,
@@ -1681,6 +1806,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppMaterielModeleImportRoute: AppMaterielModeleImportRoute,
   AppMaterielNouveauRoute: AppMaterielNouveauRoute,
   AppParametresAbonnementRoute: AppParametresAbonnementRoute,
+  AppParametresBonsCadeauxRoute: AppParametresBonsCadeauxRoute,
   AppParametresIntegrationsRoute: AppParametresIntegrationsRoute,
   AppParametresMembresRoute: AppParametresMembresRoute,
   AppParametresNotificationsRoute: AppParametresNotificationsRoute,
@@ -1690,6 +1816,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppReservationsIdRoute: AppReservationsIdRoute,
   AppReservationsExportRoute: AppReservationsExportRoute,
   AppReservationsNouvelleRoute: AppReservationsNouvelleRoute,
+  AppBonsCadeauxIndexRoute: AppBonsCadeauxIndexRoute,
   AppClientsIndexRoute: AppClientsIndexRoute,
   AppEvenementsIndexRoute: AppEvenementsIndexRoute,
   AppMaterielIndexRoute: AppMaterielIndexRoute,

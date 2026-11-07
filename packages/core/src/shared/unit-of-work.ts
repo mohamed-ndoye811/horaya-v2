@@ -10,6 +10,7 @@ import type { CalendarLinkRepository } from "../calendar-links/ports";
 import type { CustomerAccountRepository } from "../customer-accounts/ports";
 import type { EnrollmentRepository } from "../enrollments/ports";
 import type { EventRepository, EventTypeRepository } from "../events/ports";
+import type { GiftCardRepository } from "../gift-cards/ports";
 import type { InventoryRepository } from "../inventory/ports";
 import type { PassRepository } from "../passes/ports";
 import type { PaymentRepository } from "../payments/ports";
@@ -35,6 +36,7 @@ export interface Repositories {
   customerAccounts: CustomerAccountRepository;
   enrollments: EnrollmentRepository;
   passes: PassRepository;
+  giftCards: GiftCardRepository;
 }
 
 /** Exécute un travail dans une transaction : tout est validé, ou rien. */

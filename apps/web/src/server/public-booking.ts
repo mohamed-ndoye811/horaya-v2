@@ -209,8 +209,8 @@ export async function bookingMoney(workspace: PublicWorkspace, booking: ManagedB
     refunded: payments
       .filter((entry) => entry.kind === "refund" && entry.status === "succeeded")
       .reduce((total, entry) => total + entry.amountCents, 0),
-    awaitsPayment: channel !== null && awaitsOnlinePayment(booking),
-    due: amountDueOnline(booking),
+    awaitsPayment: channel !== null && awaitsOnlinePayment(booking, paid),
+    due: amountDueOnline(booking, paid),
     refund:
       paid > 0
         ? refundForCancellation({
@@ -281,6 +281,12 @@ export async function createPublicBooking(
   if (form.get("terms") !== "on") fieldErrors.terms = "Accepte les conditions pour réserver";
   if (Object.keys(fieldErrors).length > 0)
     return { error: "Vérifie les champs en rouge.", fieldErrors };
+  // Anti-force brute : chaque saisie de code compte, qu'il soit bon ou non.
+  const giftCardCode = text(form, "giftCardCode");
+  if (giftCardCode) {
+    const tooMany = await rateLimited(`giftcode:ip:${await clientIp()}`, 10, 900);
+    if (tooMany) return { error: tooMany, fieldErrors: { giftCardCode: tooMany } };
+  }
 
   let manageToken: string;
   let next: string;
@@ -299,6 +305,7 @@ export async function createPublicBooking(
         customerMessage: text(form, "customerMessage") || null,
         // Le core revérifie que le lien est actif et contient l'événement.
         calendarLinkSlug: link?.slug ?? null,
+        giftCardCode: giftCardCode || null,
       },
     );
     manageToken = created.manageToken;
@@ -315,7 +322,7 @@ export async function createPublicBooking(
       workspacePaymentChannel(workspace, event.paymentMode, event.paymentLinkUrl)?.kind ===
         "stripe" &&
       !paidWithPass &&
-      awaitsOnlinePayment(created.booking)
+      awaitsOnlinePayment(created.booking, created.giftCardCents)
     ) {
       next = await checkoutUrl(
         `/${slug}/reservation/${manageToken}?nouvelle=1`,

@@ -98,6 +98,7 @@ export interface ActivityEntry {
   organizationId: string;
   entityType:
     | "booking"
+    | "gift_card"
     | "event"
     | "event_type"
     | "enrollment"

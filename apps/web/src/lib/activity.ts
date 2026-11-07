@@ -16,6 +16,7 @@ const METHOD_LABELS: Record<string, string> = {
   card: "carte",
   check: "chèque",
   transfer: "virement",
+  gift_card: "bon cadeau",
 };
 
 /** « · carte » pour un paiement noté avec son moyen. */
@@ -70,6 +71,11 @@ export function describeBookingActivity(
         tone: "success",
       };
     }
+    case "booking.gift_card_used":
+      return {
+        title: `Bon cadeau ${String(entry.data?.code ?? "")} utilisé · ${formatMoney(Number(entry.data?.amountCents ?? 0))}`,
+        tone: "success",
+      };
     case "booking.refunded":
       return {
         title: `${entry.data?.manual ? "Remboursement noté" : "Remboursé"}${by(entry)} · ${formatMoney(Number(entry.data?.amountCents ?? 0))}`,
