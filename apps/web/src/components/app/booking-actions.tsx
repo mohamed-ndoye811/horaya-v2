@@ -311,7 +311,7 @@ export function CheckInToggle({
                   "size-9 items-center justify-center border-2",
                   present ? "border-success bg-success" : "border-line bg-surface",
                 )
-              : cn("h-5 w-9 p-0.5", present ? "justify-end bg-ink" : "bg-[#e2e2df]"),
+              : cn("h-5 w-9 p-0.5", present ? "justify-end bg-ink" : "bg-line"),
           )}
         >
           {size === "lg" ? (
@@ -433,7 +433,7 @@ export function RefundButton({ bookingId, maxCents }: { bookingId: string; maxCe
   const max = (maxCents / 100).toFixed(2).replace(".", ",");
   return (
     <>
-      <Button variant="secondary" className="h-10 px-4 text-sm" onClick={() => setOpen(true)}>
+      <Button variant="secondary" size="sm" onClick={() => setOpen(true)}>
         Rembourser
       </Button>
       {open && (
@@ -506,7 +506,7 @@ function AmountActionButton({
     <>
       <Button
         variant={tone === "primary" ? "primary" : "secondary"}
-        className="h-10 px-4 text-sm"
+        size="sm"
         onClick={() => setOpen(true)}
       >
         {label}
