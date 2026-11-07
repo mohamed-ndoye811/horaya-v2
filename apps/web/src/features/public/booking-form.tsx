@@ -327,7 +327,7 @@ export function BookingForm({
                   ? payment.deposit
                     ? `Tu règles l'acompte de ${payment.due} par carte sur la page sécurisée de Stripe ; le reste (${payment.rest}) sur place.`
                     : `Tu règles ${payment.due} par carte sur la page sécurisée de Stripe, juste après.`
-                  : `Juste après ta réservation, tu règles ${payment.deposit ? `l'acompte de ${payment.due}` : payment.due} via le lien de paiement de ${payment.organization}.${payment.deposit ? ` Le reste (${payment.rest}) sur place.` : ""} ${payment.organization} confirme ensuite la réception.`}
+                  : `Juste après ta ${enrollment ? "inscription" : "réservation"}, tu règles ${payment.deposit ? `l'acompte de ${payment.due}` : payment.due} via le lien de paiement de ${payment.organization}.${payment.deposit ? ` Le reste (${payment.rest}) sur place.` : ""} ${payment.organization} confirme ensuite la réception.`}
               </p>
             </div>
             {terms}

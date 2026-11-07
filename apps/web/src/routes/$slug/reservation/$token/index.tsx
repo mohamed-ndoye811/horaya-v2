@@ -12,7 +12,12 @@ import { searchText } from "@/lib/search-params";
 export const Route = createFileRoute("/$slug/reservation/$token/")({
   validateSearch: z.object({ nouvelle: searchText, paiement: searchText }),
   loader: ({ params }) => getManagedBookingPage({ data: params }),
-  head: () => ({ meta: [{ title: "Ta réservation" }, { name: "robots", content: "noindex" }] }),
+  head: ({ loaderData }) => ({
+    meta: [
+      { title: loaderData?.enrollment ? "Ton inscription" : "Ta réservation" },
+      { name: "robots", content: "noindex" },
+    ],
+  }),
   component: ManagedBooking,
 });
 

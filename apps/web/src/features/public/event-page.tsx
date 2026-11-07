@@ -57,7 +57,10 @@ export function PublicEventPage({
       ? cancellationPolicy(event.startsAt, workspace, tz).split(".")[0]
       : null,
   ].filter(Boolean);
-  const price = event.priceCents > 0 ? formatMoney(event.priceCents) : "Gratuit";
+  // Cours vendu seulement au trimestre : on affiche le prix de la série.
+  const seriesOnly = event.enrollmentEnabled && !event.dropInAllowed && offer !== null;
+  const priceCents = seriesOnly ? (offer?.enrollmentPriceCents ?? 0) : event.priceCents;
+  const price = priceCents > 0 ? formatMoney(priceCents) : "Gratuit";
   const ctaLabel =
     state.kind === "waitlist"
       ? "Rejoindre la liste d'attente"
@@ -188,8 +191,10 @@ export function PublicEventPage({
             <span className="text-[36px] font-medium leading-10 tracking-[-0.03em] text-ink">
               {price}
             </span>
-            {event.priceCents > 0 && (
-              <span className="text-[15px] leading-5 text-ink-subtle">/ personne</span>
+            {priceCents > 0 && (
+              <span className="text-[15px] leading-5 text-ink-subtle">
+                {seriesOnly ? "le trimestre" : "/ personne"}
+              </span>
             )}
           </p>
           <div className="flex flex-col gap-2">
@@ -298,11 +303,13 @@ export function PublicEventPage({
           <p className="flex flex-col gap-px pl-3">
             <span className="text-lg font-semibold leading-[22px] text-on-ink">{price}</span>
             <span className="text-[11px] leading-[14px] text-notch-idle">
-              {state.kind === "waitlist"
-                ? "liste d'attente"
-                : event.priceCents > 0
-                  ? "par personne"
-                  : seats.label}
+              {seriesOnly
+                ? "le trimestre"
+                : state.kind === "waitlist"
+                  ? "liste d'attente"
+                  : event.priceCents > 0
+                    ? "par personne"
+                    : seats.label}
             </span>
           </p>
           <ButtonLink href="#reserver" variant="brand" arrow>
