@@ -34,7 +34,12 @@ function AppLayout() {
             <Outlet />
           </RouteTransition>
         </main>
-        <MobileTabBar pendingBookings={pendingBookings} />
+        <MobileTabBar
+          pendingBookings={pendingBookings}
+          unreadNotifications={unreadNotifications}
+          user={user}
+          workspace={workspace}
+        />
       </ScrollZone>
     </div>
   );
