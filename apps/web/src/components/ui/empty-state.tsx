@@ -17,7 +17,7 @@ export function EmptyState({
   steps?: [string, string, string];
 }) {
   return (
-    <div className="reveal-group mx-4 flex flex-col items-center gap-4 rounded-3xl border-[1.5px] border-dashed border-[#dcdcd8] bg-band px-6 py-14 text-center sm:py-20">
+    <div className="reveal-group mx-4 flex flex-col items-center gap-4 rounded-3xl border-[1.5px] border-dashed border-line-strong bg-band px-6 py-14 text-center sm:py-20">
       <span
         aria-hidden="true"
         className="flex size-14 items-center justify-center rounded-2xl bg-ink text-2xl font-semibold text-on-ink"

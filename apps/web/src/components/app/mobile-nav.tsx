@@ -32,7 +32,7 @@ export function MobileTopBar() {
     <div className={cn("px-4 pt-4", back.href === "/app/plus" && "lg:hidden")}>
       <Link
         href={back.href}
-        className="flex w-fit items-center gap-1.5 text-[13px] font-semibold leading-4 text-ink-muted transition-colors hover:text-ink"
+        className="tap-area flex w-fit items-center gap-1.5 text-[13px] font-semibold leading-4 text-ink-muted transition-colors hover:text-ink"
       >
         <ArrowLeft className="size-3" />
         {back.label}

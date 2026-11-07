@@ -13,7 +13,9 @@ export const Route = createRootRoute({
   head: () => ({
     meta: [
       { charSet: "utf-8" },
-      { name: "viewport", content: "width=device-width, initial-scale=1" },
+      // viewport-fit=cover : le fond va jusqu'aux bords de l'iPhone ; les zones sûres
+      // (env(safe-area-inset-*)) sont gérées par app.css, la capsule du bas et les barres d'action.
+      { name: "viewport", content: "width=device-width, initial-scale=1, viewport-fit=cover" },
       { title: "Horaya" },
       {
         name: "description",

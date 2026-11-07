@@ -1,7 +1,6 @@
 import { isRedirect, useRouter as useTanstackRouter } from "@tanstack/react-router";
 import { useEffect, useState, useTransition } from "react";
-import { brandButtonClasses } from "@/components/public/public-chrome";
-import { Button } from "@/components/ui/button";
+import { Button, buttonClasses } from "@/components/ui/button";
 import { Dialog } from "@/components/ui/dialog";
 import { FormAlert } from "@/components/ui/form-alert";
 import {
@@ -142,7 +141,7 @@ export function PayButton({ slug, token, label }: { slug: string; token: string;
         type="button"
         disabled={pending}
         aria-busy={pending}
-        className={cn(brandButtonClasses, "h-[54px] px-[26px] text-base disabled:opacity-70")}
+        className={buttonClasses({ variant: "brand", size: "xl" })}
         onClick={() =>
           startTransition(async () => {
             try {

@@ -1,13 +1,12 @@
 import type { CustomFieldDefinition } from "@horaya/core";
 import { type FormEvent, type ReactNode, useState } from "react";
-import { brandButtonClasses } from "@/components/public/public-chrome";
+import { buttonClasses } from "@/components/ui/button";
 import { Checkbox, Field, inputClasses, textareaClasses } from "@/components/ui/field";
 import { FormAlert } from "@/components/ui/form-alert";
 import { ArrowRight } from "@/components/ui/icons";
 import { FormSection } from "@/components/ui/section";
 import { Select } from "@/components/ui/select";
 import { createPublicBookingAction } from "@/functions/public";
-import { cn } from "@/lib/cn";
 import { useFormAction } from "@/lib/use-form-action";
 import type { FormState } from "@/server/form-state";
 
@@ -330,7 +329,7 @@ export function BookingForm({
             type="submit"
             disabled={pending}
             aria-busy={pending}
-            className={cn(brandButtonClasses, "h-12 px-6 text-[15px] disabled:opacity-70")}
+            className={buttonClasses({ variant: "brand" })}
           >
             {pending ? "Un instant…" : submitLabel}
             {!pending && <ArrowRight />}

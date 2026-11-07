@@ -21,7 +21,7 @@ export type MenuItem =
 
 /** Marge entre le menu et les bords de l'écran. */
 const EDGE = 8;
-/** Sous `lg`, la barre d'onglets occupe le bas de l'écran. */
+/** Sous `lg`, la barre d'onglets occupe le bas de l'écran (repli si on ne la trouve pas). */
 const TAB_BAR = 80;
 
 /**
@@ -62,7 +62,15 @@ export function ActionMenu({
     const { width, height } = menu.current.getBoundingClientRect();
     const viewportWidth = window.innerWidth;
     const viewportHeight = window.innerHeight;
-    const bottomLimit = viewportHeight - (viewportWidth < 1024 ? TAB_BAR : EDGE);
+    let bottomLimit = viewportHeight - EDGE;
+    if (viewportWidth < 1024) {
+      // Au-dessus des barres collées en bas (onglets, actions), zone sûre de l'écran comprise.
+      bottomLimit = viewportHeight - TAB_BAR;
+      for (const bar of document.querySelectorAll("[data-bottom-bar]")) {
+        const box = bar.getBoundingClientRect();
+        if (box.height > 0) bottomLimit = Math.min(bottomLimit, box.top - EDGE);
+      }
+    }
     let left = anchor.right - width;
     if (left < EDGE) left = anchor.left;
     left = Math.max(EDGE, Math.min(left, viewportWidth - width - EDGE));
@@ -140,7 +148,6 @@ export function ActionMenu({
       <IconButton
         label={label}
         variant={variant}
-        size={variant === "outline" ? "lg" : "md"}
         aria-haspopup="menu"
         aria-expanded={open}
         aria-controls={open ? menuId : undefined}

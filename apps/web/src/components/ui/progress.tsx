@@ -8,6 +8,7 @@ const fills: Record<Tone | "ink", string> = {
   danger: "bg-danger",
   info: "bg-info",
   draft: "bg-draft",
+  neutral: "bg-ink-subtle",
 };
 
 /** Jauge fine (4 px) : remplissage d'un événement, progression d'une checklist. */

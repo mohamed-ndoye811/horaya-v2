@@ -10,6 +10,7 @@ import { ActionMenu } from "@/components/ui/menu";
 import { FormSection } from "@/components/ui/section";
 import { SegmentedControl } from "@/components/ui/segmented";
 import { Select } from "@/components/ui/select";
+import { Stepper } from "@/components/ui/stepper";
 import { Switch } from "@/components/ui/switch";
 
 const DESCRIPTION =
@@ -20,6 +21,8 @@ export function FormDemo() {
   const [description, setDescription] = useState(DESCRIPTION);
   const [paymentMode, setPaymentMode] = useState("online");
   const [recurring, setRecurring] = useState(true);
+  const [seats, setSeats] = useState(2);
+  const [day, setDay] = useState("today");
   const [items, setItems] = useState([
     { name: "Vidéoprojecteur", meta: "Dispo", tone: "success" as const },
     { name: "Micro sans fil × 2", meta: "1 / 2 dispo", tone: "warning" as const },
@@ -195,7 +198,36 @@ export function FormDemo() {
             </Chip>
           ))}
           <AddButton>Ajouter du matériel</AddButton>
+          <AddButton size="sm">Ajouter (sm)</AddButton>
         </div>
+        <div className="flex flex-wrap items-center gap-4">
+          <Stepper value={seats} onChange={setSeats} min={1} max={6} label="Places" />
+          <SegmentedControl
+            name="day"
+            label="Jour"
+            size="xs"
+            fill={false}
+            value={day}
+            onChange={setDay}
+            segments={[
+              { value: "today", label: "Auj." },
+              { value: "tomorrow", label: "Demain" },
+              { value: "week", label: "Semaine" },
+            ]}
+          />
+          <div className="w-28">
+            <input
+              aria-label="Code couleur"
+              defaultValue="#B4532A"
+              className={inputClasses("sm")}
+            />
+          </div>
+        </div>
+        <Field label="Adresse de la page publique" error="Cette adresse est déjà prise.">
+          {(field) => (
+            <AffixInput {...field} prefix="horaya.app/" defaultValue="atelier-lune" mono />
+          )}
+        </Field>
       </FormSection>
     </form>
   );

@@ -30,10 +30,6 @@ export function brandStyle(color: string): CSSProperties {
   } as CSSProperties;
 }
 
-/** Bouton principal aux couleurs de l'espace (« Réserver mes places »). */
-export const brandButtonClasses =
-  "flex items-center justify-center gap-2 rounded-full bg-[var(--brand)] font-semibold text-[var(--on-brand)] transition-[filter] hover:brightness-110";
-
 /** Logo de l'espace, sinon pastille carrée arrondie à son initiale (notch, en-tête mobile). */
 export function WorkspaceMark({ name, logo }: { name: string; logo?: string | null }) {
   if (logo) {

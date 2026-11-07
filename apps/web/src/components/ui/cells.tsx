@@ -3,6 +3,7 @@ import { cn } from "@/lib/cn";
 import { formatDayNumber, formatMoney, formatMonthShort, formatWeekdayShort } from "@/lib/format";
 import { Link } from "@/lib/navigation";
 import { Avatar, CategorySwatch } from "./avatar";
+import { rowLinkClasses } from "./button";
 import { TicketIcon } from "./icons";
 
 /** Titre (gras 16 px) + sous-titre (14 px), tronqués sur une ligne. Lien si `href`. */
@@ -32,7 +33,8 @@ export function TitleBlock({
           <Link
             href={href}
             className={cn(
-              "truncate text-sm font-semibold leading-[18px] text-ink hover:underline hover:decoration-1 hover:underline-offset-[3px]",
+              rowLinkClasses,
+              "truncate text-sm leading-[18px]",
               stretched && "after:absolute after:inset-0",
             )}
           >
@@ -158,8 +160,8 @@ export function DateBlock({
     >
       <span
         className={cn(
-          "text-[9px] font-bold uppercase leading-[11px]",
-          dark ? "text-white/60" : "text-ink-muted",
+          "text-[11px] font-bold uppercase leading-[13px]",
+          dark ? "text-on-ink-muted" : "text-ink-muted",
         )}
       >
         {layout === "month-first"
@@ -169,7 +171,7 @@ export function DateBlock({
       <span
         className={cn(
           "text-[15px] font-semibold leading-[18px] tabular-nums",
-          dark ? "text-white" : "text-ink",
+          dark ? "text-on-ink" : "text-ink",
         )}
       >
         {formatDayNumber(date, timeZone)}

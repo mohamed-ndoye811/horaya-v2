@@ -1,6 +1,6 @@
 "use client";
 
-import type { ReactNode } from "react";
+import type { ComponentProps, ReactNode } from "react";
 import { cn } from "@/lib/cn";
 import { CloseIcon, PlusIcon } from "./icons";
 
@@ -51,15 +51,32 @@ export function Chip({
   );
 }
 
-/** Bouton d'ajout en pointillés (« + Ajouter du matériel »). */
-export function AddButton({ children, onClick }: { children: ReactNode; onClick?: () => void }) {
+/**
+ * Bouton d'ajout en pointillés (« + Ajouter du matériel »). `sm` : 36 px, 13 px (dans une
+ * rangée de puces). `icon={false}` : sans « + » (libellé qui change selon l'état).
+ */
+export function AddButton({
+  size = "md",
+  icon = true,
+  children,
+  type = "button",
+  ...props
+}: Omit<ComponentProps<"button">, "className"> & {
+  size?: "sm" | "md";
+  icon?: boolean;
+  children: ReactNode;
+}) {
   return (
     <button
-      type="button"
-      onClick={onClick}
-      className="inline-flex h-10 items-center gap-2 rounded-full border-[1.5px] border-dashed border-line px-3.5 text-sm font-semibold text-ink hover:border-ink hover:bg-surface"
+      type={type}
+      className={cn(
+        "inline-flex items-center gap-2 rounded-full border-[1.5px] border-dashed border-line-strong font-semibold text-ink",
+        "hover:border-ink hover:bg-surface disabled:text-ink-subtle disabled:hover:border-line-strong disabled:hover:bg-transparent",
+        size === "sm" ? "h-9 px-3 text-[13px] leading-4" : "h-10 px-3.5 text-sm",
+      )}
+      {...props}
     >
-      <PlusIcon size={12} />
+      {icon && <PlusIcon size={12} />}
       {children}
     </button>
   );

@@ -1,11 +1,10 @@
 "use client";
 
 import { useState } from "react";
+import { buttonClasses } from "@/components/ui/button";
 import { ArrowRight } from "@/components/ui/icons";
-import { cn } from "@/lib/cn";
 import { formatMoney } from "@/lib/format";
 import { Link } from "@/lib/navigation";
-import { brandButtonClasses } from "./public-chrome";
 
 /** Carte de réservation de la maquette 5.2 : nombre de places, total, puis l'étape suivante. */
 export function SeatPicker({
@@ -64,7 +63,7 @@ export function SeatPicker({
       </div>
       <Link
         href={`${bookHref}${bookHref.includes("?") ? "&" : "?"}places=${seats}`}
-        className={cn(brandButtonClasses, "h-[54px] text-base")}
+        className={buttonClasses({ variant: "brand", size: "xl", className: "w-full" })}
       >
         {label}
         <ArrowRight />

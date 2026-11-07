@@ -1,9 +1,9 @@
 import { BottomNotch } from "@/components/app/bottom-notch";
 import { WordsReveal } from "@/components/motion/words";
-import { brandButtonClasses } from "@/components/public/public-chrome";
 import { eventBadge, eventCover } from "@/components/public/public-events";
 import { NotFoundScreen } from "@/components/public/public-not-found";
 import { SeatPicker } from "@/components/public/seat-picker";
+import { buttonClasses } from "@/components/ui/button";
 import { ArrowLeft, ArrowRight, Check } from "@/components/ui/icons";
 import type { getPublicEventPage } from "@/functions/public";
 import { cn } from "@/lib/cn";
@@ -263,7 +263,7 @@ export function PublicEventPage({
                   : seats.label}
             </span>
           </p>
-          <Link href="#reserver" className={cn(brandButtonClasses, "h-11 px-5 text-[15px]")}>
+          <Link href="#reserver" className={buttonClasses({ variant: "brand" })}>
             Réserver
             <ArrowRight />
           </Link>

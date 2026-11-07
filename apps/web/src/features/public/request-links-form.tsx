@@ -1,9 +1,8 @@
-import { brandButtonClasses } from "@/components/public/public-chrome";
+import { buttonClasses } from "@/components/ui/button";
 import { Field, inputClasses } from "@/components/ui/field";
 import { FormAlert } from "@/components/ui/form-alert";
 import { ArrowRight } from "@/components/ui/icons";
 import { requestBookingLinksAction } from "@/functions/public";
-import { cn } from "@/lib/cn";
 import { useFormAction } from "@/lib/use-form-action";
 import type { FormState } from "@/server/form-state";
 
@@ -34,7 +33,7 @@ export function RequestLinksForm({ slug, email }: { slug: string; email: string 
         type="submit"
         disabled={pending}
         aria-busy={pending}
-        className={cn(brandButtonClasses, "h-[52px] text-base disabled:opacity-70")}
+        className={buttonClasses({ variant: "brand", size: "lg" })}
       >
         {pending ? "Un instant…" : "Recevoir mes liens"}
         {!pending && <ArrowRight />}

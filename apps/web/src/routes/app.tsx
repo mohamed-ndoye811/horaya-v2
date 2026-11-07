@@ -19,7 +19,8 @@ export const Route = createFileRoute("/app")({
 function AppLayout() {
   const { user, workspace, pendingBookings, unreadNotifications } = Route.useLoaderData();
   return (
-    <div className="flex min-h-dvh flex-1 flex-col lg:h-dvh lg:min-h-0 lg:flex-none lg:bg-ink lg:p-1.5">
+    // Mobile : le haut de l'écran (encoche, application installée) reste libre.
+    <div className="flex min-h-dvh flex-1 flex-col pt-[env(safe-area-inset-top)] lg:h-dvh lg:min-h-0 lg:flex-none lg:bg-ink lg:p-1.5">
       <Notch
         user={user}
         workspace={workspace}

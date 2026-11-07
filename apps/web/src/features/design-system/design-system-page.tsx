@@ -1,5 +1,5 @@
 import { addDays } from "@horaya/core";
-import type { ReactNode } from "react";
+import type { CSSProperties, ReactNode } from "react";
 import { PageHeader } from "@/components/app/page-header";
 import { CalendarLegend } from "@/components/calendar/legend";
 import { MonthCalendar } from "@/components/calendar/month-calendar";
@@ -7,10 +7,21 @@ import { TimeGridCalendar } from "@/components/calendar/time-grid";
 import { Avatar, CategorySwatch } from "@/components/ui/avatar";
 import { CountBadge, StatusBadge } from "@/components/ui/badge";
 import { Banner } from "@/components/ui/banner";
-import { Button, ButtonLink, IconButton, textLinkClasses } from "@/components/ui/button";
+import {
+  Button,
+  ButtonLink,
+  buttonClasses,
+  IconButton,
+  IconLink,
+  rowLinkClasses,
+  textLinkClasses,
+  textLinkSmClasses,
+} from "@/components/ui/button";
 import { DateBlock, EventCell, MoneyCell, MonoCaption, PersonCell } from "@/components/ui/cells";
 import { DataTable } from "@/components/ui/data-table";
 import { EmptyState } from "@/components/ui/empty-state";
+import { FieldError } from "@/components/ui/field";
+import { FormAlert } from "@/components/ui/form-alert";
 import {
   Check,
   ChevronDown,
@@ -23,12 +34,13 @@ import {
 import { ActionMenu } from "@/components/ui/menu";
 import { fillTone, ProgressBar } from "@/components/ui/progress";
 import { SearchInput } from "@/components/ui/search-input";
-import { Eyebrow, SectionHeading } from "@/components/ui/section";
+import { dashedClasses, Eyebrow, inkCardClasses, SectionHeading } from "@/components/ui/section";
 import { SegmentedLinks } from "@/components/ui/segmented";
 import { Select } from "@/components/ui/select";
 import { Stat, StatGrid } from "@/components/ui/stat";
 import { BOOKING_STATUS_BADGE, eventStatusBadge } from "@/components/ui/status";
 import { Tabs } from "@/components/ui/tabs";
+import { Tag } from "@/components/ui/tag";
 import { Timeline } from "@/components/ui/timeline";
 import { formatDateTimeShort } from "@/lib/format";
 import { BOOKINGS, CALENDAR_EVENTS, CATEGORIES, NOW, TODAY, UPCOMING } from "./demo-data";
@@ -71,6 +83,26 @@ const TOKENS = [
   ["neutral", "#595959"],
 ];
 
+/** Jetons du lot 23 : gris, ambre, accent, et palette sur fond noir. */
+const EXTRA_TOKENS = [
+  "line-faint",
+  "line-strong",
+  "ink-soft",
+  "ink-faint",
+  "accent-strong",
+  "warning-strong",
+  "warning-line",
+  "ink-raised",
+  "ink-hover",
+  "ink-line",
+  "on-ink-soft",
+  "on-ink-muted",
+  "on-ink-subtle",
+  "success-on-ink",
+  "danger-on-ink",
+  "warning-on-ink",
+];
+
 export function DesignSystemPage() {
   const week = Array.from({ length: 7 }, (_, offset) => addDays(TODAY, offset));
 
@@ -98,6 +130,21 @@ export function DesignSystemPage() {
             </div>
           ))}
         </div>
+        <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4 xl:grid-cols-8">
+          {EXTRA_TOKENS.map((name) => (
+            <div key={name} className="flex flex-col gap-2">
+              <span
+                className="h-10 border border-line-soft"
+                style={{ backgroundColor: `var(--color-${name})` }}
+              />
+              <span className="font-mono text-label font-semibold text-ink">{name}</span>
+            </div>
+          ))}
+          <div className="flex flex-col gap-2">
+            <span className="h-10 bg-accent-gradient" />
+            <span className="font-mono text-label font-semibold text-ink">bg-accent-gradient</span>
+          </div>
+        </div>
         <div className="mt-10 flex flex-col gap-4">
           <p className="font-headline text-display leading-[60px]">Bonjour, Mohamed</p>
           <p className="font-section text-section">À venir · Dernières réservations</p>
@@ -105,6 +152,30 @@ export function DesignSystemPage() {
             Urbanist 16 px — texte courant des écrans.
           </p>
           <Eyebrow>Geist Mono 12 px — sur-titres et données</Eyebrow>
+          <Eyebrow variant="caps">Eyebrow caps</Eyebrow>
+          <Eyebrow variant="mono">Eyebrow mono</Eyebrow>
+          <div className={`${inkCardClasses} flex flex-col gap-3 rounded-3xl p-5`}>
+            <Eyebrow variant="inverse">Eyebrow inverse · carte inkCardClasses</Eyebrow>
+            <p className="text-sm text-on-ink-muted">
+              Texte secondaire <span className="text-success-on-ink">payé</span> ·{" "}
+              <span className="text-warning-on-ink">acompte</span> ·{" "}
+              <span className="text-danger-on-ink">en retard</span>
+            </p>
+            <div className="flex flex-wrap gap-3 border-t border-ink-line pt-3">
+              <Button variant="inverse" size="sm">
+                Inverse sm
+              </Button>
+              <Button variant="inverse-outline" size="sm">
+                Inverse outline sm
+              </Button>
+              <Tag tone="inverse">Inverse</Tag>
+            </div>
+          </div>
+          <div
+            className={`${dashedClasses} rounded-2xl px-4 py-6 text-center text-sm text-ink-subtle`}
+          >
+            dashedClasses
+          </div>
         </div>
       </Demo>
 
@@ -129,10 +200,10 @@ export function DesignSystemPage() {
             <Button disabled>Rembourser</Button>
           </div>
           <div className="flex flex-wrap items-center gap-3">
-            <IconButton label="Mois précédent" size="lg">
+            <IconButton label="Mois précédent">
               <ChevronLeft />
             </IconButton>
-            <IconButton label="Mois suivant" size="lg">
+            <IconButton label="Mois suivant">
               <ChevronRight />
             </IconButton>
             <IconButton label="Valider" variant="approve">
@@ -150,6 +221,65 @@ export function DesignSystemPage() {
             />
             <a href="#form" className={`${textLinkClasses} text-sm`}>
               Lien texte
+            </a>
+          </div>
+          <div className="flex flex-wrap items-center gap-3">
+            <Button size="xs" variant="secondary">
+              xs
+            </Button>
+            <Button size="sm" variant="secondary">
+              sm
+            </Button>
+            <Button variant="secondary">md</Button>
+            <Button size="lg" variant="secondary">
+              lg
+            </Button>
+            <Button size="xl" variant="secondary">
+              xl
+            </Button>
+            <Button size="xs" variant="soft">
+              Soft xs
+            </Button>
+            <Button size="sm" variant="soft">
+              Soft sm
+            </Button>
+            <Button size="sm" variant="soft" disabled>
+              Soft désactivé
+            </Button>
+          </div>
+          <div
+            className="flex flex-wrap items-center gap-3"
+            style={{ "--brand": "#B4532A", "--on-brand": "#ffffff" } as CSSProperties}
+          >
+            <Button variant="brand">Brand md</Button>
+            <Button variant="brand" size="xl" arrow>
+              Brand xl
+            </Button>
+            <Button variant="brand" disabled>
+              Brand désactivé
+            </Button>
+            <a href="#form" className={buttonClasses({ variant: "brand", size: "sm" })}>
+              Lien brand sm
+            </a>
+          </div>
+          <div className="flex flex-wrap items-center gap-3">
+            <IconButton label="Icône sm" size="sm">
+              <ChevronLeft />
+            </IconButton>
+            <IconButton label="Icône md">
+              <ChevronRight />
+            </IconButton>
+            <IconLink label="Lien icône sm" size="sm" href="/app/design-system">
+              <ChevronLeft />
+            </IconLink>
+            <IconLink label="Lien icône md" href="/app/design-system">
+              <ChevronRight />
+            </IconLink>
+            <a href="#form" className={textLinkSmClasses}>
+              Lien texte sm
+            </a>
+            <a href="#form" className={`${rowLinkClasses} text-sm`}>
+              Titre de ligne (rowLinkClasses)
             </a>
           </div>
           <div className="flex flex-wrap gap-3 bg-ink p-6">
@@ -182,6 +312,27 @@ export function DesignSystemPage() {
             ))}
             <StatusBadge tone="info">Payée</StatusBadge>
             <StatusBadge tone="warning">Acompte · 36 €</StatusBadge>
+            <StatusBadge tone="neutral">Bientôt</StatusBadge>
+            <StatusBadge tone="neutral" size="sm">
+              Bientôt (sm)
+            </StatusBadge>
+            <StatusBadge tone="success" size="sm">
+              Payée (sm)
+            </StatusBadge>
+          </div>
+          <div className="flex flex-wrap items-center gap-3">
+            <Tag>Outline</Tag>
+            <Tag tone="ink">VIP</Tag>
+            <Tag tone="success">Nouveau</Tag>
+            <Tag tone="info">À venir</Tag>
+            <Tag tone="draft">Brouillon</Tag>
+            <span className="flex h-16 items-center rounded-2xl bg-accent-gradient px-4">
+              <Tag tone="overlay">Overlay sur photo</Tag>
+            </span>
+          </div>
+          <div className="flex max-w-[520px] flex-col gap-3">
+            <FormAlert tone="warning">Cette réservation attend encore son acompte.</FormAlert>
+            <FieldError>Message d'erreur de champ (FieldError).</FieldError>
           </div>
           <div className="flex flex-wrap items-center gap-3">
             {["Camille Roux", "Léa Fontaine", "Marc Dupont", "Sophie Martin", "Thomas Bernard"].map(

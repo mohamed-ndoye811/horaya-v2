@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import { stagger, WordsReveal } from "@/components/motion/words";
-import { brandButtonClasses } from "@/components/public/public-chrome";
 import { NotFoundScreen } from "@/components/public/public-not-found";
+import { buttonClasses } from "@/components/ui/button";
 import { ArrowRight } from "@/components/ui/icons";
 import type { getManagedBookingPage } from "@/functions/public";
 import { cn } from "@/lib/cn";
@@ -184,7 +184,7 @@ export function ManagedBookingPage({
               href={channel.url}
               target="_blank"
               rel="noreferrer"
-              className={cn(brandButtonClasses, "h-[54px] px-[26px] text-base")}
+              className={buttonClasses({ variant: "brand", size: "xl" })}
             >
               Payer {formatMoney(due)} ↗
             </a>

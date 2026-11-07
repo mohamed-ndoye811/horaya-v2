@@ -1,12 +1,16 @@
 import { cn } from "@/lib/cn";
 
 const tones = {
-  ink: "bg-ink text-white font-bold",
-  outline: "border border-[#d6d6d2] text-[#4a4a4a] font-semibold",
+  ink: "bg-ink text-on-ink font-bold",
+  outline: "border border-line-strong text-ink-soft font-semibold",
   success: "bg-success-bg text-success font-bold",
+  /** Information neutre (« À venir », « 2 retours ce soir »). */
+  info: "bg-info-bg text-info font-bold",
   draft: "bg-draft-bg text-draft font-bold",
   /** Sur fond noir (aperçu de la fiche client). */
   inverse: "border border-white/20 text-white/85 font-semibold",
+  /** Posée sur une photo (date sur une couverture, « Aperçu public ») : verre fumé. */
+  overlay: "border border-white/15 bg-black/40 text-white font-semibold backdrop-blur-md",
 };
 
 /** Étiquette en pilule (VIP, Entreprise, Nouveau…). `lg` : en-tête de fiche client. */

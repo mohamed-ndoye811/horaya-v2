@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { type FormEvent, type ReactNode, useState } from "react";
 import { ActionBar } from "@/components/ui/action-bar";
 import { cardShellClasses } from "@/components/ui/section";
 import { cn } from "@/lib/cn";
@@ -26,7 +26,8 @@ const SECTIONS: Array<{ value: SettingsSection; label: string; href: string }> =
  * Paramètres (DA v4, maquettes 3.1 à 3.7) : en-tête « Paramètres », menu des sections dans
  * une carte à gauche, contenu, et barre noire d'enregistrement en bas (`saveBar`). Les
  * actions d'en-tête (`actions`) vont dans le coin du notch. Sur mobile, le titre est celui
- * de la section et le menu passe par « Plus ».
+ * de la section, le menu passe par « Plus » et la barre d'enregistrement n'apparaît qu'une
+ * fois le formulaire modifié.
  */
 export function SettingsShell({
   section,
@@ -44,6 +45,15 @@ export function SettingsShell({
   saveBar?: { message?: ReactNode; buttons: ReactNode };
   children: ReactNode;
 }) {
+  // Mobile : barre masquée tant que rien n'a changé (elle prenait ~140 px en permanence).
+  const [dirty, setDirty] = useState(false);
+  // shortcut: seuls les formulaires à `id` comptent (ceux que visent les boutons `form="…"`) ;
+  // remise à zéro à l'envoi, pas au succès (une erreur se corrige en retouchant un champ).
+  const track = (value: boolean) => (event: FormEvent) => {
+    const target = event.target as HTMLElement & { form?: HTMLFormElement | null };
+    const form = target instanceof HTMLFormElement ? target : target.form;
+    if (form?.id) setDirty(value);
+  };
   return (
     <div className="flex min-w-0 flex-col">
       <PageHeader
@@ -76,7 +86,7 @@ export function SettingsShell({
                   "flex h-11 items-center justify-between gap-2 rounded-[14px] px-3.5 text-sm leading-[18px] transition-colors",
                   "focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ink",
                   active
-                    ? "bg-ink font-semibold text-white"
+                    ? "bg-ink font-semibold text-on-ink"
                     : "font-medium text-ink hover:bg-field",
                 )}
               >
@@ -85,7 +95,7 @@ export function SettingsShell({
                   <span
                     className={cn(
                       "rounded-full px-2 py-0.5 text-[11px] font-bold leading-[14px]",
-                      active ? "bg-white/15 text-white" : "bg-field text-ink-subtle",
+                      active ? "bg-white/15 text-on-ink" : "bg-field text-ink-subtle",
                     )}
                   >
                     Bientôt
@@ -96,16 +106,23 @@ export function SettingsShell({
           })}
         </nav>
         {/* Contenu de la section : seul lui change d'une section à l'autre (transition « section »). */}
-        <div data-section-content className="flex min-w-0 flex-1 flex-col gap-4">
+        <div
+          data-section-content
+          className="flex min-w-0 flex-1 flex-col gap-4"
+          onInput={track(true)}
+          onChange={track(true)}
+          onSubmit={track(false)}
+        >
           {children}
           {saveBar && (
-            <>
+            // `contents` : sur grand écran, la barre reste collée au bas de la colonne.
+            <div className={cn("contents", !dirty && "max-lg:hidden")}>
               <ActionBar aboveTabs message={saveBar.message}>
                 {saveBar.buttons}
               </ActionBar>
               {/* Place de la barre collée en bas sur mobile. */}
               <div aria-hidden="true" className="h-20 lg:hidden" />
-            </>
+            </div>
           )}
         </div>
       </div>
