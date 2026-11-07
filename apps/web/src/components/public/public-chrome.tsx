@@ -74,23 +74,28 @@ export function PublicFooter({
     workspace.contactEmail ?? workspace.contactPhone,
   ].filter(Boolean);
   return (
-    <footer className="flex flex-col gap-2 px-5 pt-2 pb-5 text-[13px] leading-4 text-ink-subtle sm:flex-row sm:items-center sm:justify-between">
+    // Mobile : coordonnées, puis mentions légales et logo aux deux bouts d'une même ligne.
+    // Grand écran : tout sur une ligne, le logo à droite.
+    <footer className="flex flex-col gap-2 px-5 pt-2 pb-5 text-[13px] leading-4 text-ink-subtle sm:flex-row sm:items-center sm:gap-1">
       <p>
-        {details.join(" · ")} ·{" "}
+        {details.join(" · ")}
+        <span className="max-sm:hidden"> ·</span>
+      </p>
+      <div className="flex flex-1 items-center justify-between gap-4">
         <Link
           href={`/${workspace.slug}/mentions-legales`}
           className="tap-area underline underline-offset-2 hover:text-ink"
         >
           Mentions légales
         </Link>
-      </p>
-      <Link
-        href="/"
-        aria-label="Réservations propulsées par Horaya"
-        className="tap-area w-fit transition-colors hover:text-ink"
-      >
-        <HorayaWordmark height={13} />
-      </Link>
+        <Link
+          href="/"
+          aria-label="Réservations propulsées par Horaya"
+          className="tap-area transition-colors hover:text-ink"
+        >
+          <HorayaWordmark height={13} />
+        </Link>
+      </div>
     </footer>
   );
 }
