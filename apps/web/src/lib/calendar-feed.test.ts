@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { calendarFeedIcs, type FeedEvent } from "./calendar-feed";
+import { calendarFeedIcs, customerFeedIcs, type FeedEvent } from "./calendar-feed";
 
 const base: FeedEvent = {
   id: "0192f0a0-0000-7000-8000-000000000001",
@@ -31,5 +31,33 @@ describe("calendarFeedIcs", () => {
       "URL:https://horaya.app/app/evenements/0192f0a0-0000-7000-8000-000000000001",
     );
     expect(ics.match(/STATUS:CANCELLED/g)).toHaveLength(1);
+  });
+});
+
+describe("customerFeedIcs", () => {
+  it("liste les réservations du client, annulées marquées, avec le lien de son espace", () => {
+    const booking = {
+      id: "0192f0a0-0000-7000-8000-00000000000a",
+      title: "Stage émaillage",
+      status: "confirmed",
+      startsAt: new Date("2026-11-22T09:00:00Z"),
+      endsAt: new Date("2026-11-22T16:00:00Z"),
+      locationName: "Terre & Feu",
+      reference: "TF-2611-0001",
+      workspaceName: "Terre & Feu",
+      url: "https://horaya.app/terre-et-feu/mon-espace/0192f0a0",
+    };
+    const ics = customerFeedIcs({
+      name: "Mes cours · Terre & Feu",
+      bookings: [
+        booking,
+        { ...booking, id: "0192f0a0-0000-7000-8000-00000000000b", status: "cancelled" },
+      ],
+      now: new Date("2026-11-08T10:00:00Z"),
+    });
+    expect(ics.match(/BEGIN:VEVENT/g)).toHaveLength(2);
+    expect(ics).toContain("UID:0192f0a0-0000-7000-8000-00000000000a@horaya.app\r\n");
+    expect(ics.match(/STATUS:CANCELLED/g)).toHaveLength(1);
+    expect(ics).toContain("DESCRIPTION:Réservation TF-2611-0001 · Terre & Feu\r\n");
   });
 });

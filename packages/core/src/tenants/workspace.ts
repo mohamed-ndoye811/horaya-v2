@@ -23,6 +23,7 @@ export const RESERVED_SLUGS: ReadonlySet<string> = new Set([
   "invitation",
   "legal",
   "mentions-legales",
+  "mon-espace",
   "mot-de-passe-oublie",
   "nouveau-mot-de-passe",
   "paiement-test",

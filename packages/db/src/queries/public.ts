@@ -236,6 +236,7 @@ async function findManagedBooking(db: Executor, where: SQL | undefined) {
       eventDescription: event.description,
       eventCoverImageUrl: event.coverImageUrl,
       priceCents: event.priceCents,
+      eventPaymentMode: event.paymentMode,
     })
     .from(booking)
     .innerJoin(customer, eq(customer.id, booking.customerId))

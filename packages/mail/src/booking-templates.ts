@@ -246,14 +246,13 @@ export function weeklyDigestEmail(input: {
   };
 }
 
-export function bookingLinkEmail(mail: BookingMail): EmailContent {
+/** Espace client : la réservation a changé de date (maquette 8.3). */
+export function bookingRescheduledEmail(mail: BookingMail): EmailContent {
   return bookingEmail(mail, {
-    subject: `Ton lien de réservation : ${mail.title}`,
-    title: "Ta réservation",
-    preheader: "Le lien pour consulter ou annuler ta réservation.",
-    paragraphs: [
-      "Voici le lien pour consulter ou annuler ta réservation. Il remplace ceux reçus auparavant.",
-    ],
+    subject: `Nouvelle date : ${mail.title}`,
+    title: "Nouvelle date",
+    preheader: `Ta réservation passe au ${mail.when}.`,
+    paragraphs: ["Ta réservation a bien changé de date. Voici le nouveau récapitulatif."],
   });
 }
 

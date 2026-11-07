@@ -46,6 +46,7 @@ export async function listAccountBookings(
         slug: organization.slug,
         brandColor: sql<string>`coalesce(${tenantSettings.brandColor}, '#264489')`,
         timezone: sql<string>`coalesce(${tenantSettings.timezone}, 'Europe/Paris')`,
+        freeCancellationHours: sql<number>`coalesce(${tenantSettings.freeCancellationHours}, 72)`,
         onlinePayments: sql<boolean>`coalesce(${tenantSettings.stripeAccountStatus} = 'active', false)`,
         paymentLinkUrl: tenantSettings.paymentLinkUrl,
       },

@@ -18,13 +18,13 @@ import {
   bookingAwaitingPaymentEmail,
   bookingCancelledEmail,
   bookingConfirmedEmail,
-  bookingLinkEmail,
   bookingPaymentReceivedEmail,
   bookingPendingEmail,
   bookingPromotedEmail,
   bookingRefundedEmail,
   bookingRefusedEmail,
   bookingReminderEmail,
+  bookingRescheduledEmail,
   bookingWaitlistedEmail,
   type EmailContent,
   teamAlmostFullEmail,
@@ -42,6 +42,7 @@ import {
   formatWeekdayShort,
 } from "@/lib/format";
 import { paymentChannel } from "@/lib/payment-channel";
+import { withParams } from "@/lib/search-params";
 import { db } from "./db";
 import { absoluteUrl, mailer } from "./mailer";
 import { integratedPaymentsEnabled } from "./payments/config";
@@ -116,9 +117,11 @@ async function loadBooking(organizationId: string, bookingId: string) {
     onlinePayments,
     channel,
     eventsUrl: absoluteUrl(`/${workspace.slug}`),
-    // Sans jeton (stocké haché), on renvoie vers « Mes réservations » qui en génère un neuf.
+    // Sans jeton (stocké haché), on renvoie vers la connexion à l'espace client.
     linkRequestUrl: absoluteUrl(
-      `/${workspace.slug}/mes-reservations${booking.customer.email ? `?email=${encodeURIComponent(booking.customer.email)}` : ""}`,
+      withParams(`/${workspace.slug}/mon-espace/connexion`, {
+        email: booking.customer.email ?? undefined,
+      }),
     ),
   };
 }
@@ -164,21 +167,7 @@ export async function sendBookingCreatedEmail(
   await send(loaded.booking.customer.email, template(mail));
 }
 
-/** « Mes réservations » : un lien neuf par réservation à venir. */
-export async function sendBookingLinkEmail(
-  organizationId: string,
-  bookingId: string,
-  manageToken: string,
-) {
-  const loaded = await loadBooking(organizationId, bookingId);
-  if (!loaded) return;
-  await send(
-    loaded.booking.customer.email,
-    bookingLinkEmail(loaded.mail(manageUrl(loaded.workspace.slug, manageToken))),
-  );
-}
-
-/** Rappel la veille au client : le lien d'origine n'est pas gardé, on mène à « Mes réservations ». */
+/** Rappel la veille au client : le lien d'origine n'est pas gardé, on mène à son espace client. */
 export async function sendBookingReminder(organizationId: string, bookingId: string) {
   const loaded = await loadBooking(organizationId, bookingId);
   if (!loaded) return;
@@ -396,6 +385,9 @@ export async function notifyFromActivity(entries: ActivityEntry[]) {
         break;
       case "booking.refused":
         await send(to, bookingRefusedEmail({ ...mail(linkRequestUrl), reason, eventsUrl }));
+        break;
+      case "booking.rescheduled":
+        await send(to, bookingRescheduledEmail(mail(linkRequestUrl)));
         break;
       case "booking.promoted":
         await send(

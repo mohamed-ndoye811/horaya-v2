@@ -13,7 +13,6 @@ import {
   hashToken,
   paidCents,
   refundForCancellation,
-  reissueManageLinks,
   startCheckout,
 } from "@horaya/core";
 import {
@@ -22,11 +21,14 @@ import {
   listBookingPayments,
   listCalendarLinkEvents,
   listPublicEvents,
+  type ManagedBooking,
+  type PublicWorkspace,
 } from "@horaya/db";
 import { notFound, redirect } from "@tanstack/react-router";
 import { bookingState } from "@/lib/public-booking";
 import { withParams } from "@/lib/search-params";
-import { sendBookingCreatedEmail, sendBookingLinkEmail } from "./booking-emails";
+import { sendBookingCreatedEmail } from "./booking-emails";
+import { currentCustomerAccount } from "./customer-space";
 import { db } from "./db";
 import { type FormState, toFormState } from "./form-state";
 import { absoluteUrl } from "./mailer";
@@ -100,7 +102,7 @@ export async function bookEventPage(
   places: string | undefined,
 ) {
   const data = await publicEventPage(slug, eventSlug, lien);
-  if (!data.event) return { ...data, seats: 1 };
+  if (!data.event) return { ...data, seats: 1, prefill: null };
   const state = bookingState(data.event, data.now);
   if (state.kind === "full" || state.kind === "closed") {
     throw redirect({
@@ -109,7 +111,15 @@ export async function bookEventPage(
   }
   const requested = Number(places ?? 1);
   const seats = Number.isInteger(requested) ? Math.min(Math.max(requested, 1), state.maxSeats) : 1;
-  return { ...data, seats };
+  // Espace client connecté : son profil préremplit le participant 1.
+  const account = await currentCustomerAccount();
+  const prefill = account && {
+    firstName: account.firstName ?? "",
+    lastName: account.lastName ?? "",
+    email: account.email,
+    phone: account.phone ?? "",
+  };
+  return { ...data, seats, prefill };
 }
 
 /** Maquette 5.4 : la réservation du lien, avec ce qui a été payé et ce qui serait remboursé. */
@@ -118,6 +128,14 @@ export async function managedBookingPage(slug: string, token: string) {
   const booking = await getManagedBooking(db, workspace.id, await hashToken(token));
   const now = new Date();
   if (!booking) return { workspace, booking: null, now } as const;
+  return { workspace, booking, now, ...(await bookingMoney(workspace, booking, now)) };
+}
+
+/**
+ * Argent d'une réservation vue par le client (« Gérer ma réservation », espace client) : moyen
+ * de paiement, payé, remboursé, reste dû en ligne, remboursement en cas d'annulation.
+ */
+export async function bookingMoney(workspace: PublicWorkspace, booking: ManagedBooking, now: Date) {
   const payments = await listBookingPayments(db, booking.id);
   const paid = paidCents(payments);
   const channel = workspacePaymentChannel(
@@ -126,9 +144,6 @@ export async function managedBookingPage(slug: string, token: string) {
     booking.eventPaymentLinkUrl,
   );
   return {
-    workspace,
-    booking,
-    now,
     channel,
     paid,
     refunded: payments
@@ -237,8 +252,7 @@ export async function createPublicBooking(
       awaitsOnlinePayment(created.booking)
     ) {
       next = await checkoutUrl(
-        slug,
-        manageToken,
+        `/${slug}/reservation/${manageToken}?nouvelle=1`,
         workspace.id,
         created.booking.id,
         event.title,
@@ -254,9 +268,9 @@ export async function createPublicBooking(
   throw redirect({ href: next });
 }
 
-async function checkoutUrl(
-  slug: string,
-  token: string,
+/** Page de paiement sécurisée ; au retour, le client revient sur `returnPath` (?paiement=…). */
+export async function checkoutUrl(
+  returnPath: string,
   organizationId: string,
   bookingId: string,
   title: string,
@@ -264,10 +278,12 @@ async function checkoutUrl(
 ): Promise<string> {
   const deps = paymentDeps;
   if (!deps) throw new Error("Paiement intégré désactivé");
+  const back = (query: string) =>
+    absoluteUrl(`${returnPath}${returnPath.includes("?") ? "&" : "?"}${query}`);
   const { url } = await startCheckout(deps, organizationId, bookingId, {
     description: `${title} · ${seats} place${seats > 1 ? "s" : ""}`,
-    successUrl: absoluteUrl(`/${slug}/reservation/${token}?nouvelle=1&paiement=ok`),
-    cancelUrl: absoluteUrl(`/${slug}/reservation/${token}?paiement=annule`),
+    successUrl: back("paiement=ok"),
+    cancelUrl: back("paiement=annule"),
   });
   return url;
 }
@@ -282,8 +298,7 @@ export async function payManagedBooking(slug: string, token: string): Promise<Fo
   let url: string;
   try {
     url = await checkoutUrl(
-      slug,
-      token,
+      `/${slug}/reservation/${token}?nouvelle=1`,
       workspace.id,
       booking.id,
       booking.eventTitle ?? "Location",
@@ -318,28 +333,4 @@ export async function resendBookingEmail(slug: string, token: string): Promise<F
   if (blocked) return { error: blocked };
   await sendBookingCreatedEmail(workspace.id, booking.id, token);
   return { success: "E-mail renvoyé." };
-}
-
-/** « Mes réservations » : un lien neuf par réservation à venir, sans dire si l'adresse est connue. */
-export async function requestBookingLinks(slug: string, form: FormData): Promise<FormState> {
-  const workspace = await getWorkspaceBySlug(slug);
-  if (!workspace) return { error: "Espace introuvable." };
-  const email = text(form, "email");
-  const blocked =
-    (await rateLimited(`links:ip:${await clientIp()}`, 10, 3600)) ??
-    (await rateLimited(`links:email:${email.toLowerCase()}`, 3, 3600));
-  if (blocked) return { error: blocked };
-  try {
-    const links = await reissueManageLinks(deps, workspace.id, email);
-    await Promise.all(
-      links.map(({ booking, manageToken }) =>
-        sendBookingLinkEmail(workspace.id, booking.id, manageToken),
-      ),
-    );
-  } catch (error) {
-    return toFormState(error);
-  }
-  return {
-    success: `Si des réservations à venir existent pour ${email.toLowerCase()}, tu vas recevoir un e-mail par réservation avec son lien.`,
-  };
 }
