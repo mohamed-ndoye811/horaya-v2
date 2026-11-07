@@ -2,10 +2,11 @@ import {
   ConflictError,
   type Event,
   type EventRepository,
+  type EventSeries,
   type EventType,
   type EventTypeRepository,
 } from "@horaya/core";
-import { and, eq } from "drizzle-orm";
+import { and, asc, eq } from "drizzle-orm";
 import type { Executor } from "../client";
 import { event, eventSeries, eventType } from "../schema";
 
@@ -54,6 +55,33 @@ export function eventRepository(db: Executor): EventRepository {
         .returning({ id: eventSeries.id });
       if (!created) throw new Error("Série non créée");
       return created;
+    },
+
+    async findSeries(organizationId, seriesId) {
+      const [found] = await db
+        .select()
+        .from(eventSeries)
+        .where(and(eq(eventSeries.organizationId, organizationId), eq(eventSeries.id, seriesId)));
+      return (found as EventSeries | undefined) ?? null;
+    },
+
+    async updateSeries(organizationId, seriesId, patch) {
+      const [updated] = await db
+        .update(eventSeries)
+        .set(patch)
+        .where(and(eq(eventSeries.organizationId, organizationId), eq(eventSeries.id, seriesId)))
+        .returning();
+      if (!updated) throw new Error(`Série introuvable : ${seriesId}`);
+      return updated as EventSeries;
+    },
+
+    async listSeriesEvents(organizationId, seriesId) {
+      const rows = await db
+        .select()
+        .from(event)
+        .where(and(eq(event.organizationId, organizationId), eq(event.seriesId, seriesId)))
+        .orderBy(asc(event.startsAt), asc(event.id));
+      return rows as Event[];
     },
 
     async insert(values) {

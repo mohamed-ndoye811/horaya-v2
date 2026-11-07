@@ -16,7 +16,7 @@ import { type CreateEventBookingInput, createEventBookingSchema } from "./schema
 import type { BookingSource } from "./types";
 import { promoteWaitlist } from "./waitlist";
 
-const SOURCE_BY_ACTOR: Record<Actor["type"], BookingSource> = {
+export const SOURCE_BY_ACTOR: Record<Actor["type"], BookingSource> = {
   member: "admin",
   customer: "public_page",
   system: "api",
@@ -85,6 +85,12 @@ export async function createEventBooking(
         ? await repositories.calendarLinks.findBySlug(actor.organizationId, data.calendarLinkSlug)
         : null;
       assertCustomerCanBook(event, eventType.bookingRules, data.seats, now, link);
+      const series = event.seriesId
+        ? await repositories.events.findSeries(actor.organizationId, event.seriesId)
+        : null;
+      if (series?.enrollmentEnabled && !series.dropInAllowed) {
+        throw new ConflictError("Ce cours se réserve pour toute la série, pas à la séance");
+      }
     }
     const customer = await repositories.customers.upsertByEmail(
       actor.organizationId,
@@ -116,18 +122,21 @@ export async function insertEventBooking(
     seats: number;
     participants: ParticipantInput[];
     customerMessage: string | null;
-    manageTokenHash: string;
+    manageTokenHash: string | null;
+    /** Séance d'une inscription à la série : confirmée d'office, payée par l'inscription. */
+    enrollmentId?: string;
   },
 ): Promise<Booking> {
   if (event.endsAt <= now) throw new ConflictError("Cet événement est terminé");
+  const enrolled = data.enrollmentId !== undefined;
 
   const status = decideBookingStatus({
     capacity: event.capacity,
     seatsHeld: await repositories.bookings.seatsHeld(event.id),
     seatsRequested: data.seats,
-    // Une réservation saisie par l'équipe vaut validation.
-    requiresApproval: actor.type !== "member" && event.requiresApproval,
-    waitlistEnabled: eventType.bookingRules.waitlistEnabled ?? false,
+    // Une réservation saisie par l'équipe vaut validation ; l'inscription à la série aussi.
+    requiresApproval: !enrolled && actor.type !== "member" && event.requiresApproval,
+    waitlistEnabled: !enrolled && (eventType.bookingRules.waitlistEnabled ?? false),
   });
 
   const settings = await repositories.settings.get(actor.organizationId);
@@ -143,9 +152,10 @@ export async function insertEventBooking(
       customerId: data.customerId,
       seats: data.seats,
       status,
-      ...priceBooking(event, data.seats),
+      ...(enrolled ? { amountCents: 0, depositCents: null } : priceBooking(event, data.seats)),
       currency: event.currency,
-      paymentMode: event.paymentMode,
+      paymentMode: enrolled ? "free" : event.paymentMode,
+      enrollmentId: data.enrollmentId ?? null,
       customerMessage: data.customerMessage,
       source: SOURCE_BY_ACTOR[actor.type],
       confirmedAt: status === "confirmed" ? now : null,
@@ -157,7 +167,8 @@ export async function insertEventBooking(
     organizationId: actor.organizationId,
     entityType: "booking",
     entityId: created.id,
-    action: "booking.created",
+    // « enrolled » : pas d'e-mail par séance, l'inscription envoie son propre récapitulatif.
+    action: enrolled ? "booking.enrolled" : "booking.created",
     ...actorRef(actor),
     data: { status, seats: data.seats },
   });

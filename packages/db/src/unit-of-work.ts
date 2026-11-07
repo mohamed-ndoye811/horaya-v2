@@ -11,6 +11,7 @@ import { bookingRepository } from "./repositories/bookings";
 import { calendarFeedRepository } from "./repositories/calendar-feeds";
 import { calendarLinkRepository } from "./repositories/calendar-links";
 import { customerAccountRepository } from "./repositories/customer-accounts";
+import { enrollmentRepository } from "./repositories/enrollments";
 import { eventRepository, eventTypeRepository } from "./repositories/events";
 import { inventoryRepository } from "./repositories/inventory";
 import { paymentRepository } from "./repositories/payments";
@@ -38,6 +39,7 @@ export function repositoriesFor(db: Executor): Repositories {
     calendarFeeds: calendarFeedRepository(db),
     billing: billingRepository(db),
     customerAccounts: customerAccountRepository(db),
+    enrollments: enrollmentRepository(db),
   };
 }
 

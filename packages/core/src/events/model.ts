@@ -33,6 +33,24 @@ export interface EventType {
   archivedAt: Date | null;
 }
 
+/**
+ * Série d'événements (événement récurrent). Chaque occurrence reste un vrai `Event` ;
+ * la série porte la règle et, pour les cours à l'année, l'inscription à toute la série.
+ */
+export interface EventSeries {
+  id: string;
+  organizationId: string;
+  rrule: string;
+  until: Date | null;
+  timezone: string;
+  /** « Inscription à la série » : une place dans chaque séance restante, un seul paiement. */
+  enrollmentEnabled: boolean;
+  /** Prix de l'inscription à toute la série (ex. le trimestre), en centimes. */
+  enrollmentPriceCents: number | null;
+  /** La réservation à la séance reste possible sur la page publique. */
+  dropInAllowed: boolean;
+}
+
 export interface Event {
   id: string;
   organizationId: string;

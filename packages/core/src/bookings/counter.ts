@@ -5,7 +5,7 @@ import { recordManualPaymentIn } from "../payments/use-cases";
 import { type Actor, assertMemberCan } from "../shared/actor";
 import { ConflictError, NotFoundError } from "../shared/errors";
 import { generateToken, hashToken } from "../shared/tokens";
-import type { Deps } from "../shared/unit-of-work";
+import type { Deps, Repositories } from "../shared/unit-of-work";
 import { validate } from "../shared/validate";
 import type { Booking } from "./model";
 import { PAYMENT_METHODS } from "./types";
@@ -20,7 +20,7 @@ const optionalText = (max: number) =>
     .transform((value) => value || null);
 
 /** Client créé au comptoir : nom et téléphone suffisent, l'e-mail est facultatif. */
-const counterCustomerSchema = z.object({
+export const counterCustomerSchema = z.object({
   firstName: z.string().trim().min(1, "Prénom requis").max(60),
   lastName: z.string().trim().min(1, "Nom requis").max(60),
   phone: optionalText(30),
@@ -30,13 +30,34 @@ const counterCustomerSchema = z.object({
   ),
 });
 
+/** Client existant (`customerId`), sinon `customer` pour en créer un. */
+export const counterCustomerChoice = {
+  customerId: z.uuid().nullish(),
+  customer: counterCustomerSchema.nullish(),
+};
+
+/** Le client choisi existe, ou le nouveau a un moyen de contact. */
+export function refineCounterCustomer(
+  input: { customerId?: string | null; customer?: z.infer<typeof counterCustomerSchema> | null },
+  context: z.RefinementCtx,
+): void {
+  if (!input.customerId && !input.customer) {
+    context.addIssue({ code: "custom", path: ["customer"], message: "Choisis ou crée un client" });
+  }
+  if (input.customer && !input.customer.phone && !input.customer.email) {
+    context.addIssue({
+      code: "custom",
+      path: ["customer", "phone"],
+      message: "Un téléphone ou un e-mail",
+    });
+  }
+}
+
 export const counterBookingSchema = z
   .object({
     eventId: z.uuid(),
     seats: z.int().min(1, "Au moins une place").max(1000),
-    /** Client existant, sinon `customer` pour en créer un. */
-    customerId: z.uuid().nullish(),
-    customer: counterCustomerSchema.nullish(),
+    ...counterCustomerChoice,
     items: z
       .array(z.object({ itemId: z.uuid(), quantity: z.int().min(1).max(500) }))
       .max(50)
@@ -46,26 +67,43 @@ export const counterBookingSchema = z
     paymentMethod: z.enum(PAYMENT_METHODS).nullish(),
   })
   .superRefine((input, context) => {
-    if (!input.customerId && !input.customer) {
-      context.addIssue({
-        code: "custom",
-        path: ["customer"],
-        message: "Choisis ou crée un client",
-      });
-    }
-    if (input.customer && !input.customer.phone && !input.customer.email) {
-      context.addIssue({
-        code: "custom",
-        path: ["customer", "phone"],
-        message: "Un téléphone ou un e-mail",
-      });
-    }
+    refineCounterCustomer(input, context);
     const ids = input.items.map((item) => item.itemId);
     if (new Set(ids).size !== ids.length) {
       context.addIssue({ code: "custom", path: ["items"], message: "Article en double" });
     }
   });
 export type CounterBookingInput = z.input<typeof counterBookingSchema>;
+
+/** Client du comptoir : celui choisi (actif), sinon retrouvé par e-mail ou créé. */
+export async function resolveCounterCustomer(
+  repositories: Repositories,
+  organizationId: string,
+  data: { customerId?: string | null; customer?: z.infer<typeof counterCustomerSchema> | null },
+): Promise<string> {
+  if (data.customerId) {
+    const customer = await repositories.customers.find(organizationId, data.customerId);
+    if (!customer || customer.archivedAt || customer.anonymizedAt) {
+      throw new NotFoundError("Client", data.customerId);
+    }
+    return customer.id;
+  }
+  const contact = data.customer as NonNullable<typeof data.customer>;
+  const created = contact.email
+    ? await repositories.customers.upsertByEmail(organizationId, {
+        ...contact,
+        email: contact.email,
+        company: null,
+      })
+    : await repositories.customers.insert(organizationId, {
+        ...contact,
+        email: null,
+        company: null,
+        tags: [],
+        marketingConsent: false,
+      });
+  return created.id;
+}
 
 /**
  * Comptoir : réservation prise au téléphone ou sur place, en une transaction. Le client
@@ -95,33 +133,7 @@ export async function createCounterBooking(
     }
     const now = deps.clock.now();
 
-    let customerId: string;
-    if (data.customerId) {
-      const customer = await repositories.customers.find(actor.organizationId, data.customerId);
-      if (!customer || customer.archivedAt || customer.anonymizedAt) {
-        throw new NotFoundError("Client", data.customerId);
-      }
-      customerId = customer.id;
-    } else {
-      const contact = data.customer as NonNullable<typeof data.customer>;
-      customerId = contact.email
-        ? (
-            await repositories.customers.upsertByEmail(actor.organizationId, {
-              ...contact,
-              email: contact.email,
-              company: null,
-            })
-          ).id
-        : (
-            await repositories.customers.insert(actor.organizationId, {
-              ...contact,
-              email: null,
-              company: null,
-              tags: [],
-              marketingConsent: false,
-            })
-          ).id;
-    }
+    const customerId = await resolveCounterCustomer(repositories, actor.organizationId, data);
 
     const booking = await insertEventBooking(repositories, actor, locked, now, {
       customerId,

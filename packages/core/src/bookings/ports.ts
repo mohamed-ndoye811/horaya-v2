@@ -14,13 +14,22 @@ export type NewBooking = Omit<
   | "paymentStatus"
   | "rentalStartsAt"
   | "rentalEndsAt"
-> & { manageTokenHash: string; rentalStartsAt?: Date | null; rentalEndsAt?: Date | null };
+  | "enrollmentId"
+  | "absentAt"
+> & {
+  /** null : réservation d'une inscription, gérée par le lien de l'inscription. */
+  manageTokenHash: string | null;
+  rentalStartsAt?: Date | null;
+  rentalEndsAt?: Date | null;
+  enrollmentId?: string | null;
+};
 
 export interface BookingStatusChange {
   status: BookingStatus;
   confirmedAt?: Date | null;
   cancelledAt?: Date | null;
   refusalReason?: string | null;
+  absentAt?: Date | null;
 }
 
 export interface BookingRepository {
@@ -91,6 +100,7 @@ export interface ActivityEntry {
     | "booking"
     | "event"
     | "event_type"
+    | "enrollment"
     | "customer"
     | "item"
     | "settings"

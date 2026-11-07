@@ -5,6 +5,7 @@ export * from "./calendar-links";
 export * from "./customer-space";
 export * from "./customers";
 export * from "./dashboard";
+export * from "./enrollments";
 export * from "./events";
 export * from "./inventory";
 export * from "./join-links";

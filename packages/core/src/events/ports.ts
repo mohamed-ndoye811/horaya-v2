@@ -1,4 +1,4 @@
-import type { Event, EventType } from "./model";
+import type { Event, EventSeries, EventType } from "./model";
 
 export type NewEventType = Omit<EventType, "id" | "archivedAt">;
 export type NewEvent = Omit<
@@ -24,6 +24,16 @@ export interface EventRepository {
     until: Date | null;
     timezone: string;
   }): Promise<{ id: string }>;
+  findSeries(organizationId: string, seriesId: string): Promise<EventSeries | null>;
+  updateSeries(
+    organizationId: string,
+    seriesId: string,
+    patch: Partial<
+      Pick<EventSeries, "enrollmentEnabled" | "enrollmentPriceCents" | "dropInAllowed">
+    >,
+  ): Promise<EventSeries>;
+  /** Occurrences d'une série, la plus proche d'abord (tous statuts). */
+  listSeriesEvents(organizationId: string, seriesId: string): Promise<Event[]>;
   insert(event: NewEvent): Promise<Event>;
   find(organizationId: string, eventId: string): Promise<Event | null>;
   /**
