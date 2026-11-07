@@ -1,7 +1,29 @@
-const INK = "#264489";
-const BG = "#F2F0EF";
-const SURFACE = "#FAF9F8";
-const MUTED = "#4E669D";
+import { LOGOTYPE_CID } from "./logotype";
+
+/*
+ * Gabarit des e-mails, dans la DA de l'app (notch v4, tokens de apps/web/src/styles/app.css) :
+ * cadre noir de 6 px, notch noir en haut au centre, titres Urbanist, carte blanche pour le
+ * récapitulatif, action en pilule. Un e-mail au nom d'un espace prend la teinte sombre de sa
+ * marque (comme ses pages publiques). HTML en tableaux et styles en ligne : clients mail.
+ */
+
+const FONT = "Urbanist,'Helvetica Neue',Helvetica,Arial,sans-serif";
+const MONO = "'Geist Mono',Menlo,Consolas,monospace";
+
+/** Mélange deux couleurs #rrggbb : `weight` de la première (les clients mail ignorent color-mix). */
+export function mixColors(first: string, second: string, weight: number): string {
+  const channels = (hex: string) =>
+    [1, 3, 5].map((start) => Number.parseInt(hex.slice(start, start + 2), 16) || 0);
+  const a = channels(first);
+  const b = channels(second);
+  return `#${a
+    .map((value, index) =>
+      Math.round(value * weight + (b[index] ?? 0) * (1 - weight))
+        .toString(16)
+        .padStart(2, "0"),
+    )
+    .join("")}`.toUpperCase();
+}
 
 export function escapeHtml(value: string): string {
   return value
@@ -24,7 +46,35 @@ interface LayoutInput {
   brand?: { name: string; color: string; textColor: string; logo?: string | null };
 }
 
-/** Gabarit commun des e-mails transactionnels (HTML en tableaux, compatible clients mail). */
+/** Couleurs de l'e-mail : celles de l'app, ou la teinte de la marque de l'espace (brandStyle des pages publiques). */
+function palette(brand: LayoutInput["brand"]) {
+  if (!brand) {
+    return {
+      frame: "#111111",
+      bg: "#EDEDEB",
+      ink: "#111111",
+      text: "#4A4A4A",
+      muted: "#8A8A8A",
+      line: "#EEEEEC",
+      button: "#111111",
+      onButton: "#F7F5F3",
+    };
+  }
+  const ink = mixColors(brand.color, "#111111", 0.16);
+  const bg = mixColors(brand.color, "#F6F6F4", 0.05);
+  return {
+    frame: ink,
+    bg,
+    ink,
+    text: mixColors(ink, bg, 0.8),
+    muted: mixColors(ink, bg, 0.5),
+    line: mixColors(ink, bg, 0.08),
+    button: brand.color,
+    onButton: brand.textColor,
+  };
+}
+
+/** Gabarit commun des e-mails transactionnels. */
 export function renderEmail({
   preheader,
   title,
@@ -37,42 +87,54 @@ export function renderEmail({
   html: string;
   text: string;
 } {
+  const color = palette(brand);
   const body = paragraphs
     .map(
       (paragraph) =>
-        `<p style="margin:0 0 16px;font-size:16px;line-height:24px;color:${INK}">${escapeHtml(paragraph)}</p>`,
+        `<p style="margin:0 0 14px;font-size:16px;line-height:24px;color:${color.text}">${escapeHtml(paragraph)}</p>`,
     )
     .join("");
   const recap = details.length
-    ? `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:8px 0 8px;border-top:1px solid #DCD8D4">${details
-        .map(
-          ([label, value]) =>
-            `<tr><td style="padding:10px 0;border-bottom:1px solid #DCD8D4;font-family:'Geist Mono',Menlo,monospace;font-size:11px;letter-spacing:0.06em;text-transform:uppercase;color:${MUTED};width:120px;vertical-align:top">${escapeHtml(label)}</td><td style="padding:10px 0;border-bottom:1px solid #DCD8D4;font-size:15px;font-weight:700;color:${INK}">${escapeHtml(value)}</td></tr>`,
-        )
-        .join("")}</table>`
+    ? `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:10px 0 4px;background:#FFFFFF;border-radius:20px"><tr><td style="padding:4px 20px">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0">${details
+        .map(([label, value], index) => {
+          const border = index < details.length - 1 ? `border-bottom:1px solid ${color.line};` : "";
+          return `<tr><td style="${border}padding:13px 12px 13px 0;font-family:${MONO};font-size:11px;line-height:18px;letter-spacing:0.06em;text-transform:uppercase;color:${color.muted};width:112px;vertical-align:top">${escapeHtml(label)}</td><td style="${border}padding:13px 0;font-size:15px;line-height:20px;font-weight:600;color:${color.ink}">${escapeHtml(value)}</td></tr>`;
+        })
+        .join("")}</table>
+</td></tr></table>`
     : "";
-  const header = brand
-    ? `<td style="background:${brand.color};padding:24px 32px">${brand.logo ? `<img src="${escapeHtml(brand.logo)}" width="32" height="32" alt="" style="display:inline-block;width:32px;height:32px;border:0;border-radius:8px;vertical-align:middle;margin-right:12px">` : ""}<span style="font-size:17px;font-weight:800;letter-spacing:0.02em;text-transform:uppercase;vertical-align:middle;color:${brand.textColor}">${escapeHtml(brand.name)}</span></td>`
-    : `<td style="background:${INK};padding:28px 32px"><span style="font-family:Archivo,'Arial Narrow',Arial,sans-serif;font-weight:900;font-size:26px;letter-spacing:-0.04em;text-transform:uppercase;color:#F7F5F3">Horaya</span></td>`;
+  const notch = brand
+    ? `${brand.logo ? `<img src="${escapeHtml(brand.logo)}" width="24" height="24" alt="" style="display:inline-block;width:24px;height:24px;border:0;border-radius:7px;vertical-align:middle;margin-right:10px">` : ""}<span style="font-size:15px;line-height:24px;font-weight:600;vertical-align:middle;color:#F7F5F3">${escapeHtml(brand.name)}</span>`
+    : `<img src="cid:${LOGOTYPE_CID}" width="112" height="18" alt="Horaya" style="display:block;width:112px;height:18px;border:0">`;
+  const footer = brand
+    ? `<tr><td align="center" style="padding:16px 0 0;font-size:12px;line-height:18px;color:${color.muted}">Réservations propulsées par Horaya</td></tr>`
+    : "";
 
   const html = `<!doctype html>
 <html lang="fr">
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>${escapeHtml(title)}</title></head>
-<body style="margin:0;padding:0;background:${BG};font-family:Urbanist,Helvetica,Arial,sans-serif">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width"><meta name="color-scheme" content="light"><meta name="supported-color-schemes" content="light"><title>${escapeHtml(title)}</title>
+<link href="https://fonts.googleapis.com/css2?family=Urbanist:wght@500;600;700&family=Geist+Mono:wght@500&display=swap" rel="stylesheet"></head>
+<body style="margin:0;padding:0;background:${color.bg};font-family:${FONT}">
 <span style="display:none;max-height:0;overflow:hidden">${escapeHtml(preheader)}</span>
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:${BG};padding:40px 16px">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:${color.bg};padding:32px 12px">
 <tr><td align="center">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px">
-<tr>${header}</tr>
-<tr><td style="background:${SURFACE};padding:40px 32px">
-<h1 style="margin:0 0 24px;font-family:Archivo,'Arial Narrow',Arial,sans-serif;font-weight:900;font-size:34px;line-height:34px;letter-spacing:-0.04em;text-transform:uppercase;color:${INK}">${escapeHtml(title)}</h1>
+<tr><td style="background:${color.frame};border-radius:28px;padding:6px">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:${color.bg};border-radius:22px">
+<tr><td align="center"><table role="presentation" cellpadding="0" cellspacing="0"><tr><td style="background:${color.frame};border-radius:0 0 20px 20px;padding:11px 28px 13px">${notch}</td></tr></table></td></tr>
+<tr><td style="padding:36px 28px 30px">
+<h1 style="margin:0 0 20px;font-family:${FONT};font-weight:500;font-size:32px;line-height:38px;letter-spacing:-0.02em;color:${color.ink}">${escapeHtml(title)}</h1>
 ${body}
 ${recap}
-<table role="presentation" cellpadding="0" cellspacing="0" style="margin:24px 0"><tr>
-<td style="background:${INK}"><a href="${escapeHtml(action.url)}" style="display:inline-block;padding:16px 28px;font-size:16px;font-weight:800;color:#F7F5F3;text-decoration:none">${escapeHtml(action.label)} →</a></td>
+<table role="presentation" cellpadding="0" cellspacing="0" style="margin:24px 0 26px"><tr>
+<td style="background:${color.button};border-radius:999px"><a href="${escapeHtml(action.url)}" style="display:inline-block;padding:14px 24px;font-family:${FONT};font-size:15px;line-height:20px;font-weight:600;color:${color.onButton};text-decoration:none;border-radius:999px">${escapeHtml(action.label)} →</a></td>
 </tr></table>
-<p style="margin:0;font-size:13px;line-height:18px;color:${MUTED}">${escapeHtml(footnote)}</p>
+<p style="margin:0;font-size:13px;line-height:19px;color:${color.muted}">${escapeHtml(footnote)}</p>
 </td></tr>
+</table>
+</td></tr>
+${footer}
 </table>
 </td></tr>
 </table>
@@ -80,7 +142,7 @@ ${recap}
 </html>`;
 
   const text = [
-    title.toUpperCase(),
+    title,
     "",
     ...paragraphs,
     ...(details.length ? ["", ...details.map(([label, value]) => `${label} : ${value}`)] : []),
@@ -88,6 +150,7 @@ ${recap}
     `${action.label} : ${action.url}`,
     "",
     footnote,
+    ...(brand ? ["", "Réservations propulsées par Horaya"] : []),
   ].join("\n");
 
   return { html, text };
