@@ -65,33 +65,49 @@ export interface BillingOverview {
   canManage: boolean;
 }
 
+/** Facturation complète d'un espace, dans une transaction déjà ouverte. */
+async function overviewOf(
+  repositories: Repositories,
+  organizationId: string,
+  now: Date,
+): Promise<Omit<BillingOverview, "canManage">> {
+  const [account, grants, settings, seats] = await Promise.all([
+    repositories.billing.get(organizationId),
+    repositories.billing.listGrants(organizationId),
+    repositories.settings.get(organizationId),
+    repositories.billing.countSeats(organizationId),
+  ]);
+  const current = currentPlanOf(account, grants, now);
+  const { thisMonth, lastMonth } = monthStarts(now, settings.timezone);
+  const [usedThisMonth, usedLastMonth] = await Promise.all([
+    repositories.billing.countBookings(organizationId, thisMonth, now),
+    repositories.billing.countBookings(organizationId, lastMonth, thisMonth),
+  ]);
+  return {
+    current,
+    account,
+    grants,
+    seats: { used: seats, limit: PLANS[current.plan].limits.members },
+    bookings: bookingUsage(current.plan, usedThisMonth, usedLastMonth),
+  };
+}
+
 /** Page « Abonnement » : formule, origine, usage du mois. Tout membre la consulte. */
 export async function getBillingOverview(deps: Deps, actor: Actor): Promise<BillingOverview> {
   if (actor.type !== "member") throw new ForbiddenError();
   const now = deps.clock.now();
-  return deps.uow.run(async (repositories) => {
-    const { organizationId } = actor;
-    const [account, grants, settings, seats] = await Promise.all([
-      repositories.billing.get(organizationId),
-      repositories.billing.listGrants(organizationId),
-      repositories.settings.get(organizationId),
-      repositories.billing.countSeats(organizationId),
-    ]);
-    const current = currentPlanOf(account, grants, now);
-    const { thisMonth, lastMonth } = monthStarts(now, settings.timezone);
-    const [usedThisMonth, usedLastMonth] = await Promise.all([
-      repositories.billing.countBookings(organizationId, thisMonth, now),
-      repositories.billing.countBookings(organizationId, lastMonth, thisMonth),
-    ]);
-    return {
-      current,
-      account,
-      grants,
-      seats: { used: seats, limit: PLANS[current.plan].limits.members },
-      bookings: bookingUsage(current.plan, usedThisMonth, usedLastMonth),
-      canManage: actor.role === "owner",
-    };
-  });
+  return deps.uow.run(async (repositories) => ({
+    ...(await overviewOf(repositories, actor.organizationId, now)),
+    canManage: actor.role === "owner",
+  }));
+}
+
+/** Cockpit de la plateforme : la facturation d'un espace, vue par l'équipe Horaya. */
+export async function getWorkspaceBilling(
+  deps: Deps,
+  organizationId: string,
+): Promise<Omit<BillingOverview, "canManage">> {
+  return deps.uow.run((repositories) => overviewOf(repositories, organizationId, deps.clock.now()));
 }
 
 /**
@@ -193,6 +209,8 @@ export async function grantPlan(
     days: number | null;
     reason: string | null;
   },
+  /** Membre de l'équipe Horaya qui agit (e-mail), pour le journal. */
+  by: string | null = null,
 ): Promise<PlanGrant> {
   if (input.plan === "libre")
     throw new ValidationError("La formule Libre n'a pas besoin de licence");
@@ -212,7 +230,7 @@ export async function grantPlan(
       action: "billing.plan_granted",
       actorType: "system",
       actorId: null,
-      data: { kind: grant.kind, plan: grant.plan },
+      data: { kind: grant.kind, plan: grant.plan, by },
     });
     return grant;
   });
@@ -222,10 +240,27 @@ export async function revokePlanGrant(
   deps: Deps,
   organizationId: string,
   grantId: string,
+  by: string | null = null,
 ): Promise<boolean> {
-  return deps.uow.run((repositories) =>
-    repositories.billing.revokeGrant(organizationId, grantId, deps.clock.now()),
-  );
+  return deps.uow.run(async (repositories) => {
+    const revoked = await repositories.billing.revokeGrant(
+      organizationId,
+      grantId,
+      deps.clock.now(),
+    );
+    if (revoked) {
+      await repositories.activity.record({
+        organizationId,
+        entityType: "billing",
+        entityId: grantId,
+        action: "billing.plan_revoked",
+        actorType: "system",
+        actorId: null,
+        data: { by },
+      });
+    }
+    return revoked;
+  });
 }
 
 /** Tarif solidaire ou bêta : appliqué au prochain paiement chez Polar. */
@@ -233,6 +268,7 @@ export async function setBillingRate(
   deps: Deps,
   organizationId: string,
   rate: BillingRate,
+  by: string | null = null,
 ): Promise<void> {
   await deps.uow.run(async (repositories) => {
     await repositories.billing.setRate(organizationId, rate);
@@ -243,7 +279,7 @@ export async function setBillingRate(
       action: "billing.rate_updated",
       actorType: "system",
       actorId: null,
-      data: { rate },
+      data: { rate, by },
     });
   });
 }

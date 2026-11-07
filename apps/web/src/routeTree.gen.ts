@@ -55,6 +55,8 @@ import { Route as AppParametresMembresRouteImport } from './routes/app/parametre
 import { Route as AppParametresNotificationsRouteImport } from './routes/app/parametres/notifications'
 import { Route as AppParametresOrganisationRouteImport } from './routes/app/parametres/organisation'
 import { Route as AppParametresProfilRouteImport } from './routes/app/parametres/profil'
+import { Route as AppPlateformeIndexRouteImport } from './routes/app/plateforme/index'
+import { Route as AppPlateformeUtilisateursRouteImport } from './routes/app/plateforme/utilisateurs'
 import { Route as AppReservationsIndexRouteImport } from './routes/app/reservations/index'
 import { Route as AppReservationsIdRouteImport } from './routes/app/reservations/$id'
 import { Route as AppReservationsExportRouteImport } from './routes/app/reservations/export'
@@ -70,6 +72,7 @@ import { Route as AppMaterielIdLouerRouteImport } from './routes/app/materiel/$i
 import { Route as AppMaterielIdModifierRouteImport } from './routes/app/materiel/$id/modifier'
 import { Route as AppParametresPaiementsIndexRouteImport } from './routes/app/parametres/paiements/index'
 import { Route as AppParametresPaiementsStripeRouteImport } from './routes/app/parametres/paiements/stripe'
+import { Route as AppPlateformeEspacesIdRouteImport } from './routes/app/plateforme/espaces/$id'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -306,6 +309,17 @@ const AppParametresProfilRoute = AppParametresProfilRouteImport.update({
   path: '/parametres/profil',
   getParentRoute: () => AppRoute,
 } as any)
+const AppPlateformeIndexRoute = AppPlateformeIndexRouteImport.update({
+  id: '/plateforme/',
+  path: '/plateforme/',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppPlateformeUtilisateursRoute =
+  AppPlateformeUtilisateursRouteImport.update({
+    id: '/plateforme/utilisateurs',
+    path: '/plateforme/utilisateurs',
+    getParentRoute: () => AppRoute,
+  } as any)
 const AppReservationsIndexRoute = AppReservationsIndexRouteImport.update({
   id: '/reservations/',
   path: '/reservations/',
@@ -385,6 +399,11 @@ const AppParametresPaiementsStripeRoute =
     path: '/parametres/paiements/stripe',
     getParentRoute: () => AppRoute,
   } as any)
+const AppPlateformeEspacesIdRoute = AppPlateformeEspacesIdRouteImport.update({
+  id: '/plateforme/espaces/$id',
+  path: '/plateforme/espaces/$id',
+  getParentRoute: () => AppRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -427,6 +446,7 @@ export interface FileRoutesByFullPath {
   '/app/parametres/notifications': typeof AppParametresNotificationsRoute
   '/app/parametres/organisation': typeof AppParametresOrganisationRoute
   '/app/parametres/profil': typeof AppParametresProfilRoute
+  '/app/plateforme/utilisateurs': typeof AppPlateformeUtilisateursRoute
   '/app/reservations/$id': typeof AppReservationsIdRoute
   '/app/reservations/export': typeof AppReservationsExportRoute
   '/app/reservations/nouvelle': typeof AppReservationsNouvelleRoute
@@ -436,6 +456,7 @@ export interface FileRoutesByFullPath {
   '/app/evenements/': typeof AppEvenementsIndexRoute
   '/app/materiel/': typeof AppMaterielIndexRoute
   '/app/parametres/': typeof AppParametresIndexRoute
+  '/app/plateforme/': typeof AppPlateformeIndexRoute
   '/app/reservations/': typeof AppReservationsIndexRoute
   '/$slug/reservation/$token/agenda.ics': typeof SlugReservationTokenAgendaDoticsRoute
   '/app/clients/$id/modifier': typeof AppClientsIdModifierRoute
@@ -443,6 +464,7 @@ export interface FileRoutesByFullPath {
   '/app/materiel/$id/louer': typeof AppMaterielIdLouerRoute
   '/app/materiel/$id/modifier': typeof AppMaterielIdModifierRoute
   '/app/parametres/paiements/stripe': typeof AppParametresPaiementsStripeRoute
+  '/app/plateforme/espaces/$id': typeof AppPlateformeEspacesIdRoute
   '/$slug/reservation/$token/': typeof SlugReservationTokenIndexRoute
   '/app/clients/$id/': typeof AppClientsIdIndexRoute
   '/app/evenements/$id/': typeof AppEvenementsIdIndexRoute
@@ -488,6 +510,7 @@ export interface FileRoutesByTo {
   '/app/parametres/notifications': typeof AppParametresNotificationsRoute
   '/app/parametres/organisation': typeof AppParametresOrganisationRoute
   '/app/parametres/profil': typeof AppParametresProfilRoute
+  '/app/plateforme/utilisateurs': typeof AppPlateformeUtilisateursRoute
   '/app/reservations/$id': typeof AppReservationsIdRoute
   '/app/reservations/export': typeof AppReservationsExportRoute
   '/app/reservations/nouvelle': typeof AppReservationsNouvelleRoute
@@ -497,6 +520,7 @@ export interface FileRoutesByTo {
   '/app/evenements': typeof AppEvenementsIndexRoute
   '/app/materiel': typeof AppMaterielIndexRoute
   '/app/parametres': typeof AppParametresIndexRoute
+  '/app/plateforme': typeof AppPlateformeIndexRoute
   '/app/reservations': typeof AppReservationsIndexRoute
   '/$slug/reservation/$token/agenda.ics': typeof SlugReservationTokenAgendaDoticsRoute
   '/app/clients/$id/modifier': typeof AppClientsIdModifierRoute
@@ -504,6 +528,7 @@ export interface FileRoutesByTo {
   '/app/materiel/$id/louer': typeof AppMaterielIdLouerRoute
   '/app/materiel/$id/modifier': typeof AppMaterielIdModifierRoute
   '/app/parametres/paiements/stripe': typeof AppParametresPaiementsStripeRoute
+  '/app/plateforme/espaces/$id': typeof AppPlateformeEspacesIdRoute
   '/$slug/reservation/$token': typeof SlugReservationTokenIndexRoute
   '/app/clients/$id': typeof AppClientsIdIndexRoute
   '/app/evenements/$id': typeof AppEvenementsIdIndexRoute
@@ -552,6 +577,7 @@ export interface FileRoutesById {
   '/app/parametres/notifications': typeof AppParametresNotificationsRoute
   '/app/parametres/organisation': typeof AppParametresOrganisationRoute
   '/app/parametres/profil': typeof AppParametresProfilRoute
+  '/app/plateforme/utilisateurs': typeof AppPlateformeUtilisateursRoute
   '/app/reservations/$id': typeof AppReservationsIdRoute
   '/app/reservations/export': typeof AppReservationsExportRoute
   '/app/reservations/nouvelle': typeof AppReservationsNouvelleRoute
@@ -561,6 +587,7 @@ export interface FileRoutesById {
   '/app/evenements/': typeof AppEvenementsIndexRoute
   '/app/materiel/': typeof AppMaterielIndexRoute
   '/app/parametres/': typeof AppParametresIndexRoute
+  '/app/plateforme/': typeof AppPlateformeIndexRoute
   '/app/reservations/': typeof AppReservationsIndexRoute
   '/$slug/reservation/$token/agenda.ics': typeof SlugReservationTokenAgendaDoticsRoute
   '/app/clients/$id/modifier': typeof AppClientsIdModifierRoute
@@ -568,6 +595,7 @@ export interface FileRoutesById {
   '/app/materiel/$id/louer': typeof AppMaterielIdLouerRoute
   '/app/materiel/$id/modifier': typeof AppMaterielIdModifierRoute
   '/app/parametres/paiements/stripe': typeof AppParametresPaiementsStripeRoute
+  '/app/plateforme/espaces/$id': typeof AppPlateformeEspacesIdRoute
   '/$slug/reservation/$token/': typeof SlugReservationTokenIndexRoute
   '/app/clients/$id/': typeof AppClientsIdIndexRoute
   '/app/evenements/$id/': typeof AppEvenementsIdIndexRoute
@@ -617,6 +645,7 @@ export interface FileRouteTypes {
     | '/app/parametres/notifications'
     | '/app/parametres/organisation'
     | '/app/parametres/profil'
+    | '/app/plateforme/utilisateurs'
     | '/app/reservations/$id'
     | '/app/reservations/export'
     | '/app/reservations/nouvelle'
@@ -626,6 +655,7 @@ export interface FileRouteTypes {
     | '/app/evenements/'
     | '/app/materiel/'
     | '/app/parametres/'
+    | '/app/plateforme/'
     | '/app/reservations/'
     | '/$slug/reservation/$token/agenda.ics'
     | '/app/clients/$id/modifier'
@@ -633,6 +663,7 @@ export interface FileRouteTypes {
     | '/app/materiel/$id/louer'
     | '/app/materiel/$id/modifier'
     | '/app/parametres/paiements/stripe'
+    | '/app/plateforme/espaces/$id'
     | '/$slug/reservation/$token/'
     | '/app/clients/$id/'
     | '/app/evenements/$id/'
@@ -678,6 +709,7 @@ export interface FileRouteTypes {
     | '/app/parametres/notifications'
     | '/app/parametres/organisation'
     | '/app/parametres/profil'
+    | '/app/plateforme/utilisateurs'
     | '/app/reservations/$id'
     | '/app/reservations/export'
     | '/app/reservations/nouvelle'
@@ -687,6 +719,7 @@ export interface FileRouteTypes {
     | '/app/evenements'
     | '/app/materiel'
     | '/app/parametres'
+    | '/app/plateforme'
     | '/app/reservations'
     | '/$slug/reservation/$token/agenda.ics'
     | '/app/clients/$id/modifier'
@@ -694,6 +727,7 @@ export interface FileRouteTypes {
     | '/app/materiel/$id/louer'
     | '/app/materiel/$id/modifier'
     | '/app/parametres/paiements/stripe'
+    | '/app/plateforme/espaces/$id'
     | '/$slug/reservation/$token'
     | '/app/clients/$id'
     | '/app/evenements/$id'
@@ -741,6 +775,7 @@ export interface FileRouteTypes {
     | '/app/parametres/notifications'
     | '/app/parametres/organisation'
     | '/app/parametres/profil'
+    | '/app/plateforme/utilisateurs'
     | '/app/reservations/$id'
     | '/app/reservations/export'
     | '/app/reservations/nouvelle'
@@ -750,6 +785,7 @@ export interface FileRouteTypes {
     | '/app/evenements/'
     | '/app/materiel/'
     | '/app/parametres/'
+    | '/app/plateforme/'
     | '/app/reservations/'
     | '/$slug/reservation/$token/agenda.ics'
     | '/app/clients/$id/modifier'
@@ -757,6 +793,7 @@ export interface FileRouteTypes {
     | '/app/materiel/$id/louer'
     | '/app/materiel/$id/modifier'
     | '/app/parametres/paiements/stripe'
+    | '/app/plateforme/espaces/$id'
     | '/$slug/reservation/$token/'
     | '/app/clients/$id/'
     | '/app/evenements/$id/'
@@ -1110,6 +1147,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppParametresProfilRouteImport
       parentRoute: typeof AppRoute
     }
+    '/app/plateforme/': {
+      id: '/app/plateforme/'
+      path: '/plateforme'
+      fullPath: '/app/plateforme/'
+      preLoaderRoute: typeof AppPlateformeIndexRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/plateforme/utilisateurs': {
+      id: '/app/plateforme/utilisateurs'
+      path: '/plateforme/utilisateurs'
+      fullPath: '/app/plateforme/utilisateurs'
+      preLoaderRoute: typeof AppPlateformeUtilisateursRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/app/reservations/': {
       id: '/app/reservations/'
       path: '/reservations'
@@ -1215,6 +1266,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppParametresPaiementsStripeRouteImport
       parentRoute: typeof AppRoute
     }
+    '/app/plateforme/espaces/$id': {
+      id: '/app/plateforme/espaces/$id'
+      path: '/plateforme/espaces/$id'
+      fullPath: '/app/plateforme/espaces/$id'
+      preLoaderRoute: typeof AppPlateformeEspacesIdRouteImport
+      parentRoute: typeof AppRoute
+    }
   }
 }
 
@@ -1260,6 +1318,7 @@ interface AppRouteChildren {
   AppParametresNotificationsRoute: typeof AppParametresNotificationsRoute
   AppParametresOrganisationRoute: typeof AppParametresOrganisationRoute
   AppParametresProfilRoute: typeof AppParametresProfilRoute
+  AppPlateformeUtilisateursRoute: typeof AppPlateformeUtilisateursRoute
   AppReservationsIdRoute: typeof AppReservationsIdRoute
   AppReservationsExportRoute: typeof AppReservationsExportRoute
   AppReservationsNouvelleRoute: typeof AppReservationsNouvelleRoute
@@ -1267,12 +1326,14 @@ interface AppRouteChildren {
   AppEvenementsIndexRoute: typeof AppEvenementsIndexRoute
   AppMaterielIndexRoute: typeof AppMaterielIndexRoute
   AppParametresIndexRoute: typeof AppParametresIndexRoute
+  AppPlateformeIndexRoute: typeof AppPlateformeIndexRoute
   AppReservationsIndexRoute: typeof AppReservationsIndexRoute
   AppClientsIdModifierRoute: typeof AppClientsIdModifierRoute
   AppEvenementsIdModifierRoute: typeof AppEvenementsIdModifierRoute
   AppMaterielIdLouerRoute: typeof AppMaterielIdLouerRoute
   AppMaterielIdModifierRoute: typeof AppMaterielIdModifierRoute
   AppParametresPaiementsStripeRoute: typeof AppParametresPaiementsStripeRoute
+  AppPlateformeEspacesIdRoute: typeof AppPlateformeEspacesIdRoute
   AppClientsIdIndexRoute: typeof AppClientsIdIndexRoute
   AppEvenementsIdIndexRoute: typeof AppEvenementsIdIndexRoute
   AppMaterielIdIndexRoute: typeof AppMaterielIdIndexRoute
@@ -1297,6 +1358,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppParametresNotificationsRoute: AppParametresNotificationsRoute,
   AppParametresOrganisationRoute: AppParametresOrganisationRoute,
   AppParametresProfilRoute: AppParametresProfilRoute,
+  AppPlateformeUtilisateursRoute: AppPlateformeUtilisateursRoute,
   AppReservationsIdRoute: AppReservationsIdRoute,
   AppReservationsExportRoute: AppReservationsExportRoute,
   AppReservationsNouvelleRoute: AppReservationsNouvelleRoute,
@@ -1304,12 +1366,14 @@ const AppRouteChildren: AppRouteChildren = {
   AppEvenementsIndexRoute: AppEvenementsIndexRoute,
   AppMaterielIndexRoute: AppMaterielIndexRoute,
   AppParametresIndexRoute: AppParametresIndexRoute,
+  AppPlateformeIndexRoute: AppPlateformeIndexRoute,
   AppReservationsIndexRoute: AppReservationsIndexRoute,
   AppClientsIdModifierRoute: AppClientsIdModifierRoute,
   AppEvenementsIdModifierRoute: AppEvenementsIdModifierRoute,
   AppMaterielIdLouerRoute: AppMaterielIdLouerRoute,
   AppMaterielIdModifierRoute: AppMaterielIdModifierRoute,
   AppParametresPaiementsStripeRoute: AppParametresPaiementsStripeRoute,
+  AppPlateformeEspacesIdRoute: AppPlateformeEspacesIdRoute,
   AppClientsIdIndexRoute: AppClientsIdIndexRoute,
   AppEvenementsIdIndexRoute: AppEvenementsIdIndexRoute,
   AppMaterielIdIndexRoute: AppMaterielIdIndexRoute,
