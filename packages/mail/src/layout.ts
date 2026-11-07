@@ -74,6 +74,34 @@ function palette(brand: LayoutInput["brand"]) {
   };
 }
 
+/**
+ * Notch replié de l'app (notch-shape.ts) : chaque flanc est un S de 44 × 50 px sous le cadre.
+ * Sans SVG dans les clients mail, le S est rendu par deux quarts d'ellipse de 22 × 25 px en
+ * border-radius : raccord concave en haut, coin convexe en bas, tangents à la verticale.
+ */
+function notchHtml(content: string, frame: string, bg: string): string {
+  const cell = (width: number, background: string, inner = "") =>
+    `<td width="${width}" height="25" style="width:${width}px;height:25px;padding:0;font-size:0;line-height:0;background:${background}">${inner}</td>`;
+  const curve = (background: string, radius: string) =>
+    `<div style="height:25px;font-size:0;line-height:0;background:${background};${radius}"></div>`;
+  const flank = (side: "left" | "right") => {
+    const concave = cell(
+      22,
+      frame,
+      curve(bg, `border-top-${side === "left" ? "right" : "left"}-radius:22px 25px`),
+    );
+    const convex = cell(
+      22,
+      bg,
+      curve(frame, `border-bottom-${side === "left" ? "left" : "right"}-radius:22px 25px`),
+    );
+    const top = side === "left" ? concave + cell(22, frame) : cell(22, frame) + concave;
+    const bottom = side === "left" ? cell(22, bg) + convex : convex + cell(22, bg);
+    return `<td width="44" style="width:44px;padding:0;vertical-align:top"><table role="presentation" cellpadding="0" cellspacing="0" style="border-collapse:collapse"><tr>${top}</tr><tr>${bottom}</tr></table></td>`;
+  };
+  return `<table role="presentation" cellpadding="0" cellspacing="0" style="border-collapse:collapse"><tr>${flank("left")}<td height="46" style="height:46px;padding:0 10px 4px;background:${frame};vertical-align:middle;white-space:nowrap">${content}</td>${flank("right")}</tr></table>`;
+}
+
 /** Gabarit commun des e-mails transactionnels. */
 export function renderEmail({
   preheader,
@@ -122,7 +150,7 @@ export function renderEmail({
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px">
 <tr><td style="background:${color.frame};border-radius:28px;padding:6px">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:${color.bg};border-radius:22px">
-<tr><td align="center"><table role="presentation" cellpadding="0" cellspacing="0"><tr><td style="background:${color.frame};border-radius:0 0 20px 20px;padding:11px 28px 13px">${notch}</td></tr></table></td></tr>
+<tr><td align="center" style="padding:0">${notchHtml(notch, color.frame, color.bg)}</td></tr>
 <tr><td style="padding:36px 28px 30px">
 <h1 style="margin:0 0 20px;font-family:${FONT};font-weight:500;font-size:32px;line-height:38px;letter-spacing:-0.02em;color:${color.ink}">${escapeHtml(title)}</h1>
 ${body}
