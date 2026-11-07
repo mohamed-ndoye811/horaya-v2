@@ -194,6 +194,17 @@ export function CustomerDetailPage({ data }: { data: Awaited<ReturnType<typeof g
                 </div>
               ))}
               <div className="flex min-h-10 items-center justify-between gap-4 border-t border-line-faint py-2">
+                <dt className="text-[13px] leading-[17px] text-ink-subtle">Espace client</dt>
+                <dd
+                  className={cn(
+                    "text-right text-sm font-medium leading-[18px]",
+                    customer.hasAccount ? "text-success" : "text-ink-subtle",
+                  )}
+                >
+                  {customer.hasAccount ? "A un espace" : "Pas d'espace"}
+                </dd>
+              </div>
+              <div className="flex min-h-10 items-center justify-between gap-4 border-t border-line-faint py-2">
                 <dt className="text-[13px] leading-[17px] text-ink-subtle">Actualités</dt>
                 <dd
                   className={cn(

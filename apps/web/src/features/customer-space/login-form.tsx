@@ -1,14 +1,25 @@
-import { Button } from "@/components/ui/button";
+import { Button, ButtonLink } from "@/components/ui/button";
 import { Field, inputClasses } from "@/components/ui/field";
 import { FormAlert } from "@/components/ui/form-alert";
-import { requestBookingLinksAction } from "@/functions/public";
+import { sendCustomerLoginLinkAction, signInCustomerAction } from "@/functions/customer-space";
 import { useFormAction } from "@/lib/use-form-action";
 import type { FormState } from "@/server/form-state";
 
-/** Maquette 5.5 : l'e-mail, puis la confirmation d'envoi sous le bouton. */
-export function RequestLinksForm({ slug, email }: { slug: string; email: string }) {
+/**
+ * Maquette 8.1 : l'e-mail, puis « Regarde tes e-mails » sous le bouton. `slug` null : vue
+ * horaya.app.
+ */
+export function LoginForm({
+  slug,
+  email,
+  minutes,
+}: {
+  slug: string | null;
+  email: string;
+  minutes: number;
+}) {
   const { state, onSubmit, pending } = useFormAction<FormState>(
-    requestBookingLinksAction.bind(null, slug),
+    sendCustomerLoginLinkAction.bind(null, slug),
     {},
   );
   return (
@@ -29,8 +40,12 @@ export function RequestLinksForm({ slug, email }: { slug: string; email: string 
         )}
       </Field>
       <Button type="submit" variant="brand" size="lg" pending={pending} arrow>
-        {pending ? "Un instant…" : "Recevoir mes liens"}
+        {pending ? "Un instant…" : "Recevoir mon lien de connexion"}
       </Button>
+      <p className="text-sm leading-5 text-ink-muted">
+        Première visite ? Ton espace se crée tout seul avec l'adresse utilisée pour réserver. Tu
+        peux toujours réserver sans espace.
+      </p>
       {state.success && (
         <FormAlert
           tone="success"
@@ -48,9 +63,41 @@ export function RequestLinksForm({ slug, email }: { slug: string; email: string 
             </svg>
           }
         >
-          <strong className="font-bold">C'est parti.</strong>{" "}
-          <span className="font-normal">{state.success}</span>
+          <strong className="font-bold">Regarde tes e-mails.</strong>{" "}
+          <span className="font-normal">
+            Le lien envoyé à {state.success} te connecte pendant {minutes} minutes.
+          </span>
         </FormAlert>
+      )}
+    </form>
+  );
+}
+
+/**
+ * Arrivée par le lien de l'e-mail : un bouton consomme le jeton (un antivirus de messagerie
+ * qui ouvre le lien tout seul ne le grille pas).
+ */
+export function ConfirmLogin({ slug, token }: { slug: string | null; token: string }) {
+  const { state, onSubmit, pending } = useFormAction<FormState>(
+    () => signInCustomerAction(slug, token),
+    {},
+  );
+  return (
+    <form onSubmit={onSubmit} className="flex flex-col gap-[22px]">
+      {state.error && <FormAlert>{state.error}</FormAlert>}
+      {state.error ? (
+        <ButtonLink
+          href={slug ? `/${slug}/mon-espace/connexion` : "/mon-espace/connexion"}
+          variant="brand"
+          size="lg"
+          arrow
+        >
+          Recevoir un nouveau lien
+        </ButtonLink>
+      ) : (
+        <Button type="submit" variant="brand" size="lg" pending={pending} arrow>
+          {pending ? "Connexion…" : "Me connecter"}
+        </Button>
       )}
     </form>
   );
