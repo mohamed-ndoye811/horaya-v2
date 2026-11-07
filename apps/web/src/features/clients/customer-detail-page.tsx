@@ -11,6 +11,7 @@ import { cardClasses, cardShellClasses, dashedClasses } from "@/components/ui/se
 import { MiniStat, ProgressRing } from "@/components/ui/stat";
 import { ATTENDANCE_BADGE, BOOKING_STATUS_BADGE } from "@/components/ui/status";
 import { Tag } from "@/components/ui/tag";
+import { CustomerPasses } from "@/features/passes/customer-passes";
 import type { getCustomer } from "@/functions/clients";
 import { cn } from "@/lib/cn";
 import { customerTags } from "@/lib/customer-tags";
@@ -20,7 +21,7 @@ import { NoteForm } from "./note-form";
 
 /** Maquette 2.2 : fiche d'un client. */
 export function CustomerDetailPage({ data }: { data: Awaited<ReturnType<typeof getCustomer>> }) {
-  const { timeZone, customer, notes, bookings } = data;
+  const { timeZone, customer, notes, bookings, passes, sellablePlans } = data;
   const now = new Date();
   const attendances = new Map(
     bookings.map((entry) => [
@@ -217,6 +218,13 @@ export function CustomerDetailPage({ data }: { data: Awaited<ReturnType<typeof g
               </div>
             </dl>
           </section>
+
+          <CustomerPasses
+            customerId={customer.id}
+            passes={passes}
+            plans={sellablePlans}
+            timeZone={timeZone}
+          />
 
           <section className={cn(cardClasses, "gap-2.5")}>
             <NoteForm customerId={customer.id} />

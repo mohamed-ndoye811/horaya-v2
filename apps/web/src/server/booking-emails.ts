@@ -9,6 +9,7 @@ import {
   createNotifications,
   getBookingDetail,
   getEnrollment,
+  getPassForEmail,
   getWeeklyDigest,
   getWorkspaceSettings,
   listNotificationRecipients,
@@ -29,6 +30,7 @@ import {
   bookingWaitlistedEmail,
   type EmailContent,
   enrollmentConfirmedEmail,
+  passActivatedEmail,
   teamAlmostFullEmail,
   teamBookingEmail,
   teamReminderEmail,
@@ -88,13 +90,15 @@ async function loadBooking(organizationId: string, bookingId: string) {
   const paymentNote =
     booking.paymentMode === "on_site"
       ? "à régler sur place"
-      : booking.paymentStatus === "paid"
-        ? booking.paymentMode === "deposit"
-          ? `acompte de ${formatMoney(booking.depositCents ?? 0)} payé, le reste sur place`
-          : "payé en ligne"
-        : onlinePayments
-          ? "à payer en ligne"
-          : "à régler auprès de l'organisateur";
+      : booking.paymentStatus === "paid_with_pass"
+        ? "payée avec ta carte"
+        : booking.paymentStatus === "paid"
+          ? booking.paymentMode === "deposit"
+            ? `acompte de ${formatMoney(booking.depositCents ?? 0)} payé, le reste sur place`
+            : "payé en ligne"
+          : onlinePayments
+            ? "à payer en ligne"
+            : "à régler auprès de l'organisateur";
   const amount =
     booking.amountCents > 0 ? `${formatMoney(booking.amountCents)} · ${paymentNote}` : null;
   const mail = (url: string): BookingMail => ({
@@ -356,10 +360,45 @@ async function notifyTeam(
   }
 }
 
+/** Carte payée : e-mail au client avec le solde et la date de fin (si le client a une adresse). */
+async function sendPassActivatedEmail(organizationId: string, passId: string) {
+  const [pass, workspace, settings] = await Promise.all([
+    getPassForEmail(db, organizationId, passId),
+    getWorkspaceSettings(db, organizationId),
+    tenantSettingsReader(db).get(organizationId),
+  ]);
+  if (!pass || !workspace || !pass.expiresAt) return;
+  await send(
+    pass.customerEmail,
+    passActivatedEmail({
+      workspace: {
+        name: workspace.name,
+        color: workspace.brandColor,
+        textColor: textOn(workspace.brandColor),
+        logo: workspace.logo ? absoluteUrl(workspace.logo) : null,
+      },
+      firstName: pass.customerFirstName,
+      name: pass.name,
+      sessions: pass.balance,
+      expiresOn: new Intl.DateTimeFormat("fr-FR", {
+        day: "numeric",
+        month: "long",
+        year: "numeric",
+        timeZone: settings.timezone,
+      }).format(pass.expiresAt),
+      eventsUrl: absoluteUrl(`/${workspace.slug}`),
+    }),
+  );
+}
+
 /** Branché sur la fin des transactions (createDeps) : chaque changement de statut prévient qui de droit. */
 export async function notifyFromActivity(entries: ActivityEntry[]) {
   for (const entry of entries) {
     if (entry.entityType === "enrollment") await notifyEnrollmentCreated(entry);
+    if (entry.entityType === "pass" && entry.action === "pass.activated") {
+      await sendPassActivatedEmail(entry.organizationId, entry.entityId);
+      continue;
+    }
     if (entry.entityType !== "booking") continue;
     const loaded = await loadBooking(entry.organizationId, entry.entityId);
     if (!loaded) continue;

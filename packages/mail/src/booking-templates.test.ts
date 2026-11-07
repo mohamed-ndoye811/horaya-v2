@@ -5,6 +5,7 @@ import {
   bookingRefusedEmail,
   bookingRescheduledEmail,
   enrollmentConfirmedEmail,
+  passActivatedEmail,
   teamAlmostFullEmail,
   weeklyDigestEmail,
 } from "./booking-templates";
@@ -144,5 +145,21 @@ describe("e-mail d'inscription à une série", () => {
     expect(email.subject).toBe("Inscription confirmée : Tournage du mardi");
     expect(email.text).toContain("Séance 2 : mar. 25 nov., 18 h 30");
     expect(email.text).toContain(`Gérer mon inscription : ${mail.manageUrl}`);
+  });
+});
+
+describe("e-mail de carte", () => {
+  it("annonce le solde et la date de fin", () => {
+    const email = passActivatedEmail({
+      workspace: mail.workspace,
+      firstName: "Camille",
+      name: "Carte 10 séances",
+      sessions: 10,
+      expiresOn: "30 juin 2027",
+      eventsUrl: "https://horaya.app/cabinet-vidal",
+    });
+    expect(email.subject).toBe("Ta carte est active : Carte 10 séances");
+    expect(email.text).toContain("Séances : 10");
+    expect(email.text).toContain("Valable jusqu'au : 30 juin 2027");
   });
 });

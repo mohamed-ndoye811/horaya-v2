@@ -14,6 +14,7 @@ import { customerAccountRepository } from "./repositories/customer-accounts";
 import { enrollmentRepository } from "./repositories/enrollments";
 import { eventRepository, eventTypeRepository } from "./repositories/events";
 import { inventoryRepository } from "./repositories/inventory";
+import { passRepository } from "./repositories/passes";
 import { paymentRepository } from "./repositories/payments";
 import {
   activityLogRepository,
@@ -40,6 +41,7 @@ export function repositoriesFor(db: Executor): Repositories {
     billing: billingRepository(db),
     customerAccounts: customerAccountRepository(db),
     enrollments: enrollmentRepository(db),
+    passes: passRepository(db),
   };
 }
 

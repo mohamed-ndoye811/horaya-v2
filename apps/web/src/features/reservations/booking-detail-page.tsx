@@ -46,6 +46,7 @@ function paymentSummary(
   booking: { paymentMode: string; paymentStatus: string; amountCents: number },
   paid: number,
 ): string {
+  if (booking.paymentStatus === "paid_with_pass") return "Payée avec la carte";
   if (booking.paymentMode === "free") return "Rien à régler";
   if (booking.paymentStatus === "refunded") return "Remboursé";
   if (booking.paymentStatus === "partially_refunded")
@@ -183,7 +184,7 @@ export function BookingDetailPage({ data }: { data: Awaited<ReturnType<typeof ge
   const paymentTone =
     booking.paymentMode === "free" || booking.paymentStatus === "refunded"
       ? undefined
-      : booking.paymentStatus === "paid"
+      : booking.paymentStatus === "paid" || booking.paymentStatus === "paid_with_pass"
         ? ("success" as const)
         : ("warning" as const);
   const amountCaption = booking.depositCents

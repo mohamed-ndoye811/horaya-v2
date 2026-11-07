@@ -22,6 +22,7 @@ import {
   listBookingPayments,
   listCalendarLinkEvents,
   listPublicEvents,
+  listPublicPassPlans,
   type ManagedBooking,
   type PublicWorkspace,
 } from "@horaya/db";
@@ -61,7 +62,11 @@ export async function publicLayout(slug: string) {
 export async function publicHome(slug: string) {
   const workspace = await publicWorkspace(slug);
   const now = new Date();
-  return { workspace, events: await listPublicEvents(db, workspace.id, now), now };
+  const [events, passPlans] = await Promise.all([
+    listPublicEvents(db, workspace.id, now),
+    listPublicPassPlans(db, workspace.id),
+  ]);
+  return { workspace, events, now, hasPassPlans: passPlans.length > 0 };
 }
 
 /** Lien calendrier : les événements choisis par l'équipe, « sur invitation » compris. */

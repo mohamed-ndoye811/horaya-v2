@@ -51,6 +51,7 @@ const SCREENS: NavItem[] = [
   ...NAV.filter((item) => item.href !== "/app/parametres"),
   { href: "/app/evenements/types", label: "Types d'événements", icon: TicketIcon },
   { href: "/app/evenements/liens", label: "Liens calendrier", icon: CalendarIcon },
+  { href: "/app/cartes", label: "Cartes de séances", icon: TicketIcon },
 ];
 
 export interface MobileMenuProps {

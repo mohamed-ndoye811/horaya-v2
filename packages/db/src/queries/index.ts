@@ -10,6 +10,7 @@ export * from "./events";
 export * from "./inventory";
 export * from "./join-links";
 export * from "./notifications";
+export * from "./passes";
 export * from "./payments";
 export * from "./platform";
 export * from "./privacy";

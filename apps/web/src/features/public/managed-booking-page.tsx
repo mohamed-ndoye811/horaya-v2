@@ -144,11 +144,13 @@ export function ManagedBookingPage({
                 : `${yourPlaces} pour « ${title} » ${agree("est retenue", "sont retenues")} le temps du paiement en ligne (${formatMoney(due)}). Sans paiement, ${agree("elle est libérée", "elles sont libérées")} au bout de 30 minutes.`,
         };
       const paidNote =
-        booking.paymentStatus === "paid"
-          ? booking.paymentMode === "deposit"
-            ? ", acompte payé"
-            : agree(" et payée", " et payées")
-          : "";
+        booking.paymentStatus === "paid_with_pass"
+          ? agree(" et payée avec ta carte", " et payées avec ta carte")
+          : booking.paymentStatus === "paid"
+            ? booking.paymentMode === "deposit"
+              ? ", acompte payé"
+              : agree(" et payée", " et payées")
+            : "";
       return {
         badge: { label: "Confirmée", tone: "success" },
         title: fresh ? "C'est réservé !" : "Ta réservation",

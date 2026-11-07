@@ -1,6 +1,7 @@
 import type { CalendarLink } from "../calendar-links/model";
 import { calendarLinkAllows } from "../calendar-links/rules";
 import type { Event, EventType } from "../events/model";
+import { recreditPassForBooking } from "../passes/use-cases";
 import { type Actor, actorRef, assertMemberCan } from "../shared/actor";
 import { ConflictError, ForbiddenError, NotFoundError, ValidationError } from "../shared/errors";
 import { generateToken, hashToken } from "../shared/tokens";
@@ -244,6 +245,13 @@ export async function refuseBooking(
       ...actorRef(actor),
       data: { reason: reason ?? null },
     });
+    await recreditPassForBooking(
+      repositories,
+      actor,
+      booking,
+      event?.startsAt ?? null,
+      deps.clock.now(),
+    );
     if (event && SEAT_HOLDING_STATUSES.has(booking.status)) {
       await promoteWaitlist(repositories, event, actor, deps.clock.now());
     }
@@ -321,6 +329,13 @@ async function cancelLocked(
     ...actorRef(actor),
     data: { reason },
   });
+  await recreditPassForBooking(
+    repositories,
+    actor,
+    booking,
+    event?.startsAt ?? booking.rentalStartsAt,
+    now,
+  );
   // Location : les exemplaires bloqués redeviennent libres. Événement : le matériel
   // attribué à la réservation (comptoir) retourne au matériel de l'événement.
   if (booking.kind === "rental") {

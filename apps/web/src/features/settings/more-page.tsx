@@ -46,6 +46,7 @@ export function MorePage({ data }: { data: Awaited<ReturnType<typeof getMoreMenu
         <Row href="/app/clients">Clients</Row>
         <Row href="/app/evenements/types">Types d'événements</Row>
         <Row href="/app/evenements/liens">Liens calendrier</Row>
+        <Row href="/app/cartes">Cartes de séances</Row>
         <Row
           href={`/${workspace.slug}`}
           aside={<span className="text-[13px] font-semibold text-ink-subtle">↗</span>}

@@ -8,4 +8,5 @@ export * from "./customers";
 export * from "./enums";
 export * from "./events";
 export * from "./inventory";
+export * from "./passes";
 export * from "./tenants";

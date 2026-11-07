@@ -412,3 +412,33 @@ export function enrollmentConfirmedEmail(input: {
     }),
   };
 }
+
+/** Carte de séances payée : elle est active, avec son solde et sa date de fin. */
+export function passActivatedEmail(input: {
+  workspace: BookingMail["workspace"];
+  firstName: string;
+  name: string;
+  sessions: number;
+  expiresOn: string;
+  eventsUrl: string;
+}): EmailContent {
+  return {
+    subject: `Ta carte est active : ${input.name}`,
+    ...renderEmail({
+      preheader: `${places(input.sessions).replace("place", "séance")} à utiliser jusqu'au ${input.expiresOn}.`,
+      title: "Ta carte est active",
+      paragraphs: [
+        `Bonjour ${input.firstName},`,
+        `Ton paiement est bien reçu : ta carte « ${input.name} » est active. Chaque réservation utilise une séance ; une réservation annulée à temps te la rend.`,
+      ],
+      details: [
+        ["Carte", input.name],
+        ["Séances", String(input.sessions)],
+        ["Valable jusqu'au", input.expiresOn],
+      ],
+      action: { label: "Voir les prochains événements", url: input.eventsUrl },
+      footnote: `Cet e-mail t'est envoyé par ${input.workspace.name} via Horaya, suite à l'achat de ta carte.`,
+      brand: input.workspace,
+    }),
+  };
+}

@@ -12,6 +12,7 @@ export {
   bookingRescheduledEmail,
   bookingWaitlistedEmail,
   enrollmentConfirmedEmail,
+  passActivatedEmail,
   teamAlmostFullEmail,
   teamBookingEmail,
   teamReminderEmail,

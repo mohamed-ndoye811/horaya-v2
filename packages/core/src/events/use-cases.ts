@@ -1,4 +1,5 @@
 import { promoteWaitlist } from "../bookings/waitlist";
+import { recreditPassForBooking } from "../passes/use-cases";
 import { type Actor, actorRef, assertMemberCan } from "../shared/actor";
 import { NotFoundError } from "../shared/errors";
 import { toZonedParts } from "../shared/time";
@@ -332,6 +333,7 @@ export async function cancelEvent(
         ...actorRef(actor),
         data: { reason: "event_cancelled" },
       });
+      await recreditPassForBooking(repositories, actor, booking, locked.event.startsAt, now);
     }
     await repositories.activity.record({
       organizationId: actor.organizationId,

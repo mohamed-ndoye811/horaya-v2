@@ -12,6 +12,8 @@ import {
   EVENT_STATUSES,
   EVENT_VISIBILITIES,
   ITEM_UNIT_STATUSES,
+  PASS_MOVEMENT_KINDS,
+  PASS_STATUSES,
   PAYMENT_KINDS,
   PAYMENT_METHODS,
   PAYMENT_MODES,
@@ -43,3 +45,5 @@ export const billingInterval = pgEnum("billing_interval", BILLING_INTERVALS);
 export const billingRate = pgEnum("billing_rate", BILLING_RATES);
 export const planGrantKind = pgEnum("plan_grant_kind", PLAN_GRANT_KINDS);
 export const subscriptionStatus = pgEnum("subscription_status", SUBSCRIPTION_STATUSES);
+export const passStatus = pgEnum("pass_status", PASS_STATUSES);
+export const passMovementKind = pgEnum("pass_movement_kind", PASS_MOVEMENT_KINDS);
