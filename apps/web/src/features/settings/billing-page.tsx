@@ -1,5 +1,5 @@
 import { type BillingInterval, PLAN_RANK, PLANS, type PlanId } from "@horaya/core";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { SettingsShell } from "@/components/app/settings-shell";
 import { StatusBadge, type Tone } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -83,6 +83,22 @@ export function BillingSettingsPage({ data, paid }: { data: Data; paid: boolean 
   const current = PLANS[data.plan];
   const badge = sourceBadge(data);
   const subscribed = Boolean(data.subscription) && data.subscription?.status !== "canceled";
+  const router = useRouter();
+  const refresh = useRef(router.refresh);
+  refresh.current = router.refresh;
+
+  // Retour du paiement : le webhook de Polar arrive quelques secondes après. On recharge les
+  // données toutes les 2 s jusqu'à voir l'abonnement, 30 s au plus.
+  const waiting = paid && !subscribed;
+  useEffect(() => {
+    if (!waiting) return;
+    const timer = window.setInterval(() => refresh.current(), 2000);
+    const stop = window.setTimeout(() => window.clearInterval(timer), 30_000);
+    return () => {
+      window.clearInterval(timer);
+      window.clearTimeout(stop);
+    };
+  }, [waiting]);
 
   /** Paiement ou portail chez Polar : le navigateur part sur leur page. */
   async function go(key: string, request: () => Promise<string>) {
@@ -105,7 +121,9 @@ export function BillingSettingsPage({ data, paid }: { data: Data; paid: boolean 
       <div className="flex flex-col gap-4">
         {paid && (
           <FormAlert tone="success">
-            Merci ! Ton paiement est validé : la formule s'active dans quelques secondes.
+            {waiting
+              ? "Merci ! Ton paiement est validé : la formule s'active dans quelques secondes."
+              : `Merci ! Ta formule ${current.name} est active.`}
           </FormAlert>
         )}
         {error && <FormAlert>{error}</FormAlert>}
@@ -351,7 +369,9 @@ function PlanAction({
       {pending === id
         ? "Ouverture…"
         : isCurrent
-          ? `Garder ${PLANS[id].name} après l'essai`
+          ? data.source === "trial"
+            ? `Garder ${PLANS[id].name} après l'essai`
+            : `S'abonner à ${PLANS[id].name}`
           : higher
             ? `Passer à ${PLANS[id].name}`
             : `Choisir ${PLANS[id].name}`}
