@@ -572,6 +572,12 @@ function NotificationList({
   );
 }
 
+const COCKPIT_LINK = {
+  href: "/app/plateforme",
+  label: "Cockpit",
+  detail: "Espaces, comptes, licences",
+};
+
 const ACCOUNT_LINKS = [
   { href: "/app/parametres/profil", label: "Mon profil", detail: "Ton nom, ton mot de passe" },
   {
@@ -601,6 +607,8 @@ const ACCOUNT_LINKS = [
 export interface AccountUser {
   name: string;
   image: string | null;
+  /** Équipe Horaya : accès au cockpit de la plateforme. */
+  platformAdmin?: boolean;
 }
 
 /** Le compte : paramètres, qui est connecté, et la sortie. */
@@ -632,7 +640,7 @@ export function AccountPanel({
       <div className="flex min-w-0 flex-col gap-1">
         <GroupLabel>Paramètres</GroupLabel>
         <div className={cn("grid gap-2", wide ? "grid-cols-3" : "grid-cols-2")}>
-          {ACCOUNT_LINKS.map((link) => (
+          {(user.platformAdmin ? [...ACCOUNT_LINKS, COCKPIT_LINK] : ACCOUNT_LINKS).map((link) => (
             <Link
               key={link.href}
               href={link.href}

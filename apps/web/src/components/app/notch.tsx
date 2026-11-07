@@ -53,7 +53,7 @@ const LABEL_GAP = 8;
 const clamp01 = (x: number) => Math.min(1, Math.max(0, x));
 
 export interface NotchProps {
-  user: { name: string; shortName: string; image: string | null };
+  user: { name: string; shortName: string; image: string | null; platformAdmin?: boolean };
   workspace: { name: string };
   /** Réservations à valider : pastille orange sur l'icône. */
   pendingBookings: number;

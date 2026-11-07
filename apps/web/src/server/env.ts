@@ -39,6 +39,8 @@ const schema = z.object({
   POLAR_PRODUCT_EQUIPE_YEAR: optional,
   POLAR_DISCOUNT_SOLIDAIRE: optional,
   POLAR_DISCOUNT_BETA: optional,
+  /** Équipe Horaya : e-mails (séparés par des virgules) qui ont accès au cockpit de la plateforme. */
+  PLATFORM_ADMINS: optional,
   /** Poste de travail local (worktree) : voir « Postes de travail » dans CLAUDE.md. */
   POSTE: z.enum(POSTES).optional(),
 });
