@@ -16,16 +16,19 @@ import {
   createEventType,
   createItem,
   createRentalBooking,
+  enrollInSeries,
   fromZonedParts,
   publishEvent,
+  reportAbsenceAsCustomer,
   scheduleMaintenance,
   setEventItemQuantity,
   systemClock,
   toZonedParts,
   updateCustomer,
+  updateSeriesEnrollment,
   updateTenantSettings,
 } from "@horaya/core";
-import { and, eq, inArray, ne } from "drizzle-orm";
+import { and, asc, eq, inArray, ne } from "drizzle-orm";
 import { createDb } from "./client";
 import {
   activityLog,
@@ -47,6 +50,7 @@ import {
   payment,
   planGrant,
   referenceCounter,
+  seriesEnrollment,
   tenantSettings,
   user,
 } from "./schema";
@@ -100,6 +104,7 @@ if (reset) {
       itemType,
       payment,
       booking,
+      seriesEnrollment,
       event,
       eventSeries,
       eventType,
@@ -712,6 +717,76 @@ await db.insert(invitation).values({
   expiresAt: new Date(now + 5 * 86_400_000),
   inviterId: owner.userId,
 });
+
+// Cours à l'année (lot 30) : « Tournage du mardi », 12 séances hebdomadaires dont 4 passées,
+// inscription à la série ouverte, trois inscrits dont Antoine (absent à la 3e séance restante).
+{
+  const course = await createEventType(deps, actor, {
+    name: "Cours",
+    color: "#7A5AA6",
+    defaultDurationMinutes: 90,
+  });
+  const weekday = (offset: number) =>
+    new Intl.DateTimeFormat("en-US", { timeZone: TZ, weekday: "short" }).format(
+      new Date(at(offset, 12)),
+    );
+  // Le mardi de la semaine du 4e cours passé : 4 séances passées, 8 à venir.
+  let offset = -28;
+  while (weekday(offset) !== "Tue") offset++;
+  const sessions = await createEvent(deps, actor, {
+    eventTypeId: course.id,
+    title: "Tournage du mardi",
+    startsAt: at(offset, 19),
+    endsAt: at(offset, 20, 30),
+    timezone: TZ,
+    locationName: "Studio Démo, Puget-Ville",
+    capacity: 12,
+    priceCents: 2000,
+    paymentMode: "on_site",
+    description: "Cours hebdomadaire de tournage : cadrage, lumière et montage, au trimestre.",
+    highlights: ["Matériel fourni", "Petit groupe"],
+    recurrence: { frequency: "weekly", count: 12 },
+  });
+  const seriesId = sessions[0]?.seriesId;
+  if (seriesId) {
+    for (const session of sessions) {
+      if (new Date(session.startsAt) > new Date()) await publishEvent(deps, actor, session.id);
+      // Séances passées : publiées d'office (publishEvent refuse un événement commencé).
+      else
+        await db
+          .update(event)
+          .set({ status: "published", publishedAt: session.startsAt })
+          .where(eq(event.id, session.id));
+    }
+    await updateSeriesEnrollment(deps, actor, seriesId, {
+      enrollmentEnabled: true,
+      enrollmentPriceCents: 24000,
+      dropInAllowed: true,
+    });
+    for (const [firstName, lastName] of [
+      ["Antoine", "Leroy"],
+      ["Sophie", "Martin"],
+      ["Camille", "Roux"],
+      ["Thomas", "Bernard"],
+    ] as const) {
+      const email = `${firstName}.${lastName}@mail.com`.toLowerCase();
+      const { enrollment } = await enrollInSeries(deps, actor, {
+        seriesId,
+        customer: { firstName, lastName, email },
+        paid: firstName !== "Antoine",
+      });
+      if (firstName !== "Antoine") continue;
+      const upcoming = await db
+        .select({ id: booking.id })
+        .from(booking)
+        .innerJoin(event, eq(event.id, booking.eventId))
+        .where(eq(booking.enrollmentId, enrollment.id))
+        .orderBy(asc(event.startsAt));
+      const absent = upcoming[2];
+      if (absent) await reportAbsenceAsCustomer(deps, org.id, absent.id, email);
+    }
+  }
+}
 
 console.info(
   `Espace « ${org.name} » : ${Object.keys(types).length} types, ${plans.length} événements, ${bookingCount} réservations, ${Object.keys(items).length} articles, ${rentals.length} locations, ${teammates.length} coéquipiers.`,
