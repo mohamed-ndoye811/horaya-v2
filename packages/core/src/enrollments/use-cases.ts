@@ -10,12 +10,21 @@ import type { Booking } from "../bookings/model";
 import { customerContactSchema, participantSchema } from "../bookings/schemas";
 import { assertCustomerCanBook, insertEventBooking, SOURCE_BY_ACTOR } from "../bookings/use-cases";
 import { promoteWaitlist } from "../bookings/waitlist";
-import type { EventSeries } from "../events/model";
+import { type PriceLine, ratesOf } from "../bookings/pricing";
+import type { Event, EventSeries } from "../events/model";
+import { cancelLockedEvent } from "../events/use-cases";
+import { reserveSameEquipment } from "../inventory/equipment";
 import { rawFieldValuesSchema } from "../fields/schemas";
+import { isWithinFreeCancellation } from "../bookings/cancellation";
 import { cancellationPolicyOf } from "../modules/rules";
 import { runBookingRules } from "../rules/use-cases";
 import { type Actor, actorRef, assertMemberCan } from "../shared/actor";
-import { ConflictError, ForbiddenError, NotFoundError } from "../shared/errors";
+import {
+  ConflictError,
+  ForbiddenError,
+  NotFoundError,
+  ValidationError,
+} from "../shared/errors";
 import { generateToken, hashToken } from "../shared/tokens";
 import type { Deps, Repositories } from "../shared/unit-of-work";
 import { validate } from "../shared/validate";
@@ -74,6 +83,8 @@ export const enrollInSeriesSchema = z
     answers: rawFieldValuesSchema.default({}),
     /** … et pour le participant (l'inscrit·e, une seule personne). */
     participants: z.array(participantSchema).max(1).default([]),
+    /** Stage : le tarif choisi (absent : le tarif par défaut). */
+    rateId: z.string().max(40).nullish(),
   })
   .superRefine(refineCounterCustomer);
 export type EnrollInSeriesInput = z.input<typeof enrollInSeriesSchema>;
@@ -118,6 +129,14 @@ export async function enrollInSeries(
     if (actor.type === "customer" && sessions.some((event) => event.visibility !== "public")) {
       throw new ForbiddenError("Cette série est sur invitation");
     }
+    const stage = series.kind === "stage";
+    // Un stage se prend en entier : plus d'inscription une fois la première séance commencée.
+    if (stage && sessions.length < allEvents.filter((e) => e.status === "published").length) {
+      throw new ConflictError("Le stage a commencé : les inscriptions sont closes");
+    }
+    if (stage && actor.type === "customer" && sessions[0]) {
+      assertCustomerCanBook(sessions[0], 1, now, null);
+    }
 
     const locked = [];
     for (const session of sessions) {
@@ -140,12 +159,13 @@ export async function enrollInSeries(
       });
     }
     assertEnrollmentFits(places, series.timezone);
-    // Prix au prorata des séances restantes (séances publiées de la série, passées comprises).
+    // Stage : le prix du tarif choisi pour tout le stage. Série : au prorata des séances restantes.
+    const stagePrice = stage && locked[0] ? stageQuote(series, locked[0].event, data.rateId) : null;
     const quote = enrollmentQuote({
-      fullCents: series.enrollmentPriceCents ?? 0,
+      fullCents: stagePrice?.amountCents ?? series.enrollmentPriceCents ?? 0,
       remaining: locked.length,
       total: allEvents.filter((event) => event.status === "published").length,
-      prorata: series.enrollmentProrata,
+      prorata: !stage && series.enrollmentProrata,
     });
 
     const settings = await repositories.settings.get(actor.organizationId);
@@ -158,6 +178,7 @@ export async function enrollInSeries(
       paidAt: data.paid ? now : null,
       source: SOURCE_BY_ACTOR[actor.type],
       manageTokenHash,
+      priceLines: stagePrice?.lines ?? [],
     });
     const bookings: Booking[] = [];
     for (const [index, entry] of locked.entries()) {
@@ -172,7 +193,20 @@ export async function enrollInSeries(
           enrollmentId: enrollment.id,
           // Les règles agissent sur chaque séance, mais ne préviennent qu'une fois.
           quietRules: index > 0,
+          skipEquipment: series.sameEquipment,
         }),
+      );
+    }
+    // « Même tour à chaque séance » : les mêmes exemplaires réservés sur toutes les séances.
+    if (series.sameEquipment) {
+      await reserveSameEquipment(
+        repositories,
+        actor,
+        locked.map((entry, index) => ({
+          event: entry.event,
+          bookingId: (bookings[index] as Booking).id,
+        })),
+        1,
       );
     }
     await repositories.activity.record({
@@ -190,6 +224,42 @@ export async function enrollInSeries(
     });
     return { enrollment, bookings, manageToken };
   });
+}
+
+/**
+ * Prix d'une inscription à un stage : le prix du tarif choisi pour tout le stage (les noms des
+ * tarifs sont ceux de la séance, les prix ceux de la série).
+ */
+export function stageQuote(
+  series: Pick<EventSeries, "enrollmentPrices" | "enrollmentPriceCents">,
+  session: Pick<Event, "priceCents" | "modules" | "paymentMode">,
+  rateId?: string | null,
+): { amountCents: number; lines: PriceLine[] } {
+  if (session.paymentMode === "free") return { amountCents: 0, lines: [] };
+  const rates = ratesOf(session);
+  const pricing = session.modules.pricing;
+  const rate = rateId
+    ? rates.find((entry) => entry.id === rateId)
+    : (rates.find((entry) => entry.id === pricing?.defaultRateId) ?? rates[0]);
+  if (!rate) {
+    throw new ValidationError("Ce tarif n'existe pas", [
+      { path: "rateId", message: "Ce tarif n'existe pas" },
+    ]);
+  }
+  const amountCents = series.enrollmentPrices?.[rate.id] ?? series.enrollmentPriceCents ?? 0;
+  return {
+    amountCents,
+    lines: [
+      {
+        kind: "rate",
+        id: rate.id,
+        label: rate.name,
+        unitCents: amountCents,
+        quantity: 1,
+        totalCents: amountCents,
+      },
+    ],
+  };
 }
 
 /** Libère la place d'une séance réservée par une inscription, sous le verrou de la séance. */
@@ -223,6 +293,8 @@ async function releaseSession(
     action: change.action,
     ...actorRef(actor),
   });
+  // Le matériel réservé pour la séance est rendu.
+  await repositories.inventory.releaseBookingAllocations(booking.organizationId, booking.id);
   // La place libérée profite à la liste d'attente existante.
   await runBookingRules(repositories, actor, "seat_released", locked.event, fresh, now);
   await promoteWaitlist(repositories, locked.event, actor, now);
@@ -602,5 +674,117 @@ export async function setEnrollmentPaid(
       ...actorRef(actor),
     });
     return updated;
+  });
+}
+
+/**
+ * « Annuler le stage » (équipe) : toutes les séances à venir sont annulées par le parcours
+ * habituel (places, matériel, cartes), puis les inscriptions. Les inscrits reçoivent un seul
+ * e-mail (`enrollment.cancelled`, raison `stage_cancelled`), pas un par séance.
+ */
+export async function cancelStage(
+  deps: Deps,
+  actor: Actor,
+  seriesId: string,
+): Promise<{ cancelledSessions: number; cancelledEnrollments: number }> {
+  assertMemberCan(actor, "event", "delete");
+  return deps.uow.run(async (repositories) => {
+    const series = await repositories.events.findSeries(actor.organizationId, seriesId);
+    if (series?.kind !== "stage") throw new NotFoundError("Stage", seriesId);
+    const now = deps.clock.now();
+    let cancelledSessions = 0;
+    // Ordre chronologique, comme l'inscription : pas d'interblocage.
+    for (const session of await repositories.events.listSeriesEvents(
+      actor.organizationId,
+      seriesId,
+    )) {
+      if (session.status === "cancelled" || session.endsAt <= now) continue;
+      const locked = await repositories.events.lockForBooking(actor.organizationId, session.id);
+      if (!locked || locked.event.status === "cancelled") continue;
+      await cancelLockedEvent(repositories, actor, locked.event, now, "stage_cancelled");
+      cancelledSessions++;
+    }
+    const enrollments = await repositories.enrollments.listActive(actor.organizationId, seriesId);
+    for (const enrollment of enrollments) {
+      await repositories.enrollments.update(actor.organizationId, enrollment.id, {
+        cancelledAt: now,
+      });
+      await repositories.activity.record({
+        organizationId: actor.organizationId,
+        entityType: "enrollment",
+        entityId: enrollment.id,
+        action: "enrollment.cancelled",
+        ...actorRef(actor),
+        data: { reason: "stage_cancelled", releasedSessions: cancelledSessions },
+      });
+    }
+    return { cancelledSessions, cancelledEnrollments: enrollments.length };
+  });
+}
+
+/**
+ * L'élève annule son inscription au stage (lien de gestion) : toutes ses séances sont
+ * libérées. Le remboursement suit la règle d'annulation du type, comptée depuis la première
+ * séance : en entier dans le délai gratuit, sinon la part prévue.
+ */
+export async function cancelStageEnrollmentWithToken(
+  deps: Deps,
+  organizationId: string,
+  manageToken: string,
+): Promise<{ enrollment: Enrollment; refundPercent: number }> {
+  const tokenHash = await hashToken(manageToken);
+  const actor: Actor = { type: "customer", organizationId };
+  return deps.uow.run(async (repositories) => {
+    const found = await repositories.enrollments.findByManageTokenHash(organizationId, tokenHash);
+    if (!found) throw new NotFoundError("Inscription", "lien");
+    if (found.cancelledAt) throw new ConflictError("Cette inscription est déjà annulée");
+    const series = await repositories.events.findSeries(organizationId, found.seriesId);
+    if (series?.kind !== "stage") {
+      throw new ConflictError("Signale plutôt ton absence, séance par séance");
+    }
+    const now = deps.clock.now();
+    const sessions = (await repositories.events.listSeriesEvents(organizationId, series.id)).filter(
+      (event) => event.status === "published",
+    );
+    const first = sessions[0];
+    if (!first || first.startsAt <= now) {
+      throw new ConflictError("Le stage a commencé : contacte l'atelier pour annuler");
+    }
+    const policy = cancellationPolicyOf(first.modules, await repositories.settings.get(organizationId));
+    const refundPercent = isWithinFreeCancellation({
+      startsAt: first.startsAt,
+      now,
+      freeCancellationHours: policy.freeCancellationHours,
+    })
+      ? 100
+      : policy.lateCancellationRefundPercent;
+    const bookings = await repositories.enrollments.listBookings(found.id);
+    for (const session of sessions) {
+      const booking = bookings.find(
+        (entry) => entry.eventId === session.id && SEAT_HOLDING_STATUSES.has(entry.status),
+      );
+      if (booking) {
+        await releaseSession(repositories, actor, booking, now, {
+          action: "booking.unenrolled",
+          absentAt: null,
+        });
+      }
+    }
+    const enrollment = await repositories.enrollments.update(organizationId, found.id, {
+      cancelledAt: now,
+    });
+    await repositories.activity.record({
+      organizationId,
+      entityType: "enrollment",
+      entityId: found.id,
+      action: "enrollment.cancelled",
+      ...actorRef(actor),
+      data: {
+        reason: "customer_request",
+        refundPercent,
+        refundCents: Math.round((found.amountCents * refundPercent) / 100),
+      },
+    });
+    return { enrollment, refundPercent };
   });
 }

@@ -54,9 +54,11 @@ export function assertEventConsistency(
     issues.push({ path: "priceCents", message: "Un événement gratuit n'a pas de prix" });
   }
   const pricing = event.modules.pricing;
-  const paid = pricing
-    ? [...pricing.rates, ...(pricing.options ?? [])].some((entry) => entry.priceCents > 0)
-    : event.priceCents > 0;
+  const paid = event.modules.duration
+    ? event.modules.duration.options.some((option) => option.priceCents > 0)
+    : pricing
+      ? [...pricing.rates, ...(pricing.options ?? [])].some((entry) => entry.priceCents > 0)
+      : event.priceCents > 0;
   if (event.paymentMode !== "free" && !paid) {
     issues.push({
       path: pricing ? "prices" : "priceCents",

@@ -20,6 +20,7 @@ import { checkSubmissionRules, recordRuleRuns, runBookingRules } from "../rules/
 import { type Actor, actorRef, assertMemberCan } from "../shared/actor";
 import { ConflictError, ForbiddenError, NotFoundError, ValidationError } from "../shared/errors";
 import { generateToken, hashToken } from "../shared/tokens";
+import { findSlotHold, lockSlotEvent } from "../slots/use-cases";
 import type { Deps, Repositories } from "../shared/unit-of-work";
 import { validate } from "../shared/validate";
 import { decideBookingStatus, SEAT_HOLDING_STATUSES } from "./capacity";
@@ -84,12 +85,30 @@ export async function createEventBooking(
   const manageTokenHash = await hashToken(manageToken);
 
   const { booking, giftCardCents } = await deps.uow.run(async (repositories) => {
-    const locked = await repositories.events.lockForBooking(actor.organizationId, data.eventId);
+    const now = deps.clock.now();
+    // Créneau gardé : revérifié sous le verrou des créneaux, son événement créé au besoin.
+    const hold = data.holdId
+      ? await findSlotHold(repositories, actor.organizationId, data.holdId)
+      : null;
+    const locked = hold
+      ? await lockSlotEvent(
+          repositories,
+          actor,
+          {
+            eventTypeId: hold.eventTypeId,
+            startsAt: hold.startsAt,
+            durationId: hold.durationId,
+            staffMemberId: hold.staffMemberId,
+            seats: data.seats,
+          },
+          now,
+          hold.id,
+        )
+      : await repositories.events.lockForBooking(actor.organizationId, data.eventId as string);
     if (!locked || (actor.type === "customer" && locked.event.status === "draft")) {
-      throw new NotFoundError("Événement", data.eventId);
+      throw new NotFoundError("Événement", data.eventId ?? "");
     }
     const { event } = locked;
-    const now = deps.clock.now();
 
     if (event.status !== "published") {
       throw new ConflictError(
@@ -124,6 +143,7 @@ export async function createEventBooking(
       equipment: data.equipment,
       selection: { rates: data.rates, options: data.options },
     });
+    if (hold) await repositories.slots.deleteHold(actor.organizationId, hold.id);
     // Sur liste d'attente, rien à payer encore : le bon n'est pas touché.
     const giftCardCents =
       data.giftCardCode && created.status !== "waitlisted"
@@ -170,6 +190,8 @@ export async function insertEventBooking(
     makeupForBookingId?: string;
     /** Séances 2 et suivantes d'une inscription à la série : les règles n'envoient rien de plus. */
     quietRules?: boolean;
+    /** Stage « même matériel » : le matériel est réservé ensuite pour toutes les séances. */
+    skipEquipment?: boolean;
   },
 ): Promise<Booking> {
   if (event.endsAt <= now) throw new ConflictError("Cet événement est terminé");
@@ -282,7 +304,7 @@ export async function insertEventBooking(
     answered.participants,
   );
   // Matériel avancé : réservé avec la place (sauf liste d'attente, rien n'est encore retenu).
-  if (status !== "waitlisted") {
+  if (status !== "waitlisted" && !data.skipEquipment) {
     await reserveEquipment(
       repositories,
       actor,

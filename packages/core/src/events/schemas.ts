@@ -96,6 +96,19 @@ const eventFields = {
   fieldValues: rawFieldValuesSchema,
 };
 
+/** Une séance d'un stage : ses horaires et son sujet. */
+export const stageSessionSchema = z
+  .object({
+    startsAt: z.coerce.date({ error: "Date ou heure invalide" }),
+    endsAt: z.coerce.date({ error: "Date ou heure invalide" }),
+    topic: optionalText(120),
+  })
+  .refine((session) => session.endsAt > session.startsAt, {
+    message: "La fin doit être après le début",
+    path: ["endsAt"],
+  });
+export type StageSessionInput = z.input<typeof stageSessionSchema>;
+
 export const createEventSchema = z.object({
   eventTypeId: z.uuid(),
   ...eventFields,
@@ -115,9 +128,26 @@ export const createEventSchema = z.object({
   staffMemberId: eventFields.staffMemberId.default(null),
   equipmentUnits: eventFields.equipmentUnits.optional(),
   recurrence: recurrenceSchema.optional(),
-});
+  /** Module « Durée au choix » : la durée de l'événement (fixe sa fin et son prix). */
+  durationId: z.string().max(40).optional(),
+  /**
+   * Module « Plusieurs séances » : les séances du stage (une série, une inscription). Les prix
+   * (`priceCents`, `prices`) sont alors ceux de tout le stage.
+   */
+  sessions: z.array(stageSessionSchema).min(1, "Ajoute une séance").max(30).optional(),
+  /** Stage : inscription possible à une seule séance (absent : réglage du type). */
+  singleSession: z.boolean().optional(),
+  /** Stage : le même matériel à chaque séance (absent : réglage du type). */
+  sameEquipment: z.boolean().optional(),
+})
+  .refine((input) => !(input.sessions && input.recurrence), {
+    message: "Un stage a ses séances : pas de répétition en plus",
+    path: ["recurrence"],
+  });
 export type CreateEventInput = z.input<typeof createEventSchema>;
 
 /** Mise à jour partielle : la cohérence est revérifiée sur l'événement fusionné. */
-export const updateEventSchema = z.object(eventFields).partial();
+export const updateEventSchema = z
+  .object({ ...eventFields, sessionTopic: optionalText(120) })
+  .partial();
 export type UpdateEventInput = z.input<typeof updateEventSchema>;

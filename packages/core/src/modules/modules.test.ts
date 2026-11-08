@@ -49,12 +49,18 @@ describe("registre des modules", () => {
     }
   });
 
-  it("les modules « Bientôt » n'ont pas de schéma et sont ignorés à l'enregistrement", () => {
-    const soon = MODULE_CATALOG.filter((module) => module.soon).map((module) => module.key);
-    expect(soon).toEqual(["sessions", "slots", "duration"]);
-    expect(eventTypeModulesSchema.parse({ sessions: {}, waitlist: {} })).toEqual({
+  it("plus aucun module « Bientôt » ; les clés inconnues sont ignorées à l'enregistrement", () => {
+    expect(MODULE_CATALOG.filter((module) => module.soon)).toEqual([]);
+    expect(eventTypeModulesSchema.parse({ inconnu: {}, waitlist: {} })).toEqual({
       waitlist: {},
     });
+  });
+
+  it("créneaux, plusieurs séances et inscription à la série s'excluent", () => {
+    const slots = MODULE_CATALOG.find((module) => module.key === "slots")?.defaults;
+    expect(eventTypeModulesSchema.safeParse({ slots, sessions: {} }).success).toBe(false);
+    expect(eventTypeModulesSchema.safeParse({ sessions: {}, series: {} }).success).toBe(false);
+    expect(eventTypeModulesSchema.safeParse({ slots, duration: undefined }).success).toBe(true);
   });
 
   it("les modèles déclarent des modules valides", () => {
