@@ -39,9 +39,12 @@ const day = (date: Date, timeZone: string, options: Intl.DateTimeFormatOptions) 
 export function EnrollmentProgress({
   progress,
   timeZone,
+  wide = false,
 }: {
   progress: EnrollmentProgressData;
   timeZone: string;
+  /** Carte à part (colonne de droite) : toute la largeur plutôt que 280 px. */
+  wide?: boolean;
 }) {
   const absences =
     progress.absences === 0
@@ -50,7 +53,12 @@ export function EnrollmentProgress({
         ? "Une absence signalée"
         : `${progress.absences} absences signalées`;
   return (
-    <div className="flex flex-col justify-between gap-4 rounded-2xl bg-field px-5 py-[18px] sm:w-[280px] sm:shrink-0">
+    <div
+      className={cn(
+        "flex flex-col justify-between gap-4 rounded-2xl bg-field px-5 py-[18px]",
+        !wide && "sm:w-[280px] sm:shrink-0",
+      )}
+    >
       <div className="flex flex-col gap-2.5">
         <p className="flex items-baseline justify-between gap-3">
           <span className="text-sm font-semibold leading-[18px] text-ink">Ton trimestre</span>
