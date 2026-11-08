@@ -190,6 +190,33 @@ describe("concurrence", () => {
     expect(await balanceOf(customerId, pass.id)).toBe(4);
   });
 
+  it("refuse la carte sur une réservation déjà en partie payée (bon cadeau)", async () => {
+    const event = await session();
+    const { pass, customerId } = await activePass(5);
+    const { booking: created } = await createCounterBooking(deps, owner, {
+      eventId: event.id,
+      seats: 1,
+      customerId,
+    });
+    await db.insert(payment).values({
+      organizationId,
+      bookingId: created.id,
+      kind: "charge",
+      status: "succeeded",
+      amountCents: 1000,
+      provider: "gift_card",
+      method: "gift_card",
+    });
+    await expect(
+      payBookingWithPassAsCustomer(
+        deps,
+        { organizationId, customerId },
+        { bookingId: created.id, passId: pass.id },
+      ),
+    ).rejects.toThrow(/en partie payée/);
+    expect(await balanceOf(customerId, pass.id)).toBe(5);
+  });
+
   it("retrouve la fiche du client connecté par l'e-mail de son compte, dans cet espace seulement", async () => {
     const mine = await newCustomer("Lea@Mail.com");
     expect(await findCustomerIdByEmail(db, organizationId, "lea@mail.com")).toBe(mine.id);

@@ -5,7 +5,6 @@ import { AbsenceButton, EnrollmentProgress } from "@/features/enrollments/enroll
 import { MyGiftCards } from "@/features/gift-cards/my-gift-cards";
 import {
   getCustomerHome,
-  getCustomerTerm,
   getMyGiftCards,
   reportCustomerAbsenceAction,
 } from "@/functions/customer-space";
@@ -16,13 +15,12 @@ const layout = getRouteApi("/$slug");
 /** Maquettes 8.2 et 8.6 : accueil de l'espace client chez un atelier. */
 export const Route = createFileRoute("/$slug/mon-espace/")({
   loader: async ({ params }) => {
-    const [home, term, { passes }, giftCards] = await Promise.all([
+    const [home, { passes }, giftCards] = await Promise.all([
       getCustomerHome({ data: params.slug }),
-      getCustomerTerm({ data: params.slug }),
       getMyPassSummary({ data: params.slug }),
       getMyGiftCards({ data: params.slug }),
     ]);
-    return { home, term, passes, giftCards };
+    return { home, passes, giftCards };
   },
   head: () => ({ meta: [{ title: "Mon espace" }, { name: "robots", content: "noindex" }] }),
   component: CustomerHome,
@@ -30,15 +28,20 @@ export const Route = createFileRoute("/$slug/mon-espace/")({
 
 function CustomerHome() {
   const workspace = layout.useLoaderData();
-  const { home, term, passes, giftCards } = Route.useLoaderData();
+  const { home, passes, giftCards } = Route.useLoaderData();
   const next = home.upcoming[0];
+  // Collé au prochain rendez-vous s'il est une séance de la série, sinon carte à part à droite.
+  const nextSeries = next?.series ?? null;
+  const otherSeries = nextSeries ? null : home.upcoming.find((card) => card.series)?.series;
   const remaining = passes.reduce((total, pass) => total + pass.remaining, 0);
   return (
     <CustomerHomePage
       workspace={workspace}
       data={home}
       slots={{
-        term: term && <EnrollmentProgress progress={term.progress} timeZone={workspace.timezone} />,
+        term: nextSeries && (
+          <EnrollmentProgress progress={nextSeries.progress} timeZone={workspace.timezone} />
+        ),
         nextActions: next?.enrollmentId && next.eventId && next.startsAt && (
           <AbsenceButton
             session={{ eventId: next.eventId, title: next.title, startsAt: next.startsAt }}
@@ -46,8 +49,15 @@ function CustomerHome() {
             onAbsent={() => reportCustomerAbsenceAction(workspace.slug, next.id)}
           />
         ),
-        aside: (passes.length > 0 || giftCards.length > 0) && (
+        aside: (passes.length > 0 || giftCards.length > 0 || otherSeries) && (
           <>
+            {otherSeries && (
+              <EnrollmentProgress
+                progress={otherSeries.progress}
+                timeZone={workspace.timezone}
+                wide
+              />
+            )}
             {passes.map((pass) => (
               <PassBalanceCard key={pass.id} pass={pass} timeZone={workspace.timezone} />
             ))}

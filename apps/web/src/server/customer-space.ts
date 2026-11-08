@@ -128,7 +128,15 @@ function toCard(row: AccountBooking, now: Date, candidates: Candidates) {
       ),
   };
 }
-export type CustomerBookingCard = ReturnType<typeof toCard>;
+
+/** Une réservation (ou une séance de série) à venir ou passée. */
+export type CustomerSessionCard = ReturnType<typeof toCard>;
+/** Inscription à une série (lot 30) : sa carte unique porte la progression et les séances à venir. */
+export interface CardSeries {
+  progress: NonNullable<Awaited<ReturnType<typeof enrollmentOf>>>["progress"];
+  sessions: CustomerSessionCard[];
+}
+export type CustomerBookingCard = CustomerSessionCard & { series: CardSeries | null };
 
 type Candidates = Map<string, Awaited<ReturnType<typeof listCandidatesForTypes>>>;
 
@@ -147,10 +155,39 @@ async function split(rows: AccountBooking[], now: Date) {
   for (const to of await listCandidatesForTypes(db, types, now))
     candidates.set(to.eventTypeId, [...(candidates.get(to.eventTypeId) ?? []), to]);
   const cards = rows.map((row) => toCard(row, now, candidates));
+  // Une seule carte par inscription à une série (celle de sa prochaine séance), pas une par séance.
+  const upcoming: CustomerBookingCard[] = [];
+  const series = new Map<string, CustomerBookingCard>();
+  for (const card of cards.filter((c) => isUpcoming(c, now))) {
+    const id = card.enrollmentId;
+    if (!id) {
+      upcoming.push({ ...card, series: null });
+      continue;
+    }
+    const head = series.get(id);
+    if (head) {
+      head.series?.sessions.push(card);
+      continue;
+    }
+    const row = rows.find((r) => r.id === card.id);
+    const enrollment = row
+      ? await enrollmentOf({ id: row.organizationId, paymentLinkUrl: null }, id, now)
+      : null;
+    const entry: CustomerBookingCard = {
+      ...card,
+      series: enrollment ? { progress: enrollment.progress, sessions: [card] } : null,
+    };
+    // Inscription introuvable ou annulée : on garde les séances à l'unité.
+    if (enrollment) series.set(id, entry);
+    upcoming.push(entry);
+  }
   return {
-    upcoming: cards.filter((card) => isUpcoming(card, now)),
+    upcoming,
     // Le plus récent d'abord.
-    history: cards.filter((card) => !isUpcoming(card, now)).reverse(),
+    history: cards
+      .filter((card) => !isUpcoming(card, now))
+      .map((card) => ({ ...card, series: null }))
+      .reverse(),
   };
 }
 
@@ -260,16 +297,6 @@ export async function customerHome(slug: string) {
   };
 }
 
-/** Lot 30 : « Ton trimestre » de l'accueil, l'inscription de la prochaine séance qui en a une. */
-export async function customerTerm(slug: string) {
-  const workspace = await publicWorkspace(slug);
-  const account = await requireAccount(slug);
-  const now = new Date();
-  const rows = await listAccountBookings(db, account.email, workspace.id);
-  const next = rows.find((row) => row.enrollmentId && isUpcoming(row, now));
-  return next?.enrollmentId ? enrollmentOf(workspace, next.enrollmentId, now) : null;
-}
-
 /** Lot 32 : « Mes bons cadeaux », ceux de l'e-mail du compte connecté (jamais un e-mail saisi). */
 export async function customerGiftCards(slug: string) {
   const workspace = await publicWorkspace(slug);
@@ -334,7 +361,8 @@ export async function customerBookingPage(slug: string, bookingId: string) {
     booking.kind === "event" &&
     booking.amountCents > 0 &&
     ["pending", "confirmed"].includes(booking.status) &&
-    ["none", "failed"].includes(booking.paymentStatus)
+    ["none", "failed"].includes(booking.paymentStatus) &&
+    money.paid === 0
       ? await findCustomerIdByEmail(db, workspace.id, account.email)
       : null;
   const pass = customerId

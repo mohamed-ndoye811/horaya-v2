@@ -10,7 +10,6 @@ import {
   customerHome,
   customerLoginPage,
   customerProfilePage,
-  customerTerm,
   deleteCustomerSpace,
   payCustomerBooking,
   reportCustomerAbsence,
@@ -37,11 +36,6 @@ export const getCustomerLoginPage = createServerFn({ method: "GET" })
 export const getCustomerHome = createServerFn({ method: "GET" })
   .validator(slug)
   .handler(({ data }) => customerHome(data));
-
-/** Lot 30 : « Ton trimestre » (null sans inscription en cours). */
-export const getCustomerTerm = createServerFn({ method: "GET" })
-  .validator(slug)
-  .handler(({ data }) => customerTerm(data));
 
 /** Lot 32 : bons cadeaux utilisables du client connecté (son e-mail vient de la session). */
 export const getMyGiftCards = createServerFn({ method: "GET" })
