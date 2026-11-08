@@ -85,7 +85,20 @@ export function eventRepository(db: Executor): EventRepository {
     },
 
     async insert(values) {
-      const [created] = await db.insert(event).values(values).returning();
+      const [created] = await db
+        .insert(event)
+        .values(values)
+        .returning()
+        .catch((error: unknown) => {
+          // Module Créneaux : intervenant ou créneau déjà pris (contraintes d'exclusion).
+          const code =
+            (error as { cause?: { code?: string } }).cause?.code ??
+            (error as { code?: string }).code;
+          if (code === "23P01") {
+            throw new ConflictError("Ce créneau vient d'être pris : choisis-en un autre");
+          }
+          throw error;
+        });
       return created as Event;
     },
 
