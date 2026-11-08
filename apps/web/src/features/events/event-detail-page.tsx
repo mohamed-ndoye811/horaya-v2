@@ -1,9 +1,11 @@
-import { fieldsOfScope } from "@horaya/core";
+import { fieldsOfScope, minimumDecisionAt } from "@horaya/core";
+import { useState, useTransition } from "react";
 import { BookingRowActions, CheckInToggle } from "@/components/app/booking-actions";
 import { useImageUpload } from "@/components/app/image-upload";
 import { PageHeader } from "@/components/app/page-header";
 import { CategorySwatch } from "@/components/ui/avatar";
 import { StatusBadge } from "@/components/ui/badge";
+import { Banner } from "@/components/ui/banner";
 import { ButtonLink } from "@/components/ui/button";
 import { MoneyCell, PersonCell } from "@/components/ui/cells";
 import { DataTable } from "@/components/ui/data-table";
@@ -13,7 +15,7 @@ import { Stat } from "@/components/ui/stat";
 import { bookingStatusBadge, eventStatusBadge } from "@/components/ui/status";
 import { Tabs } from "@/components/ui/tabs";
 import { SeriesPanel } from "@/features/enrollments/series-panel";
-import type { getEvent } from "@/functions/events";
+import { type getEvent, keepEventAction } from "@/functions/events";
 import { cn } from "@/lib/cn";
 import { meshCover } from "@/lib/cover";
 import { answerRows } from "@/lib/fields";
@@ -21,11 +23,65 @@ import {
   formatEventRange,
   formatHour,
   formatMoney,
+  formatOpening,
   formatRelativeDateTime,
   PAYMENT_MODE_LABELS,
 } from "@/lib/format";
+import { useRouter } from "@/lib/navigation";
 import { EventActions } from "./event-actions";
 import { EventItems } from "./event-items";
+
+/**
+ * Seuil de maintien (module Places) pas encore atteint : date de la décision et « Maintenir
+ * quand même », qui retire le seuil de cet événement.
+ */
+function MinimumBanner({
+  eventId,
+  seats,
+  minimum,
+  decideAt,
+  timeZone,
+}: {
+  eventId: string;
+  seats: number;
+  minimum: number;
+  decideAt: Date;
+  timeZone: string;
+}) {
+  const router = useRouter();
+  const [pending, startTransition] = useTransition();
+  const [error, setError] = useState<string | null>(null);
+  return (
+    <Banner
+      tone={error ? "danger" : "warning"}
+      action={
+        <button
+          type="button"
+          disabled={pending}
+          onClick={() =>
+            startTransition(async () => {
+              const result = await keepEventAction(eventId);
+              if (result.error) setError(result.error);
+              else router.refresh();
+            })
+          }
+        >
+          {pending ? "Un instant…" : "Maintenir quand même"}
+        </button>
+      }
+    >
+      {error ?? (
+        <>
+          <strong>
+            {seats} inscrit{seats > 1 ? "s" : ""} sur {minimum}
+          </strong>{" "}
+          nécessaires : sans inscriptions d'ici le {formatOpening(decideAt, timeZone)}, l'événement
+          sera annulé et chaque inscrit prévenu.
+        </>
+      )}
+    </Banner>
+  );
+}
 
 /** Écran 15 : fiche d'un événement côté équipe. */
 export function EventDetailPage({
@@ -54,6 +110,8 @@ export function EventDetailPage({
     null,
   );
   const clock = new Intl.DateTimeFormat("fr-FR", { hour: "2-digit", minute: "2-digit", timeZone });
+  const minimum = event.modules.places?.minimum;
+  const decideAt = minimumDecisionAt(event.startsAt, event.modules.places);
 
   return (
     <>
@@ -83,6 +141,15 @@ export function EventDetailPage({
         }
       />
 
+      {minimum && decideAt && event.status === "published" && event.seatsHeld < minimum.seats && (
+        <MinimumBanner
+          eventId={event.id}
+          seats={event.seatsHeld}
+          minimum={minimum.seats}
+          decideAt={decideAt}
+          timeZone={timeZone}
+        />
+      )}
       <div className="reveal-group grid grid-cols-2 gap-3 px-4 xl:grid-cols-[236px_repeat(4,minmax(0,1fr))]">
         <EventCover id={event.id} cover={event.coverImageUrl} color={event.typeColor} />
         <Stat

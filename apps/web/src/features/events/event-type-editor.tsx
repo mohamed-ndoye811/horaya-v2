@@ -1,42 +1,38 @@
 import {
+  ageLabel,
   BOOKING_NOUNS,
   type BookingNoun,
-  type BookingRules,
+  bookingWindow,
+  type CancellationPolicy,
+  type EventModules,
   type EventTypeField,
   eventTypeFieldsSchema,
   FIELD_TYPES,
   type FieldScope,
   fieldsOfScope,
+  withModuleFields,
 } from "@horaya/core";
 import { isRedirect, useRouter } from "@tanstack/react-router";
-import { type ReactNode, useState, useTransition } from "react";
+import { useState, useTransition } from "react";
 import { FieldInputs } from "@/components/app/field-inputs";
 import { PageHeader } from "@/components/app/page-header";
-import { Collapse } from "@/components/motion/collapse";
 import { ActiveIndicator } from "@/components/motion/indicator";
 import { PresenceItem, PresenceList } from "@/components/motion/presence";
 import { ActionBar } from "@/components/ui/action-bar";
 import { Button, ButtonLink } from "@/components/ui/button";
 import { AffixInput, Checkbox, Field, inputClasses } from "@/components/ui/field";
 import { FormAlert } from "@/components/ui/form-alert";
-import {
-  CalendarIcon,
-  ChevronDown,
-  ReceiptIcon,
-  TicketIcon,
-  UsersIcon,
-} from "@/components/ui/icons";
 import { FormSection } from "@/components/ui/section";
 import { Select } from "@/components/ui/select";
-import { Switch } from "@/components/ui/switch";
 import { archiveEventTypeAction, saveEventType } from "@/functions/events";
 import { cn } from "@/lib/cn";
 import { BOOKING_NOUN_LABELS, FIELD_TYPE_LABELS } from "@/lib/fields";
-import { formatMoney } from "@/lib/format";
+import { formatMoney, formatOpening } from "@/lib/format";
 import { centsToInput, parseEuroToCents } from "@/lib/money";
 import { useFormAction } from "@/lib/use-form-action";
 import type { FormState } from "@/server/form-state";
 import { type EditableField, FieldListEditor } from "./field-list-editor";
+import { ModuleList } from "./module-editor";
 
 export const TYPE_COLORS = [
   "#528D74",
@@ -60,15 +56,6 @@ const DURATIONS: Array<[string, string]> = [
   ["1440", "1 jour"],
 ];
 
-const ADVANCE: Array<[string, string]> = [
-  ["", "le début"],
-  ["2", "2 h avant"],
-  ["24", "J-1"],
-  ["48", "J-2"],
-  ["72", "J-3"],
-  ["168", "J-7"],
-];
-
 export interface EventTypeEditorValues {
   id: string | null;
   name: string;
@@ -76,70 +63,44 @@ export interface EventTypeEditorValues {
   bookingNoun: BookingNoun;
   defaultDurationMinutes: number | null;
   defaultPriceCents: number | null;
-  defaultCapacity: number | null;
-  requiresApproval: boolean;
-  bookingRules: BookingRules;
+  modules: EventModules;
   fields: EventTypeField[];
   eventCount: number;
   /** Événements à venir sans inscription (« Appliquer aussi aux N événements à venir »). */
   upcomingUnbooked: number;
   /** Nouveau type : modèle ou type d'origine (« Créé depuis le modèle « Cours collectif » »). */
   origin: string | null;
+  /** Règle d'annulation de la structure (module Annulation sans réglage). */
+  structure: CancellationPolicy;
+  timeZone: string;
 }
 
 /** Les champs d'une liste complète, rangés par portée (l'ordre de chaque portée est gardé). */
 const byScope = (fields: EditableField[], scope: FieldScope) =>
   fields.filter((field) => field.scope === scope);
 
-/** Ligne de « Fonctionnement » qui s'ouvre sur ses réglages (maquette 9.1, section 2). */
-function SettingRow({
-  icon,
-  title,
-  summary,
-  open,
-  onToggle,
-  children,
-}: {
-  icon: ReactNode;
-  title: string;
-  summary: string;
-  open: boolean;
-  onToggle: () => void;
-  children: ReactNode;
-}) {
-  return (
-    <div
-      className={cn(
-        "flex flex-col rounded-2xl transition-colors",
-        open ? "border-[1.5px] border-ink bg-surface" : "bg-field",
-      )}
-    >
-      <button
-        type="button"
-        onClick={onToggle}
-        aria-expanded={open}
-        className="flex items-center gap-3.5 p-3 text-left"
-      >
-        <span
-          className={cn(
-            "flex size-9 shrink-0 items-center justify-center rounded-[10px] transition-colors",
-            open ? "bg-ink text-on-ink" : "bg-surface text-ink",
-          )}
-        >
-          {icon}
-        </span>
-        <span className="flex min-w-0 grow flex-col gap-0.5">
-          <span className="text-[15px] font-semibold leading-5 text-ink">{title}</span>
-          <span className="text-[13px] leading-[17px] text-ink-muted">{summary}</span>
-        </span>
-        <ChevronDown className={cn("mr-1.5 shrink-0 transition-transform", open && "rotate-180")} />
-      </button>
-      {/* Replié, les réglages restent dans le formulaire (envoyés avec le reste). */}
-      <Collapse keepMounted open={open}>
-        <div className="flex flex-col gap-4 px-3 pb-4 sm:pl-[62px]">{children}</div>
-      </Collapse>
-    </div>
-  );
+/** Ce que les modules changent pour le visiteur (aperçu des onglets Page et Inscription). */
+function moduleNotes(modules: EventModules, timeZone: string): string[] {
+  const { opening, access, places, messages } = modules;
+  // Exemple : un événement dans trois semaines, à 18 h.
+  const sample = new Date(Date.now() + 21 * 86_400_000);
+  const { opensAt } = bookingWindow(sample, opening);
+  const tags = access?.tags ?? [];
+  return [
+    opening?.opensAt && opensAt
+      ? `Inscriptions ouvertes le ${formatOpening(opensAt, timeZone)}`
+      : null,
+    opening?.opensDaysBefore
+      ? `Inscriptions ouvertes ${opening.opensDaysBefore} jours avant`
+      : null,
+    ageLabel(access) ? `Réservé : ${ageLabel(access)}` : null,
+    tags.length ? `Réservé aux clients ${tags.map((tag) => `« ${tag} »`).join(" ou ")}` : null,
+    access?.inviteOnly ? "Sur invitation" : null,
+    modules.approval ? "L'organisateur valide chaque demande." : null,
+    modules.waitlist ? "Complet : liste d'attente." : null,
+    places?.minimum ? `Maintenu à partir de ${places.minimum.seats} inscrits` : null,
+    messages?.bring ? `À apporter : ${messages.bring}` : null,
+  ].filter((note): note is string => note !== null);
 }
 
 /** Aperçu en direct (colonne de droite) : inscription, formulaire d'événement, page publique. */
@@ -151,6 +112,8 @@ function Preview({
   priceCents,
   durationLabel,
   fields,
+  modules,
+  timeZone,
 }: {
   workspaceName: string;
   name: string;
@@ -159,6 +122,8 @@ function Preview({
   priceCents: number;
   durationLabel: string;
   fields: EditableField[];
+  modules: EventModules;
+  timeZone: string;
 }) {
   const [tab, setTab] = useState<"event" | "page" | "booking">("booking");
   const typed = fields as EventTypeField[];
@@ -168,6 +133,18 @@ function Preview({
     field.options?.[0] ??
     (field.type === "boolean" ? "Oui" : field.type === "number" ? "2" : (field.help ?? "…"));
   const price = Number.isFinite(priceCents) && priceCents > 0 ? formatMoney(priceCents) : null;
+  const notes = moduleNotes(modules, timeZone);
+  const noteList = notes.length > 0 && (
+    <ul className="relative flex flex-col gap-1.5 rounded-[14px] bg-field p-3.5 text-[13px] leading-[18px] text-ink/85">
+      <PresenceList>
+        {notes.map((note) => (
+          <PresenceItem as="li" key={note}>
+            {note}
+          </PresenceItem>
+        ))}
+      </PresenceList>
+    </ul>
+  );
   return (
     <aside className="animate-rise flex w-full shrink-0 flex-col gap-3 lg:sticky lg:top-4 lg:w-[340px]">
       <div className="flex items-center justify-between px-1">
@@ -236,6 +213,7 @@ function Preview({
                 enforceRequired={false}
                 className="flex flex-col gap-3"
               />
+              {noteList}
               <div
                 className="flex h-11 items-center justify-center rounded-full text-sm font-semibold text-white"
                 style={{ backgroundColor: color }}
@@ -244,6 +222,11 @@ function Preview({
                 {price ? ` · ${price}` : ""}
               </div>
             </>
+          )}
+          {tab === "event" && modules.places?.capacity && (
+            <p className="text-[13px] font-semibold text-ink-muted">
+              {modules.places.capacity} places proposées par défaut
+            </p>
           )}
           {tab === "event" &&
             (described.length > 0 ? (
@@ -301,6 +284,7 @@ function Preview({
                   Les informations publiques de « Ce que tu décris » s'affichent ici.
                 </p>
               )}
+              {noteList}
               {described.length > visible.length && (
                 <p className="text-xs text-ink-subtle">
                   {described.length - visible.length} information
@@ -335,16 +319,9 @@ export function EventTypeEditor({
   const [price, setPrice] = useState(
     initial.defaultPriceCents ? centsToInput(initial.defaultPriceCents) : "",
   );
-  const [capacity, setCapacity] = useState(initial.defaultCapacity?.toString() ?? "");
-  const [maxSeats, setMaxSeats] = useState(
-    initial.bookingRules.maxSeatsPerBooking?.toString() ?? "",
-  );
   const [duration, setDuration] = useState(initial.defaultDurationMinutes?.toString() ?? "");
-  const [approval, setApproval] = useState(initial.requiresApproval);
-  const [waitlist, setWaitlist] = useState(initial.bookingRules.waitlistEnabled ?? false);
-  const [advance, setAdvance] = useState(initial.bookingRules.minAdvanceHours?.toString() ?? "");
+  const [modules, setModules] = useState<EventModules>(initial.modules);
   const [fields, setFields] = useState<EditableField[]>(initial.fields);
-  const [open, setOpen] = useState<string | null>(null);
   const router = useRouter();
   const [archiving, startArchive] = useTransition();
   const [archiveError, setArchiveError] = useState<string | null>(null);
@@ -362,7 +339,16 @@ export function EventTypeEditor({
     setFields(all);
     return null;
   };
-  const toggle = (row: string) => setOpen((current) => (current === row ? null : row));
+  /** Modules changés ; une condition d'âge ajoute la question « Âge » (comme le core). */
+  const changeModules = (next: EventModules) => {
+    setModules(next);
+    try {
+      setFields(withModuleFields(fields as EventTypeField[], next));
+    } catch {
+      // Question « age » d'un autre type : le serveur renverra l'erreur à l'enregistrement.
+    }
+  };
+  const moduleCount = Object.keys(modules).length;
   const durationLabel = DURATIONS.find(([value]) => value === duration)?.[1] ?? "—";
   const priceCents = parseEuroToCents(price);
 
@@ -460,146 +446,57 @@ export function EventTypeEditor({
                 </Select>
               )}
             </Field>
+            {/* Valeurs de départ du formulaire d'événement (les tarifs arrivent au lot 35). */}
+            <div className="grid gap-4 sm:grid-cols-2">
+              <Field label="Prix par défaut" error={errors.defaultPriceCents}>
+                {(props) => (
+                  <AffixInput
+                    {...props}
+                    name="defaultPrice"
+                    inputMode="decimal"
+                    value={price}
+                    onChange={(event) => setPrice(event.target.value)}
+                    placeholder="Gratuit"
+                    suffix="€"
+                  />
+                )}
+              </Field>
+              <Field label="Durée par défaut">
+                {(props) => (
+                  <Select
+                    {...props}
+                    name="defaultDuration"
+                    value={duration}
+                    onChange={(event) => setDuration(event.target.value)}
+                  >
+                    {DURATIONS.map(([value, label]) => (
+                      <option key={value} value={value}>
+                        {label}
+                      </option>
+                    ))}
+                  </Select>
+                )}
+              </Field>
+            </div>
           </FormSection>
 
-          <FormSection number={2} title="Fonctionnement" description="Comment ce type marche">
-            <div className="flex flex-col gap-1.5">
-              <SettingRow
-                icon={<UsersIcon />}
-                title="Places"
-                summary={[
-                  capacity ? `${capacity} par défaut` : "Illimitées par défaut",
-                  maxSeats ? `${maxSeats} au plus par ${BOOKING_NOUN_LABELS[noun].singular}` : null,
-                  waitlist ? "liste d'attente quand c'est complet" : null,
-                ]
-                  .filter(Boolean)
-                  .join(" · ")}
-                open={open === "places"}
-                onToggle={() => toggle("places")}
-              >
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <Field label="Places par défaut" error={errors.defaultCapacity}>
-                    {(props) => (
-                      <AffixInput
-                        {...props}
-                        name="defaultCapacity"
-                        inputMode="numeric"
-                        value={capacity}
-                        onChange={(event) => setCapacity(event.target.value)}
-                        placeholder="Illimité"
-                        suffix="places"
-                      />
-                    )}
-                  </Field>
-                  <Field
-                    label={`Au plus par ${BOOKING_NOUN_LABELS[noun].singular}`}
-                    error={errors["bookingRules.maxSeatsPerBooking"]}
-                  >
-                    {(props) => (
-                      <AffixInput
-                        {...props}
-                        name="maxSeatsPerBooking"
-                        inputMode="numeric"
-                        value={maxSeats}
-                        onChange={(event) => setMaxSeats(event.target.value)}
-                        placeholder="Pas de limite"
-                        suffix="places"
-                      />
-                    )}
-                  </Field>
-                </div>
-                <Switch
-                  name="waitlistEnabled"
-                  checked={waitlist}
-                  onChange={(event) => setWaitlist(event.target.checked)}
-                  label="Liste d'attente quand c'est complet"
-                />
-              </SettingRow>
-              <SettingRow
-                icon={<ReceiptIcon />}
-                title="Prix"
-                summary={
-                  priceCents > 0
-                    ? `${formatMoney(priceCents)} par place par défaut`
-                    : "Gratuit par défaut"
-                }
-                open={open === "price"}
-                onToggle={() => toggle("price")}
-              >
-                <Field label="Prix par défaut" error={errors.defaultPriceCents}>
-                  {(props) => (
-                    <AffixInput
-                      {...props}
-                      name="defaultPrice"
-                      inputMode="decimal"
-                      value={price}
-                      onChange={(event) => setPrice(event.target.value)}
-                      placeholder="Gratuit"
-                      suffix="€"
-                    />
-                  )}
-                </Field>
-              </SettingRow>
-              <SettingRow
-                icon={<CalendarIcon />}
-                title="Durée"
-                summary={duration ? `${durationLabel} par défaut` : "Libre"}
-                open={open === "duration"}
-                onToggle={() => toggle("duration")}
-              >
-                <Field label="Durée par défaut">
-                  {(props) => (
-                    <Select
-                      {...props}
-                      name="defaultDuration"
-                      value={duration}
-                      onChange={(event) => setDuration(event.target.value)}
-                      className="sm:max-w-[260px]"
-                    >
-                      {DURATIONS.map(([value, label]) => (
-                        <option key={value} value={value}>
-                          {label}
-                        </option>
-                      ))}
-                    </Select>
-                  )}
-                </Field>
-              </SettingRow>
-              <SettingRow
-                icon={<TicketIcon />}
-                title={`Ouverture des ${BOOKING_NOUN_LABELS[noun].plural}`}
-                summary={[
-                  approval ? "Validation de chaque demande" : "Confirmées d'office",
-                  `en ligne jusqu'à ${ADVANCE.find(([value]) => value === advance)?.[1] ?? "le début"}`,
-                ].join(" · ")}
-                open={open === "opening"}
-                onToggle={() => toggle("opening")}
-              >
-                <Switch
-                  name="requiresApproval"
-                  checked={approval}
-                  onChange={(event) => setApproval(event.target.checked)}
-                  label="Valider chaque demande à la main"
-                />
-                <Field label="En ligne jusqu'à">
-                  {(props) => (
-                    <Select
-                      {...props}
-                      name="minAdvanceHours"
-                      value={advance}
-                      onChange={(event) => setAdvance(event.target.value)}
-                      className="sm:max-w-[260px]"
-                    >
-                      {ADVANCE.map(([value, label]) => (
-                        <option key={value} value={value}>
-                          {label}
-                        </option>
-                      ))}
-                    </Select>
-                  )}
-                </Field>
-              </SettingRow>
-            </div>
+          <FormSection
+            number={2}
+            title="Fonctionnement"
+            description="Comment ce type marche"
+            aside={`${moduleCount} module${moduleCount > 1 ? "s" : ""}`}
+          >
+            <input type="hidden" name="modules" value={JSON.stringify(modules)} />
+            <ModuleList
+              modules={modules}
+              onChange={changeModules}
+              context={{
+                noun: BOOKING_NOUN_LABELS[noun].singular,
+                structure: initial.structure,
+                timeZone: initial.timeZone,
+              }}
+              errors={errors}
+            />
           </FormSection>
 
           <input type="hidden" name="fields" value={JSON.stringify(fields)} />
@@ -720,6 +617,8 @@ export function EventTypeEditor({
           priceCents={priceCents}
           durationLabel={duration ? durationLabel : ""}
           fields={fields}
+          modules={modules}
+          timeZone={initial.timeZone}
         />
       </form>
     </div>

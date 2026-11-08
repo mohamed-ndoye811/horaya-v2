@@ -44,6 +44,8 @@ export interface EventTypeOption {
   defaultPriceCents: number | null;
   defaultCapacity: number | null;
   requiresApproval: boolean;
+  /** Module « Conditions d'accès » sur invitation. */
+  inviteOnly: boolean;
 }
 
 export interface EventFormValues {
@@ -138,6 +140,7 @@ export function EventForm({
     set({
       eventTypeId: id,
       requiresApproval: next.requiresApproval,
+      ...(next.inviteOnly ? { visibility: "invite_only" } : {}),
       ...(values.capacity === "" && next.defaultCapacity
         ? { capacity: String(next.defaultCapacity) }
         : {}),
