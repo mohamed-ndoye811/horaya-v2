@@ -43,6 +43,10 @@ export function emptyEventValues(
     requiresApproval: false,
     visibility: "public",
     highlights: "",
+    durationId: "",
+    sessions: [],
+    singleSession: false,
+    sameEquipment: false,
   };
 }
 
@@ -94,5 +98,9 @@ export function eventToValues(
     requiresApproval: event.requiresApproval,
     visibility: event.visibility,
     highlights: event.highlights.join(", "),
+    durationId: "",
+    sessions: [],
+    singleSession: false,
+    sameEquipment: false,
   };
 }

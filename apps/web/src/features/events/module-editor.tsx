@@ -1,6 +1,7 @@
 import {
   type CancellationPolicy,
   type DocumentsModule,
+  durationOf,
   type EventModules,
   fromZonedParts,
   MODULE_CATALOG,
@@ -8,6 +9,7 @@ import {
   type ModuleDefinition,
   type ModuleKey,
   moduleSummary,
+  nextWeekSlotCount,
   toZonedParts,
 } from "@horaya/core";
 import { type ReactNode, useRef, useState, useTransition } from "react";
@@ -32,6 +34,7 @@ import { formatOpening } from "@/lib/format";
 import { centsToInput, parseEuroToCents } from "@/lib/money";
 import { DepositPanel, PaymentMethodsPanel, PricingPanel } from "./money-panels";
 import { EquipmentPanel, LocationPanel, StaffPanel } from "./resources-panels";
+import { DurationPanel, SessionsPanel, SlotsPanel } from "./time-panels";
 
 /** Saisie d'un nombre entier : vide → réglage absent. */
 const whole = (value: string): number | undefined => {
@@ -62,6 +65,11 @@ const ICON_PATHS: Record<ModuleKey, string> = {
     "M12.6 2.6A2 2 0 0 0 11.2 2H4a2 2 0 0 0-2 2v7.2a2 2 0 0 0 .6 1.4l8.7 8.7a2.4 2.4 0 0 0 3.4 0l6.6-6.6a2.4 2.4 0 0 0 0-3.4zM7.5 8a.5.5 0 1 0 0-1 .5.5 0 0 0 0 1",
   deposit: "M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20M12 2a10 10 0 0 1 10 10H12z",
   payment_methods: "M2 7h20v12H2zM2 11h20M6 15h4",
+  sessions:
+    "M8 2v4M16 2v4M3 10h18M5 4h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01",
+  slots:
+    "M8 2v4M16 2v4M3 10h18M5 4h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2M12 14v2.5l1.5 1",
+  duration: "M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20M12 6v6l4 2",
 };
 
 function ModuleIcon({ moduleKey }: { moduleKey: ModuleKey }) {
@@ -146,6 +154,11 @@ export function ModuleList({
                   memberNames: Object.fromEntries(context.members.map((m) => [m.id, m.name])),
                   formatDate: (date) => formatOpening(date, context.timeZone),
                 })}
+                badge={
+                  key === "slots" && modules.slots
+                    ? slotBadge(modules, context.timeZone)
+                    : undefined
+                }
                 open={open === key || moduleErrors.length > 0}
                 onToggle={() => setOpen((current) => (current === key ? null : key))}
                 onRemove={() => remove(key)}
@@ -197,10 +210,13 @@ function ModuleRow({
   onToggle,
   onRemove,
   error,
+  badge,
   children,
 }: {
   moduleKey: ModuleKey;
   summary: string;
+  /** Aperçu en direct à droite du nom (« 14 créneaux la semaine prochaine »). */
+  badge?: string;
   open: boolean;
   onToggle: () => void;
   onRemove: () => void;
@@ -235,6 +251,11 @@ function ModuleRow({
           <span className="text-[15px] font-semibold leading-5 text-ink">{name}</span>
           <span className="text-[13px] leading-[17px] text-ink-muted">{summary}</span>
         </span>
+        {badge && (
+          <span className="hidden shrink-0 rounded-full bg-success-bg px-2.5 py-1 text-label font-semibold leading-4 text-success sm:inline">
+            {badge}
+          </span>
+        )}
         <span className="flex w-6 shrink-0 justify-center">
           <ChevronDown
             className={cn(
@@ -259,6 +280,24 @@ function ModuleRow({
       </Collapse>
     </div>
   );
+}
+
+/** Aperçu des créneaux : combien la semaine prochaine (durée par défaut du type). */
+function slotBadge(modules: EventModules, timeZone: string): string {
+  if (!modules.slots) return "";
+  try {
+    const count = nextWeekSlotCount(
+      modules.slots,
+      modules.duration ? durationOf(modules.duration).minutes : 60,
+      timeZone,
+      new Date(),
+    );
+    return count === 0
+      ? "Aucun créneau la semaine prochaine"
+      : `${count} créneau${count > 1 ? "x" : ""} la semaine prochaine`;
+  } catch {
+    return "";
+  }
 }
 
 type Setter = <K extends ModuleKey>(key: K, value: EventModules[K]) => void;
@@ -316,6 +355,12 @@ function ModulePanel({
       return (
         <PaymentMethodsPanel modules={modules} set={set} passPlans={context.passPlans ?? []} />
       );
+    case "slots":
+      return <SlotsPanel modules={modules} set={set} members={context.members} />;
+    case "duration":
+      return <DurationPanel modules={modules} set={set} />;
+    case "sessions":
+      return <SessionsPanel modules={modules} set={set} />;
     case "documents":
       return (
         <DocumentsPanel

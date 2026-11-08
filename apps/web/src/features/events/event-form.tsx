@@ -1,6 +1,8 @@
 import {
   type DepositModule,
+  type DurationOption,
   defaultRate,
+  durationLabel,
   type EventTypeField,
   type FieldValues,
   fieldsOfScope,
@@ -36,6 +38,7 @@ import { centsToInput, parseEuroToCents } from "@/lib/money";
 import { useFormAction } from "@/lib/use-form-action";
 import { useInvalidMessage } from "@/lib/use-invalid-message";
 import type { FormState } from "@/server/form-state";
+import { type SessionDraft, StageSessions } from "./stage-sessions";
 
 export interface EventTypeOption {
   id: string;
@@ -59,6 +62,13 @@ export interface EventTypeOption {
   needs: Array<{ id: string; itemTypeId: string }>;
   /** Module Lieu. */
   locationMode: "venue" | "online" | "client" | null;
+  /** Module « Durée au choix » : les durées du type (l'événement en prend une). */
+  durations: DurationOption[] | null;
+  defaultDurationId: string | null;
+  /** Module « Plusieurs séances » : réglages de départ d'un stage. */
+  stage: { singleSession: boolean; sameEquipment: boolean } | null;
+  /** Module Créneaux : les événements naissent des réservations. */
+  slots: boolean;
 }
 
 /** Équipe et exemplaires de l'espace, pour l'intervenant et les exemplaires proposés. */
@@ -120,6 +130,12 @@ export interface EventFormValues {
   visibility: string;
   /** Points forts séparés par des virgules (« Déjeuner inclus, Accessible PMR »). */
   highlights: string;
+  /** Module « Durée au choix » : la durée de l'événement. */
+  durationId: string;
+  /** Module « Plusieurs séances » : les séances du stage et ses deux réglages. */
+  sessions: SessionDraft[];
+  singleSession: boolean;
+  sameEquipment: boolean;
 }
 
 const PAYMENT_OPTIONS = [
@@ -192,10 +208,22 @@ export function EventForm({
   function changeType(id: string) {
     const next = types.find((entry) => entry.id === id);
     if (!next || eventId) return set({ eventTypeId: id });
-    const end = next.defaultDurationMinutes
-      ? shift(values.startDate, values.startTime, next.defaultDurationMinutes)
-      : null;
+    const duration =
+      next.durations?.find((option) => option.id === next.defaultDurationId) ?? next.durations?.[0];
+    const minutes = duration?.minutes ?? next.defaultDurationMinutes;
+    const end = minutes ? shift(values.startDate, values.startTime, minutes) : null;
     set({
+      durationId: duration?.id ?? "",
+      // Stage : une première séance à la date choisie, à compléter.
+      ...(next.stage
+        ? {
+            singleSession: next.stage.singleSession,
+            sameEquipment: next.stage.sameEquipment,
+            sessions: values.sessions.length
+              ? values.sessions
+              : [{ date: values.startDate, start: "10:00", end: "17:00", topic: "" }],
+          }
+        : {}),
       eventTypeId: id,
       requiresApproval: next.requiresApproval,
       ...(next.inviteOnly ? { visibility: "invite_only" } : {}),
@@ -244,6 +272,10 @@ export function EventForm({
   }, [recurring, start, frequency, count]);
 
   const pricing = type?.pricing ?? null;
+  // Stage : les séances remplacent la date unique et la répétition (à la création).
+  const stage = !eventId && type?.stage ? type.stage : null;
+  const durations = !eventId && !stage && !type?.slots ? (type?.durations ?? null) : null;
+  const firstSession = values.sessions[0];
   const priceCents =
     values.paymentMode === "free"
       ? 0
@@ -382,115 +414,177 @@ export function EventForm({
           <div className="xl:hidden">{visibilityField("visibility")}</div>
         </FormSection>
 
-        <FormSection number={2} title="Date & lieu">
-          <div className="grid gap-4 sm:grid-cols-[1fr_128px] lg:grid-cols-[1fr_128px_1fr_128px]">
-            <Field label="Début" required error={errors.startsAt}>
-              {(field) => (
-                <AffixInput
-                  {...field}
-                  type="date"
-                  name="startDate"
-                  required
-                  value={values.startDate}
-                  onChange={(event) => set({ startDate: event.target.value })}
-                  leading={<CalendarIcon size={16} />}
-                />
-              )}
-            </Field>
-            <Field label="Heure">
-              {(field) => (
-                <AffixInput
-                  {...field}
-                  type="time"
-                  name="startTime"
-                  required
-                  value={values.startTime}
-                  onChange={(event) => set({ startTime: event.target.value })}
-                  mono
-                />
-              )}
-            </Field>
-            <Field label="Fin" required error={errors.endsAt}>
-              {(field) => (
-                <AffixInput
-                  {...field}
-                  type="date"
-                  name="endDate"
-                  required
-                  value={values.endDate}
-                  onChange={(event) => set({ endDate: event.target.value })}
-                  leading={<CalendarIcon size={16} />}
-                />
-              )}
-            </Field>
-            <Field label="Heure">
-              {(field) => (
-                <AffixInput
-                  {...field}
-                  type="time"
-                  name="endTime"
-                  required
-                  value={values.endTime}
-                  onChange={(event) => set({ endTime: event.target.value })}
-                  mono
-                />
-              )}
-            </Field>
-          </div>
-
-          {!eventId && (
-            <div className="flex flex-wrap items-center justify-between gap-4 rounded-xl border border-line-soft bg-field px-4 py-4">
-              <Switch
-                name="recurring"
-                checked={recurring}
-                onChange={(event) => setRecurring(event.target.checked)}
-                label="Événement récurrent"
-                description={
-                  recurring
-                    ? nextOccurrence
-                      ? `Prochaine occurrence : ${formatWeekdayShort(nextOccurrence, "UTC")} ${nextOccurrence.getUTCDate()} ${nextOccurrence.toLocaleDateString("fr-FR", { month: "long", timeZone: "UTC" })}`
-                      : "Choisis une date de début"
-                    : "Une seule date"
-                }
+        <FormSection
+          number={2}
+          title={stage ? "Les séances" : "Date & lieu"}
+          description={stage ? "Une seule inscription pour toutes les dates" : undefined}
+        >
+          {stage ? (
+            <>
+              {/* Repères de l'événement : la première séance (le serveur lit les séances). */}
+              <input type="hidden" name="startDate" value={firstSession?.date ?? ""} />
+              <input type="hidden" name="startTime" value={firstSession?.start ?? ""} />
+              <input type="hidden" name="endDate" value={firstSession?.date ?? ""} />
+              <input type="hidden" name="endTime" value={firstSession?.end ?? ""} />
+              <StageSessions
+                sessions={values.sessions}
+                onChange={(sessions) => set({ sessions })}
+                pricing={pricing}
+                prices={values.prices}
+                onPricesChange={(prices) => set({ prices })}
+                price={values.price}
+                onPriceChange={(price) => set({ price })}
+                paid={values.paymentMode !== "free"}
+                singleSession={values.singleSession}
+                sameEquipment={values.sameEquipment}
+                onSettingsChange={(patch) => set(patch)}
+                hasEquipment={(type?.needs.length ?? 0) > 0}
+                error={errors.sessions ?? errors.prices}
               />
-              <Collapse open={recurring}>
-                <div className="flex flex-wrap items-center gap-3">
-                  <input type="hidden" name="frequency" value={frequency.split(":")[0]} />
-                  <input type="hidden" name="interval" value={frequency.split(":")[1]} />
-                  <Select
-                    variant="compact"
-                    aria-label="Fréquence"
-                    value={frequency}
-                    onChange={(event) => setFrequency(event.target.value)}
-                    className="w-52"
-                  >
-                    {FREQUENCIES.map((option) => (
-                      <option key={option.value} value={option.value}>
-                        {option.label}
-                      </option>
-                    ))}
-                  </Select>
-                  <label
-                    className="flex items-center gap-2 text-sm font-semibold text-ink"
-                    {...countInvalid.handlers}
-                  >
-                    <input
-                      type="number"
-                      name="count"
-                      min={2}
-                      max={104}
-                      value={count}
-                      onChange={(event) => setCount(event.target.value)}
-                      className={cn(inputClasses("sm"), "w-20 font-mono")}
+            </>
+          ) : (
+            <>
+              {durations && (
+                <Field label="Durée" error={errors.durationId}>
+                  {(field) => (
+                    <Select
+                      {...field}
+                      name="durationId"
+                      value={values.durationId}
+                      onChange={(event) => {
+                        const option = durations.find((entry) => entry.id === event.target.value);
+                        const end = option
+                          ? shift(values.startDate, values.startTime, option.minutes)
+                          : null;
+                        set({
+                          durationId: event.target.value,
+                          ...(end ? { endDate: end.date, endTime: end.time } : {}),
+                        });
+                      }}
+                      className="sm:max-w-[360px]"
+                    >
+                      {durations.map((option) => (
+                        <option key={option.id} value={option.id}>
+                          {option.label === durationLabel(option.minutes)
+                            ? option.label
+                            : `${option.label} (${durationLabel(option.minutes)})`}{" "}
+                          · {(option.priceCents / 100).toLocaleString("fr-FR")} €
+                        </option>
+                      ))}
+                    </Select>
+                  )}
+                </Field>
+              )}
+              <div className="grid gap-4 sm:grid-cols-[1fr_128px] lg:grid-cols-[1fr_128px_1fr_128px]">
+                <Field label="Début" required error={errors.startsAt}>
+                  {(field) => (
+                    <AffixInput
+                      {...field}
+                      type="date"
+                      name="startDate"
+                      required
+                      value={values.startDate}
+                      onChange={(event) => set({ startDate: event.target.value })}
+                      leading={<CalendarIcon size={16} />}
                     />
-                    fois
-                  </label>
+                  )}
+                </Field>
+                <Field label="Heure">
+                  {(field) => (
+                    <AffixInput
+                      {...field}
+                      type="time"
+                      name="startTime"
+                      required
+                      value={values.startTime}
+                      onChange={(event) => set({ startTime: event.target.value })}
+                      mono
+                    />
+                  )}
+                </Field>
+                <Field label="Fin" required error={errors.endsAt}>
+                  {(field) => (
+                    <AffixInput
+                      {...field}
+                      type="date"
+                      name="endDate"
+                      required
+                      value={values.endDate}
+                      onChange={(event) => set({ endDate: event.target.value })}
+                      leading={<CalendarIcon size={16} />}
+                    />
+                  )}
+                </Field>
+                <Field label="Heure">
+                  {(field) => (
+                    <AffixInput
+                      {...field}
+                      type="time"
+                      name="endTime"
+                      required
+                      value={values.endTime}
+                      onChange={(event) => set({ endTime: event.target.value })}
+                      mono
+                    />
+                  )}
+                </Field>
+              </div>
+
+              {!eventId && (
+                <div className="flex flex-wrap items-center justify-between gap-4 rounded-xl border border-line-soft bg-field px-4 py-4">
+                  <Switch
+                    name="recurring"
+                    checked={recurring}
+                    onChange={(event) => setRecurring(event.target.checked)}
+                    label="Événement récurrent"
+                    description={
+                      recurring
+                        ? nextOccurrence
+                          ? `Prochaine occurrence : ${formatWeekdayShort(nextOccurrence, "UTC")} ${nextOccurrence.getUTCDate()} ${nextOccurrence.toLocaleDateString("fr-FR", { month: "long", timeZone: "UTC" })}`
+                          : "Choisis une date de début"
+                        : "Une seule date"
+                    }
+                  />
+                  <Collapse open={recurring}>
+                    <div className="flex flex-wrap items-center gap-3">
+                      <input type="hidden" name="frequency" value={frequency.split(":")[0]} />
+                      <input type="hidden" name="interval" value={frequency.split(":")[1]} />
+                      <Select
+                        variant="compact"
+                        aria-label="Fréquence"
+                        value={frequency}
+                        onChange={(event) => setFrequency(event.target.value)}
+                        className="w-52"
+                      >
+                        {FREQUENCIES.map((option) => (
+                          <option key={option.value} value={option.value}>
+                            {option.label}
+                          </option>
+                        ))}
+                      </Select>
+                      <label
+                        className="flex items-center gap-2 text-sm font-semibold text-ink"
+                        {...countInvalid.handlers}
+                      >
+                        <input
+                          type="number"
+                          name="count"
+                          min={2}
+                          max={104}
+                          value={count}
+                          onChange={(event) => setCount(event.target.value)}
+                          className={cn(inputClasses("sm"), "w-20 font-mono")}
+                        />
+                        fois
+                      </label>
+                    </div>
+                  </Collapse>
                 </div>
-              </Collapse>
-            </div>
-          )}
-          {(countInvalid.message ?? errors.recurrence) && (
-            <FieldError>{countInvalid.message ?? errors.recurrence}</FieldError>
+              )}
+              {(countInvalid.message ?? errors.recurrence) && (
+                <FieldError>{countInvalid.message ?? errors.recurrence}</FieldError>
+              )}
+            </>
           )}
 
           <div className="grid gap-4 sm:grid-cols-2">
@@ -628,7 +722,7 @@ export function EventForm({
                 />
               )}
             </Field>
-            <Collapse open={values.paymentMode !== "free" && !pricing}>
+            <Collapse open={values.paymentMode !== "free" && !pricing && !stage && !durations}>
               <Field label="Prix par personne" required error={errors.priceCents}>
                 {(field) => (
                   <AffixInput
@@ -645,7 +739,7 @@ export function EventForm({
               </Field>
             </Collapse>
           </div>
-          <Collapse open={values.paymentMode !== "free" && pricing !== null}>
+          <Collapse open={values.paymentMode !== "free" && pricing !== null && !stage}>
             <PriceInputs
               pricing={pricing}
               prices={values.prices}

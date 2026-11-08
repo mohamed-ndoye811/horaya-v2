@@ -3,6 +3,8 @@ import { colorFor, textOn } from "@/lib/colors";
 import { initials } from "@/lib/format";
 
 const sizes = {
+  /** Pastille d'une ligne de réglage (intervenants d'un module). */
+  mini: "size-6 text-[9px]",
   /** Participants d'une réservation. */
   xs: "size-[30px] text-[11px]",
   /** Lignes de liste (DA v4). */

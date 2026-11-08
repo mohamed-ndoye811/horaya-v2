@@ -27,7 +27,10 @@ export function Stepper({
   min,
   max,
   label,
+  size = "md",
 }: {
+  /** `pill` : 32 px, dans une ligne de réglage (maquette 9.5, « Places par créneau »). */
+  size?: "md" | "pill";
   value: number;
   onChange: (value: number) => void;
   min: number;
@@ -41,6 +44,37 @@ export function Stepper({
   useEffect(() => {
     previous.current = value;
   }, [value]);
+  if (size === "pill") {
+    return (
+      <div className="flex h-8 shrink-0 items-center rounded-lg border border-bg bg-field">
+        <button
+          type="button"
+          aria-label={`Moins (${label})`}
+          disabled={value <= min}
+          onClick={() => onChange(value - 1)}
+          className="h-full w-[30px] text-base leading-4 text-ink disabled:text-ink-faint"
+        >
+          −
+        </button>
+        <output
+          aria-label={label}
+          aria-live="polite"
+          className="w-6 text-center text-[13px] font-semibold leading-4 text-ink tabular-nums"
+        >
+          {value}
+        </output>
+        <button
+          type="button"
+          aria-label={`Plus (${label})`}
+          disabled={value >= max}
+          onClick={() => onChange(value + 1)}
+          className="h-full w-[30px] text-base leading-4 text-ink disabled:text-ink-faint"
+        >
+          +
+        </button>
+      </div>
+    );
+  }
   return (
     <div className="flex shrink-0 items-center gap-2.5 rounded-full border border-bg bg-surface p-1">
       <button

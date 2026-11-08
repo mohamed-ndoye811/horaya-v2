@@ -123,6 +123,16 @@ const typeOption = (
     itemTypeId: need.itemTypeId,
   })),
   locationMode: resourceModules.location?.mode ?? null,
+  // Le temps (lot 37) : durées, stage, créneaux.
+  durations: type.modules.duration?.options ?? null,
+  defaultDurationId: type.modules.duration?.defaultId ?? null,
+  stage: type.modules.sessions
+    ? {
+        singleSession: type.modules.sessions.singleSession ?? false,
+        sameEquipment: type.modules.sessions.sameEquipment ?? false,
+      }
+    : null,
+  slots: Boolean(type.modules.slots),
 });
 
 /** Équipe et exemplaires des types de matériel visés, pour l'intervenant et les exemplaires proposés. */
