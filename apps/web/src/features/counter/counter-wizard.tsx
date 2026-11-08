@@ -1,5 +1,11 @@
-import type { CounterBookingInput, PaymentMethod } from "@horaya/core";
+import {
+  type CounterBookingInput,
+  type EventTypeField,
+  fieldsOfScope,
+  type PaymentMethod,
+} from "@horaya/core";
 import { type FormEvent, type ReactNode, useEffect, useRef, useState, useTransition } from "react";
+import { FieldInputs } from "@/components/app/field-inputs";
 import { WordsReveal } from "@/components/motion/words";
 import { ActionBar } from "@/components/ui/action-bar";
 import { Avatar } from "@/components/ui/avatar";
@@ -24,6 +30,7 @@ import {
 import { cn } from "@/lib/cn";
 import { CATEGORY_COLORS } from "@/lib/colors";
 import { meshCover, seedOf } from "@/lib/cover";
+import { rawFieldValues } from "@/lib/fields";
 import { formatMoney } from "@/lib/format";
 
 export interface CounterEvent {
@@ -46,6 +53,8 @@ export interface CounterEvent {
   /** Cours à l'année : prix de l'inscription à toute la série, si elle est ouverte. */
   seriesId: string | null;
   enrollmentPriceCents: number | null;
+  /** « Ce que tu demandes » : questions une fois et par participant. */
+  fields: EventTypeField[];
 }
 
 interface CustomerHit {
@@ -81,6 +90,19 @@ const METHODS: Array<{ value: PaymentMethod; label: string }> = [
 ];
 
 const EMPTY_CONTACT = { firstName: "", lastName: "", phone: "", email: "" };
+
+/** Réponses saisies au comptoir : questions une fois, puis une ligne par place. */
+function answersOf(form: FormData, seats: number) {
+  return {
+    answers: rawFieldValues(form, "a."),
+    participants: Array.from({ length: seats }, (_, index) => ({
+      firstName: String(form.get(`p${index}.firstName`) ?? ""),
+      lastName: String(form.get(`p${index}.lastName`) ?? ""),
+      email: null,
+      answers: rawFieldValues(form, `p${index}.`),
+    })),
+  };
+}
 
 /**
  * Comptoir sur un seul écran (maquette 1.6b) : séance et places, client, matériel et
@@ -127,6 +149,9 @@ export function CounterWizard({
   const enrolling = wholeSeries && event?.enrollmentPriceCents != null;
   const total = enrolling ? (event?.enrollmentPriceCents ?? 0) : (event?.priceCents ?? 0) * seats;
   const full = event?.remaining !== null && event !== undefined && seats > (event.remaining ?? 0);
+  // Questions du type (pas pour l'inscription à toute la série, qui n'en pose pas).
+  const asking = Boolean(event && !enrolling && event.fields.length > 0);
+  const participantFields = fieldsOfScope(event?.fields ?? [], "participant");
   const newName = `${contact.firstName} ${contact.lastName}`.trim();
   const customerName = customer?.name ?? (newName || null);
   const chosenItems = Object.entries(quantities).filter(([, quantity]) => quantity > 0);
@@ -221,6 +246,7 @@ export function CounterWizard({
       paymentMethod: total > 0 && paid && !passId ? method : null,
       passId: total > 0 ? passId : null,
       giftCardCode: total > 0 && !passId ? giftCode.trim() || null : null,
+      ...answersOf(new FormData(formEvent.currentTarget as HTMLFormElement), seats),
     };
     startTransition(async () => {
       const result = await createCounterBookingAction(input);
@@ -475,7 +501,7 @@ export function CounterWizard({
               )}
             </>
           )}
-          {seats > 1 && (
+          {seats > 1 && !asking && (
             <p className="text-xs leading-4 text-ink-subtle">
               {seats === 2
                 ? "Participant 2 : tu pourras compléter son nom plus tard."
@@ -484,7 +510,59 @@ export function CounterWizard({
           )}
         </Section>
 
-        <Section number={3} title={enrolling ? "Paiement" : "Matériel et paiement"}>
+        {asking && event && (
+          // Questions du type : rien n'est requis au comptoir, l'équipe note ce qu'elle sait.
+          <Section key={event.id} number={3} title="Questions">
+            <FieldInputs
+              fields={fieldsOfScope(event.fields, "booking")}
+              prefix="a."
+              errorPrefix="answers."
+              errors={fieldErrors}
+              enforceRequired={false}
+            />
+            {participantFields.length > 0 &&
+              Array.from({ length: seats }, (_, index) => (
+                <fieldset
+                  // biome-ignore lint/suspicious/noArrayIndexKey: une place = un participant, dans l'ordre.
+                  key={index}
+                  className="flex flex-col gap-3 rounded-2xl bg-field p-4"
+                >
+                  <legend className="sr-only">Participant {index + 1}</legend>
+                  <p className="text-sm font-bold leading-[18px] text-ink">
+                    Participant {index + 1}
+                    {index === 0 && customerName ? ` · ${customerName}` : ""}
+                  </p>
+                  {index > 0 && (
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      <input
+                        name={`p${index}.firstName`}
+                        aria-label={`Prénom du participant ${index + 1}`}
+                        placeholder="Prénom"
+                        maxLength={60}
+                        className={inputClasses("sm")}
+                      />
+                      <input
+                        name={`p${index}.lastName`}
+                        aria-label={`Nom du participant ${index + 1}`}
+                        placeholder="Nom"
+                        maxLength={60}
+                        className={inputClasses("sm")}
+                      />
+                    </div>
+                  )}
+                  <FieldInputs
+                    fields={participantFields}
+                    prefix={`p${index}.`}
+                    errorPrefix={`participants.${index}.answers.`}
+                    errors={fieldErrors}
+                    enforceRequired={false}
+                  />
+                </fieldset>
+              ))}
+          </Section>
+        )}
+
+        <Section number={asking ? 4 : 3} title={enrolling ? "Paiement" : "Matériel et paiement"}>
           <div className={cn("flex flex-wrap gap-2", enrolling && "hidden")}>
             {chosenItems.map(([id, quantity]) => (
               <span

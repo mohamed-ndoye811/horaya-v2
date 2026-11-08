@@ -1,4 +1,11 @@
+import {
+  FIELD_TYPES,
+  type FieldDefinition,
+  type FieldValues,
+  itemFieldsSchema,
+} from "@horaya/core";
 import { useRef, useState } from "react";
+import { FieldInputs } from "@/components/app/field-inputs";
 import { ActionBar } from "@/components/ui/action-bar";
 import { Button } from "@/components/ui/button";
 import { AffixInput, Checkbox, Field, inputClasses, textareaClasses } from "@/components/ui/field";
@@ -6,6 +13,7 @@ import { FormAlert } from "@/components/ui/form-alert";
 import { BoxIcon } from "@/components/ui/icons";
 import { cardClasses, cardShellClasses, dashedClasses, FormSection } from "@/components/ui/section";
 import { Tag } from "@/components/ui/tag";
+import { type EditableField, FieldListEditor } from "@/features/events/field-list-editor";
 import { saveItem } from "@/functions/inventory";
 import { cn } from "@/lib/cn";
 import { useFormAction } from "@/lib/use-form-action";
@@ -30,10 +38,14 @@ export function ItemForm({
   itemId,
   initial,
   types,
+  fieldValues = {},
 }: {
   itemId: string | null;
   initial: ItemFormValues;
-  types: string[];
+  /** Catégories existantes et leurs champs. */
+  types: Array<{ name: string; fields: FieldDefinition[] }>;
+  /** Valeurs des champs de sa catégorie (modification). */
+  fieldValues?: FieldValues;
 }) {
   const { state, onSubmit, pending } = useFormAction<FormState>(saveItem.bind(null, itemId), {});
   const errors = state.fieldErrors ?? {};
@@ -53,6 +65,11 @@ export function ItemForm({
     });
   };
   const quantity = Math.max(0, Number.parseInt(preview.quantity, 10) || 0);
+  // Champs de la catégorie choisie : ceux enregistrés, ou ceux modifiés ici (envoyés avec l'article).
+  const category = preview.typeName.trim();
+  const [edited, setEdited] = useState<Record<string, EditableField[]>>({});
+  const categoryFields =
+    edited[category] ?? types.find((type) => type.name === category)?.fields ?? [];
   const labels = Array.from({ length: Math.min(quantity, 3) }, (_, index) => `#${index + 1}`);
   return (
     <form
@@ -83,19 +100,19 @@ export function ItemForm({
               hint={
                 types.length > 0 && (
                   <div className="flex flex-wrap gap-1.5">
-                    {types.slice(0, 6).map((type) => (
+                    {types.slice(0, 6).map(({ name }) => (
                       <button
-                        key={type}
+                        key={name}
                         type="button"
                         onClick={(event) => {
                           if (!typeRef.current) return;
-                          typeRef.current.value = type;
+                          typeRef.current.value = name;
                           const form = event.currentTarget.form;
                           if (form) read(form);
                         }}
                         className="h-8 rounded-full bg-field px-3 text-xs font-semibold leading-4 text-ink-soft hover:bg-line-soft"
                       >
-                        {type}
+                        {name}
                       </button>
                     ))}
                   </div>
@@ -115,8 +132,8 @@ export function ItemForm({
                     className={inputClasses()}
                   />
                   <datalist id="item-types">
-                    {types.map((type) => (
-                      <option key={type} value={type} />
+                    {types.map(({ name }) => (
+                      <option key={name} value={name} />
                     ))}
                   </datalist>
                 </>
@@ -241,6 +258,39 @@ export function ItemForm({
             label="Proposé à la location sur la page publique"
           />
         </FormSection>
+
+        {category && (
+          <FormSection number={3} title={`Champs de « ${category} »`}>
+            <p className="text-[13px] font-medium leading-[18px] text-ink-muted">
+              Les mêmes pour tous les articles de la catégorie : chacun y met ses valeurs.
+            </p>
+            {edited[category] && (
+              <input type="hidden" name="typeFields" value={JSON.stringify(edited[category])} />
+            )}
+            <FieldListEditor
+              fields={categoryFields}
+              scope={undefined}
+              all={categoryFields}
+              types={FIELD_TYPES.filter((type) => type !== "acceptance")}
+              onChange={(next) => {
+                const result = itemFieldsSchema.safeParse(next);
+                if (!result.success) return result.error.issues[0]?.message ?? "Champ invalide";
+                setEdited((current) => ({ ...current, [category]: next }));
+                return null;
+              }}
+              addLabel="Ajouter un champ"
+              addHint="numéro de série, puissance, taille…"
+            />
+            <FieldInputs
+              key={category}
+              fields={categoryFields}
+              prefix="v."
+              errorPrefix="fieldValues."
+              defaults={category === initial.typeName ? fieldValues : {}}
+              errors={errors}
+            />
+          </FormSection>
+        )}
 
         <ActionBar
           message={

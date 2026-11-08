@@ -9,7 +9,7 @@ import { searchText } from "@/lib/search-params";
 
 /** Maquette 5.1 : page publique d'un espace, ses événements à venir. */
 export const Route = createFileRoute("/$slug/")({
-  validateSearch: z.object({ type: searchText, tri: searchText }),
+  validateSearch: z.object({ type: searchText, tri: searchText, filtre: searchText }),
   loader: ({ params }) => getPublicHome({ data: params.slug }),
   head: ({ loaderData }) => ({
     meta: [

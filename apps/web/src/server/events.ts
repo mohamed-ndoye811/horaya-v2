@@ -21,6 +21,7 @@ import {
 } from "@horaya/core";
 import { redirect } from "@tanstack/react-router";
 import { parseCivilDate } from "@/lib/dates";
+import { rawFieldValues } from "@/lib/fields";
 import { parseEuroToCents } from "@/lib/money";
 import { type FormState, toFormState } from "./form-state";
 import { deps } from "./services";
@@ -65,6 +66,8 @@ function eventFields(form: FormData, timeZone: string) {
       .split(",")
       .map((entry) => entry.trim())
       .filter(Boolean),
+    // « Ce que tu décris » : validé par le core contre les champs de l'événement.
+    fieldValues: rawFieldValues(form, "f."),
   };
 }
 
@@ -142,40 +145,44 @@ const DURATIONS: Record<string, number | null> = {
   "1440": 1440,
 };
 
-/** Création ou modification d'un type d'événement (écran 16). */
+/** Création ou modification d'un type d'événement (maquette 9.1). */
 export async function saveEventType(typeId: string | null, form: FormData): Promise<FormState> {
   const { actor } = await getWorkspaceContext();
   const price = text(form, "defaultPrice");
   const capacity = text(form, "defaultCapacity");
-  const fieldsJson = text(form, "customFields") || "[]";
+  const maxSeats = text(form, "maxSeatsPerBooking");
   const minAdvance = text(form, "minAdvanceHours");
 
-  let customFields: unknown;
+  let fields: unknown;
   try {
-    customFields = JSON.parse(fieldsJson);
+    fields = JSON.parse(text(form, "fields") || "[]");
   } catch {
-    return { error: "Champs personnalisés illisibles." };
+    return { error: "Champs illisibles." };
   }
 
   const input = {
     name: text(form, "name"),
     color: text(form, "color"),
-    description: text(form, "description") || null,
+    bookingNoun: text(form, "bookingNoun") || "reservation",
     defaultDurationMinutes: DURATIONS[text(form, "defaultDuration")] ?? null,
     defaultPriceCents: price === "" ? null : parseEuroToCents(price),
     defaultCapacity: capacity === "" ? null : Number(capacity),
     requiresApproval: form.get("requiresApproval") === "on",
-    customFields,
+    fields,
     bookingRules: {
       waitlistEnabled: form.get("waitlistEnabled") === "on",
       ...(minAdvance !== "" ? { minAdvanceHours: Number(minAdvance) } : {}),
+      ...(maxSeats !== "" ? { maxSeatsPerBooking: Number(maxSeats) } : {}),
     },
   };
 
   let savedId: string;
   try {
     const saved = typeId
-      ? await updateEventType(deps, actor, typeId, input as unknown as UpdateEventTypeInput)
+      ? await updateEventType(deps, actor, typeId, {
+          ...(input as unknown as UpdateEventTypeInput),
+          applyToUpcoming: form.get("applyToUpcoming") === "on",
+        })
       : await createEventType(deps, actor, input as unknown as CreateEventTypeInput);
     savedId = saved.id;
   } catch (error) {

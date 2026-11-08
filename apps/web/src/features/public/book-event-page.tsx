@@ -3,6 +3,7 @@ import { NotFoundScreen } from "@/components/public/public-not-found";
 import { ArrowLeft } from "@/components/ui/icons";
 import type { getBookEventPage } from "@/functions/public";
 import { cn } from "@/lib/cn";
+import { BOOKING_NOUN_LABELS } from "@/lib/fields";
 import { displayFontClass } from "@/lib/fonts";
 import { formatEventRange, formatMoney } from "@/lib/format";
 import { Link } from "@/lib/navigation";
@@ -56,7 +57,7 @@ export function BookEventPage({
           ? event.paymentMode === "deposit"
             ? `Payer l'acompte de ${formatMoney(dueNow)}`
             : `Payer ${formatMoney(dueNow)}`
-          : "Confirmer ma réservation";
+          : BOOKING_NOUN_LABELS[event.bookingNoun].confirm;
 
   const place = event.locationName ?? (event.onlineUrl ? "En ligne" : null);
   const deposit = depositCents !== null && total > 0;
@@ -77,7 +78,7 @@ export function BookEventPage({
             displayFontClass(workspace.displayFont),
           )}
         >
-          Réserve tes places
+          {BOOKING_NOUN_LABELS[event.bookingNoun].title}
         </h1>
       </div>
 
@@ -86,7 +87,7 @@ export function BookEventPage({
         eventSlug={eventSlug}
         linkSlug={linkSlug}
         seats={seats}
-        customFields={event.customFields}
+        fields={event.fields}
         workspaceName={workspace.name}
         submitLabel={submitLabel}
         prefill={prefill}

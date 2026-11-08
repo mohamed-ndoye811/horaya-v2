@@ -6,6 +6,7 @@ import {
   MarkPaidButton,
   RefundButton,
 } from "@/components/app/booking-actions";
+import { FieldAnswers } from "@/components/app/field-answers";
 import { ItemTile } from "@/components/app/item-tile";
 import { PageHeader } from "@/components/app/page-header";
 import { Avatar } from "@/components/ui/avatar";
@@ -21,6 +22,7 @@ import type { getBooking } from "@/functions/booking";
 import { describeBookingActivity } from "@/lib/activity";
 import { cn } from "@/lib/cn";
 import { elapsed } from "@/lib/dashboard";
+import { answerRows } from "@/lib/fields";
 import {
   compactUnitLabels,
   formatEventRange,
@@ -140,6 +142,15 @@ export function BookingDetailPage({ data }: { data: Awaited<ReturnType<typeof ge
     rentalItems,
     assignedItems,
   } = detail;
+  // Une ligne par place : on montre celles qui ont un nom ou des réponses.
+  const listed = participants
+    .map((participant, index) => ({ participant, index }))
+    .filter(
+      ({ participant }) =>
+        participant.firstName ||
+        participant.lastName ||
+        Object.keys(participant.answers).length > 0,
+    );
   const paid = paidCents(payments);
   // Un bon cadeau n'est pas de l'argent encaissé : son montant retourne au bon, pas au client.
   const refundable = externalPaidCents(payments);
@@ -452,15 +463,24 @@ export function BookingDetailPage({ data }: { data: Awaited<ReturnType<typeof ge
             </section>
           )}
 
-          {participants.length > 0 && (
+          {Object.keys(booking.answers).length > 0 && (
+            <section className={cn(card, "gap-3")}>
+              <CardTitle>Réponses</CardTitle>
+              <FieldAnswers fields={booking.event?.fields ?? []} values={booking.answers} />
+            </section>
+          )}
+
+          {listed.length > 0 && (
             <section className={cn(card, "gap-1.5")}>
               <div className="pb-1.5">
-                <CardTitle count={participants.length}>Participants</CardTitle>
+                <CardTitle count={listed.length}>Participants</CardTitle>
               </div>
               <ul className="flex flex-col">
-                {participants.map((participant) => {
-                  const answers = Object.entries(participant.customAnswers ?? {});
-                  const fullName = `${participant.firstName} ${participant.lastName}`;
+                {listed.map(({ participant, index }) => {
+                  const rows = answerRows(booking.event?.fields ?? [], participant.answers);
+                  const fullName =
+                    `${participant.firstName} ${participant.lastName}`.trim() ||
+                    `Participant ${index + 1}`;
                   return (
                     <li
                       key={participant.id}
@@ -469,19 +489,16 @@ export function BookingDetailPage({ data }: { data: Awaited<ReturnType<typeof ge
                       <Avatar name={fullName} size="xs" />
                       <span className="min-w-0 flex-1 text-sm font-semibold leading-[18px] text-ink">
                         {fullName}
-                        <span className="font-normal text-ink-subtle">
-                          {" "}
-                          · {participant.email ?? "pas d'e-mail"}
-                        </span>
+                        {participant.email && (
+                          <span className="font-normal text-ink-subtle">
+                            {" "}
+                            · {participant.email}
+                          </span>
+                        )}
                       </span>
-                      {answers.length > 0 && (
+                      {rows.length > 0 && (
                         <span className="text-[13px] leading-[17px] text-ink-subtle">
-                          {answers
-                            .map(
-                              ([key, value]) =>
-                                `${key.replaceAll("_", " ")} : ${value === true ? "oui" : value === false ? "non" : value}`,
-                            )
-                            .join(" · ")}
+                          {rows.map((row) => `${row.label} : ${row.value}`).join(" · ")}
                         </span>
                       )}
                     </li>

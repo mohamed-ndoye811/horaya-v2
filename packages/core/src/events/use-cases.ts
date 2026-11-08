@@ -1,4 +1,5 @@
 import { promoteWaitlist } from "../bookings/waitlist";
+import { fieldsOfScope, validateFieldValues } from "../fields/values";
 import { recreditPassForBooking } from "../passes/use-cases";
 import { type Actor, actorRef, assertMemberCan } from "../shared/actor";
 import { NotFoundError } from "../shared/errors";
@@ -61,19 +62,29 @@ export async function updateEventType(
   input: UpdateEventTypeInput,
 ): Promise<EventType> {
   assertMemberCan(actor, "event", "update");
-  const patch = validate(updateEventTypeSchema, input);
+  const { applyToUpcoming, ...patch } = validate(updateEventTypeSchema, input);
 
   return deps.uow.run(async (repositories) => {
     const existing = await repositories.eventTypes.find(actor.organizationId, eventTypeId);
     if (!existing || existing.archivedAt) throw new NotFoundError("Type d'événement", eventTypeId);
     const updated = await repositories.eventTypes.update(actor.organizationId, eventTypeId, patch);
+    // Les événements gardent leur version du type ; les passés et ceux qui ont des inscrits, toujours.
+    const appliedTo =
+      applyToUpcoming && patch.fields
+        ? await repositories.events.applyTypeFields(
+            actor.organizationId,
+            eventTypeId,
+            updated.fields,
+            deps.clock.now(),
+          )
+        : 0;
     await repositories.activity.record({
       organizationId: actor.organizationId,
       entityType: "event_type",
       entityId: eventTypeId,
       action: "event_type.updated",
       ...actorRef(actor),
-      data: { fields: Object.keys(patch) },
+      data: { fields: Object.keys(patch), ...(appliedTo ? { appliedTo } : {}) },
     });
     return updated;
   });
@@ -157,6 +168,12 @@ export async function createEvent(
     if (!eventType || eventType.archivedAt)
       throw new NotFoundError("Type d'événement", eventTypeId);
     const settings = await repositories.settings.get(actor.organizationId);
+    const fieldValues = validateFieldValues(
+      fieldsOfScope(eventType.fields, "event"),
+      details.fieldValues,
+      { now: deps.clock.now() },
+      "fieldValues",
+    );
 
     const series = recurrence
       ? await repositories.events.insertSeries({
@@ -185,6 +202,8 @@ export async function createEvent(
         endsAt: new Date(startsAt.getTime() + duration),
         currency: settings.currency,
         requiresApproval: requiresApproval ?? eventType.requiresApproval,
+        fields: eventType.fields,
+        fieldValues,
       });
       await repositories.activity.record({
         organizationId: actor.organizationId,
@@ -211,13 +230,22 @@ export async function updateEvent(
   input: UpdateEventInput,
 ): Promise<Event> {
   assertMemberCan(actor, "event", "update");
-  const patch = validate(updateEventSchema, input) as EventPatch;
+  const { fieldValues, ...details } = validate(updateEventSchema, input);
+  const patch: EventPatch = details;
 
   return deps.uow.run(async (repositories) => {
     const locked = await repositories.events.lockForBooking(actor.organizationId, eventId);
     if (!locked) throw new NotFoundError("Événement", eventId);
     const { event } = locked;
     assertCanEdit(event);
+    if (fieldValues) {
+      patch.fieldValues = validateFieldValues(
+        fieldsOfScope(event.fields, "event"),
+        fieldValues,
+        { now: deps.clock.now() },
+        "fieldValues",
+      );
+    }
 
     const merged = { ...event, ...patch };
     assertEventConsistency(merged);

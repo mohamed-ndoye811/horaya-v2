@@ -68,6 +68,7 @@ export const getCounter = createServerFn({ method: "GET" })
       waitlist: event.waitlistEnabled,
       seriesId: event.seriesId,
       enrollmentPriceCents: event.enrollmentPriceCents,
+      fields: event.fields.filter((field) => field.scope !== "event"),
     }));
 
     return {

@@ -1,4 +1,4 @@
-import type { BookingRules, CustomFieldDefinition } from "@horaya/core";
+import type { BookingNoun, BookingRules, EventTypeField, FieldValues } from "@horaya/core";
 import { sql } from "drizzle-orm";
 import {
   boolean,
@@ -27,7 +27,10 @@ export const eventType = pgTable(
     defaultPriceCents: cents(),
     defaultCapacity: integer(),
     requiresApproval: boolean().notNull().default(false),
-    customFields: jsonb().$type<CustomFieldDefinition[]>().notNull().default([]),
+    /** « Ce que tu décris » et « Ce que tu demandes » (lot 33). */
+    fields: jsonb().$type<EventTypeField[]>().notNull().default([]),
+    /** « inscription », « réservation »… sur la page publique et le bouton du formulaire. */
+    bookingNoun: text().$type<BookingNoun>().notNull().default("reservation"),
     bookingRules: jsonb().$type<BookingRules>().notNull().default({}),
     archivedAt: timestamp({ withTimezone: true }),
     createdAt: createdAt(),
@@ -84,6 +87,10 @@ export const event = pgTable(
     /** Lien de paiement externe propre à l'événement (sinon celui de l'espace). */
     paymentLinkUrl: text(),
     coverImageUrl: text(),
+    /** Champs du type copiés à la création : l'événement garde sa version. */
+    fields: jsonb().$type<EventTypeField[]>().notNull().default([]),
+    /** Valeurs de « Ce que tu décris ». */
+    fieldValues: jsonb().$type<FieldValues>().notNull().default({}),
     publishedAt: timestamp({ withTimezone: true }),
     cancelledAt: timestamp({ withTimezone: true }),
     /** Rappel de la veille envoyé à l'équipe (une seule fois). */

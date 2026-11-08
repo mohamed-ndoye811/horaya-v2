@@ -1,6 +1,8 @@
 import { z } from "zod";
+import { eventTypeFieldsSchema, rawFieldValuesSchema } from "../fields/schemas";
 import { paymentLinkSchema } from "../shared/links";
 import { isValidTimeZone } from "../shared/time";
+import { BOOKING_NOUNS } from "./model";
 import { recurrenceSchema } from "./recurrence";
 import { EVENT_VISIBILITIES, PAYMENT_MODES } from "./types";
 
@@ -11,14 +13,6 @@ const optionalText = (max: number) =>
     .max(max)
     .nullish()
     .transform((value) => value || null);
-
-const customFieldSchema = z.object({
-  key: z.string().regex(/^[a-z][a-z0-9_]{0,39}$/, "Clé en minuscules, chiffres et _"),
-  label: z.string().trim().min(1).max(80),
-  type: z.enum(["text", "select", "checkbox"]),
-  required: z.boolean(),
-  options: z.array(z.string().trim().min(1).max(80)).max(20).optional(),
-});
 
 const bookingRulesSchema = z.object({
   minAdvanceHours: z
@@ -46,7 +40,8 @@ const eventTypeFields = {
   defaultPriceCents: z.int().min(0).max(10_000_000).nullable(),
   defaultCapacity: z.int().min(1).max(100_000).nullable(),
   requiresApproval: z.boolean(),
-  customFields: z.array(customFieldSchema).max(15),
+  fields: eventTypeFieldsSchema,
+  bookingNoun: z.enum(BOOKING_NOUNS),
   bookingRules: bookingRulesSchema,
 };
 
@@ -56,12 +51,17 @@ export const createEventTypeSchema = z.object({
   defaultPriceCents: eventTypeFields.defaultPriceCents.optional().default(null),
   defaultCapacity: eventTypeFields.defaultCapacity.optional().default(null),
   requiresApproval: eventTypeFields.requiresApproval.default(false),
-  customFields: eventTypeFields.customFields.default([]),
+  fields: eventTypeFields.fields.default([]),
+  bookingNoun: eventTypeFields.bookingNoun.default("reservation"),
   bookingRules: bookingRulesSchema.default({}),
 });
 export type CreateEventTypeInput = z.input<typeof createEventTypeSchema>;
 
-export const updateEventTypeSchema = z.object(eventTypeFields).partial();
+export const updateEventTypeSchema = z.object({
+  ...z.object(eventTypeFields).partial().shape,
+  /** Nouveaux champs aussi sur les événements à venir sans inscription (sinon : les prochains). */
+  applyToUpcoming: z.boolean().optional(),
+});
 export type UpdateEventTypeInput = z.input<typeof updateEventTypeSchema>;
 
 /**
@@ -96,6 +96,8 @@ const eventFields = {
   requiresApproval: z.boolean(),
   highlights: z.array(z.string().trim().min(1).max(80)).max(6),
   paymentLinkUrl: paymentLinkSchema,
+  /** « Ce que tu décris », validé contre les champs de l'événement par le cas d'usage. */
+  fieldValues: rawFieldValuesSchema,
 };
 
 export const createEventSchema = z.object({
@@ -111,6 +113,7 @@ export const createEventSchema = z.object({
   requiresApproval: eventFields.requiresApproval.optional(),
   highlights: eventFields.highlights.default([]),
   paymentLinkUrl: eventFields.paymentLinkUrl.default(null),
+  fieldValues: eventFields.fieldValues.default({}),
   recurrence: recurrenceSchema.optional(),
 });
 export type CreateEventInput = z.input<typeof createEventSchema>;

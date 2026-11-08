@@ -1,4 +1,4 @@
-import type { AllocationKind, ItemUnitStatus } from "@horaya/core";
+import type { AllocationKind, FieldDefinition, ItemUnitStatus } from "@horaya/core";
 import { and, asc, desc, eq, inArray, isNull, sql } from "drizzle-orm";
 import type { Executor } from "../client";
 import { event as eventTable, item, itemAllocation, itemType, itemUnit } from "../schema";
@@ -203,6 +203,8 @@ export async function getItemDetail(
       photoUrl: item.photoUrl,
       description: item.description,
       typeName: itemType.name,
+      typeFields: itemType.fields,
+      fieldValues: item.fieldValues,
       dailyRateCents: item.dailyRateCents,
       depositCents: item.depositCents,
       storageLocation: item.storageLocation,
@@ -359,11 +361,14 @@ export async function listCounterItems(db: Executor, organizationId: string, eve
 }
 
 /** Catégories de matériel déjà utilisées (suggestions du formulaire). */
-export async function listItemTypeNames(db: Executor, organizationId: string): Promise<string[]> {
-  const rows = await db
-    .select({ name: itemType.name })
+/** Catégories de matériel et leurs champs (formulaire d'un article). */
+export async function listItemTypes(
+  db: Executor,
+  organizationId: string,
+): Promise<Array<{ name: string; fields: FieldDefinition[] }>> {
+  return db
+    .select({ name: itemType.name, fields: itemType.fields })
     .from(itemType)
     .where(and(eq(itemType.organizationId, organizationId), isNull(itemType.archivedAt)))
     .orderBy(asc(itemType.name));
-  return rows.map((row) => row.name);
 }

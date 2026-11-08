@@ -1,4 +1,13 @@
-import type { BookingStatus, EventStatus, EventVisibility, PaymentMode } from "@horaya/core";
+import type {
+  BookingNoun,
+  BookingRules,
+  BookingStatus,
+  EventStatus,
+  EventTypeField,
+  EventVisibility,
+  FieldValues,
+  PaymentMode,
+} from "@horaya/core";
 import { and, asc, desc, eq, gt, gte, ilike, isNull, lt, ne, or, type SQL, sql } from "drizzle-orm";
 import type { Executor } from "../client";
 import { booking, customer, event, eventType } from "../schema";
@@ -178,19 +187,12 @@ export interface EventTypeRow {
   defaultPriceCents: number | null;
   defaultCapacity: number | null;
   requiresApproval: boolean;
-  customFields: Array<{
-    key: string;
-    label: string;
-    type: "text" | "select" | "checkbox";
-    required: boolean;
-    options?: string[];
-  }>;
-  bookingRules: {
-    minAdvanceHours?: number;
-    maxSeatsPerBooking?: number;
-    waitlistEnabled?: boolean;
-  };
+  fields: EventTypeField[];
+  bookingNoun: BookingNoun;
+  bookingRules: BookingRules;
   eventCount: number;
+  /** Événements à venir sans inscription : ceux que « Appliquer aussi » mettrait à jour. */
+  upcomingUnbooked: number;
 }
 
 /** Types d'événements actifs (écran 16 et listes déroulantes). */
@@ -208,9 +210,14 @@ export async function listEventTypes(
       defaultPriceCents: eventType.defaultPriceCents,
       defaultCapacity: eventType.defaultCapacity,
       requiresApproval: eventType.requiresApproval,
-      customFields: eventType.customFields,
+      fields: eventType.fields,
+      bookingNoun: eventType.bookingNoun,
       bookingRules: eventType.bookingRules,
       eventCount: sql<number>`(select count(*) from event e where e.event_type_id = "event_type"."id")::int`,
+      // Même sélection que EventRepository.applyTypeFields.
+      upcomingUnbooked: sql<number>`(select count(*) from event e
+        where e.event_type_id = "event_type"."id" and e.starts_at > now() and e.status <> 'cancelled'
+        and not exists (select 1 from booking b where b.event_id = e.id))::int`,
     })
     .from(eventType)
     .where(and(eq(eventType.organizationId, organizationId), isNull(eventType.archivedAt)))
@@ -246,6 +253,8 @@ export async function getEventDetail(db: Executor, organizationId: string, event
       requiresApproval: event.requiresApproval,
       depositPercent: event.depositPercent,
       publishedAt: event.publishedAt,
+      fields: event.fields,
+      fieldValues: event.fieldValues,
     })
     .from(event)
     .innerJoin(eventType, eq(eventType.id, event.eventTypeId))
@@ -284,6 +293,8 @@ export async function getEventDetail(db: Executor, organizationId: string, event
       requiresApproval: boolean;
       depositPercent: number | null;
       publishedAt: Date | null;
+      fields: EventTypeField[];
+      fieldValues: FieldValues;
     },
     bookings,
     waitlisted: bookings

@@ -1,5 +1,11 @@
-import { generateOccurrences } from "@horaya/core";
+import {
+  type EventTypeField,
+  type FieldValues,
+  fieldsOfScope,
+  generateOccurrences,
+} from "@horaya/core";
 import { type ReactNode, useMemo, useState } from "react";
+import { FieldInputs } from "@/components/app/field-inputs";
 import { ActionBar } from "@/components/ui/action-bar";
 import { CategorySwatch } from "@/components/ui/avatar";
 import { ChoiceCards } from "@/components/ui/choice-cards";
@@ -30,6 +36,8 @@ export interface EventTypeOption {
   id: string;
   name: string;
   color: string;
+  /** Champs du type (à la modification : ceux de l'événement, sa version du type). */
+  fields: EventTypeField[];
   defaultDurationMinutes: number | null;
   defaultPriceCents: number | null;
   defaultCapacity: number | null;
@@ -95,10 +103,13 @@ export function EventForm({
   timeZone,
   formId,
   actions,
+  fieldValues = {},
 }: {
   eventId: string | null;
   types: EventTypeOption[];
   initial: EventFormValues;
+  /** Valeurs de « Ce que tu décris » déjà saisies. */
+  fieldValues?: FieldValues;
   timeZone: string;
   formId: string;
   /** Boutons de la barre noire du bas (enregistrer, publier), en variantes `inverse`. */
@@ -112,6 +123,7 @@ export function EventForm({
   const countInvalid = useInvalidMessage();
   const errors = state.fieldErrors ?? {};
   const type = types.find((entry) => entry.id === values.eventTypeId);
+  const described = fieldsOfScope(type?.fields ?? [], "event");
   const set = (patch: Partial<EventFormValues>) =>
     setValues((current) => ({ ...current, ...patch }));
 
@@ -530,6 +542,23 @@ export function EventForm({
             label="Valider manuellement chaque réservation"
           />
         </FormSection>
+
+        {described.length > 0 && (
+          <FormSection
+            number={4}
+            title="Ce que tu décris"
+            description={`Les informations d'un ${type?.name.toLowerCase() ?? "événement"}`}
+          >
+            <FieldInputs
+              key={type?.id}
+              fields={described}
+              prefix="f."
+              errorPrefix="fieldValues."
+              defaults={fieldValues}
+              errors={errors}
+            />
+          </FormSection>
+        )}
 
         <ActionBar
           message={

@@ -28,6 +28,7 @@ import {
   type PublicWorkspace,
 } from "@horaya/db";
 import { notFound, redirect } from "@tanstack/react-router";
+import { rawFieldValues } from "@/lib/fields";
 import { bookingState } from "@/lib/public-booking";
 import { withParams } from "@/lib/search-params";
 import { sendBookingCreatedEmail } from "./booking-emails";
@@ -242,17 +243,6 @@ export async function createPublicBooking(
   if (blocked) return { error: blocked };
 
   const fieldErrors: Record<string, string> = {};
-  const answers = (index: number) =>
-    Object.fromEntries(
-      event.customFields.map((field) => {
-        const raw = form.get(`p${index}.${field.key}`);
-        const value = field.type === "checkbox" ? raw === "on" : String(raw ?? "").trim();
-        if (index === 0 && field.required && (value === "" || value === false)) {
-          fieldErrors[`p0.${field.key}`] = "Champ requis";
-        }
-        return [field.key, value];
-      }),
-    );
   const customer = {
     firstName: text(form, "firstName"),
     lastName: text(form, "lastName"),
@@ -260,24 +250,13 @@ export async function createPublicBooking(
     phone: text(form, "phone") || null,
     company: text(form, "company") || null,
   };
-  const participants = [
-    {
-      firstName: customer.firstName,
-      lastName: customer.lastName,
-      email: customer.email,
-      customAnswers: answers(0),
-    },
-  ];
-  for (let index = 1; index < seats; index++) {
-    const firstName = text(form, `p${index}.firstName`);
-    const lastName = text(form, `p${index}.lastName`);
-    // Les autres participants sont facultatifs : on peut réserver sans connaître leurs noms.
-    if (firstName || lastName) {
-      if (!firstName) fieldErrors[`p${index}.firstName`] = "Prénom requis";
-      if (!lastName) fieldErrors[`p${index}.lastName`] = "Nom requis";
-      participants.push({ firstName, lastName, email: "", customAnswers: answers(index) });
-    }
-  }
+  // Une ligne par place : la première, c'est la personne qui réserve. Le core valide les réponses.
+  const participants = Array.from({ length: seats }, (_, index) => ({
+    firstName: index === 0 ? customer.firstName : text(form, `p${index}.firstName`),
+    lastName: index === 0 ? customer.lastName : text(form, `p${index}.lastName`),
+    email: index === 0 ? customer.email : null,
+    answers: rawFieldValues(form, `p${index}.`),
+  }));
   if (form.get("terms") !== "on") fieldErrors.terms = "Accepte les conditions pour réserver";
   if (Object.keys(fieldErrors).length > 0)
     return { error: "Vérifie les champs en rouge.", fieldErrors };
@@ -298,10 +277,8 @@ export async function createPublicBooking(
         eventId: event.id,
         seats,
         customer,
-        participants: participants.map((participant) => ({
-          ...participant,
-          email: participant.email || null,
-        })),
+        answers: rawFieldValues(form, "a."),
+        participants,
         customerMessage: text(form, "customerMessage") || null,
         // Le core revérifie que le lien est actif et contient l'événement.
         calendarLinkSlug: link?.slug ?? null,

@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { rawFieldValuesSchema } from "../fields/schemas";
 
 const optionalText = (max: number) =>
   z
@@ -16,16 +17,17 @@ export const customerContactSchema = z.object({
   company: optionalText(120),
 });
 
+/** Participant d'une place : nom facultatif, réponses validées contre les champs de l'événement. */
 export const participantSchema = z.object({
-  firstName: z.string().trim().min(1).max(60),
-  lastName: z.string().trim().min(1).max(60),
+  firstName: z.string().trim().max(60).default(""),
+  lastName: z.string().trim().max(60).default(""),
   email: z
     .email()
     .trim()
     .toLowerCase()
     .nullish()
     .transform((value) => value ?? null),
-  customAnswers: z.record(z.string(), z.union([z.string().max(500), z.boolean()])).default({}),
+  answers: rawFieldValuesSchema.default({}),
 });
 
 export const createEventBookingSchema = z
@@ -33,6 +35,8 @@ export const createEventBookingSchema = z
     eventId: z.uuid(),
     seats: z.int().min(1, "Au moins une place").max(1000),
     customer: customerContactSchema,
+    /** Réponses aux questions « une fois par inscription ». */
+    answers: rawFieldValuesSchema.default({}),
     participants: z.array(participantSchema).max(1000).default([]),
     customerMessage: optionalText(1000),
     /** Lien calendrier par lequel le client est arrivé (vaut invitation). */

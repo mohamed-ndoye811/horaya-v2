@@ -1,3 +1,4 @@
+import type { FieldValues } from "@horaya/core";
 import { sql } from "drizzle-orm";
 import {
   check,
@@ -89,6 +90,8 @@ export const booking = pgTable(
     paymentStatus: bookingPaymentStatus().notNull().default("none"),
     depositCents: cents(),
     customerMessage: text(),
+    /** Réponses aux questions « une fois par inscription ». */
+    answers: jsonb().$type<FieldValues>().notNull().default({}),
     refusalReason: text(),
     source: bookingSource().notNull(),
     /** Hash du jeton du lien « Gérer ma réservation » (jamais le jeton en clair). */
@@ -131,8 +134,8 @@ export const bookingParticipant = pgTable(
     firstName: text().notNull(),
     lastName: text().notNull(),
     email: text(),
-    /** Réponses aux champs personnalisés du type d'événement, par clé. */
-    customAnswers: jsonb().$type<Record<string, string | boolean>>().notNull().default({}),
+    /** Réponses aux questions « pour chaque participant », par clé. */
+    answers: jsonb().$type<FieldValues>().notNull().default({}),
     createdAt: createdAt(),
   },
   (t) => [index().on(t.bookingId)],

@@ -394,13 +394,21 @@ describe("événements", () => {
     const type = await createEventType(deps, owner, {
       name: "Séminaire",
       color: "#528d74",
-      customFields: [{ key: "entreprise", label: "Entreprise", type: "text", required: true }],
+      fields: [
+        {
+          key: "entreprise",
+          label: "Entreprise",
+          type: "short_text",
+          scope: "booking",
+          required: true,
+        },
+      ],
       bookingRules: { waitlistEnabled: true },
     });
     expect(type.color).toBe("#528D74");
     const updated = await updateEventType(deps, owner, type.id, { defaultPriceCents: 12000 });
     expect(updated.defaultPriceCents).toBe(12000);
-    expect(updated.customFields).toHaveLength(1);
+    expect(updated.fields).toHaveLength(1);
     expect(updated.bookingRules.waitlistEnabled).toBe(true);
   });
 

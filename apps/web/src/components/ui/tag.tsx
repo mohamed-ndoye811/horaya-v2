@@ -7,6 +7,10 @@ const tones = {
   /** Information neutre (« À venir », « 2 retours ce soir »). */
   info: "bg-info-bg text-info font-bold",
   draft: "bg-draft-bg text-draft font-bold",
+  /** Condition (« Si « oui » ») dans une liste de champs. */
+  warning: "bg-warning-bg text-warning font-bold",
+  /** Posée sur un fond gris (« Requis » dans une ligne de champ). */
+  surface: "bg-surface text-ink font-semibold",
   /** Sur fond noir (aperçu de la fiche client). */
   inverse: "border border-white/20 text-white/85 font-semibold",
   /** Posée sur une photo (date sur une couverture, « Aperçu public ») : verre fumé. */

@@ -1,4 +1,6 @@
+import { fieldsOfScope } from "@horaya/core";
 import { BottomNotch } from "@/components/app/bottom-notch";
+import { FieldAnswers } from "@/components/app/field-answers";
 import { WordsReveal } from "@/components/motion/words";
 import { eventBadge, eventCover } from "@/components/public/public-events";
 import { NotFoundScreen } from "@/components/public/public-not-found";
@@ -8,6 +10,7 @@ import { ButtonLink } from "@/components/ui/button";
 import { ArrowLeft, Check } from "@/components/ui/icons";
 import type { getPublicEventPage } from "@/functions/public";
 import { cn } from "@/lib/cn";
+import { BOOKING_NOUN_LABELS } from "@/lib/fields";
 import { displayFontClass } from "@/lib/fonts";
 import { formatMoney, formatPublicSchedule } from "@/lib/format";
 import { Link } from "@/lib/navigation";
@@ -64,9 +67,10 @@ export function PublicEventPage({
   const ctaLabel =
     state.kind === "waitlist"
       ? "Rejoindre la liste d'attente"
-      : event.requiresApproval
+      : event.requiresApproval && event.bookingNoun === "reservation"
         ? "Demander mes places"
-        : "Réserver mes places";
+        : BOOKING_NOUN_LABELS[event.bookingNoun].action;
+  const described = fieldsOfScope(event.fields, "event");
 
   const badge = eventBadge(state, seats, event.requiresApproval);
   // Cours à l'année : l'organisateur peut réserver la séance à l'unité aux inscrits.
@@ -155,6 +159,12 @@ export function PublicEventPage({
               </div>
             )}
           </dl>
+          {described.some((field) => event.fieldValues[field.key] !== undefined) && (
+            <section className="flex flex-col gap-3 rounded-3xl bg-surface p-6">
+              <h2 className="text-xl font-semibold leading-6 text-ink">En pratique</h2>
+              <FieldAnswers fields={described} values={event.fieldValues} timeZone={tz} />
+            </section>
+          )}
           {hasProgram && (
             <section className="flex flex-col gap-3 rounded-3xl bg-surface p-6">
               <h2 className="text-xl font-semibold leading-6 text-ink">Au programme</h2>

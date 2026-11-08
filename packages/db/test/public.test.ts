@@ -70,7 +70,7 @@ describe("pages publiques", () => {
     expect(listed[0]).toMatchObject({ seatsHeld: 3, highlights: ["Déjeuner inclus"] });
     expect(await getPublicEvent(db, organizationId, open.slug)).toMatchObject({
       title: "Atelier ouvert",
-      customFields: [],
+      fields: [],
     });
   });
 
@@ -83,10 +83,14 @@ describe("pages publiques", () => {
       participants: [{ firstName: "Camille", lastName: "Roux" }],
     });
     const found = await getManagedBooking(db, organizationId, await hashToken(manageToken));
+    // Une ligne par place : la seconde reste à compléter.
     expect(found).toMatchObject({
       seats: 2,
       eventTitle: "Atelier",
-      participants: [{ firstName: "Camille", lastName: "Roux" }],
+      participants: [
+        { firstName: "Camille", lastName: "Roux" },
+        { firstName: "", lastName: "" },
+      ],
     });
   });
 });

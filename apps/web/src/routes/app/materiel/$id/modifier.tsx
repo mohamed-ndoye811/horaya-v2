@@ -33,6 +33,7 @@ function EditItemPage() {
           purchasePrice: cents(item.purchasePriceCents),
           rentable: item.rentable,
         }}
+        fieldValues={item.fieldValues}
       />
     </>
   );

@@ -13,6 +13,7 @@ import {
 import { redirect } from "@tanstack/react-router";
 import { toCsv } from "@/lib/csv";
 import { parseCivilDate } from "@/lib/dates";
+import { rawFieldValues } from "@/lib/fields";
 import { parseEuroToCents } from "@/lib/money";
 import { type FormState, toFormState } from "./form-state";
 import { deps } from "./services";
@@ -46,6 +47,9 @@ function itemFields(form: FormData) {
     purchasedOn: text(form, "purchasedOn") || null,
     purchasePriceCents: optionalCents(text(form, "purchasePrice")),
     rentable: form.get("rentable") === "on",
+    // Champs de la catégorie (si modifiés ici) et valeurs de l'article, validés par le core.
+    ...(form.has("typeFields") ? { typeFields: JSON.parse(text(form, "typeFields")) } : {}),
+    fieldValues: rawFieldValues(form, "v."),
   };
 }
 

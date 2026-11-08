@@ -1,96 +1,65 @@
-import type { CustomFieldDefinition } from "@horaya/core";
+import { type EventTypeField, fieldsOfScope } from "@horaya/core";
 import { type FormEvent, type ReactNode, useState } from "react";
+import { FieldInputs } from "@/components/app/field-inputs";
 import { Button } from "@/components/ui/button";
 import { Checkbox, Field, FieldError, inputClasses, textareaClasses } from "@/components/ui/field";
 import { FormAlert } from "@/components/ui/form-alert";
 import { FormSection } from "@/components/ui/section";
-import { Select } from "@/components/ui/select";
 import { createPublicBookingAction } from "@/functions/public";
 import { cn } from "@/lib/cn";
+import { formatFieldValue, rawFieldValues } from "@/lib/fields";
 import { useFormAction } from "@/lib/use-form-action";
 import type { FormState } from "@/server/form-state";
 
-function CustomField({
-  field,
-  index,
-  error,
-}: {
-  field: CustomFieldDefinition;
-  index: number;
-  error?: string;
-}) {
-  const name = `p${index}.${field.key}`;
-  if (field.type === "checkbox") return <Checkbox name={name} label={field.label} />;
-  return (
-    <Field label={field.label} required={field.required && index === 0} error={error}>
-      {(props) =>
-        field.type === "select" ? (
-          <Select {...props} name={name} defaultValue={field.options?.[0] ?? ""}>
-            {(field.options ?? []).map((option) => (
-              <option key={option} value={option}>
-                {option}
-              </option>
-            ))}
-          </Select>
-        ) : (
-          <input
-            {...props}
-            name={name}
-            maxLength={500}
-            required={field.required && index === 0}
-            className={inputClasses()}
-          />
-        )
-      }
-    </Field>
-  );
-}
-
-/** Résumé d'un participant replié : nom puis réponses aux champs personnalisés. */
-function participantSummary(
-  fieldset: HTMLFieldSetElement,
-  index: number,
-  fields: CustomFieldDefinition[],
-) {
-  const value = (name: string) => {
-    const element = fieldset.elements.namedItem(`p${index}.${name}`);
-    if (element instanceof HTMLInputElement && element.type === "checkbox") {
-      return element.checked ? (fields.find((field) => field.key === name)?.label ?? "") : "";
-    }
-    return element instanceof HTMLInputElement || element instanceof HTMLSelectElement
-      ? element.value.trim()
-      : "";
-  };
-  const name = [value("firstName"), value("lastName")].filter(Boolean).join(" ");
-  return [name, ...fields.map((field) => value(field.key))].filter(Boolean).join(" · ");
+/** Résumé d'un participant replié : nom puis réponses. */
+function participantSummary(form: HTMLFormElement, index: number, fields: EventTypeField[]) {
+  const data = new FormData(form);
+  const name = [data.get(`p${index}.firstName`), data.get(`p${index}.lastName`)]
+    .map((value) => String(value ?? "").trim())
+    .filter(Boolean)
+    .join(" ");
+  const raw = rawFieldValues(data, `p${index}.`);
+  const answers = fields.map((field) => {
+    const value = raw[field.key];
+    if (value === null || value === undefined || value === "") return "";
+    if (Array.isArray(value)) return value.join(", ");
+    return field.type === "boolean" || field.type === "acceptance"
+      ? `${field.label} : ${value === "true" || value === "on" ? "oui" : "non"}`
+      : formatFieldValue(field, value as string);
+  });
+  return [name, ...answers].filter(Boolean).join(" · ");
 }
 
 /**
  * Participants 2 et suivants : repliés en une ligne (nom et réponses) avec « Modifier »,
- * dépliés pour la saisie. Les champs restent dans le formulaire une fois repliés.
+ * dépliés pour la saisie. Les champs restent dans le formulaire une fois repliés. Avec des
+ * questions requises, le bloc reste ouvert (un champ requis caché bloquerait l'envoi).
  */
 function ExtraParticipant({
   index,
-  customFields,
+  fields,
   errors,
 }: {
   index: number;
-  customFields: CustomFieldDefinition[];
+  fields: EventTypeField[];
   errors: Record<string, string>;
 }) {
-  const hasError = Object.keys(errors).some((key) => key.startsWith(`p${index}.`));
-  const [open, setOpen] = useState(false);
+  const hasError = Object.keys(errors).some(
+    (key) => key.startsWith(`p${index}.`) || key.startsWith(`participants.${index}.`),
+  );
+  const mandatory = fields.some((field) => field.required);
+  const [open, setOpen] = useState(mandatory);
   const [summary, setSummary] = useState("");
   const expanded = open || hasError;
   const panelId = `participant-${index}`;
+  const update = (event: FormEvent<HTMLFieldSetElement>) => {
+    const form = event.currentTarget.form;
+    if (form) setSummary(participantSummary(form, index, fields));
+  };
   return (
     <fieldset
-      onInput={(event: FormEvent<HTMLFieldSetElement>) =>
-        setSummary(participantSummary(event.currentTarget, index, customFields))
-      }
-      onChange={(event: FormEvent<HTMLFieldSetElement>) =>
-        setSummary(participantSummary(event.currentTarget, index, customFields))
-      }
+      onInput={update}
+      onChange={update}
       className="flex flex-col gap-3 rounded-[18px] border-[1.5px] border-dashed border-line px-[18px] py-3.5"
     >
       <legend className="sr-only">Participant {index + 1}</legend>
@@ -98,43 +67,54 @@ function ExtraParticipant({
         <div className="flex min-w-0 flex-col gap-0.5">
           <span className="text-sm font-bold leading-[18px] text-ink">Participant {index + 1}</span>
           <span className="truncate text-[13px] leading-[18px] text-ink-subtle">
-            {summary || "Facultatif : tu peux compléter plus tard."}
+            {summary ||
+              (mandatory
+                ? "Quelques questions pour cette place."
+                : "Facultatif : tu peux compléter plus tard.")}
           </span>
         </div>
-        <Button
-          variant="soft"
-          size="xs"
-          aria-expanded={expanded}
-          aria-controls={panelId}
-          onClick={() => setOpen(!expanded)}
-        >
-          {expanded ? "Fermer" : summary ? "Modifier" : "Compléter"}
-        </Button>
+        {!mandatory && (
+          <Button
+            variant="soft"
+            size="xs"
+            aria-expanded={expanded}
+            aria-controls={panelId}
+            onClick={() => setOpen(!expanded)}
+          >
+            {expanded ? "Fermer" : summary ? "Modifier" : "Compléter"}
+          </Button>
+        )}
       </div>
-      <div id={panelId} hidden={!expanded} className="auth-fields grid gap-3 sm:grid-cols-2">
-        <Field label="Prénom" error={errors[`p${index}.firstName`]}>
-          {(field) => (
-            <input
-              {...field}
-              name={`p${index}.firstName`}
-              maxLength={60}
-              className={inputClasses()}
-            />
-          )}
-        </Field>
-        <Field label="Nom" error={errors[`p${index}.lastName`]}>
-          {(field) => (
-            <input
-              {...field}
-              name={`p${index}.lastName`}
-              maxLength={60}
-              className={inputClasses()}
-            />
-          )}
-        </Field>
-        {customFields.map((field) => (
-          <CustomField key={field.key} field={field} index={index} />
-        ))}
+      <div id={panelId} hidden={!expanded} className="auth-fields flex flex-col gap-3">
+        <div className="grid gap-3 sm:grid-cols-2">
+          <Field label="Prénom" error={errors[`p${index}.firstName`]}>
+            {(field) => (
+              <input
+                {...field}
+                name={`p${index}.firstName`}
+                maxLength={60}
+                className={inputClasses()}
+              />
+            )}
+          </Field>
+          <Field label="Nom" error={errors[`p${index}.lastName`]}>
+            {(field) => (
+              <input
+                {...field}
+                name={`p${index}.lastName`}
+                maxLength={60}
+                className={inputClasses()}
+              />
+            )}
+          </Field>
+        </div>
+        <FieldInputs
+          fields={fields}
+          prefix={`p${index}.`}
+          errorPrefix={`participants.${index}.answers.`}
+          errors={errors}
+          className="grid gap-3 sm:grid-cols-2"
+        />
       </div>
     </fieldset>
   );
@@ -146,7 +126,7 @@ export function BookingForm({
   eventSlug,
   linkSlug,
   seats,
-  customFields,
+  fields,
   workspaceName,
   submitLabel,
   summary,
@@ -162,7 +142,8 @@ export function BookingForm({
   /** Lien calendrier par lequel arrive le visiteur (vaut invitation). */
   linkSlug: string | null;
   seats: number;
-  customFields: CustomFieldDefinition[];
+  /** Champs de l'événement : on en tire « Ce que tu demandes » (une fois, par participant). */
+  fields: EventTypeField[];
   workspaceName: string;
   submitLabel: string;
   summary: ReactNode;
@@ -190,6 +171,8 @@ export function BookingForm({
     {},
   );
   const errors = state.fieldErrors ?? {};
+  const bookingFields = fieldsOfScope(fields, "booking");
+  const participantFields = fieldsOfScope(fields, "participant");
   const terms = (
     <div className="flex flex-col gap-2">
       <Checkbox
@@ -284,21 +267,34 @@ export function BookingForm({
                   )}
                 </Field>
               )}
-              {customFields.map((field) => (
-                <CustomField
-                  key={field.key}
-                  field={field}
-                  index={0}
-                  error={errors[`p0.${field.key}`]}
-                />
-              ))}
             </div>
+            <FieldInputs
+              fields={participantFields}
+              prefix="p0."
+              errorPrefix="participants.0.answers."
+              errors={errors}
+              className="grid gap-3 sm:grid-cols-2"
+            />
           </div>
+          {bookingFields.length > 0 && (
+            <div className="flex flex-col gap-3.5 rounded-[18px] bg-field p-[18px]">
+              <p className="text-sm font-bold leading-[18px] text-ink">
+                {seats > 1 ? "Pour ta réservation" : "Quelques questions"}
+              </p>
+              <FieldInputs
+                fields={bookingFields}
+                prefix="a."
+                errorPrefix="answers."
+                errors={errors}
+                className="grid gap-3 sm:grid-cols-2"
+              />
+            </div>
+          )}
           {Array.from({ length: seats - 1 }, (_, offset) => offset + 1).map((index) => (
             <ExtraParticipant
               key={index}
               index={index}
-              customFields={customFields}
+              fields={participantFields}
               errors={errors}
             />
           ))}
