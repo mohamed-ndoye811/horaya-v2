@@ -1,4 +1,5 @@
-import { cancellationPolicyOf } from "@horaya/core";
+import { acceptsGiftCards, cancellationPolicyOf, depositLabel } from "@horaya/core";
+import { CountUp } from "@/components/motion/count-up";
 import { eventCover } from "@/components/public/public-events";
 import { NotFoundScreen } from "@/components/public/public-not-found";
 import { ArrowLeft } from "@/components/ui/icons";
@@ -11,6 +12,7 @@ import { Link } from "@/lib/navigation";
 import { bookingState, cancellationPolicy, paymentNote } from "@/lib/public-booking";
 import { withParams } from "@/lib/search-params";
 import { BookingForm } from "./booking-form";
+import { PriceLines, usePriceChoice } from "./price-choice";
 
 /** Maquette 5.3 : coordonnées des participants et paiement (complet ou clos : redirigé avant). */
 export function BookEventPage({
@@ -21,6 +23,8 @@ export function BookEventPage({
   data: Awaited<ReturnType<typeof getBookEventPage>>;
 }) {
   const slug = workspace.slug;
+  // Tarifs et options : le total suit chaque choix (même calcul que le serveur).
+  const price = usePriceChoice(event ?? { priceCents: 0, paymentMode: "free", modules: {} }, seats);
   if (!event) {
     return (
       <NotFoundScreen
@@ -35,7 +39,7 @@ export function BookEventPage({
   }
   const state = bookingState(event, now);
   const eventHref = withParams(`/${slug}/${eventSlug}`, { lien: linkSlug ?? undefined });
-  const total = event.priceCents * seats;
+  const total = price.quote.amountCents;
   const policy =
     event.paymentMode === "free"
       ? null
@@ -44,10 +48,8 @@ export function BookEventPage({
           cancellationPolicyOf(event.modules, workspace),
           workspace.timezone,
         );
-  const depositCents =
-    event.paymentMode === "deposit" && event.depositPercent !== null
-      ? Math.round((total * event.depositPercent) / 100)
-      : null;
+  const depositCents = price.quote.depositCents;
+  const depositModule = event.modules.deposit;
   // Paiement en ligne juste après : réservation confirmée d'office (ni validation ni liste d'attente).
   const paysOnline =
     channel !== null && state.kind === "open" && !event.requiresApproval && total > 0;
@@ -98,6 +100,8 @@ export function BookEventPage({
         prefill={prefill}
         pass={pass}
         equipment={equipment}
+        price={price.visible ? price : null}
+        giftCards={acceptsGiftCards(event.modules.payment_methods)}
         payment={
           paysOnline && channel
             ? {
@@ -106,6 +110,7 @@ export function BookEventPage({
                 due: formatMoney(dueNow),
                 deposit: event.paymentMode === "deposit",
                 rest: formatMoney(total - dueNow),
+                restLater: depositModule?.balance === "later",
               }
             : null
         }
@@ -139,7 +144,9 @@ export function BookEventPage({
                 <p className="flex justify-between gap-4 text-sm leading-[18px]">
                   <span className="text-ink/85">
                     {seats} place{seats > 1 ? "s" : ""}
-                    {event.priceCents > 0 && ` × ${formatMoney(event.priceCents)}`}
+                    {!price.visible &&
+                      event.priceCents > 0 &&
+                      ` × ${formatMoney(event.priceCents)}`}
                     <Link
                       href={`${eventHref}#reserver`}
                       className="ml-2 text-[13px] font-semibold text-ink-subtle underline underline-offset-2 hover:text-ink"
@@ -147,14 +154,17 @@ export function BookEventPage({
                       Modifier
                     </Link>
                   </span>
-                  <span className="font-semibold text-ink">
-                    {total > 0 ? formatMoney(total) : "Gratuit"}
-                  </span>
+                  {!price.visible && (
+                    <span className="font-semibold text-ink">
+                      {total > 0 ? formatMoney(total) : "Gratuit"}
+                    </span>
+                  )}
                 </p>
+                {price.visible && <PriceLines lines={price.quote.lines} />}
                 <p className="flex items-baseline justify-between gap-4">
                   <span className="text-[15px] font-bold leading-5 text-ink">Total TTC</span>
                   <span className="text-xl font-semibold leading-6 text-ink">
-                    {total > 0 ? formatMoney(total) : "Gratuit"}
+                    {total > 0 ? <CountUp value={formatMoney(total)} /> : "Gratuit"}
                   </span>
                 </p>
               </div>
@@ -162,19 +172,24 @@ export function BookEventPage({
                 <div className="flex flex-col gap-2 rounded-[14px] bg-field p-3.5 text-sm leading-[18px]">
                   <p className="flex justify-between gap-4 font-bold text-[var(--brand-text)]">
                     <span>
-                      Acompte {event.depositPercent} %{paysOnline ? " · maintenant" : ""}
+                      Acompte {depositModule ? depositLabel(depositModule) : ""}
+                      {paysOnline ? " · maintenant" : ""}
                     </span>
                     <span>{formatMoney(dueNow)}</span>
                   </p>
                   <p className="flex justify-between gap-4">
-                    <span className="text-ink/85">Reste sur place</span>
+                    <span className="text-ink/85">
+                      {depositModule?.balance === "later"
+                        ? "Reste à régler plus tard"
+                        : "Reste sur place"}
+                    </span>
                     <span className="font-semibold text-ink">{formatMoney(total - dueNow)}</span>
                   </p>
                 </div>
               ) : (
                 total > 0 && (
                   <p className="rounded-[14px] bg-field p-3.5 text-sm leading-[18px] text-ink/85">
-                    {paymentNote(event.paymentMode, channel, event.depositPercent)}
+                    {paymentNote(event.paymentMode, channel, depositModule)}
                   </p>
                 )
               )}

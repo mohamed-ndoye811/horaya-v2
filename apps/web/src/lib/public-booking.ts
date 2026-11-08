@@ -1,4 +1,11 @@
-import { bookingWindow, type EventModules, windowState } from "@horaya/core";
+import {
+  balanceLabel,
+  bookingWindow,
+  type DepositModule,
+  depositLabel,
+  type EventModules,
+  windowState,
+} from "@horaya/core";
 
 export type AvailabilityTone = "success" | "warning" | "info";
 
@@ -104,14 +111,14 @@ export const pluralize = (word: string) => (/[sxz]$/i.test(word) ? word : `${wor
 export function paymentNote(
   paymentMode: string,
   channel: { kind: "stripe" } | { kind: "link"; url: string } | null,
-  depositPercent: number | null,
+  deposit: DepositModule | undefined,
 ): string {
   if (paymentMode === "free") return "Gratuit";
   if (paymentMode === "on_site") return "Paiement sur place";
   if (!channel) return "Paiement auprès de l'organisateur";
   const how = channel.kind === "stripe" ? "par carte" : "en ligne";
   return paymentMode === "deposit"
-    ? `Acompte de ${depositPercent ?? 0} % ${how}, le reste sur place`
+    ? `Acompte de ${deposit ? depositLabel(deposit) : "—"} ${how}, ${deposit ? balanceLabel(deposit) : "le reste sur place"}`
     : channel.kind === "stripe"
       ? "Paiement sécurisé par carte"
       : "Paiement en ligne après la réservation";

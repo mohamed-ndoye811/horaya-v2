@@ -31,6 +31,12 @@ export const participantSchema = z.object({
   answers: rawFieldValuesSchema.default({}),
 });
 
+/** Choix du prix (lot 35), vérifié par `quoteBooking` contre les tarifs de l'événement. */
+export const priceRatesSchema = z.array(z.string().max(40)).max(1000).default([]);
+export const priceOptionsSchema = z
+  .record(z.string().max(40), z.int().min(0).max(100_000))
+  .default({});
+
 export const createEventBookingSchema = z
   .object({
     eventId: z.uuid(),
@@ -42,6 +48,10 @@ export const createEventBookingSchema = z
     customerMessage: optionalText(1000),
     /** Lien calendrier par lequel le client est arrivé (vaut invitation). */
     calendarLinkSlug: optionalText(120),
+    /** Tarif de chaque place (dans l'ordre des participants) ; absent : le tarif par défaut. */
+    rates: priceRatesSchema,
+    /** Quantité de chaque option choisie. */
+    options: priceOptionsSchema,
     /** Bon cadeau à déduire du prix. */
     giftCardCode: optionalText(40),
     /** Module Matériel avancé : cases cochées et exemplaires choisis. */
@@ -50,5 +60,9 @@ export const createEventBookingSchema = z
   .refine((input) => input.participants.length <= input.seats, {
     message: "Plus de participants que de places",
     path: ["participants"],
+  })
+  .refine((input) => input.rates.length <= input.seats, {
+    message: "Plus de tarifs que de places",
+    path: ["rates"],
   });
 export type CreateEventBookingInput = z.input<typeof createEventBookingSchema>;

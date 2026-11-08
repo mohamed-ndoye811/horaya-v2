@@ -158,6 +158,83 @@ export const staffModuleSchema = z.object({
   showOnPublicPage: z.boolean().optional(),
 });
 
+/* ---------- L'argent (lot 35) ---------- */
+
+/** Identifiant stable d'un tarif ou d'une option (l'événement et les réservations s'y réfèrent). */
+const priceId = z.string().regex(/^[a-z0-9-]{1,40}$/, "Identifiant invalide");
+
+export const rateSchema = z.object({
+  id: priceId,
+  name: z.string().trim().min(1, "Nomme le tarif").max(40),
+  priceCents: cents,
+  /** « étudiant, demandeur d'emploi » */
+  description: z.string().trim().max(120).optional(),
+});
+
+export const OPTION_PER = ["booking", "participant"] as const;
+export type OptionPer = (typeof OPTION_PER)[number];
+
+export const priceOptionSchema = z.object({
+  id: priceId,
+  name: z.string().trim().min(1, "Nomme l'option").max(60),
+  priceCents: cents,
+  /** Une fois par inscription, ou une fois par participant. */
+  per: z.enum(OPTION_PER),
+  /** Quantité au plus (par inscription ou par participant) ; absent : 1, une case à cocher. */
+  max: z.int({ error: "Quantité invalide" }).min(1, "Au moins 1").max(99).optional(),
+  /**
+   * Besoin de matériel facultatif (module Matériel avancé) réservé quand l'option est prise : un
+   * matériel facultatif payant passe par son option, qui remplace sa case à cocher.
+   */
+  needId: z.string().trim().min(1).max(40).optional(),
+});
+
+export const pricingModuleSchema = z
+  .object({
+    rates: z.array(rateSchema).min(1, "Au moins un tarif").max(10, "10 tarifs au plus"),
+    /** Tarif choisi d'office ; absent : le premier. */
+    defaultRateId: priceId.optional(),
+    options: z.array(priceOptionSchema).max(20, "20 options au plus").optional(),
+  })
+  .refine(
+    (value) => {
+      const ids = [...value.rates, ...(value.options ?? [])].map((entry) => entry.id);
+      return new Set(ids).size === ids.length;
+    },
+    { message: "Deux tarifs ou options ont le même identifiant", path: ["rates"] },
+  )
+  .refine(
+    (value) =>
+      value.defaultRateId === undefined ||
+      value.rates.some((rate) => rate.id === value.defaultRateId),
+    { message: "Tarif par défaut inconnu", path: ["defaultRateId"] },
+  );
+
+export const depositModuleSchema = z
+  .object({
+    /** Part du total payée à l'inscription. */
+    percent: z.int({ error: "Pourcentage invalide" }).min(1, "Entre 1 et 99 %").max(99).optional(),
+    /** Ou un montant fixe par place (jamais plus que le total). */
+    amountCents: cents.min(1, "Indique un montant").optional(),
+    /** Le reste : sur place (défaut) ou plus tard, avec le lien de paiement. */
+    balance: z.enum(["on_site", "later"]).optional(),
+  })
+  .refine((value) => (value.percent === undefined) !== (value.amountCents === undefined), {
+    message: "Choisis un pourcentage ou un montant fixe",
+    path: ["percent"],
+  });
+
+export const paymentMethodsModuleSchema = z.object({
+  /** Cartes de séances acceptées (absent : oui). */
+  passes: z.boolean().optional(),
+  /** Formules acceptées ; absent : toutes. */
+  passPlanIds: z.array(z.uuid()).max(50).optional(),
+  /** Séances débitées par place (absent : 1). */
+  sessionsPerSeat: z.int({ error: "Nombre invalide" }).min(1).max(20).optional(),
+  /** Bons cadeaux acceptés (absent : oui). */
+  giftCards: z.boolean().optional(),
+});
+
 /** Schéma de chaque module disponible (les modules « Bientôt » n'en ont pas encore). */
 export const MODULE_SCHEMAS = {
   places: placesModuleSchema,
@@ -172,17 +249,45 @@ export const MODULE_SCHEMAS = {
   equipment: equipmentModuleSchema,
   location: locationModuleSchema,
   staff: staffModuleSchema,
+  pricing: pricingModuleSchema,
+  deposit: depositModuleSchema,
+  payment_methods: paymentMethodsModuleSchema,
 } as const;
 
 export type ModuleKey = keyof typeof MODULE_SCHEMAS;
 export const MODULE_KEYS = Object.keys(MODULE_SCHEMAS) as ModuleKey[];
 
 /** Les modules actifs d'un type (ou la copie d'un événement). Les clés inconnues sont ignorées. */
-export const eventTypeModulesSchema = z.object(
-  Object.fromEntries(MODULE_KEYS.map((key) => [key, MODULE_SCHEMAS[key].optional()])) as {
-    [K in ModuleKey]: z.ZodOptional<(typeof MODULE_SCHEMAS)[K]>;
-  },
-);
+export const eventTypeModulesSchema = z
+  .object(
+    Object.fromEntries(MODULE_KEYS.map((key) => [key, MODULE_SCHEMAS[key].optional()])) as {
+      [K in ModuleKey]: z.ZodOptional<(typeof MODULE_SCHEMAS)[K]>;
+    },
+  )
+  .superRefine((modules, context) => {
+    // Option liée au matériel : un besoin facultatif du module, une seule option par besoin.
+    const linked = new Set<string>();
+    for (const [index, option] of (modules.pricing?.options ?? []).entries()) {
+      if (option.needId === undefined) continue;
+      const need = modules.equipment?.needs.find((entry) => entry.id === option.needId);
+      const message = !need
+        ? "Ce matériel n'est pas dans le module Matériel avancé"
+        : need.required
+          ? "Le matériel obligatoire est inclus : il ne peut pas être une option"
+          : linked.has(need.id)
+            ? "Ce matériel est déjà lié à une autre option"
+            : (option.max ?? 1) > 1
+              ? "Une option liée au matériel se prend une fois (par participant ou par inscription)"
+              : null;
+      if (message)
+        context.addIssue({
+          code: "custom",
+          message,
+          path: ["pricing", "options", index, "needId"],
+        });
+      linked.add(option.needId);
+    }
+  });
 export type EventModules = z.output<typeof eventTypeModulesSchema>;
 export type PlacesModule = z.output<typeof placesModuleSchema>;
 export type OpeningModule = z.output<typeof openingModuleSchema>;
@@ -195,6 +300,11 @@ export type EquipmentNeed = z.output<typeof equipmentNeedSchema>;
 export type EquipmentModule = z.output<typeof equipmentModuleSchema>;
 export type LocationModule = z.output<typeof locationModuleSchema>;
 export type StaffModule = z.output<typeof staffModuleSchema>;
+export type PricingModule = z.output<typeof pricingModuleSchema>;
+export type Rate = z.output<typeof rateSchema>;
+export type PriceOption = z.output<typeof priceOptionSchema>;
+export type DepositModule = z.output<typeof depositModuleSchema>;
+export type PaymentMethodsModule = z.output<typeof paymentMethodsModuleSchema>;
 
 export const MODULE_GROUPS = [
   { id: "reserve", label: "Réserver" },
@@ -306,8 +416,19 @@ export const MODULE_CATALOG: readonly ModuleDefinition[] = [
     name: "Tarifs et options",
     group: "money",
     description: "Plusieurs tarifs, options payantes.",
-    keywords: "prix réduit étudiant",
-    soon: "lot 35",
+    keywords: "prix réduit étudiant enfant option supplément",
+    defaults: {
+      rates: [
+        { id: "plein", name: "Plein", priceCents: 4500 },
+        {
+          id: "reduit",
+          name: "Réduit",
+          priceCents: 3500,
+          description: "étudiant, demandeur d'emploi",
+        },
+      ],
+      options: [],
+    },
   },
   {
     key: "deposit",
@@ -315,7 +436,7 @@ export const MODULE_CATALOG: readonly ModuleDefinition[] = [
     group: "money",
     description: "Une part à l'inscription, le reste sur place.",
     keywords: "arrhes paiement",
-    soon: "lot 35",
+    defaults: { percent: 30, balance: "on_site" },
   },
   {
     key: "payment_methods",
@@ -323,7 +444,7 @@ export const MODULE_CATALOG: readonly ModuleDefinition[] = [
     group: "money",
     description: "Cartes de séances et bons cadeaux valables ici.",
     keywords: "carte bon cadeau paiement",
-    soon: "lot 35",
+    defaults: {},
   },
   {
     key: "equipment",

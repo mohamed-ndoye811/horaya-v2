@@ -1,4 +1,5 @@
 import type { Booking, CustomerContact } from "../bookings/model";
+import { acceptsPass, passSessionsFor } from "../bookings/pricing";
 import { customerContactSchema } from "../bookings/schemas";
 import { cancellationPolicyOf } from "../modules/rules";
 import { paidCents } from "../payments/rules";
@@ -269,20 +270,23 @@ export async function payBookingWithPassIn(
   if (!passValidForSession(pass, event.startsAt)) {
     throw new ConflictError("Cette carte n'est plus valable à la date de cette séance");
   }
-  if (!passAcceptsEventType(pass, event.eventTypeId)) {
+  // Module « Moyens acceptés » : formules acceptées et séances débitées par place.
+  const methods = event.modules.payment_methods;
+  if (!passAcceptsEventType(pass, event.eventTypeId) || !acceptsPass(methods, pass)) {
     throw new ConflictError("Cette carte ne s'utilise pas pour ce type d'événement");
   }
+  const sessions = passSessionsFor(methods, booking.seats);
   const balance = await repositories.passes.balance(pass.id);
-  if (balance < booking.seats) {
+  if (balance < sessions) {
     throw new ConflictError(
-      `Solde insuffisant : ${balance} séance${balance > 1 ? "s" : ""} pour ${booking.seats} place${booking.seats > 1 ? "s" : ""}`,
+      `Solde insuffisant : ${balance} séance${balance > 1 ? "s" : ""} pour ${sessions} séance${sessions > 1 ? "s" : ""}`,
     );
   }
   await repositories.passes.insertMovement({
     organizationId: booking.organizationId,
     passId,
     kind: "use",
-    delta: -booking.seats,
+    delta: -sessions,
     bookingId: booking.id,
     reason: null,
     actorType: actor.type,
@@ -298,7 +302,7 @@ export async function payBookingWithPassIn(
     entityId: passId,
     action: "pass.used",
     ...actorRef(actor),
-    data: { bookingId: booking.id, seats: booking.seats, balance: balance - booking.seats },
+    data: { bookingId: booking.id, seats: booking.seats, balance: balance - sessions },
   });
   await repositories.activity.record({
     organizationId: booking.organizationId,

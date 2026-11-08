@@ -1,9 +1,12 @@
 import {
+  acceptsGiftCards,
   ageLabel,
   BOOKING_NOUNS,
   type BookingNoun,
+  balanceLabel,
   bookingWindow,
   type CancellationPolicy,
+  depositLabel,
   type EventModules,
   type EventTypeField,
   eventTypeFieldsSchema,
@@ -31,6 +34,7 @@ import { formatMoney, formatOpening } from "@/lib/format";
 import { centsToInput, parseEuroToCents } from "@/lib/money";
 import { useFormAction } from "@/lib/use-form-action";
 import type { FormState } from "@/server/form-state";
+import { BookingOptions, SeatPrice, usePriceChoice } from "../public/price-choice";
 import { type EditableField, FieldListEditor } from "./field-list-editor";
 import { ModuleList } from "./module-editor";
 
@@ -76,6 +80,8 @@ export interface EventTypeEditorValues {
   /** Modules Ressources : types de matériel et équipe de l'espace. */
   itemTypes: Array<{ id: string; name: string }>;
   members: Array<{ id: string; name: string }>;
+  /** Formules de cartes de séances (module « Moyens acceptés »). */
+  passPlans: Array<{ id: string; name: string }>;
 }
 
 /** Les champs d'une liste complète, rangés par portée (l'ordre de chaque portée est gardé). */
@@ -84,7 +90,16 @@ const byScope = (fields: EditableField[], scope: FieldScope) =>
 
 /** Ce que les modules changent pour le visiteur (aperçu des onglets Page et Inscription). */
 function moduleNotes(modules: EventModules, timeZone: string): string[] {
-  const { opening, access, places, messages, location, staff } = modules;
+  const {
+    opening,
+    access,
+    places,
+    messages,
+    location,
+    staff,
+    deposit,
+    payment_methods: methods,
+  } = modules;
   // Exemple : un événement dans trois semaines, à 18 h.
   const sample = new Date(Date.now() + 21 * 86_400_000);
   const { opensAt } = bookingWindow(sample, opening);
@@ -107,6 +122,11 @@ function moduleNotes(modules: EventModules, timeZone: string): string[] {
     location?.mode === "client" ? "Nous venons chez toi : ton adresse est demandée" : null,
     location?.mode === "venue" && location.address ? `Lieu : ${location.address}` : null,
     staff?.showOnPublicPage ? "Avec le prénom de l'intervenant" : null,
+    deposit
+      ? `Acompte de ${depositLabel(deposit)} à l'inscription, ${balanceLabel(deposit)}`
+      : null,
+    methods?.passes === false ? "Pas de carte de séances" : null,
+    acceptsGiftCards(methods) ? null : "Bons cadeaux non acceptés",
   ].filter((note): note is string => note !== null);
 }
 
@@ -141,7 +161,13 @@ function Preview({
   const sample = (field: EventTypeField) =>
     field.options?.[0] ??
     (field.type === "boolean" ? "Oui" : field.type === "number" ? "2" : (field.help ?? "…"));
-  const price = Number.isFinite(priceCents) && priceCents > 0 ? formatMoney(priceCents) : null;
+  // Tarifs et options : l'aperçu se coche comme le vrai formulaire, le bouton suit le total.
+  const choice = usePriceChoice(
+    { priceCents: Number.isFinite(priceCents) ? priceCents : 0, paymentMode: "online", modules },
+    1,
+  );
+  const total = choice.quote.amountCents;
+  const price = Number.isFinite(total) && total > 0 ? formatMoney(total) : null;
   const notes = moduleNotes(modules, timeZone);
   const noteList = notes.length > 0 && (
     <ul className="relative flex flex-col gap-1.5 rounded-[14px] bg-field p-3.5 text-[13px] leading-[18px] text-ink/85">
@@ -210,6 +236,7 @@ function Preview({
         <div key={tab} className="flex animate-fade flex-col gap-3.5 px-[18px] pt-4 pb-[18px]">
           {tab === "booking" && (
             <>
+              <SeatPrice choice={choice} seat={0} />
               <FieldInputs
                 fields={fieldsOfScope(typed, "participant")}
                 prefix="apercu.p."
@@ -239,6 +266,7 @@ function Preview({
                   </p>
                 );
               })}
+              <BookingOptions choice={choice} />
               {noteList}
               <div
                 className="flex h-11 items-center justify-center rounded-full text-sm font-semibold text-white"
@@ -472,21 +500,31 @@ export function EventTypeEditor({
                 </Select>
               )}
             </Field>
-            {/* Valeurs de départ du formulaire d'événement (les tarifs arrivent au lot 35). */}
+            {/* Valeurs de départ du formulaire d'événement ; avec « Tarifs et options », le prix du tarif par défaut. */}
             <div className="grid gap-4 sm:grid-cols-2">
-              <Field label="Prix par défaut" error={errors.defaultPriceCents}>
-                {(props) => (
-                  <AffixInput
-                    {...props}
-                    name="defaultPrice"
-                    inputMode="decimal"
-                    value={price}
-                    onChange={(event) => setPrice(event.target.value)}
-                    placeholder="Gratuit"
-                    suffix="€"
-                  />
-                )}
-              </Field>
+              {modules.pricing ? (
+                <Field label="Prix">
+                  {(props) => (
+                    <p {...props} className="flex h-11 items-center text-sm text-ink-muted">
+                      Dans le module « Tarifs et options »
+                    </p>
+                  )}
+                </Field>
+              ) : (
+                <Field label="Prix par défaut" error={errors.defaultPriceCents}>
+                  {(props) => (
+                    <AffixInput
+                      {...props}
+                      name="defaultPrice"
+                      inputMode="decimal"
+                      value={price}
+                      onChange={(event) => setPrice(event.target.value)}
+                      placeholder="Gratuit"
+                      suffix="€"
+                    />
+                  )}
+                </Field>
+              )}
               <Field label="Durée par défaut">
                 {(props) => (
                   <Select
@@ -522,6 +560,7 @@ export function EventTypeEditor({
                 timeZone: initial.timeZone,
                 itemTypes: initial.itemTypes,
                 members: initial.members,
+                passPlans: initial.passPlans,
               }}
               errors={errors}
             />

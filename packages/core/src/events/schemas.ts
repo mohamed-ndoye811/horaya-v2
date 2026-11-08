@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { eventTypeFieldsSchema, rawFieldValuesSchema } from "../fields/schemas";
-import { eventTypeModulesSchema } from "../modules/registry";
+import { depositModuleSchema, eventTypeModulesSchema } from "../modules/registry";
 import { paymentLinkSchema } from "../shared/links";
 import { isValidTimeZone } from "../shared/time";
 import { BOOKING_NOUNS } from "./model";
@@ -75,11 +75,13 @@ const eventFields = {
     .nullable(),
   priceCents: z.int({ error: "Prix invalide" }).min(0).max(10_000_000, "Prix trop élevé"),
   paymentMode: z.enum(PAYMENT_MODES),
-  depositPercent: z
-    .int({ error: "Pourcentage invalide" })
-    .min(1, "Entre 1 et 99 %")
-    .max(99, "Entre 1 et 99 %")
-    .nullable(),
+  /** Acompte de l'événement (module « Acompte ») ; null : pas d'acompte. */
+  deposit: depositModuleSchema.nullable(),
+  /** Prix des tarifs et options de l'événement, par identifiant (les noms restent ceux du type). */
+  prices: z.record(
+    z.string().max(40),
+    z.int({ error: "Prix invalide" }).min(0).max(10_000_000, "Prix trop élevé"),
+  ),
   requiresApproval: z.boolean(),
   highlights: z.array(z.string().trim().min(1).max(80)).max(6),
   paymentLinkUrl: paymentLinkSchema,
@@ -99,7 +101,9 @@ export const createEventSchema = z.object({
   capacity: eventFields.capacity.default(null),
   priceCents: eventFields.priceCents.default(0),
   paymentMode: eventFields.paymentMode.default("free"),
-  depositPercent: eventFields.depositPercent.default(null),
+  /** Absent : celui du type. */
+  deposit: eventFields.deposit.optional(),
+  prices: eventFields.prices.optional(),
   /** Par défaut, celui du type d'événement. */
   requiresApproval: eventFields.requiresApproval.optional(),
   highlights: eventFields.highlights.default([]),

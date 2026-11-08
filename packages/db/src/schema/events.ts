@@ -84,7 +84,6 @@ export const event = pgTable(
     priceCents: cents().notNull().default(0),
     currency: currency(),
     paymentMode: paymentMode().notNull().default("free"),
-    depositPercent: integer(),
     requiresApproval: boolean().notNull().default(false),
     /** Mentions affichées sur la page publique (« Déjeuner inclus »…). */
     highlights: text().array().notNull().default(sql`'{}'::text[]`),
@@ -93,7 +92,7 @@ export const event = pgTable(
     coverImageUrl: text(),
     /** Champs du type copiés à la création : l'événement garde sa version. */
     fields: jsonb().$type<EventTypeField[]>().notNull().default([]),
-    /** Modules du type copiés à la création (lot 34). */
+    /** Modules du type copiés à la création (lot 34) ; tarifs et acompte de l'événement (lot 35). */
     modules: jsonb().$type<EventModules>().notNull().default({}),
     /** Valeurs de « Ce que tu décris ». */
     fieldValues: jsonb().$type<FieldValues>().notNull().default({}),
@@ -123,10 +122,6 @@ export const event = pgTable(
     check("event_period_valid", sql`${t.endsAt} > ${t.startsAt}`),
     check("event_capacity_positive", sql`${t.capacity} IS NULL OR ${t.capacity} > 0`),
     check("event_price_positive", sql`${t.priceCents} >= 0`),
-    check(
-      "event_deposit_percent_range",
-      sql`${t.depositPercent} IS NULL OR (${t.depositPercent} > 0 AND ${t.depositPercent} <= 100)`,
-    ),
   ],
 );
 

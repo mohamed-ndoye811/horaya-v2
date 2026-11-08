@@ -6,6 +6,7 @@ import { validateBookingAnswers } from "../fields/values";
 import { applyGiftCardToBooking, restoreGiftCardForBooking } from "../gift-cards/use-cases";
 import { reserveEquipment } from "../inventory/equipment";
 import type { EquipmentChoice } from "../modules/registry";
+import { optionNeedSeats } from "../modules/resources";
 import {
   ageIssues,
   bookingWindow,
@@ -23,7 +24,7 @@ import { validate } from "../shared/validate";
 import { decideBookingStatus, SEAT_HOLDING_STATUSES } from "./capacity";
 import { CHECK_IN_OPENS_BEFORE_HOURS, isCheckInOpen } from "./check-in";
 import type { Booking } from "./model";
-import { priceBooking } from "./pricing";
+import { type PriceSelection, quoteBooking } from "./pricing";
 import { formatBookingReference, referencePeriod } from "./reference";
 import { rescheduleClosedReason, reschedulePricing, rescheduleTargetIssue } from "./reschedule";
 import { type CreateEventBookingInput, createEventBookingSchema } from "./schemas";
@@ -120,6 +121,7 @@ export async function createEventBooking(
       customerMessage: data.customerMessage,
       manageTokenHash,
       equipment: data.equipment,
+      selection: { rates: data.rates, options: data.options },
     });
     // Sur liste d'attente, rien à payer encore : le bon n'est pas touché.
     const giftCardCents =
@@ -159,6 +161,8 @@ export async function insertEventBooking(
     manageTokenHash: string | null;
     /** Module Matériel avancé : cases cochées et exemplaires choisis par le client. */
     equipment?: EquipmentChoice[];
+    /** Tarifs et options choisis (lot 35). */
+    selection?: PriceSelection;
     /** Séance d'une inscription à la série : confirmée d'office, payée par l'inscription. */
     enrollmentId?: string;
     /** Rattrapage d'une absence : confirmé d'office, sans paiement ni question. */
@@ -235,7 +239,9 @@ export async function insertEventBooking(
       customerId: data.customerId,
       seats: data.seats,
       status,
-      ...(enrolled ? { amountCents: 0, depositCents: null } : priceBooking(event, data.seats)),
+      ...(enrolled
+        ? { amountCents: 0, depositCents: null, priceLines: [] }
+        : priceOf(event, data.seats, data.selection)),
       currency: event.currency,
       paymentMode: enrolled ? "free" : event.paymentMode,
       enrollmentId: data.enrollmentId ?? null,
@@ -258,6 +264,7 @@ export async function insertEventBooking(
       data.seats,
       data.equipment ?? [],
       actor.type !== "customer" || enrolled,
+      optionNeedSeats(event, data.seats, created.priceLines),
     );
   }
   await repositories.activity.record({
@@ -274,6 +281,11 @@ export async function insertEventBooking(
     },
   });
   return created;
+}
+
+function priceOf(event: Event, seats: number, selection: PriceSelection | undefined) {
+  const { lines, ...amounts } = quoteBooking(event, seats, selection);
+  return { ...amounts, priceLines: lines };
 }
 
 /**
@@ -646,7 +658,16 @@ export async function rescheduleBookingAsCustomer(
     });
     // Le matériel attribué au comptoir pour l'ancienne date y retourne.
     await repositories.inventory.releaseBookingAllocations(organizationId, booking.id);
-    await reserveEquipment(repositories, actor, to.event, booking.id, booking.seats, [], true);
+    await reserveEquipment(
+      repositories,
+      actor,
+      to.event,
+      booking.id,
+      booking.seats,
+      [],
+      true,
+      optionNeedSeats(to.event, booking.seats, moved.priceLines),
+    );
     await repositories.activity.record({
       organizationId,
       entityType: "booking",

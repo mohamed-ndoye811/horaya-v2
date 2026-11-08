@@ -4,6 +4,7 @@
  * et, pour « Gérer ma réservation », par le jeton du lien.
  */
 import {
+  acceptsPass,
   amountDueOnline,
   awaitsOnlinePayment,
   cancelBookingWithToken,
@@ -14,6 +15,7 @@ import {
   hasFeature,
   hashToken,
   paidCents,
+  passSessionsFor,
   refundForCancellation,
   startCheckout,
 } from "@horaya/core";
@@ -183,12 +185,15 @@ export async function bookEventPage(
         data.event.startsAt,
       )
     : [];
-  const pass = passes.find((entry) => entry.balance >= seats);
+  // Module « Moyens acceptés » : formules acceptées et séances par place.
+  const methods = data.event.modules.payment_methods;
+  const sessions = passSessionsFor(methods, seats);
+  const pass = passes.find((entry) => acceptsPass(methods, entry) && entry.balance >= sessions);
   return {
     ...data,
     seats,
     prefill: await customerPrefill(),
-    pass: pass ? { id: pass.id, name: pass.name, balance: pass.balance } : null,
+    pass: pass ? { id: pass.id, name: pass.name, balance: pass.balance, sessions } : null,
     // Module Matériel avancé : besoins de l'événement et exemplaires encore libres.
     equipment: await listEquipmentOffers(db, data.event.id),
   };
@@ -265,6 +270,20 @@ export async function bookingMoney(workspace: PublicWorkspace, booking: ManagedB
 
 /* ---------- Actions ---------- */
 
+/** Tarifs et options choisis (champ `price`, JSON) ; illisible : le tarif par défaut. */
+export function priceChoice(form: FormData): {
+  rates?: string[];
+  options?: Record<string, number>;
+} {
+  try {
+    // Forme non vérifiée ici : le schéma du core la valide.
+    const parsed = JSON.parse(text(form, "price") || "{}");
+    return { rates: parsed.rates, options: parsed.options };
+  } catch {
+    return {};
+  }
+}
+
 /** Étape 2 (écran 18) : coordonnées des participants, puis réservation au nom du client. */
 export async function createPublicBooking(
   slug: string,
@@ -318,6 +337,8 @@ export async function createPublicBooking(
         answers: rawFieldValues(form, "a."),
         participants,
         customerMessage: text(form, "customerMessage") || null,
+        // Tarifs et options : le core revérifie tout contre l'événement.
+        ...priceChoice(form),
         // Le core revérifie que le lien est actif et contient l'événement.
         calendarLinkSlug: link?.slug ?? null,
         giftCardCode: giftCardCode || null,

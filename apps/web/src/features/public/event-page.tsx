@@ -62,7 +62,7 @@ export function PublicEventPage({
     .filter(Boolean);
   const hasProgram = paragraphs.length > 0 || event.highlights.length > 0;
   const notes = [
-    paymentNote(event.paymentMode, channel, event.depositPercent),
+    paymentNote(event.paymentMode, channel, event.modules.deposit),
     event.requiresApproval ? "Sur validation de l'organisateur" : null,
     event.paymentMode !== "free"
       ? cancellationPolicy(
@@ -310,6 +310,21 @@ export function PublicEventPage({
               <SeatPicker
                 bookHref={bookHref}
                 priceCents={event.priceCents}
+                note={
+                  event.paymentMode !== "free" &&
+                  event.modules.pricing &&
+                  (event.modules.pricing.rates.length > 1 ||
+                    (event.modules.pricing.options?.length ?? 0) > 0)
+                    ? [
+                        ...event.modules.pricing.rates.map(
+                          (rate) => `${rate.name} ${formatMoney(rate.priceCents)}`,
+                        ),
+                        event.modules.pricing.options?.length ? "options à l'étape suivante" : null,
+                      ]
+                        .filter(Boolean)
+                        .join(" · ")
+                    : null
+                }
                 maxSeats={state.maxSeats}
                 label={ctaLabel}
               />

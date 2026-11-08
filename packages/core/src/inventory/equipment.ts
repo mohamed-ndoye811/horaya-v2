@@ -3,6 +3,7 @@ import type { EquipmentChoice } from "../modules/registry";
 import {
   type EquipmentCandidate,
   equipmentCandidates,
+  needSeats,
   planEquipment,
   unitLabel,
 } from "../modules/resources";
@@ -25,6 +26,8 @@ export async function reserveEquipment(
   seats: number,
   choices: readonly EquipmentChoice[],
   byTeam: boolean,
+  /** Matériel facultatif lié à une option payante : places qui la prennent (`optionNeedSeats`). */
+  linked: Readonly<Record<string, number>> = {},
 ): Promise<string[]> {
   const needs = event.modules.equipment?.needs ?? [];
   if (needs.length === 0) return [];
@@ -32,9 +35,7 @@ export async function reserveEquipment(
   const candidates: Record<string, EquipmentCandidate[]> = {};
   const names: Record<string, string> = {};
   for (const need of needs) {
-    if (!need.required && !choices.some((choice) => choice.needId === need.id && choice.wanted)) {
-      continue;
-    }
+    if (needSeats(need, seats, choices, linked) === 0) continue;
     const found = await repositories.inventory.unitsOfItemType(
       event.organizationId,
       need.itemTypeId,
@@ -52,7 +53,7 @@ export async function reserveEquipment(
       restrictTo: need.unitIds,
     });
   }
-  const planned = planEquipment({ needs, seats, choices, candidates, names, byTeam });
+  const planned = planEquipment({ needs, seats, choices, candidates, names, byTeam, linked });
 
   // Déjà réservés à l'événement : on les attribue. Les autres : nouvelle allocation.
   for (const need of needs) {

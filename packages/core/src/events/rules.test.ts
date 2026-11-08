@@ -8,7 +8,7 @@ const base = {
   endsAt: new Date("2026-11-10T17:00:00Z"),
   priceCents: 0,
   paymentMode: "free" as const,
-  depositPercent: null,
+  modules: {},
 };
 
 describe("assertEventConsistency", () => {
@@ -22,14 +22,14 @@ describe("assertEventConsistency", () => {
     );
   });
 
-  it("exige un prix pour un événement payant et un pourcentage pour l'acompte", () => {
+  it("exige un prix pour un événement payant et un acompte en mode acompte", () => {
     try {
       assertEventConsistency({ ...base, paymentMode: "deposit" });
       expect.unreachable();
     } catch (error) {
       expect((error as ValidationError).issues.map((issue) => issue.path)).toEqual([
         "priceCents",
-        "depositPercent",
+        "deposit",
       ]);
     }
   });

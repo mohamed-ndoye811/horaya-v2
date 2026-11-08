@@ -1,5 +1,6 @@
 /** Cartes de séances : logique serveur des formulaires (voir functions/passes.ts). */
 import {
+  acceptsPass,
   adjustPass,
   cancelPendingPass,
   createPassPlan,
@@ -141,12 +142,15 @@ export async function counterPassesImpl(customerId: string, eventId: string) {
     new Date(),
     target?.startsAt,
   );
-  return passes.map((entry) => ({
-    id: entry.id,
-    name: entry.name,
-    balance: entry.balance,
-    expiresAt: entry.expiresAt.toISOString(),
-  }));
+  // Module « Moyens acceptés » : seulement les formules que le type accepte.
+  return passes
+    .filter((entry) => acceptsPass(target?.modules.payment_methods, entry))
+    .map((entry) => ({
+      id: entry.id,
+      name: entry.name,
+      balance: entry.balance,
+      expiresAt: entry.expiresAt.toISOString(),
+    }));
 }
 
 /** Page publique : « Acheter une carte ». La carte attend que l'organisateur la marque payée. */

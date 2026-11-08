@@ -1,5 +1,6 @@
 import type { PaymentMode } from "../events/types";
 import type { FieldValues } from "../fields/model";
+import type { PriceLine } from "./pricing";
 import type { BookingKind, BookingPaymentStatus, BookingSource, BookingStatus } from "./types";
 
 export interface Booking {
@@ -18,6 +19,8 @@ export interface Booking {
   paymentMode: PaymentMode;
   paymentStatus: BookingPaymentStatus;
   depositCents: number | null;
+  /** Détail du prix (tarifs et options) au moment de la réservation ; vide avant le lot 35. */
+  priceLines: PriceLine[];
   customerMessage: string | null;
   /** Réponses aux questions « une fois par inscription ». */
   answers: FieldValues;

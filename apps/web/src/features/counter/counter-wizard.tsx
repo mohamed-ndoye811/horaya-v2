@@ -1,8 +1,12 @@
 import {
+  acceptsGiftCards,
   type CounterBookingInput,
+  type EventModules,
   type EventTypeField,
   fieldsOfScope,
   type PaymentMethod,
+  type PaymentMode,
+  passSessionsFor,
 } from "@horaya/core";
 import { type FormEvent, type ReactNode, useEffect, useRef, useState, useTransition } from "react";
 import { FieldInputs } from "@/components/app/field-inputs";
@@ -35,6 +39,7 @@ import { CATEGORY_COLORS } from "@/lib/colors";
 import { meshCover, seedOf } from "@/lib/cover";
 import { rawFieldValues } from "@/lib/fields";
 import { formatMoney } from "@/lib/format";
+import { BookingOptions, SeatPrice, usePriceChoice } from "../public/price-choice";
 
 export interface CounterEvent {
   id: string;
@@ -46,6 +51,9 @@ export interface CounterEvent {
   range: string;
   location: string | null;
   priceCents: number;
+  paymentMode: PaymentMode;
+  /** Tarifs et options, moyens acceptés (lot 35). */
+  modules: EventModules;
   color: string;
   /** « Mar. 16 · 10h » : ligne de la séance. */
   label: string;
@@ -152,7 +160,11 @@ export function CounterWizard({
   const event = events.find((entry) => entry.id === eventId);
   // Inscription à toute la série : une place par séance restante, au prix de la série.
   const enrolling = wholeSeries && event?.enrollmentPriceCents != null;
-  const total = enrolling ? (event?.enrollmentPriceCents ?? 0) : (event?.priceCents ?? 0) * seats;
+  // Tarifs et options : même calcul que le serveur (quoteBooking).
+  const price = usePriceChoice(event ?? { priceCents: 0, paymentMode: "free", modules: {} }, seats);
+  const total = enrolling ? (event?.enrollmentPriceCents ?? 0) : price.quote.amountCents;
+  const passSessions = passSessionsFor(event?.modules.payment_methods, seats);
+  const giftCardsAccepted = acceptsGiftCards(event?.modules.payment_methods);
   const full = event?.remaining !== null && event !== undefined && seats > (event.remaining ?? 0);
   // Questions du type, aussi pour l'inscription à toute la série (une fois, pour une personne).
   const asking = Boolean(event && event.fields.length > 0);
@@ -252,7 +264,9 @@ export function CounterWizard({
       paid: total > 0 && paid && !passId,
       paymentMethod: total > 0 && paid && !passId ? method : null,
       passId: total > 0 ? passId : null,
-      giftCardCode: total > 0 && !passId ? giftCode.trim() || null : null,
+      giftCardCode: total > 0 && !passId && giftCardsAccepted ? giftCode.trim() || null : null,
+      rates: price.selection.rates ? [...price.selection.rates] : [],
+      options: { ...price.selection.options },
       ...answersOf(new FormData(formEvent.currentTarget as HTMLFormElement), seats),
     };
     startTransition(async () => {
@@ -401,6 +415,22 @@ export function CounterWizard({
                 },
               ]}
             />
+          )}
+          {price.visible && !enrolling && (
+            <div className="flex flex-col gap-3">
+              {Array.from({ length: seats }, (_, index) => (
+                // biome-ignore lint/suspicious/noArrayIndexKey: une place = un participant, dans l'ordre.
+                <div key={index} className="flex flex-col gap-2">
+                  {seats > 1 && (
+                    <p className="text-[13px] font-semibold leading-4 text-ink-muted">
+                      Participant {index + 1}
+                    </p>
+                  )}
+                  <SeatPrice choice={price} seat={index} />
+                </div>
+              ))}
+              <BookingOptions choice={price} />
+            </div>
           )}
         </Section>
 
@@ -669,7 +699,7 @@ export function CounterWizard({
                 Régler avec une carte de séances
               </legend>
               {passes.map((entry) => {
-                const enough = entry.balance >= seats;
+                const enough = entry.balance >= passSessions;
                 return (
                   <label
                     key={entry.id}
@@ -701,8 +731,8 @@ export function CounterWizard({
                         passId === entry.id ? "text-on-ink-muted" : "text-ink-subtle",
                       )}
                     >
-                      {entry.balance} séance{entry.balance > 1 ? "s" : ""} · {seats} utilisée
-                      {seats > 1 ? "s" : ""}
+                      {entry.balance} séance{entry.balance > 1 ? "s" : ""} · {passSessions} utilisée
+                      {passSessions > 1 ? "s" : ""}
                     </span>
                   </label>
                 );
@@ -710,7 +740,7 @@ export function CounterWizard({
             </fieldset>
           </Collapse>
           <Collapse open={total > 0 && !passId} className="flex flex-col gap-3">
-            {!enrolling && (
+            {!enrolling && giftCardsAccepted && (
               <Field
                 label="Bon cadeau"
                 error={fieldErrors.giftCardCode}
@@ -826,13 +856,28 @@ export function CounterWizard({
             ) : (
               <SummaryLine
                 label={
-                  event && event.priceCents > 0
+                  event && event.priceCents > 0 && !price.visible
                     ? `${seats} place${seats > 1 ? "s" : ""} × ${formatMoney(event.priceCents)}`
                     : "Places"
                 }
-                value={event ? (total > 0 ? formatMoney(total) : String(seats)) : null}
+                value={
+                  event ? (total > 0 && !price.visible ? formatMoney(total) : String(seats)) : null
+                }
               />
             )}
+            {price.visible &&
+              !enrolling &&
+              price.quote.lines.map((line) => (
+                <SummaryLine
+                  key={`${line.kind}-${line.id}`}
+                  label={
+                    line.kind === "rate"
+                      ? `${line.quantity} × ${line.label}`
+                      : `${line.label}${line.quantity > 1 ? ` × ${line.quantity}` : ""}`
+                  }
+                  value={formatMoney(line.totalCents)}
+                />
+              ))}
             {chosenItems.map(([id, quantity]) => (
               <SummaryLine key={id} label={`${itemName(id)} ×${quantity}`} value="attribué" />
             ))}

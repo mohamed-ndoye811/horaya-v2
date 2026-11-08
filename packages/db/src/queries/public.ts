@@ -82,7 +82,6 @@ const publicEventColumns = {
   capacity: event.capacity,
   priceCents: event.priceCents,
   paymentMode: event.paymentMode,
-  depositPercent: event.depositPercent,
   requiresApproval: event.requiresApproval,
   highlights: event.highlights,
   paymentLinkUrl: event.paymentLinkUrl,
@@ -136,7 +135,6 @@ export interface PublicEventRow {
   capacity: number | null;
   priceCents: number;
   paymentMode: PaymentMode;
-  depositPercent: number | null;
   requiresApproval: boolean;
   highlights: string[];
   paymentLinkUrl: string | null;
@@ -259,6 +257,7 @@ async function findManagedBooking(db: Executor, where: SQL | undefined) {
       seats: booking.seats,
       amountCents: booking.amountCents,
       depositCents: booking.depositCents,
+      priceLines: booking.priceLines,
       paymentMode: booking.paymentMode,
       paymentStatus: booking.paymentStatus,
       currency: booking.currency,

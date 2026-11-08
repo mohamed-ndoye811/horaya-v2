@@ -203,6 +203,35 @@ describe("matériel avancé", () => {
     ).rejects.toThrow(ConflictError);
   });
 
+  it("option payante liée : la prendre réserve le tablier, une unité par participant qui la prend", async () => {
+    const lessonEvent = await lesson(
+      ({ aprons }) => ({
+        equipment: { needs: [{ ...tour, id: "tablier", itemTypeId: aprons, required: false }] },
+        pricing: {
+          rates: [{ id: "plein", name: "Plein", priceCents: 4000 }],
+          options: [
+            { id: "tab", name: "Tablier", priceCents: 500, per: "participant", needId: "tablier" },
+          ],
+        },
+      }),
+      { priceCents: 4000, paymentMode: "on_site" },
+    );
+    const withOption = (seats: number, quantity: number, email: string) =>
+      createEventBooking(deps, customerActor(organizationId), {
+        eventId: lessonEvent.id,
+        seats,
+        customer: contact(email),
+        options: { tab: quantity },
+        // La case envoyée est ignorée : l'option décide.
+        equipment: [{ needId: "tablier", wanted: true }],
+      });
+    const none = await withOption(2, 0, "a@mail.com");
+    expect(await active(none.booking.id)).toHaveLength(0);
+    const one = await withOption(2, 1, "b@mail.com");
+    expect(one.booking.amountCents).toBe(8500);
+    expect(await active(one.booking.id)).toHaveLength(1);
+  });
+
   it("une unité en maintenance ou hors de la restriction de l'événement n'est pas proposée", async () => {
     const lessonEvent = await lesson(({ tours }) => ({
       equipment: { needs: [{ ...tour, itemTypeId: tours, chooser: "student" }] },

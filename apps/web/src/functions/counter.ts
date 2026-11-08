@@ -77,6 +77,12 @@ export const getCounter = createServerFn({ method: "GET" })
         range: `${clock.format(event.startsAt)} – ${clock.format(event.endsAt)}`,
         location: event.locationName,
         priceCents: event.priceCents,
+        paymentMode: event.paymentMode,
+        // Seulement ce que le comptoir utilise : tarifs et options, moyens acceptés.
+        modules: {
+          ...(event.modules.pricing && { pricing: event.modules.pricing }),
+          ...(event.modules.payment_methods && { payment_methods: event.modules.payment_methods }),
+        },
         color: event.color,
         remaining: event.capacity === null ? null : Math.max(0, event.capacity - event.seatsHeld),
         capacity: event.capacity,

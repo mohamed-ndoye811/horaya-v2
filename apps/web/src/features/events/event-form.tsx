@@ -1,8 +1,11 @@
 import {
+  type DepositModule,
+  defaultRate,
   type EventTypeField,
   type FieldValues,
   fieldsOfScope,
   generateOccurrences,
+  type PricingModule,
 } from "@horaya/core";
 import { type ReactNode, useMemo, useState } from "react";
 import { FieldInputs } from "@/components/app/field-inputs";
@@ -29,7 +32,7 @@ import { saveEvent } from "@/functions/events";
 import { cn } from "@/lib/cn";
 import { parseCivilDate } from "@/lib/dates";
 import { formatHour, formatWeekdayShort, plural } from "@/lib/format";
-import { parseEuroToCents } from "@/lib/money";
+import { centsToInput, parseEuroToCents } from "@/lib/money";
 import { useFormAction } from "@/lib/use-form-action";
 import { useInvalidMessage } from "@/lib/use-invalid-message";
 import type { FormState } from "@/server/form-state";
@@ -46,6 +49,10 @@ export interface EventTypeOption {
   requiresApproval: boolean;
   /** Module « Conditions d'accès » sur invitation. */
   inviteOnly: boolean;
+  /** Tarifs et options du type (à la modification : ceux de l'événement). */
+  pricing: PricingModule | null;
+  /** Acompte de départ du type. */
+  deposit: DepositModule | null;
   /** Module Intervenant : membres proposés (liste vide : toute l'équipe), null sans le module. */
   staff: { memberIds: string[] } | null;
   /** Module Matériel avancé : un besoin par type de matériel visé. */
@@ -59,6 +66,29 @@ export interface ResourceChoices {
   members: Array<{ id: string; name: string }>;
   itemTypes: Record<string, { name: string; units: Array<{ id: string; label: string }> }>;
 }
+
+/** Saisie de l'acompte à partir du module. */
+export function depositInputs(deposit: DepositModule | null | undefined) {
+  return {
+    depositKind: deposit?.amountCents !== undefined ? "fixed" : "percent",
+    depositValue:
+      deposit?.amountCents !== undefined
+        ? centsToInput(deposit.amountCents)
+        : deposit?.percent !== undefined
+          ? String(deposit.percent)
+          : "",
+    depositBalance: deposit?.balance ?? "on_site",
+  };
+}
+
+/** Prix saisis des tarifs et options, par identifiant. */
+export const pricingInputs = (pricing: PricingModule | null | undefined) =>
+  Object.fromEntries(
+    [...(pricing?.rates ?? []), ...(pricing?.options ?? [])].map((entry) => [
+      entry.id,
+      centsToInput(entry.priceCents),
+    ]),
+  );
 
 export interface EventFormValues {
   title: string;
@@ -78,7 +108,12 @@ export interface EventFormValues {
   capacity: string;
   price: string;
   paymentMode: string;
-  depositPercent: string;
+  /** Acompte : en pourcentage ou montant fixe par place, le reste sur place ou plus tard. */
+  depositKind: string;
+  depositValue: string;
+  depositBalance: string;
+  /** Prix des tarifs et options du type (module « Tarifs et options »). */
+  prices: Record<string, string>;
   /** Lien de paiement propre à l'événement (sinon celui des paramètres). */
   paymentLinkUrl: string;
   requiresApproval: boolean;
@@ -90,7 +125,7 @@ export interface EventFormValues {
 const PAYMENT_OPTIONS = [
   { value: "free", label: "Gratuit", description: "Inscription seule" },
   { value: "online", label: "Paiement en ligne", description: "Lien de paiement" },
-  { value: "deposit", label: "Acompte", description: "Le reste sur place" },
+  { value: "deposit", label: "Acompte", description: "Une part à l'inscription" },
   { value: "on_site", label: "Sur place", description: "Espèces ou carte" },
 ];
 
@@ -173,6 +208,10 @@ export function EventForm({
             paymentMode: values.paymentMode === "free" ? "on_site" : values.paymentMode,
           }
         : {}),
+      // Tarifs du type, et son acompte s'il en a un.
+      prices: pricingInputs(next.pricing),
+      ...(next.pricing && values.paymentMode === "free" ? { paymentMode: "on_site" } : {}),
+      ...(next.deposit ? { paymentMode: "deposit", ...depositInputs(next.deposit) } : {}),
       ...(end ? { endDate: end.date, endTime: end.time } : {}),
     });
   }
@@ -204,7 +243,13 @@ export function EventForm({
     }
   }, [recurring, start, frequency, count]);
 
-  const priceCents = values.paymentMode === "free" ? 0 : parseEuroToCents(values.price);
+  const pricing = type?.pricing ?? null;
+  const priceCents =
+    values.paymentMode === "free"
+      ? 0
+      : pricing
+        ? parseEuroToCents(values.prices[defaultRate(pricing).id] ?? "")
+        : parseEuroToCents(values.price);
   const checklist = [
     { label: "Informations", done: values.title.trim().length >= 2 && Boolean(type) },
     {
@@ -216,8 +261,10 @@ export function EventForm({
     {
       label: "Places & paiement",
       done:
-        (values.paymentMode === "free" || priceCents > 0) &&
-        (values.paymentMode !== "deposit" || values.depositPercent !== ""),
+        (values.paymentMode === "free" ||
+          priceCents > 0 ||
+          Object.values(values.prices).some((price) => parseEuroToCents(price) > 0)) &&
+        (values.paymentMode !== "deposit" || values.depositValue !== ""),
     },
   ];
   const ready = checklist.filter((item) => item.done).length;
@@ -581,7 +628,7 @@ export function EventForm({
                 />
               )}
             </Field>
-            <Collapse open={values.paymentMode !== "free"}>
+            <Collapse open={values.paymentMode !== "free" && !pricing}>
               <Field label="Prix par personne" required error={errors.priceCents}>
                 {(field) => (
                   <AffixInput
@@ -597,24 +644,58 @@ export function EventForm({
                 )}
               </Field>
             </Collapse>
-            <Collapse open={values.paymentMode === "deposit"}>
-              <Field label="Acompte" required error={errors.depositPercent}>
+          </div>
+          <Collapse open={values.paymentMode !== "free" && pricing !== null}>
+            <PriceInputs
+              pricing={pricing}
+              prices={values.prices}
+              onChange={(prices) => set({ prices })}
+              error={errors.prices}
+            />
+          </Collapse>
+          <Collapse open={values.paymentMode === "deposit"}>
+            <div className="grid gap-4 sm:grid-cols-3">
+              <Field label="Acompte" required error={errors.deposit ?? errors["deposit.percent"]}>
                 {(field) => (
                   <AffixInput
                     {...field}
-                    name="depositPercent"
-                    inputMode="numeric"
-                    value={values.depositPercent}
-                    onChange={(event) =>
-                      set({ depositPercent: event.target.value.replace(/\D/g, "") })
-                    }
-                    suffix="%"
+                    name="depositValue"
+                    inputMode={values.depositKind === "fixed" ? "decimal" : "numeric"}
+                    value={values.depositValue}
+                    onChange={(event) => set({ depositValue: event.target.value })}
+                    suffix={values.depositKind === "fixed" ? "€ par place" : "%"}
                     mono
                   />
                 )}
               </Field>
-            </Collapse>
-          </div>
+              <Field label="Calculé">
+                {(field) => (
+                  <Select
+                    {...field}
+                    name="depositKind"
+                    value={values.depositKind}
+                    onChange={(event) => set({ depositKind: event.target.value, depositValue: "" })}
+                  >
+                    <option value="percent">En pourcentage du total</option>
+                    <option value="fixed">Montant fixe par place</option>
+                  </Select>
+                )}
+              </Field>
+              <Field label="Le reste">
+                {(field) => (
+                  <Select
+                    {...field}
+                    name="depositBalance"
+                    value={values.depositBalance}
+                    onChange={(event) => set({ depositBalance: event.target.value })}
+                  >
+                    <option value="on_site">Sur place</option>
+                    <option value="later">Plus tard, en ligne</option>
+                  </Select>
+                )}
+              </Field>
+            </div>
+          </Collapse>
           <Collapse open={values.paymentMode === "online" || values.paymentMode === "deposit"}>
             <Field
               label="Lien de paiement"
@@ -712,7 +793,7 @@ export function EventForm({
                 values.paymentMode === "free"
                   ? "Gratuit"
                   : priceCents > 0
-                    ? `${values.price} € / pers.`
+                    ? `${centsToInput(priceCents)} € / pers.`
                     : null,
               ]
                 .filter(Boolean)
@@ -767,5 +848,68 @@ export function EventForm({
         </div>
       </aside>
     </form>
+  );
+}
+
+/** Tarifs et options de l'événement : les noms viennent du type, les prix se changent ici. */
+function PriceInputs({
+  pricing,
+  prices,
+  onChange,
+  error,
+}: {
+  pricing: PricingModule | null;
+  prices: Record<string, string>;
+  onChange: (prices: Record<string, string>) => void;
+  error: string | undefined;
+}) {
+  if (!pricing) return null;
+  const rows = [
+    ...pricing.rates.map((rate) => ({
+      id: rate.id,
+      name: rate.name,
+      hint: [
+        rate.description,
+        rate.id === defaultRate(pricing).id && pricing.rates.length > 1 ? "par défaut" : null,
+      ]
+        .filter(Boolean)
+        .join(" · "),
+    })),
+    ...(pricing.options ?? []).map((option) => ({
+      id: option.id,
+      name: `+ ${option.name}`,
+      hint: option.per === "participant" ? "option, par participant" : "option, par inscription",
+    })),
+  ];
+  return (
+    <fieldset className="flex flex-col gap-2">
+      <legend className="pb-2 text-[13px] font-semibold leading-[17px] text-ink">
+        Tarifs et options
+      </legend>
+      {rows.map((row) => (
+        <div key={row.id} className="flex items-center gap-3">
+          <span className="flex min-w-0 grow flex-col">
+            <span className="truncate text-sm font-semibold leading-[18px] text-ink">
+              {row.name}
+            </span>
+            {row.hint && (
+              <span className="truncate text-[13px] leading-[17px] text-ink-muted">{row.hint}</span>
+            )}
+          </span>
+          <div className="w-32 shrink-0">
+            <AffixInput
+              aria-label={`Prix : ${row.name}`}
+              name={`prix.${row.id}`}
+              inputMode="decimal"
+              value={prices[row.id] ?? ""}
+              onChange={(event) => onChange({ ...prices, [row.id]: event.target.value })}
+              suffix="€"
+              mono
+            />
+          </div>
+        </div>
+      ))}
+      {error && <FieldError>{error}</FieldError>}
+    </fieldset>
   );
 }

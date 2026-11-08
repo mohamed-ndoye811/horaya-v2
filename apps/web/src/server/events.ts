@@ -54,7 +54,8 @@ function eventFields(form: FormData, timeZone: string) {
   const endsAt = zoned(form, "endDate", "endTime", timeZone);
   const capacity = text(form, "capacity");
   const paymentMode = text(form, "paymentMode") || "free";
-  const deposit = text(form, "depositPercent");
+  const deposit = text(form, "depositValue");
+  const fixed = text(form, "depositKind") === "fixed";
   return {
     title: text(form, "title"),
     description: text(form, "description"),
@@ -72,7 +73,20 @@ function eventFields(form: FormData, timeZone: string) {
     capacity: capacity === "" ? null : Number(capacity),
     priceCents: paymentMode === "free" ? 0 : parseEuroToCents(text(form, "price")),
     paymentMode,
-    depositPercent: paymentMode === "deposit" && deposit !== "" ? Number(deposit) : null,
+    // Acompte : pourcentage ou montant fixe par place ; vide, le core demande de le remplir.
+    deposit:
+      paymentMode === "deposit" && deposit !== ""
+        ? {
+            ...(fixed ? { amountCents: parseEuroToCents(deposit) } : { percent: Number(deposit) }),
+            balance: text(form, "depositBalance") === "later" ? "later" : "on_site",
+          }
+        : null,
+    // Prix des tarifs et options (champs « prix.<id> »).
+    prices: Object.fromEntries(
+      [...form.keys()]
+        .filter((key) => key.startsWith("prix."))
+        .map((key) => [key.slice(5), parseEuroToCents(text(form, key))]),
+    ),
     paymentLinkUrl:
       paymentMode === "online" || paymentMode === "deposit"
         ? text(form, "paymentLinkUrl") || null

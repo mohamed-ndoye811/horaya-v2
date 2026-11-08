@@ -4,6 +4,7 @@
  * organisateurs (Better Auth) : son propre cookie, jamais l'un pour l'autre.
  */
 import {
+  acceptsPass,
   amountDueOnline,
   awaitsOnlinePayment,
   bookMakeupAsCustomer,
@@ -15,11 +16,13 @@ import {
   deleteCustomerAccount,
   enrollmentProgress,
   LOGIN_LINK_MINUTES,
+  passSessionsFor,
   reportAbsenceAsCustomer,
   requestCustomerLoginLink,
   rescheduleBookingAsCustomer,
   rescheduleClosedReason,
   rescheduleDeadline,
+  reschedulePricing,
   rescheduleTargetIssue,
   signInWithLoginLink,
   signOutCustomer,
@@ -394,11 +397,10 @@ export async function customerBookingPage(slug: string, bookingId: string) {
             startsAt: to.startsAt,
             endsAt: to.endsAt,
             remaining: to.capacity === null ? null : to.capacity - to.seatsHeld,
-            // Écart de prix pour ces places (une carte de séances ne change rien).
+            // Écart de prix pour ces places, mêmes tarifs et options (une carte ne change rien).
             deltaCents:
-              booking.paymentStatus === "paid_with_pass"
-                ? 0
-                : (to.priceCents - from.priceCents) * booking.seats,
+              reschedulePricing({ booking, to, paidCents: money.paid }).amountCents -
+              booking.amountCents,
           }))
       : [];
   // Lot 31 : « Payer avec ma carte » si la réservation reste à régler et qu'une carte du client
@@ -421,7 +423,11 @@ export async function customerBookingPage(slug: string, bookingId: string) {
           now,
           startsAt ?? undefined,
         )
-      ).find((entry) => entry.balance >= booking.seats)
+      ).find(
+        (entry) =>
+          acceptsPass(booking.eventModules?.payment_methods, entry) &&
+          entry.balance >= passSessionsFor(booking.eventModules?.payment_methods, booking.seats),
+      )
     : undefined;
   return {
     booking,

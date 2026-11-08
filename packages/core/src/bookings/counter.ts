@@ -11,7 +11,7 @@ import { generateToken, hashToken } from "../shared/tokens";
 import type { Deps, Repositories } from "../shared/unit-of-work";
 import { validate } from "../shared/validate";
 import type { Booking } from "./model";
-import { participantSchema } from "./schemas";
+import { participantSchema, priceOptionsSchema, priceRatesSchema } from "./schemas";
 import { PAYMENT_METHODS } from "./types";
 import { insertEventBooking } from "./use-cases";
 
@@ -76,6 +76,9 @@ export const counterBookingSchema = z
     /** Réponses aux questions du type, saisies par l'équipe (rien n'est requis au comptoir). */
     answers: rawFieldValuesSchema.default({}),
     participants: z.array(participantSchema).max(1000).default([]),
+    /** Tarif de chaque place et options (lot 35). */
+    rates: priceRatesSchema,
+    options: priceOptionsSchema,
   })
   .superRefine((input, context) => {
     refineCounterCustomer(input, context);
@@ -160,6 +163,7 @@ export async function createCounterBooking(
       participants: data.participants,
       customerMessage: null,
       manageTokenHash,
+      selection: { rates: data.rates, options: data.options },
     });
     if (
       booking.status !== "confirmed" &&

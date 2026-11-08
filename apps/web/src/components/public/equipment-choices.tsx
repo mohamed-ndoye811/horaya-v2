@@ -13,20 +13,29 @@ export function EquipmentChoices({
   offers,
   seats,
   errors,
+  linked = {},
+  optionNames = {},
 }: {
   offers: EquipmentOffer[];
   seats: number;
   errors: Record<string, string>;
+  /** Matériel facultatif lié à une option payante : places qui la prennent (l'option fait la case). */
+  linked?: Readonly<Record<string, number>>;
+  optionNames?: Readonly<Record<string, string>>;
 }) {
-  if (offers.length === 0) return null;
+  // Un matériel lié à une option n'apparaît ici que si l'option est prise.
+  const shown = offers.filter((offer) => (linked[offer.needId] ?? 1) > 0);
+  if (shown.length === 0) return null;
   return (
     <div className="flex flex-col gap-3.5 rounded-[18px] bg-field p-[18px]">
       <p className="text-sm font-bold leading-[18px] text-ink">Ton matériel</p>
-      {offers.map((offer) => (
+      {shown.map((offer) => (
         <EquipmentOfferRow
           key={offer.needId}
           offer={offer}
           seats={seats}
+          linkedSeats={linked[offer.needId]}
+          optionName={optionNames[offer.needId]}
           error={errors[`equipment.${offer.needId}`]}
         />
       ))}
@@ -37,28 +46,50 @@ export function EquipmentChoices({
 function EquipmentOfferRow({
   offer,
   seats,
+  linkedSeats,
+  optionName,
   error,
 }: {
   offer: EquipmentOffer;
   seats: number;
+  linkedSeats: number | undefined;
+  optionName: string | undefined;
   error: string | undefined;
 }) {
-  const quantity = offer.perSeat * seats;
+  const quantity = offer.perSeat * (linkedSeats ?? seats);
   const [wanted, setWanted] = useState(false);
-  const [picked, setPicked] = useState(() =>
-    Array.from({ length: quantity }, (_, slot) => ({ slot, value: "" })),
-  );
+  const [picked, setPicked] = useState<string[]>([]);
   const soldOut = offer.available < quantity;
-  const choosing = offer.chooser === "student" && (offer.required || wanted);
+  const choosing =
+    offer.chooser === "student" && (offer.required || wanted || linkedSeats !== undefined);
   const pick = (slot: number, unitId: string) =>
-    setPicked((current) =>
-      current.map((entry) => (entry.slot === slot ? { slot, value: unitId } : entry)),
-    );
-  const taken = picked.map((entry) => entry.value);
+    setPicked((current) => {
+      const next = Array.from({ length: quantity }, (_, index) => current[index] ?? "");
+      next[slot] = unitId;
+      return next;
+    });
+  const slots = Array.from({ length: quantity }, (_, slot) => ({
+    slot,
+    value: picked[slot] ?? "",
+  }));
+  const taken = slots.map((entry) => entry.value);
 
   return (
     <div className="flex flex-col gap-2.5">
-      {offer.required ? (
+      {linkedSeats !== undefined ? (
+        <div className="flex flex-col gap-0.5">
+          <p className="text-sm font-semibold leading-5 text-ink">
+            {offer.name}
+            {quantity > 1 ? ` · ${quantity} exemplaires` : ""}
+          </p>
+          <p className="text-[13px] leading-[18px] text-ink-muted">
+            {`Avec l'option « ${optionName ?? offer.name} » : `}
+            {offer.chooser === "student"
+              ? `choisis ${quantity > 1 ? "tes exemplaires" : "ton exemplaire"}.`
+              : "l'atelier te l'attribue."}
+          </p>
+        </div>
+      ) : offer.required ? (
         <div className="flex flex-col gap-0.5">
           <p className="text-sm font-semibold leading-5 text-ink">
             {offer.name}
@@ -83,7 +114,7 @@ function EquipmentOfferRow({
           }
         />
       )}
-      {soldOut && offer.required && (
+      {soldOut && (offer.required || linkedSeats !== undefined) && (
         <p className="text-[13px] leading-[18px] text-danger">
           Plus assez de matériel pour {seats > 1 ? `${seats} places` : "cette place"} : contacte
           l'atelier.
@@ -91,7 +122,7 @@ function EquipmentOfferRow({
       )}
       <Collapse open={choosing && !soldOut}>
         <div className="flex flex-col gap-2">
-          {picked.map(({ slot, value }) => (
+          {slots.map(({ slot, value }) => (
             <Select
               key={slot}
               name={`eq.${offer.needId}.unit`}

@@ -65,10 +65,10 @@ export interface Event {
   onlineUrl: string | null;
   /** null = places illimitées. */
   capacity: number | null;
+  /** Prix du tarif par défaut (tarifs et options : `modules.pricing`, acompte : `modules.deposit`). */
   priceCents: number;
   currency: string;
   paymentMode: PaymentMode;
-  depositPercent: number | null;
   requiresApproval: boolean;
   highlights: string[];
   /** Lien de paiement externe propre à l'événement (sinon celui de l'espace). */
@@ -109,7 +109,6 @@ export type EventDetails = Pick<
   | "capacity"
   | "priceCents"
   | "paymentMode"
-  | "depositPercent"
   | "requiresApproval"
   | "highlights"
   | "paymentLinkUrl"

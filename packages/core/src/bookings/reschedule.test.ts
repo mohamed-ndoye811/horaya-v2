@@ -83,11 +83,12 @@ describe("prix après changement de date", () => {
     depositCents: null,
     paymentMode: "online" as const,
     paymentStatus: "paid" as const,
+    priceLines: [],
   };
   const target = (priceCents: number) => ({
     priceCents,
     paymentMode: "online" as const,
-    depositPercent: null,
+    modules: {},
   });
 
   it("plus cher : la réservation payée repasse à payer, la différence reste due", () => {
@@ -113,7 +114,7 @@ describe("prix après changement de date", () => {
   it("acompte : le reste est calculé sur le nouvel acompte", () => {
     const result = reschedulePricing({
       booking: { ...booking, paymentMode: "deposit", depositCents: 5100, amountCents: 17000 },
-      to: { priceCents: 10000, paymentMode: "deposit", depositPercent: 30 },
+      to: { priceCents: 10000, paymentMode: "deposit", modules: { deposit: { percent: 30 } } },
       paidCents: 5100,
     });
     expect(result).toMatchObject({ amountCents: 20000, depositCents: 6000, dueCents: 900 });
