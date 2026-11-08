@@ -431,6 +431,65 @@ const types = Object.fromEntries(
             help: "12 ans minimum",
           },
         ],
+        // Lot 36 : deux règles « si… alors… ».
+        rules: [
+          {
+            id: "autorisation-mineurs",
+            name: "Autorisation des mineurs",
+            trigger: { kind: "booking_submitted" as const },
+            conditions: [
+              [
+                {
+                  kind: "field" as const,
+                  fieldKey: "age",
+                  operator: "less_than" as const,
+                  value: 16,
+                },
+              ],
+            ],
+            actions: [
+              {
+                kind: "ask" as const,
+                field: {
+                  key: "accord_representant",
+                  label: "Je suis son représentant légal et j'autorise sa participation",
+                  type: "acceptance" as const,
+                },
+              },
+              {
+                kind: "remind_document" as const,
+                label: "l'autorisation parentale signée",
+              },
+            ],
+          },
+          {
+            id: "dernieres-places-debutants",
+            name: "Dernières places débutants",
+            trigger: { kind: "before_start" as const, hours: 7 * 24 },
+            conditions: [
+              [
+                {
+                  kind: "field" as const,
+                  fieldKey: "niveau",
+                  operator: "equals" as const,
+                  value: "Débutant",
+                },
+                {
+                  kind: "seats" as const,
+                  measure: "remaining" as const,
+                  operator: "greater_than" as const,
+                  value: 0,
+                },
+              ],
+            ],
+            actions: [
+              {
+                kind: "notify_team" as const,
+                message: "Il reste des places au cours débutants : relance les anciens élèves.",
+              },
+            ],
+          },
+        ],
       },
       {
         key: "atelier",

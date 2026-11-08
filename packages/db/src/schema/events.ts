@@ -1,4 +1,4 @@
-import type { BookingNoun, EventModules, EventTypeField, FieldValues } from "@horaya/core";
+import type { BookingNoun, EventModules, EventTypeField, FieldValues, Rule } from "@horaya/core";
 import { sql } from "drizzle-orm";
 import {
   boolean,
@@ -30,6 +30,8 @@ export const eventType = pgTable(
     modules: jsonb().$type<EventModules>().notNull().default({}),
     /** « Ce que tu décris » et « Ce que tu demandes » (lot 33). */
     fields: jsonb().$type<EventTypeField[]>().notNull().default([]),
+    /** Règles « si… alors… » (lot 36). */
+    rules: jsonb().$type<Rule[]>().notNull().default([]),
     /** « inscription », « réservation »… sur la page publique et le bouton du formulaire. */
     bookingNoun: text().$type<BookingNoun>().notNull().default("reservation"),
     archivedAt: timestamp({ withTimezone: true }),
@@ -94,6 +96,8 @@ export const event = pgTable(
     fields: jsonb().$type<EventTypeField[]>().notNull().default([]),
     /** Modules du type copiés à la création (lot 34) ; tarifs et acompte de l'événement (lot 35). */
     modules: jsonb().$type<EventModules>().notNull().default({}),
+    /** Règles du type copiées à la création (lot 36). */
+    rules: jsonb().$type<Rule[]>().notNull().default([]),
     /** Valeurs de « Ce que tu décris ». */
     fieldValues: jsonb().$type<FieldValues>().notNull().default({}),
     /** Module Intervenant : le membre de l'équipe qui anime l'événement. */
