@@ -10,6 +10,7 @@ import {
   type Deps,
   type EventModules,
   ForbiddenError,
+  keepEventDespiteMinimum,
   type LegacyTypeSettings,
   legacyModules,
   publishEvent,
@@ -258,6 +259,20 @@ describe("modules d'un type", () => {
       data: { reason: "minimum_not_reached" },
       actorType: "system",
     });
+  });
+
+  it("« Maintenir quand même » retire le seuil de l'événement : pas d'annulation", async () => {
+    const places = { capacity: 10, minimum: { seats: 3, daysBefore: 2 } };
+    const { event } = await publishedEvent({ places }, "2032-05-20T16:00:00Z");
+    await book(event.id);
+    const kept = await keepEventDespiteMinimum(deps, owner, event.id);
+    expect(kept.modules.places).toEqual({ capacity: 10 });
+    const decision = new Date("2032-05-18T16:00:00Z");
+    clock.set(decision);
+    expect((await claimMinimumDecisions(db, decision)).map((row) => row.id)).not.toContain(
+      event.id,
+    );
+    expect(await cancelEventBelowMinimum(deps, organizationId, event.id)).toBeNull();
   });
 
   it("rappel au moment choisi et message après la séance, une seule fois", async () => {

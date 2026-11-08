@@ -417,6 +417,37 @@ export async function cancelEvent(
 }
 
 /**
+ * « Maintenir quand même » : l'équipe retire le seuil de maintien de cet événement (sa copie
+ * des modules), la tâche planifiée ne l'annulera pas.
+ */
+export async function keepEventDespiteMinimum(
+  deps: Deps,
+  actor: Actor,
+  eventId: string,
+): Promise<Event> {
+  assertMemberCan(actor, "event", "update");
+  return deps.uow.run(async (repositories) => {
+    const locked = await repositories.events.lockForBooking(actor.organizationId, eventId);
+    if (!locked) throw new NotFoundError("Événement", eventId);
+    const { places, ...modules } = locked.event.modules;
+    if (!places?.minimum) return locked.event;
+    const { minimum: _minimum, ...rest } = places;
+    const updated = await repositories.events.update(actor.organizationId, eventId, {
+      modules: { ...modules, places: rest },
+    });
+    await repositories.activity.record({
+      organizationId: actor.organizationId,
+      entityType: "event",
+      entityId: eventId,
+      action: "event.updated",
+      ...actorRef(actor),
+      data: { fields: ["minimum"] },
+    });
+    return updated;
+  });
+}
+
+/**
  * Seuil de maintien (module Places), appelé par la tâche planifiée à J-x : si l'événement
  * publié n'a toujours pas assez d'inscrits, il est annulé par le système, avec le parcours
  * d'annulation habituel. Revérifié sous le verrou ; renvoie null s'il est maintenu.

@@ -251,6 +251,7 @@ export async function getEventDetail(db: Executor, organizationId: string, event
       publishedAt: event.publishedAt,
       fields: event.fields,
       fieldValues: event.fieldValues,
+      modules: event.modules,
     })
     .from(event)
     .innerJoin(eventType, eq(eventType.id, event.eventTypeId))
@@ -291,6 +292,7 @@ export async function getEventDetail(db: Executor, organizationId: string, event
       publishedAt: Date | null;
       fields: EventTypeField[];
       fieldValues: FieldValues;
+      modules: EventModules;
     },
     bookings,
     waitlisted: bookings

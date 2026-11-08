@@ -22,6 +22,7 @@ import {
   bookingAwaitingPaymentEmail,
   bookingCancelledEmail,
   bookingConfirmedEmail,
+  bookingFollowUpEmail,
   bookingPaymentReceivedEmail,
   bookingPendingEmail,
   bookingPromotedEmail,
@@ -29,12 +30,15 @@ import {
   bookingRefusedEmail,
   bookingReminderEmail,
   bookingRescheduledEmail,
+  bookingSoonEmail,
   bookingWaitlistedEmail,
   type EmailContent,
   enrollmentConfirmedEmail,
   passActivatedEmail,
   teamAlmostFullEmail,
   teamBookingEmail,
+  teamMinimumCancelledEmail,
+  teamMinimumRiskEmail,
   teamReminderEmail,
   weeklyDigestEmail,
 } from "@horaya/mail";
@@ -138,6 +142,13 @@ async function loadBooking(organizationId: string, bookingId: string) {
     seats: booking.seats,
     amount,
     manageUrl: url,
+    // Modules copiés sur l'événement : messages et documents joints (liens absolus).
+    note: booking.event?.modules.messages?.confirmation ?? null,
+    bring: booking.event?.modules.messages?.bring ?? null,
+    documents: (booking.event?.modules.documents?.files ?? []).map((file) => ({
+      name: file.name,
+      url: absoluteUrl(file.url),
+    })),
   });
   return {
     booking,
@@ -268,13 +279,81 @@ async function notifyEnrollmentCreated(entry: ActivityEntry) {
   );
 }
 
-/** Rappel la veille au client : le lien d'origine n'est pas gardé, on mène à son espace client. */
-export async function sendBookingReminder(organizationId: string, bookingId: string) {
+/**
+ * Rappel au client, la veille ou au moment choisi (module Messages) : le lien d'origine n'est
+ * pas gardé, on mène à son espace client.
+ */
+export async function sendBookingReminder(
+  organizationId: string,
+  bookingId: string,
+  custom = false,
+) {
   const loaded = await loadBooking(organizationId, bookingId);
   if (!loaded) return;
+  const template = custom ? bookingSoonEmail : bookingReminderEmail;
+  await send(loaded.booking.customer.email, template(loaded.mail(loaded.linkRequestUrl)));
+}
+
+/** Message après la séance (module Messages) : à chaque inscrit confirmé de l'événement. */
+export async function sendFollowUp(organizationId: string, bookingId: string) {
+  const loaded = await loadBooking(organizationId, bookingId);
+  const message = loaded?.booking.event?.modules.messages?.after;
+  if (!loaded || !message) return;
   await send(
     loaded.booking.customer.email,
-    bookingReminderEmail(loaded.mail(loaded.linkRequestUrl)),
+    bookingFollowUpEmail({ ...loaded.mail(loaded.eventsUrl), message }),
+  );
+}
+
+/** Seuil de maintien : l'équipe est prévenue la veille de J-x, puis de l'annulation. */
+export async function notifyMinimum(
+  kind: "risk" | "cancelled",
+  input: {
+    organizationId: string;
+    id: string;
+    title: string;
+    startsAt: Date;
+    endsAt: Date;
+    timezone: string;
+    seats: number;
+    minimum: number;
+    cancelledBookings?: number;
+  },
+) {
+  const workspace = await getWorkspaceSettings(db, input.organizationId);
+  if (!workspace) return;
+  const when = formatEventRange(input.startsAt, input.endsAt, input.timezone);
+  const link = `/app/evenements/${input.id}`;
+  const base = {
+    workspaceName: workspace.name,
+    title: input.title,
+    when,
+    seats: input.seats,
+    minimum: input.minimum,
+    url: absoluteUrl(link),
+  };
+  if (kind === "risk") {
+    await notifyTeam(
+      input.organizationId,
+      "event_at_risk",
+      teamMinimumRiskEmail({ ...base, decision: "demain" }),
+      {
+        title: `Risque d'annulation : ${input.title}`,
+        body: `${when} · ${input.seats} inscrit${input.seats > 1 ? "s" : ""} sur ${input.minimum} nécessaires, décision demain`,
+        link,
+      },
+    );
+    return;
+  }
+  await notifyTeam(
+    input.organizationId,
+    "event_auto_cancelled",
+    teamMinimumCancelledEmail({ ...base, cancelledBookings: input.cancelledBookings ?? 0 }),
+    {
+      title: `Annulé faute d'inscrits : ${input.title}`,
+      body: `${when} · ${input.seats} inscrit${input.seats > 1 ? "s" : ""} sur ${input.minimum}`,
+      link,
+    },
   );
 }
 
@@ -599,7 +678,11 @@ export async function notifyFromActivity(entries: ActivityEntry[]) {
                 ? null
                 : reason === "payment_expired"
                   ? "paiement en ligne non finalisé dans les 30 minutes"
-                  : reason,
+                  : reason === "minimum_not_reached"
+                    ? "le nombre minimum d'inscrits n'a pas été atteint, l'événement est annulé"
+                    : reason === "event_cancelled"
+                      ? "l'événement est annulé"
+                      : reason,
             eventsUrl,
           }),
         );

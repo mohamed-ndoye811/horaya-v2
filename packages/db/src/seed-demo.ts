@@ -6,6 +6,9 @@
  *
  * --reset vide d'abord l'espace (matériel, événements, réservations, clients, historique).
  */
+
+import { randomUUID } from "node:crypto";
+import { createRequire } from "node:module";
 import {
   type Actor,
   addCustomerNote,
@@ -166,6 +169,81 @@ await updateTenantSettings(deps, actor, {
   paymentLinkUrl: "https://example.com/paiement-cabinet-vidal",
 });
 
+/** PDF d'une page avec quelques lignes de texte (document joint de démonstration). */
+function demoPdf(lines: string[]): string {
+  const text = lines
+    .map(
+      (line, index) =>
+        `BT /F1 ${index === 0 ? 16 : 11} Tf 56 ${780 - index * 24} Td (${line}) Tj ET`,
+    )
+    .join("\n");
+  const objects = [
+    "<< /Type /Catalog /Pages 2 0 R >>",
+    "<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
+    "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Contents 4 0 R /Resources << /Font << /F1 5 0 R >> >> >>",
+    `<< /Length ${text.length} >>\nstream\n${text}\nendstream`,
+    "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>",
+  ];
+  let pdf = "%PDF-1.4\n";
+  const offsets = objects.map((object, index) => {
+    const offset = pdf.length;
+    pdf += `${index + 1} 0 obj\n${object}\nendobj\n`;
+    return offset;
+  });
+  const xref = pdf.length;
+  pdf += `xref\n0 ${objects.length + 1}\n0000000000 65535 f \n${offsets.map((offset) => `${String(offset).padStart(10, "0")} 00000 n \n`).join("")}`;
+  return `${pdf}trailer\n<< /Size ${objects.length + 1} /Root 1 0 R >>\nstartxref\n${xref}\n%%EOF\n`;
+}
+
+/**
+ * Module « Documents joints » : un règlement factice déposé dans le stockage de l'app, si ce
+ * poste en a un (variables STORAGE_*). Sinon, pas de document. Le client S3 est celui de l'app
+ * web (aws4fetch), pas une dépendance de plus.
+ */
+async function demoDocuments(organizationId: string) {
+  const { STORAGE_ENDPOINT, STORAGE_BUCKET, STORAGE_ACCESS_KEY_ID, STORAGE_SECRET_ACCESS_KEY } =
+    process.env;
+  if (!STORAGE_ENDPOINT || !STORAGE_BUCKET || !STORAGE_ACCESS_KEY_ID || !STORAGE_SECRET_ACCESS_KEY)
+    return undefined;
+  try {
+    const web = createRequire(new URL("../../../apps/web/package.json", import.meta.url));
+    const { AwsClient } = (await import(web.resolve("aws4fetch"))) as {
+      AwsClient: new (options: {
+        accessKeyId: string;
+        secretAccessKey: string;
+        service: string;
+        region: string;
+      }) => { fetch(url: string, init?: RequestInit): Promise<Response> };
+    };
+    const client = new AwsClient({
+      accessKeyId: STORAGE_ACCESS_KEY_ID,
+      secretAccessKey: STORAGE_SECRET_ACCESS_KEY,
+      service: "s3",
+      region: process.env.STORAGE_REGION ?? "us-east-1",
+    });
+    const key = `${organizationId}/documents/${randomUUID()}.pdf`;
+    const body = demoPdf([
+      "Reglement de l'atelier (document de demonstration)",
+      "1. Arrive 10 minutes avant le debut du cours.",
+      "2. Tenue qui ne craint rien, cheveux attaches.",
+      "3. Les pieces sont cuites et emaillees par l'atelier.",
+    ]);
+    const response = await client.fetch(`${STORAGE_ENDPOINT}/${STORAGE_BUCKET}/${key}`, {
+      method: "PUT",
+      body,
+      headers: { "Content-Type": "application/pdf" },
+    });
+    if (!response.ok) throw new Error(`envoi refusé (${response.status})`);
+    return {
+      files: [{ name: "Règlement de l'atelier", url: `/fichiers/${key}`, size: body.length }],
+    };
+  } catch (error) {
+    console.warn("Document de démonstration non déposé :", error);
+    return undefined;
+  }
+}
+const documents = await demoDocuments(org.id);
+
 const today = toZonedParts(new Date(), TZ);
 /** Date dans `days` jours à `hour` h `minute` (heure de Paris). */
 const at = (days: number, hour: number, minute = 0) =>
@@ -212,6 +290,7 @@ const types = Object.fromEntries(
             after:
               "Merci d'être venu·e ! Tes pièces sèchent une semaine avant la cuisson : on te prévient quand elles sont prêtes.",
           },
+          ...(documents && { documents }),
         },
         fields: [
           {

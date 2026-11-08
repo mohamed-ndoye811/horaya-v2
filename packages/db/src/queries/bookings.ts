@@ -371,6 +371,8 @@ export async function getBookingDetail(db: Executor, organizationId: string, boo
         paymentLinkUrl: event.paymentLinkUrl,
         coverImageUrl: event.coverImageUrl,
         fields: event.fields,
+        /** Modules copiés sur l'événement (messages et documents des e-mails). */
+        modules: event.modules,
       },
       typeColor: eventType.color,
     })

@@ -1,4 +1,10 @@
-import { setEventCover, setItemPhoto, updateTenantSettings } from "@horaya/core";
+import {
+  assertMemberCan,
+  ForbiddenError,
+  setEventCover,
+  setItemPhoto,
+  updateTenantSettings,
+} from "@horaya/core";
 import { getWorkspaceSettings } from "@horaya/db";
 import { z } from "zod";
 import { auth, requestHeaders } from "./auth";
@@ -7,7 +13,14 @@ import { db } from "./db";
 import type { FormState } from "./form-state";
 import { toFormState } from "./form-state";
 import { deps } from "./services";
-import { deleteFile, type FileFolder, imageProblem, storeImage } from "./storage";
+import {
+  deleteFile,
+  documentProblem,
+  type FileFolder,
+  imageProblem,
+  storeDocument,
+  storeImage,
+} from "./storage";
 import { getWorkspaceContext } from "./workspace";
 
 /** Ce qu'une image illustre : photo d'article, couverture d'événement, photo de profil, logo. */
@@ -67,4 +80,32 @@ export async function saveImageImpl(form: FormData): Promise<FormState> {
   }
   await deleteFile(previous);
   return { success: url ? "Image enregistrée." : "Image retirée." };
+}
+
+/**
+ * Module « Documents joints » : range un PDF de l'espace et renvoie sa fiche, que l'éditeur
+ * ajoute au type (enregistrée avec lui). Droits : ceux de la modification d'un événement.
+ */
+export async function uploadDocumentImpl(
+  form: FormData,
+): Promise<{ error: string } | { file: { name: string; url: string; size: number } }> {
+  const file = form.get("file");
+  if (!(file instanceof File) || file.size === 0) return { error: "Choisis un fichier PDF." };
+  const problem = documentProblem(file);
+  if (problem) return { error: problem };
+  const { workspace, actor } = await getWorkspaceContext();
+  try {
+    assertMemberCan(actor, "event", "update");
+  } catch (error) {
+    if (error instanceof ForbiddenError) return { error: error.message };
+    throw error;
+  }
+  const url = await storeDocument(file, workspace.id);
+  // Nom affiché : celui du fichier, sans l'extension.
+  const name =
+    file.name
+      .replace(/\.pdf$/i, "")
+      .trim()
+      .slice(0, 120) || "Document";
+  return { file: { name, url, size: file.size } };
 }

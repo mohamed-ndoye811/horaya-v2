@@ -10,14 +10,7 @@ export type NewEvent = Omit<
 export type EventPatch = Partial<
   Omit<
     Event,
-    | "id"
-    | "organizationId"
-    | "eventTypeId"
-    | "seriesId"
-    | "fields"
-    | "modules"
-    | "createdAt"
-    | "updatedAt"
+    "id" | "organizationId" | "eventTypeId" | "seriesId" | "fields" | "createdAt" | "updatedAt"
   >
 >;
 
