@@ -13,6 +13,7 @@ import {
   acceptsPass,
   depositFor,
   passSessionsFor,
+  priceDetail,
   priceLinesLabel,
   quoteBooking,
   selectionFor,
@@ -102,6 +103,12 @@ describe("quoteBooking : options", () => {
     expect(quoteBooking(event(), 1, { options: { cuisson: 0 } }).lines).toHaveLength(1);
     expect(() => quoteBooking(event(), 1, { options: { gateau: 1 } })).toThrow(/option/);
     expect(() => quoteBooking(event(), 1, { options: { cuisson: 0.5 } })).toThrow(ValidationError);
+  });
+
+  it("le détail ne s'affiche que s'il apprend quelque chose", () => {
+    expect(priceDetail(quoteBooking(event({}), 2).lines)).toBeNull();
+    expect(priceDetail([])).toBeNull();
+    expect(priceDetail(quoteBooking(event(), 1, { rates: ["reduit"] }).lines)).toBe("1 Réduit");
   });
 
   it("total = tarifs + options", () => {

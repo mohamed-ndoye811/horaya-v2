@@ -319,9 +319,7 @@ export function PublicEventPage({
                         ...event.modules.pricing.rates.map(
                           (rate) => `${rate.name} ${formatMoney(rate.priceCents)}`,
                         ),
-                        event.modules.pricing.options?.length
-                          ? "options à l'étape suivante"
-                          : null,
+                        event.modules.pricing.options?.length ? "options à l'étape suivante" : null,
                       ]
                         .filter(Boolean)
                         .join(" · ")

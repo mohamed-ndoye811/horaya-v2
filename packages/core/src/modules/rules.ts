@@ -252,9 +252,9 @@ export function depositLabel(deposit: DepositModule): string {
     : `${money(deposit.amountCents ?? 0)} par place`;
 }
 
-/** « le reste sur place », « le reste plus tard, en ligne ». */
+/** « le reste sur place », « le reste à régler plus tard ». */
 export const balanceLabel = (deposit: DepositModule) =>
-  deposit.balance === "later" ? "le reste plus tard, en ligne" : "le reste sur place";
+  deposit.balance === "later" ? "le reste à régler plus tard" : "le reste sur place";
 
 export interface SummaryContext extends ResourceNames {
   /** « inscription », « réservation »… */
