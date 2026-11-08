@@ -46,6 +46,18 @@ export interface EventTypeOption {
   requiresApproval: boolean;
   /** Module « Conditions d'accès » sur invitation. */
   inviteOnly: boolean;
+  /** Module Intervenant : membres proposés (liste vide : toute l'équipe), null sans le module. */
+  staff: { memberIds: string[] } | null;
+  /** Module Matériel avancé : un besoin par type de matériel visé. */
+  needs: Array<{ id: string; itemTypeId: string }>;
+  /** Module Lieu. */
+  locationMode: "venue" | "online" | "client" | null;
+}
+
+/** Équipe et exemplaires de l'espace, pour l'intervenant et les exemplaires proposés. */
+export interface ResourceChoices {
+  members: Array<{ id: string; name: string }>;
+  itemTypes: Record<string, { name: string; units: Array<{ id: string; label: string }> }>;
 }
 
 export interface EventFormValues {
@@ -57,6 +69,11 @@ export interface EventFormValues {
   endDate: string;
   endTime: string;
   locationName: string;
+  locationAddress: string;
+  /** Module Intervenant : membre choisi (vide : aucun). */
+  staffMemberId: string;
+  /** Module Matériel avancé : exemplaires proposés par besoin (liste vide : tous). */
+  equipmentUnits: Record<string, string[]>;
   onlineUrl: string;
   capacity: string;
   price: string;
@@ -108,7 +125,9 @@ export function EventForm({
   formId,
   actions,
   fieldValues = {},
+  resources,
 }: {
+  resources: ResourceChoices;
   eventId: string | null;
   types: EventTypeOption[];
   initial: EventFormValues;
@@ -130,6 +149,10 @@ export function EventForm({
   const described = fieldsOfScope(type?.fields ?? [], "event");
   const set = (patch: Partial<EventFormValues>) =>
     setValues((current) => ({ ...current, ...patch }));
+  // Exemplaires proposés : seulement les besoins du type choisi, une liste vide = tous.
+  const restrictions = Object.fromEntries(
+    (type?.needs ?? []).map((need) => [need.id, values.equipmentUnits[need.id] ?? []]),
+  );
 
   function changeType(id: string) {
     const next = types.find((entry) => entry.id === id);
@@ -437,6 +460,18 @@ export function EventForm({
                 />
               )}
             </Field>
+            <Field label="Adresse" error={errors.locationAddress}>
+              {(field) => (
+                <AffixInput
+                  {...field}
+                  name="locationAddress"
+                  maxLength={300}
+                  value={values.locationAddress}
+                  onChange={(event) => set({ locationAddress: event.target.value })}
+                  placeholder="Adresse de l'espace par défaut"
+                />
+              )}
+            </Field>
             <Field label="Lien de visio (si en ligne)" error={errors.onlineUrl}>
               {(field) => (
                 <AffixInput
@@ -450,6 +485,70 @@ export function EventForm({
               )}
             </Field>
           </div>
+          <Collapse open={Boolean(type?.staff)}>
+            <Field label="Intervenant" error={errors.staffMemberId}>
+              {(field) => (
+                <Select
+                  {...field}
+                  name="staffMemberId"
+                  value={values.staffMemberId}
+                  onChange={(event) => set({ staffMemberId: event.target.value })}
+                >
+                  <option value="">Pas encore choisi</option>
+                  {resources.members
+                    .filter(
+                      (entry) =>
+                        !type?.staff?.memberIds.length || type.staff.memberIds.includes(entry.id),
+                    )
+                    .map((entry) => (
+                      <option key={entry.id} value={entry.id}>
+                        {entry.name}
+                      </option>
+                    ))}
+                </Select>
+              )}
+            </Field>
+          </Collapse>
+          {(type?.needs.length ?? 0) > 0 && (
+            <>
+              <input type="hidden" name="equipmentUnits" value={JSON.stringify(restrictions)} />
+              {type?.needs.map((need) => {
+                const category = resources.itemTypes[need.itemTypeId];
+                if (!category) return null;
+                const restricted = values.equipmentUnits[need.id] ?? [];
+                const checked =
+                  restricted.length === 0 ? category.units.map((u) => u.id) : restricted;
+                const toggle = (unitId: string) => {
+                  const next = checked.includes(unitId)
+                    ? checked.filter((entry) => entry !== unitId)
+                    : [...checked, unitId];
+                  set({
+                    equipmentUnits: {
+                      ...values.equipmentUnits,
+                      [need.id]: next.length === category.units.length ? [] : next,
+                    },
+                  });
+                };
+                return (
+                  <Field key={need.id} label={`${category.name} proposés`} group>
+                    {() => (
+                      <div className="flex flex-wrap gap-x-5 gap-y-2">
+                        {category.units.map((unit) => (
+                          <Checkbox
+                            key={unit.id}
+                            checked={checked.includes(unit.id)}
+                            disabled={checked.length === 1 && checked.includes(unit.id)}
+                            onChange={() => toggle(unit.id)}
+                            label={unit.label}
+                          />
+                        ))}
+                      </div>
+                    )}
+                  </Field>
+                );
+              })}
+            </>
+          )}
         </FormSection>
 
         <FormSection number={3} title="Places & paiement">

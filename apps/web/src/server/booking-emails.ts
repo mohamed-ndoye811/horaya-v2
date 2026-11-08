@@ -138,7 +138,11 @@ async function loadBooking(organizationId: string, bookingId: string) {
     title,
     reference: booking.reference,
     when: startsAt && endsAt ? formatEventRange(startsAt, endsAt, settings.timezone) : "",
-    where: booking.event?.locationName ?? null,
+    where:
+      [booking.event?.locationName, booking.event?.locationAddress].filter(Boolean).join(", ") ||
+      null,
+    onlineUrl: booking.event?.onlineUrl ?? null,
+    equipment: detail.equipment,
     seats: booking.seats,
     amount,
     manageUrl: url,
@@ -456,11 +460,13 @@ export async function notifyTeam(
   type: NotificationType,
   content: EmailContent,
   inApp: { title: string; body: string; link: string },
+  /** Intervenant de l'événement : prévenu des inscriptions de ses événements. */
+  staffMemberId?: string | null,
 ) {
-  const recipients = await listNotificationRecipients(db, organizationId, type);
+  const recipients = await listNotificationRecipients(db, organizationId, type, staffMemberId);
   await Promise.all(recipients.map((email) => send(email, content)));
   try {
-    await createNotifications(db, organizationId, type, inApp);
+    await createNotifications(db, organizationId, type, inApp, staffMemberId);
   } catch (error) {
     console.error("Notification non enregistrée", type, error);
   }
@@ -543,6 +549,7 @@ export async function notifyFromActivity(entries: ActivityEntry[]) {
               body: summary,
               link: adminPath,
             },
+            booking.event?.staffMemberId,
           );
         }
         break;

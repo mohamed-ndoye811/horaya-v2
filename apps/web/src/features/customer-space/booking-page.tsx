@@ -173,9 +173,30 @@ export function CustomerBookingPage({
           )}
 
           {(booking.eventModules?.messages?.bring ||
+            booking.equipment.length > 0 ||
+            booking.onlineUrl ||
             (booking.eventModules?.documents?.files.length ?? 0) > 0) && (
             <div className="flex flex-col gap-3.5 border-t border-line pt-7">
               <h2 className="text-lg font-semibold leading-6 text-ink">À savoir</h2>
+              {booking.onlineUrl && (
+                <p className="text-[15px] leading-[22px] text-ink">
+                  <span className="font-semibold">Lien de la visio :</span>{" "}
+                  <a
+                    href={booking.onlineUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="underline underline-offset-2 hover:text-link"
+                  >
+                    {booking.onlineUrl}
+                  </a>
+                </p>
+              )}
+              {booking.equipment.length > 0 && (
+                <p className="text-[15px] leading-[22px] text-ink">
+                  <span className="font-semibold">Ton matériel :</span>{" "}
+                  {booking.equipment.join(", ")}
+                </p>
+              )}
               {booking.eventModules?.messages?.bring && (
                 <p className="text-[15px] leading-[22px] text-ink">
                   <span className="font-semibold">À apporter :</span>{" "}

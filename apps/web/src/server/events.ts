@@ -38,6 +38,17 @@ function zoned(form: FormData, dateKey: string, timeKey: string, timeZone: strin
   return fromZonedParts({ ...date, hour: Number(time[1]), minute: Number(time[2]) }, timeZone);
 }
 
+/** Restriction des exemplaires (JSON `{ besoin: [exemplaires] }`, liste vide : tous). */
+function equipmentUnits(form: FormData) {
+  const raw = text(form, "equipmentUnits");
+  if (!raw) return {};
+  try {
+    return { equipmentUnits: JSON.parse(raw) as Record<string, string[]> };
+  } catch {
+    return {};
+  }
+}
+
 function eventFields(form: FormData, timeZone: string) {
   const startsAt = zoned(form, "startDate", "startTime", timeZone);
   const endsAt = zoned(form, "endDate", "endTime", timeZone);
@@ -53,6 +64,10 @@ function eventFields(form: FormData, timeZone: string) {
     endsAt: endsAt ?? "date invalide",
     timezone: timeZone,
     locationName: text(form, "locationName") || null,
+    locationAddress: text(form, "locationAddress") || null,
+    // Module Intervenant, et exemplaires proposés par besoin (module Matériel avancé).
+    staffMemberId: text(form, "staffMemberId") || null,
+    ...equipmentUnits(form),
     onlineUrl: text(form, "onlineUrl") || null,
     capacity: capacity === "" ? null : Number(capacity),
     priceCents: paymentMode === "free" ? 0 : parseEuroToCents(text(form, "price")),

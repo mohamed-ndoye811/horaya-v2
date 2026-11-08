@@ -10,7 +10,7 @@ import type {
 } from "@horaya/core";
 import { and, asc, desc, eq, gt, gte, ilike, isNull, lt, ne, or, type SQL, sql } from "drizzle-orm";
 import type { Executor } from "../client";
-import { booking, customer, event, eventType } from "../schema";
+import { booking, customer, event, eventType, member, user } from "../schema";
 
 /**
  * Places occupées (en attente + confirmées), en sous-requête corrélée.
@@ -316,4 +316,18 @@ export async function getEventDetail(db: Executor, organizationId: string, event
       .reduce((total, entry) => total + entry.seats, 0),
     bookedAmountCents: active.reduce((total, entry) => total + entry.amountCents, 0),
   };
+}
+
+/** Membres qui animent au moins un événement (filtre « intervenant » du calendrier et de la liste). */
+export async function listEventStaff(
+  db: Executor,
+  organizationId: string,
+): Promise<Array<{ id: string; name: string }>> {
+  return db
+    .selectDistinct({ id: member.id, name: user.name })
+    .from(event)
+    .innerJoin(member, eq(member.id, event.staffMemberId))
+    .innerJoin(user, eq(user.id, member.userId))
+    .where(eq(event.organizationId, organizationId))
+    .orderBy(asc(user.name));
 }

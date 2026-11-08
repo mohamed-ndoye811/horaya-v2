@@ -126,6 +126,7 @@ export function EventDetailPage({
               event.typeName,
               formatEventRange(event.startsAt, event.endsAt, timeZone),
               event.locationName ?? (event.onlineUrl ? "En ligne" : null),
+              event.staffName ? `avec ${event.staffName}` : null,
             ]
               .filter(Boolean)
               .join(" · ")}
@@ -456,8 +457,12 @@ export function EventDetailPage({
             {[
               ["Type", event.typeName],
               ["Quand", formatEventRange(event.startsAt, event.endsAt, timeZone)],
-              ["Lieu", event.locationName ?? "—"],
+              [
+                "Lieu",
+                [event.locationName, event.locationAddress].filter(Boolean).join(", ") || "—",
+              ],
               ["Lien de visio", event.onlineUrl ?? "—"],
+              ...(event.modules.staff ? [["Intervenant", event.staffName ?? "—"]] : []),
               ["Visibilité", event.visibility === "public" ? "Public" : "Sur invitation"],
               ["Réservation", event.requiresApproval ? "Validation manuelle" : "Automatique"],
               [

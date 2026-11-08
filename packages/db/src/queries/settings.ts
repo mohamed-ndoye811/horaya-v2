@@ -195,10 +195,12 @@ export async function listNotificationRecipients(
   db: Executor,
   organizationId: string,
   type: NotificationType,
+  /** Intervenant de l'événement : prévenu même sans cette préférence. */
+  alsoMemberId?: string | null,
 ): Promise<string[]> {
   const byDefault = NOTIFICATION_TYPES.find((entry) => entry.value === type)?.email ?? false;
   const rows = await db
-    .select({ email: user.email, wants: notificationPreference.email })
+    .select({ email: user.email, wants: notificationPreference.email, memberId: member.id })
     .from(member)
     .innerJoin(user, eq(user.id, member.userId))
     .leftJoin(
@@ -209,5 +211,7 @@ export async function listNotificationRecipients(
       ),
     )
     .where(eq(member.organizationId, organizationId));
-  return rows.filter((row) => row.wants ?? byDefault).map((row) => row.email);
+  return rows
+    .filter((row) => (row.wants ?? byDefault) || row.memberId === alsoMemberId)
+    .map((row) => row.email);
 }

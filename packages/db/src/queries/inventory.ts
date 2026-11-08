@@ -2,11 +2,9 @@ import {
   type AllocationKind,
   describeItemValues,
   type EquipmentOffer,
-  type EventModules,
   equipmentCandidates,
   type FieldDefinition,
   type ItemUnitStatus,
-  needQuantity,
   unitLabel,
 } from "@horaya/core";
 import { and, asc, desc, eq, inArray, isNotNull, isNull, sql } from "drizzle-orm";
@@ -391,14 +389,19 @@ export async function listItemTypes(
  */
 export async function listEquipmentOffers(
   db: Executor,
-  event: {
-    id: string;
-    organizationId: string;
-    startsAt: Date;
-    endsAt: Date;
-    modules: EventModules;
-  },
+  eventId: string,
 ): Promise<EquipmentOffer[]> {
+  const [event] = await db
+    .select({
+      id: eventTable.id,
+      organizationId: eventTable.organizationId,
+      startsAt: eventTable.startsAt,
+      endsAt: eventTable.endsAt,
+      modules: eventTable.modules,
+    })
+    .from(eventTable)
+    .where(eq(eventTable.id, eventId));
+  if (!event) return [];
   const period = { startsAt: event.startsAt, endsAt: event.endsAt };
   const offers: EquipmentOffer[] = [];
   for (const need of event.modules.equipment?.needs ?? []) {
@@ -430,7 +433,7 @@ export async function listEquipmentOffers(
     offers.push({
       needId: need.id,
       name: found.name,
-      quantity: needQuantity(need, 1),
+      perSeat: need.perSeat,
       required: need.required,
       chooser: need.chooser,
       options:

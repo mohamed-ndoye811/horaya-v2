@@ -4,16 +4,21 @@ import {
   type EventModules,
   type EventTypeField,
   isCheckInOpen,
+  unitLabel,
 } from "@horaya/core";
 import {
   countEventsByTab,
+  equipmentUnitsOfType,
   getEventDetail,
   listCalendarLinks,
   listEventItems,
+  listEventStaff,
   listEvents,
   listEventTypes,
   listItemsAvailableBetween,
+  listItemTypes,
   listLinkableEvents,
+  listTeam,
   tenantSettingsReader,
 } from "@horaya/db";
 import { notFound, redirect } from "@tanstack/react-router";
@@ -51,6 +56,7 @@ export const eventsSearch = z.object({
   onglet: z.enum(EVENT_TABS).optional().catch(undefined),
   q: searchText,
   type: searchText,
+  intervenant: searchText,
 });
 
 /** Écran 04 : événements filtrés, compteurs des onglets, types pour le filtre. */
@@ -59,15 +65,17 @@ export const getEvents = createServerFn({ method: "GET" })
   .handler(async ({ data }) => {
     const { workspace, timeZone } = await getWorkspaceContext();
     const now = new Date();
-    const [counts, events, types] = await Promise.all([
+    const [counts, events, types, staff] = await Promise.all([
       countEventsByTab(db, workspace.id, now),
       listEvents(db, workspace.id, {
         tab: data.onglet ?? "all",
         now,
         search: data.q,
         typeId: data.type,
+        staffMemberId: data.intervenant,
       }),
       listEventTypes(db, workspace.id),
+      listEventStaff(db, workspace.id),
     ]);
     return {
       timeZone,
@@ -75,19 +83,23 @@ export const getEvents = createServerFn({ method: "GET" })
       counts,
       events,
       types: types.map((type) => ({ id: type.id, name: type.name })),
+      staff,
     };
   });
 
 /** Types proposés dans le formulaire d'événement. */
-const typeOption = (type: {
-  id: string;
-  name: string;
-  color: string;
-  fields: EventTypeField[];
-  defaultDurationMinutes: number | null;
-  defaultPriceCents: number | null;
-  modules: EventModules;
-}) => ({
+const typeOption = (
+  type: {
+    id: string;
+    name: string;
+    color: string;
+    fields: EventTypeField[];
+    defaultDurationMinutes: number | null;
+    defaultPriceCents: number | null;
+    modules: EventModules;
+  },
+  resourceModules: EventModules = type.modules,
+) => ({
   id: type.id,
   name: type.name,
   color: type.color,
@@ -98,7 +110,46 @@ const typeOption = (type: {
   defaultCapacity: type.modules.places?.capacity ?? null,
   requiresApproval: Boolean(type.modules.approval),
   inviteOnly: Boolean(type.modules.access?.inviteOnly),
+  // Modules Ressources : intervenant, matériel et lieu (ceux de l'événement à la modification).
+  staff: resourceModules.staff ? { memberIds: resourceModules.staff.memberIds ?? [] } : null,
+  needs: (resourceModules.equipment?.needs ?? []).map((need) => ({
+    id: need.id,
+    itemTypeId: need.itemTypeId,
+  })),
+  locationMode: resourceModules.location?.mode ?? null,
 });
+
+/** Équipe et exemplaires des types de matériel visés, pour l'intervenant et les exemplaires proposés. */
+async function resourceChoices(workspaceId: string, modulesList: EventModules[]) {
+  const wanted = new Set(
+    modulesList.flatMap((modules) => (modules.equipment?.needs ?? []).map((n) => n.itemTypeId)),
+  );
+  const [team, ...categories] = await Promise.all([
+    listTeam(db, workspaceId, new Date()),
+    ...[...wanted].map((id) => equipmentUnitsOfType(db, workspaceId, id)),
+  ]);
+  return {
+    members: team.members.map((entry) => ({ id: entry.id, name: entry.name })),
+    itemTypes: Object.fromEntries(
+      [...wanted].flatMap((id, index) => {
+        const found = categories[index];
+        return found
+          ? [
+              [
+                id,
+                {
+                  name: found.name,
+                  units: found.units
+                    .filter((unit) => unit.status !== "retired")
+                    .map((unit) => ({ id: unit.id, label: unitLabel(unit) })),
+                },
+              ],
+            ]
+          : [];
+      }),
+    ),
+  };
+}
 
 export const newEventSearch = z.object({ date: searchText, titre: searchText });
 
@@ -111,7 +162,11 @@ export const getNewEvent = createServerFn({ method: "GET" })
     const day = parseCivilDate(data.date) ?? undefined;
     return {
       timeZone,
-      types: types.map(typeOption),
+      types: types.map((type) => typeOption(type)),
+      resources: await resourceChoices(
+        workspace.id,
+        types.map((type) => type.modules),
+      ),
       initial: { ...emptyEventValues(timeZone, day), title: data.titre ?? "" },
     };
   });
@@ -175,11 +230,12 @@ export const getEditEvent = createServerFn({ method: "GET" })
       modules: {},
     };
     const options = [
-      ...types.filter((type) => type.id !== event.typeId).map(typeOption),
-      typeOption(current),
+      ...types.filter((type) => type.id !== event.typeId).map((type) => typeOption(type)),
+      typeOption(current, event.modules),
     ];
     return {
       timeZone,
+      resources: await resourceChoices(workspace.id, [event.modules]),
       event: { id: event.id, title: event.title, status: event.status },
       types: options,
       initial: eventToValues(event, timeZone),
@@ -199,9 +255,11 @@ export const getEventTypes = createServerFn({ method: "GET" })
   .validator(eventTypesSearch)
   .handler(async ({ data }) => {
     const { workspace, timeZone } = await getWorkspaceContext();
-    const [types, settings] = await Promise.all([
+    const [types, settings, itemTypes, team] = await Promise.all([
       listEventTypes(db, workspace.id),
       tenantSettingsReader(db).get(workspace.id),
+      listItemTypes(db, workspace.id),
+      listTeam(db, workspace.id, new Date()),
     ]);
     const existing = types.find((type) => type.id === data.type);
     const source = types.find((type) => type.id === data.depuis);
@@ -241,6 +299,8 @@ export const getEventTypes = createServerFn({ method: "GET" })
               lateCancellationRefundPercent: settings.lateCancellationRefundPercent,
             },
             timeZone,
+            itemTypes: itemTypes.map((type) => ({ id: type.id, name: type.name })),
+            members: team.members.map((entry) => ({ id: entry.id, name: entry.name })),
           };
     return {
       workspaceName: workspace.name,

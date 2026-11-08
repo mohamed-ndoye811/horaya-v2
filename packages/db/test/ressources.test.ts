@@ -20,8 +20,15 @@ import {
   listBookingEquipment,
   listEquipmentOffers,
   listEvents,
+  listNotificationRecipients,
 } from "../src/queries";
-import { event as eventTable, itemAllocation, itemUnit, tenantSettings } from "../src/schema";
+import {
+  event as eventTable,
+  itemAllocation,
+  itemUnit,
+  notificationPreference,
+  tenantSettings,
+} from "../src/schema";
 import {
   contact,
   createMember,
@@ -184,7 +191,7 @@ describe("matériel avancé", () => {
     expect((await active(wants.booking.id)).map((entry) => entry.itemUnitId)).toEqual([chosen]);
 
     // L'exemplaire pris n'est plus proposé, et ne peut pas être choisi une seconde fois.
-    const [offer] = await listEquipmentOffers(db, lessonEvent);
+    const [offer] = await listEquipmentOffers(db, lessonEvent.id);
     expect(offer?.options.map((option) => option.unitId)).toEqual([apronUnits[0]]);
     await expect(
       book(
@@ -204,7 +211,7 @@ describe("matériel avancé", () => {
       equipmentUnits: { tour: [tourUnits[0] as string, tourUnits[1] as string] },
     });
     expect(restricted.modules.equipment?.needs[0]?.unitIds).toEqual([tourUnits[0], tourUnits[1]]);
-    const [offer] = await listEquipmentOffers(db, restricted);
+    const [offer] = await listEquipmentOffers(db, lessonEvent.id);
     expect(offer?.available).toBe(2);
     await expect(
       book(lessonEvent.id, 1, [{ needId: "tour", unitIds: [tourUnits[2] as string] }]),
@@ -214,7 +221,7 @@ describe("matériel avancé", () => {
       .update(itemUnit)
       .set({ status: "maintenance" })
       .where(eq(itemUnit.id, tourUnits[0] as string));
-    const [after] = await listEquipmentOffers(db, restricted);
+    const [after] = await listEquipmentOffers(db, lessonEvent.id);
     expect(after?.options.map((option) => option.unitId)).toEqual([tourUnits[1]]);
   });
 
@@ -300,6 +307,23 @@ describe("intervenant", () => {
     });
     expect(mine.map((row) => row.id)).toEqual([created.id]);
     expect(mine[0]?.staffName).toBe("Mohamed Ndoye");
+
+    // L'intervenant reçoit les inscriptions de ses événements, même s'il a coupé cette notification.
+    await db.insert(notificationPreference).values({
+      organizationId,
+      memberId,
+      notificationType: "booking_created",
+      email: false,
+      inApp: false,
+    });
+    const without = await listNotificationRecipients(db, organizationId, "booking_created");
+    const withStaff = await listNotificationRecipients(
+      db,
+      organizationId,
+      "booking_created",
+      memberId,
+    );
+    expect(withStaff.length).toBe(without.length + 1);
 
     await publishEvent(deps, owner, created.id);
     expect((await getPublicEvent(db, organizationId, created.slug))?.staffFirstName).toBe(

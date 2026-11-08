@@ -203,7 +203,8 @@ export function restrictEquipment(
 export interface EquipmentOffer {
   needId: string;
   name: string;
-  quantity: number;
+  /** Exemplaires par place. */
+  perSeat: number;
   required: boolean;
   chooser: EquipmentNeed["chooser"];
   /** Exemplaires libres parmi lesquels choisir (« L'élève choisit »). */
