@@ -4,7 +4,7 @@ import {
   getInventoryStats,
   getItemDetail,
   listItems,
-  listItemTypeNames,
+  listItemTypes,
 } from "@horaya/db";
 import { notFound } from "@tanstack/react-router";
 import { createServerFn } from "@tanstack/react-start";
@@ -60,7 +60,7 @@ export const getInventory = createServerFn({ method: "GET" })
 /** Catégories déjà utilisées (suggestions du formulaire d'article). */
 export const getItemTypes = createServerFn({ method: "GET" }).handler(async () => {
   const { workspace } = await getWorkspaceContext();
-  return listItemTypeNames(db, workspace.id);
+  return listItemTypes(db, workspace.id);
 });
 
 const DAYS = 14;
@@ -90,7 +90,7 @@ export const getItemForEdit = createServerFn({ method: "GET" })
     const now = new Date();
     const [detail, types] = await Promise.all([
       getItemDetail(db, workspace.id, id, { from: now, to: now, now }),
-      listItemTypeNames(db, workspace.id),
+      listItemTypes(db, workspace.id),
     ]);
     if (!detail || detail.item.archivedAt) throw notFound();
     return { item: detail.item, types };

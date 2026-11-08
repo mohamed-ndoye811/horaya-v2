@@ -16,6 +16,7 @@ import type { getItem } from "@/functions/inventory";
 import { type CivilDate, civilDateOf, civilKey, daysCovered } from "@/lib/calendar";
 import { cn } from "@/lib/cn";
 import { parseCivilDate } from "@/lib/dates";
+import { answerRows } from "@/lib/fields";
 import { formatMoney } from "@/lib/format";
 import { withParams } from "@/lib/search-params";
 import { AddMaintenance, CancelMaintenance } from "./maintenance";
@@ -153,6 +154,10 @@ export function ItemDetailPage({ data }: { data: Awaited<ReturnType<typeof getIt
     ["Tarif", item.dailyRateCents === null ? "—" : `${formatMoney(item.dailyRateCents)} / jour`],
     ["Caution", item.depositCents === null ? "—" : formatMoney(item.depositCents)],
     ["Emplacement", item.storageLocation ?? "—"],
+    // Champs de la catégorie (lot 33).
+    ...answerRows(item.typeFields ?? [], item.fieldValues).map(
+      (row) => [row.label, row.value] as [string, string],
+    ),
     [
       "Acheté le",
       purchased ? `${purchased.day} ${FULL_MONTHS[purchased.month - 1]} ${purchased.year}` : "—",
