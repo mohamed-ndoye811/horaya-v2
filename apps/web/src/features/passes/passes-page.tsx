@@ -7,7 +7,7 @@ import { ChevronRight, PlusIcon } from "@/components/ui/icons";
 import { cardClasses, cardShellClasses } from "@/components/ui/section";
 import type { getPassesPage } from "@/functions/passes";
 import { cn } from "@/lib/cn";
-import { formatMoney } from "@/lib/format";
+import { formatMoney, plural } from "@/lib/format";
 import { Link } from "@/lib/navigation";
 import { PassPaymentActions } from "./pending-pass-row";
 import { PlanForm, type PlanFormValues } from "./plan-form";
@@ -123,7 +123,7 @@ export function PassesPage({
                         {plan.archivedAt && <StatusBadge tone="draft">Archivée</StatusBadge>}
                       </span>
                       <span className="truncate text-[13px] font-medium leading-[17px] text-ink-muted">
-                        {plan.sessions} séances · valable {plan.validityDays} jours ·{" "}
+                        {plural(plan.sessions, "séance")} · valable {plan.validityDays} jours ·{" "}
                         {plan.eventTypeIds.length === 0
                           ? "tous les types"
                           : plan.eventTypeIds

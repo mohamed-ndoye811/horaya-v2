@@ -43,7 +43,7 @@ function assertCustomerCanBook(
   if (now.getTime() >= closesAt)
     throw new ConflictError("Les réservations sont closes pour cet événement");
   if (rules.maxSeatsPerBooking !== undefined && seats > rules.maxSeatsPerBooking) {
-    throw new ValidationError(`${rules.maxSeatsPerBooking} places maximum par réservation`, [
+    throw new ValidationError(`${rules.maxSeatsPerBooking} place${rules.maxSeatsPerBooking > 1 ? "s" : ""} maximum par réservation`, [
       { path: "seats", message: `Maximum ${rules.maxSeatsPerBooking}` },
     ]);
   }

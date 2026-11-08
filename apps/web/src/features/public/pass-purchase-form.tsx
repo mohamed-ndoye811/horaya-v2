@@ -3,7 +3,7 @@ import { Field, inputClasses } from "@/components/ui/field";
 import { FormAlert } from "@/components/ui/form-alert";
 import { purchasePassAction } from "@/functions/passes";
 import { cn } from "@/lib/cn";
-import { formatMoney } from "@/lib/format";
+import { formatMoney, plural } from "@/lib/format";
 import { useFormAction } from "@/lib/use-form-action";
 import type { FormState } from "@/server/form-state";
 
@@ -50,7 +50,7 @@ export function PassPurchaseForm({
             <span className="flex flex-col gap-0.5">
               <span className="text-[15px] font-bold text-ink">{plan.name}</span>
               <span className="text-[13px] text-ink-muted">
-                {plan.sessions} séances · valable {plan.validityDays} jours
+                {plural(plan.sessions, "séance")} · valable {plan.validityDays} jours
               </span>
             </span>
             <span className="text-base font-extrabold text-ink">
