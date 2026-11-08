@@ -499,9 +499,15 @@ dialog[open]::backdrop {
     translate: 0 6px;
   }
 }
-/* La page garde sa taille réelle pendant le fondu (pas d'étirement entre deux hauteurs). */
+/* La page garde sa taille réelle pendant le fondu (pas d'étirement entre deux hauteurs).
+   Fond de l'app sous les deux captures : la zone nommée laisse un trou dans la racine, qui
+   montrerait le cadre noir entre la sortie de l'ancienne page et l'arrivée de la nouvelle. */
 ::view-transition-group(page) {
   animation: none;
+}
+:root:has([data-scroll-zone])::view-transition-group(page) {
+  background-color: var(--color-bg);
+  border-radius: 10px;
 }
 ::view-transition-old(page),
 ::view-transition-new(page) {
