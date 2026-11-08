@@ -1,4 +1,4 @@
-import { fieldsOfScope, minimumDecisionAt } from "@horaya/core";
+import { depositLabel, fieldsOfScope, minimumDecisionAt } from "@horaya/core";
 import { useState, useTransition } from "react";
 import { BookingRowActions, CheckInToggle } from "@/components/app/booking-actions";
 import { useImageUpload } from "@/components/app/image-upload";
@@ -469,7 +469,7 @@ export function EventDetailPage({
                 "Paiement",
                 event.paymentMode === "free"
                   ? "Gratuit"
-                  : `${PAYMENT_MODE_LABELS[event.paymentMode]} · ${formatMoney(event.priceCents)} / pers.${event.depositPercent ? ` · acompte ${event.depositPercent} %` : ""}`,
+                  : `${PAYMENT_MODE_LABELS[event.paymentMode]} · ${formatMoney(event.priceCents)} / pers.${event.paymentMode === "deposit" && event.modules.deposit ? ` · acompte ${depositLabel(event.modules.deposit)}` : ""}${event.modules.pricing && event.modules.pricing.rates.length > 1 ? ` · ${event.modules.pricing.rates.length} tarifs` : ""}`,
               ],
               // « Ce que tu décris », champs internes compris.
               ...answerRows(fieldsOfScope(event.fields, "event"), event.fieldValues, timeZone).map(

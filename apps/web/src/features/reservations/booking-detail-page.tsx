@@ -1,4 +1,4 @@
-import { can, externalPaidCents, paidCents, rentalDays } from "@horaya/core";
+import { can, externalPaidCents, paidCents, priceDetail, rentalDays } from "@horaya/core";
 import type { ReactNode } from "react";
 import {
   BookingHeaderActions,
@@ -209,11 +209,15 @@ export function BookingDetailPage({ data }: { data: Awaited<ReturnType<typeof ge
         : booking.paymentStatus === "paid" || booking.paymentStatus === "paid_with_pass"
           ? ("success" as const)
           : ("warning" as const);
-  const amountCaption = booking.depositCents
-    ? `Acompte ${formatMoney(booking.depositCents)}`
-    : booking.seats > 1 && booking.amountCents > 0
-      ? `${booking.seats} × ${formatMoney(Math.round(booking.amountCents / booking.seats))} · TTC`
-      : "TTC";
+  // Tarifs et options (lot 35) : le détail, puis l'acompte.
+  const priceLabel = priceDetail(booking.priceLines);
+  const amountCaption = priceLabel
+    ? `${priceLabel}${booking.depositCents ? ` · acompte ${formatMoney(booking.depositCents)}` : ""}`
+    : booking.depositCents
+      ? `Acompte ${formatMoney(booking.depositCents)}`
+      : booking.seats > 1 && booking.amountCents > 0
+        ? `${booking.seats} × ${formatMoney(Math.round(booking.amountCents / booking.seats))} · TTC`
+        : "TTC";
 
   const timeline = [
     ...(isPending

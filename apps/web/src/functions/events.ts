@@ -18,6 +18,7 @@ import {
   listItemsAvailableBetween,
   listItemTypes,
   listLinkableEvents,
+  listPassPlans,
   listTeam,
   tenantSettingsReader,
 } from "@horaya/db";
@@ -106,7 +107,9 @@ const typeOption = (
   fields: type.fields,
   defaultDurationMinutes: type.defaultDurationMinutes,
   defaultPriceCents: type.defaultPriceCents,
-  // Réglages de départ des modules (places, validation, invitation).
+  // Réglages de départ des modules (places, validation, invitation, tarifs, acompte).
+  pricing: type.modules.pricing ?? null,
+  deposit: type.modules.deposit ?? null,
   defaultCapacity: type.modules.places?.capacity ?? null,
   requiresApproval: Boolean(type.modules.approval),
   inviteOnly: Boolean(type.modules.access?.inviteOnly),
@@ -219,7 +222,7 @@ export const getEditEvent = createServerFn({ method: "GET" })
     if (detail.event.status === "cancelled") throw redirect({ href: `/app/evenements/${id}` });
     const { event } = detail;
     // Le type actuel reste proposé même s'il a été archivé depuis, avec la version de ses
-    // champs copiée sur l'événement.
+    // champs et de ses tarifs copiée sur l'événement.
     const current = {
       id: event.typeId,
       name: event.typeName,
@@ -227,7 +230,7 @@ export const getEditEvent = createServerFn({ method: "GET" })
       fields: event.fields,
       defaultDurationMinutes: null,
       defaultPriceCents: null,
-      modules: {},
+      modules: event.modules.pricing ? { pricing: event.modules.pricing } : {},
     };
     const options = [
       ...types.filter((type) => type.id !== event.typeId).map((type) => typeOption(type)),
@@ -255,11 +258,12 @@ export const getEventTypes = createServerFn({ method: "GET" })
   .validator(eventTypesSearch)
   .handler(async ({ data }) => {
     const { workspace, timeZone } = await getWorkspaceContext();
-    const [types, settings, itemTypes, team] = await Promise.all([
+    const [types, settings, itemTypes, team, plans] = await Promise.all([
       listEventTypes(db, workspace.id),
       tenantSettingsReader(db).get(workspace.id),
       listItemTypes(db, workspace.id),
       listTeam(db, workspace.id, new Date()),
+      listPassPlans(db, workspace.id),
     ]);
     const existing = types.find((type) => type.id === data.type);
     const source = types.find((type) => type.id === data.depuis);
@@ -301,6 +305,9 @@ export const getEventTypes = createServerFn({ method: "GET" })
             timeZone,
             itemTypes: itemTypes.map((type) => ({ id: type.id, name: type.name })),
             members: team.members.map((entry) => ({ id: entry.id, name: entry.name })),
+            passPlans: plans
+              .filter((plan) => !plan.archivedAt)
+              .map((plan) => ({ id: plan.id, name: plan.name })),
           };
     return {
       workspaceName: workspace.name,

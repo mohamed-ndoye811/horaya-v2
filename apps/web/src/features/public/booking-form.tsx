@@ -13,6 +13,7 @@ import { cn } from "@/lib/cn";
 import { formatFieldValue, rawFieldValues } from "@/lib/fields";
 import { useFormAction } from "@/lib/use-form-action";
 import type { FormState } from "@/server/form-state";
+import { BookingOptions, type PriceChoice, SeatPrice } from "./price-choice";
 
 /** Résumé d'un participant replié : nom puis réponses. */
 function participantSummary(form: HTMLFormElement, index: number, fields: EventTypeField[]) {
@@ -42,10 +43,12 @@ function ExtraParticipant({
   index,
   fields,
   errors,
+  price,
 }: {
   index: number;
   fields: EventTypeField[];
   errors: Record<string, string>;
+  price: PriceChoice | null;
 }) {
   const hasError = Object.keys(errors).some(
     (key) => key.startsWith(`p${index}.`) || key.startsWith(`participants.${index}.`),
@@ -90,6 +93,7 @@ function ExtraParticipant({
           </Button>
         )}
       </div>
+      {price && <SeatPrice choice={price} seat={index} />}
       <Collapse keepMounted open={expanded}>
         <div id={panelId} className="auth-fields flex flex-col gap-3">
           <div className="grid gap-3 sm:grid-cols-2">
@@ -144,6 +148,8 @@ export function BookingForm({
   equipment = [],
   action,
   enrollment = false,
+  price = null,
+  giftCards = true,
 }: {
   slug: string;
   eventSlug: string;
@@ -164,17 +170,23 @@ export function BookingForm({
     due: string;
     deposit: boolean;
     rest: string;
+    /** Le reste se règle plus tard en ligne (sinon sur place). */
+    restLater?: boolean;
   } | null;
   /** Espace client connecté : son profil remplit le participant 1. */
   prefill: { firstName: string; lastName: string; email: string; phone: string } | null;
   /** Lot 31 : client connecté avec une carte de séances utilisable pour ces places. */
-  pass?: { id: string; name: string; balance: number } | null;
+  pass?: { id: string; name: string; balance: number; sessions: number } | null;
   /** Module Matériel avancé : ce que l'élève réserve ou choisit avec sa place. */
   equipment?: EquipmentOffer[];
   /** Autre envoi que la réservation à la séance (inscription à toute la série). */
   action?: (previous: FormState, form: FormData) => Promise<FormState>;
   /** Inscription à la série : une seule personne, sans entreprise ni message. */
   enrollment?: boolean;
+  /** Tarifs et options (lot 35) : un tarif par participant, options. */
+  price?: PriceChoice | null;
+  /** Le type accepte les bons cadeaux (module « Moyens acceptés »). */
+  giftCards?: boolean;
 }) {
   const { state, onSubmit, pending } = useFormAction<FormState>(
     action ?? createPublicBookingAction.bind(null, slug, eventSlug, linkSlug, seats),
@@ -199,7 +211,7 @@ export function BookingForm({
         name="passId"
         value={pass.id}
         defaultChecked
-        label={`Payer avec ma carte « ${pass.name} » : ${seats} séance${seats > 1 ? "s" : ""} sur les ${pass.balance} qui restent, rien d'autre à régler`}
+        label={`Payer avec ma carte « ${pass.name} » : ${pass.sessions} séance${pass.sessions > 1 ? "s" : ""} sur les ${pass.balance} qui restent, rien d'autre à régler`}
       />
     </div>
   );
@@ -211,6 +223,7 @@ export function BookingForm({
         <FormSection number={1} title={`Participant${seats > 1 ? "s" : ""} · ${seats}`}>
           <div className="auth-fields flex flex-col gap-3.5 rounded-[18px] bg-field p-[18px]">
             <p className="text-sm font-bold leading-[18px] text-ink">Participant 1 · toi</p>
+            {price && <SeatPrice choice={price} seat={0} />}
             <div className="grid gap-3 sm:grid-cols-2">
               <Field label="Prénom" required error={errors["customer.firstName"]}>
                 {(field) => (
@@ -307,8 +320,15 @@ export function BookingForm({
               index={index}
               fields={participantFields}
               errors={errors}
+              price={price}
             />
           ))}
+          {price && (
+            <>
+              <input type="hidden" name="price" value={JSON.stringify(price.selection)} />
+              <BookingOptions choice={price} />
+            </>
+          )}
           {!enrollment && (
             <Field label="Un mot pour l'organisateur">
               {(field) => (
@@ -324,33 +344,35 @@ export function BookingForm({
           )}
         </FormSection>
 
-        <FormSection number={2} title="Bon cadeau">
-          <Field
-            label="J'ai un bon cadeau"
-            error={errors.giftCardCode}
-            hint={
-              <p className="text-[13px] font-medium text-ink-muted">
-                Facultatif. Le montant est déduit du prix, le reste du solde est conservé.
-              </p>
-            }
-          >
-            {(field) => (
-              <input
-                {...field}
-                name="giftCardCode"
-                maxLength={40}
-                autoComplete="off"
-                autoCapitalize="characters"
-                spellCheck={false}
-                placeholder="TERRE-8K2F7M3P"
-                className={cn(inputClasses(), "font-mono uppercase placeholder:normal-case")}
-              />
-            )}
-          </Field>
-        </FormSection>
+        {giftCards && (
+          <FormSection number={2} title="Bon cadeau">
+            <Field
+              label="J'ai un bon cadeau"
+              error={errors.giftCardCode}
+              hint={
+                <p className="text-[13px] font-medium text-ink-muted">
+                  Facultatif. Le montant est déduit du prix, le reste du solde est conservé.
+                </p>
+              }
+            >
+              {(field) => (
+                <input
+                  {...field}
+                  name="giftCardCode"
+                  maxLength={40}
+                  autoComplete="off"
+                  autoCapitalize="characters"
+                  spellCheck={false}
+                  placeholder="TERRE-8K2F7M3P"
+                  className={cn(inputClasses(), "font-mono uppercase placeholder:normal-case")}
+                />
+              )}
+            </Field>
+          </FormSection>
+        )}
 
         {payment ? (
-          <FormSection number={3} title="Paiement">
+          <FormSection number={giftCards ? 3 : 2} title="Paiement">
             <div className="flex items-start gap-3.5 rounded-[18px] bg-field px-[18px] py-4">
               <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-[var(--brand)] text-[var(--on-brand)]">
                 <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
@@ -371,9 +393,9 @@ export function BookingForm({
               <p className="text-sm leading-[21px] text-ink/85">
                 {payment.kind === "stripe"
                   ? payment.deposit
-                    ? `Tu règles l'acompte de ${payment.due} par carte sur la page sécurisée de Stripe ; le reste (${payment.rest}) sur place.`
+                    ? `Tu règles l'acompte de ${payment.due} par carte sur la page sécurisée de Stripe ; le reste (${payment.rest}) ${payment.restLater ? "plus tard, en ligne" : "sur place"}.`
                     : `Tu règles ${payment.due} par carte sur la page sécurisée de Stripe, juste après.`
-                  : `Juste après ta ${enrollment ? "inscription" : "réservation"}, tu règles ${payment.deposit ? `l'acompte de ${payment.due}` : payment.due} via le lien de paiement de ${payment.organization}.${payment.deposit ? ` Le reste (${payment.rest}) sur place.` : ""} ${payment.organization} confirme ensuite la réception.`}
+                  : `Juste après ta ${enrollment ? "inscription" : "réservation"}, tu règles ${payment.deposit ? `l'acompte de ${payment.due}` : payment.due} via le lien de paiement de ${payment.organization}.${payment.deposit ? ` Le reste (${payment.rest}) ${payment.restLater ? "plus tard, avec le même lien" : "sur place"}.` : ""} ${payment.organization} confirme ensuite la réception.`}
               </p>
             </div>
             {passChoice}

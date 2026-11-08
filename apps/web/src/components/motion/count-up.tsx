@@ -9,17 +9,21 @@ const format = new Intl.NumberFormat("fr-FR");
 /**
  * Chiffre clé qui défile jusqu'à sa valeur (« 1 240 € » part de 0). Le serveur rend la
  * valeur finale (lisible sans JavaScript) ; le défilement démarre à l'hydratation, pendant
- * que la tuile apparaît. Une valeur sans nombre est affichée telle quelle.
+ * que la tuile apparaît. Une valeur sans nombre est affichée telle quelle. Quand la valeur
+ * change ensuite (un total qui suit un choix), le défilement part de la précédente.
  */
 export function CountUp({ value }: { value: string }) {
   const ref = useRef<HTMLSpanElement>(null);
   const reduced = useReducedMotion();
+  const previous = useRef(0);
 
   useEffect(() => {
     const parts = splitCount(value);
     const node = ref.current;
     if (!parts || !node || reduced) return;
-    const controls = animate(0, parts.target, {
+    const from = previous.current;
+    previous.current = parts.target;
+    const controls = animate(from, parts.target, {
       duration: 0.9,
       ease: [0.2, 0, 0, 1],
       onUpdate: (current) => {

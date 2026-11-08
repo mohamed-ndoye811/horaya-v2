@@ -30,6 +30,7 @@ import { uploadDocumentAction } from "@/functions/files";
 import { cn } from "@/lib/cn";
 import { formatOpening } from "@/lib/format";
 import { centsToInput, parseEuroToCents } from "@/lib/money";
+import { DepositPanel, PaymentMethodsPanel, PricingPanel } from "./money-panels";
 import { EquipmentPanel, LocationPanel, StaffPanel } from "./resources-panels";
 
 /** Saisie d'un nombre entier : vide → réglage absent. */
@@ -57,6 +58,10 @@ const ICON_PATHS: Record<ModuleKey, string> = {
   equipment: "M21 8 12 3 3 8v8l9 5 9-5zM3 8l9 5 9-5M12 13v8",
   location: "M20 10c0 6-8 12-8 12S4 16 4 10a8 8 0 0 1 16 0M12 13a3 3 0 1 0 0-6 3 3 0 0 0 0 6",
   staff: "M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2M12 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8",
+  pricing:
+    "M12.6 2.6A2 2 0 0 0 11.2 2H4a2 2 0 0 0-2 2v7.2a2 2 0 0 0 .6 1.4l8.7 8.7a2.4 2.4 0 0 0 3.4 0l6.6-6.6a2.4 2.4 0 0 0 0-3.4zM7.5 8a.5.5 0 1 0 0-1 .5.5 0 0 0 0 1",
+  deposit: "M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20M12 2a10 10 0 0 1 10 10H12z",
+  payment_methods: "M2 7h20v12H2zM2 11h20M6 15h4",
 };
 
 function ModuleIcon({ moduleKey }: { moduleKey: ModuleKey }) {
@@ -91,6 +96,8 @@ export interface ModuleContext {
   /** Modules Ressources : types de matériel et membres de l'équipe à proposer. */
   itemTypes: Array<{ id: string; name: string }>;
   members: Array<{ id: string; name: string }>;
+  /** Formules de cartes de séances de l'espace (module « Moyens acceptés »). */
+  passPlans?: ReadonlyArray<{ id: string; name: string }>;
 }
 
 /**
@@ -155,7 +162,7 @@ export function ModuleList({
         <PlusIcon size={12} className="text-ink" />
         <span className="font-semibold text-ink">Ajouter un module</span>
         <span className="hidden text-ink-subtle sm:inline">
-          · ouverture, annulation, messages, documents…
+          · tarifs, acompte, ouverture, annulation, messages…
         </span>
       </button>
       {catalog && (
@@ -294,6 +301,14 @@ function ModulePanel({
       return <LocationPanel modules={modules} set={set} />;
     case "staff":
       return <StaffPanel modules={modules} set={set} context={context} />;
+    case "pricing":
+      return <PricingPanel modules={modules} set={set} />;
+    case "deposit":
+      return <DepositPanel modules={modules} set={set} />;
+    case "payment_methods":
+      return (
+        <PaymentMethodsPanel modules={modules} set={set} passPlans={context.passPlans ?? []} />
+      );
     case "documents":
       return (
         <DocumentsPanel

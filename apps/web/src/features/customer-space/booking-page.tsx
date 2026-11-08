@@ -1,3 +1,4 @@
+import { priceDetail } from "@horaya/core";
 import { type ReactNode, useState } from "react";
 import { BookingAnswers } from "@/components/app/field-answers";
 import { StatusBadge, type Tone } from "@/components/ui/badge";
@@ -131,6 +132,10 @@ export function CustomerBookingPage({
               {[
                 startsAt && endsAt ? formatEventRange(startsAt, endsAt, tz) : null,
                 places,
+                // Tarifs et options choisis (lot 35), avec le total.
+                priceDetail(booking.priceLines)
+                  ? `${priceDetail(booking.priceLines)} · ${formatMoney(booking.amountCents)}`
+                  : null,
                 where || null,
                 `réservé le ${booked}`,
               ]

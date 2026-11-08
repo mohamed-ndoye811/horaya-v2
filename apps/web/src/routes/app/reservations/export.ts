@@ -1,3 +1,4 @@
+import { priceLinesLabel } from "@horaya/core";
 import { type BookingTab, listBookingAnswers, listBookings } from "@horaya/db";
 import { createFileRoute } from "@tanstack/react-router";
 import { BOOKING_STATUS_BADGE } from "@/components/ui/status";
@@ -44,6 +45,7 @@ export const Route = createFileRoute("/app/reservations/export")({
             "Date",
             "Places",
             "Montant (€)",
+            "Détail du prix",
             "Paiement",
             "Statut",
             "Réservée le",
@@ -57,6 +59,7 @@ export const Route = createFileRoute("/app/reservations/export")({
             row.eventStartsAt ? formatDateTimeShort(row.eventStartsAt, timeZone) : null,
             row.seats,
             (row.amountCents / 100).toFixed(2).replace(".", ","),
+            priceLinesLabel(row.priceLines),
             PAYMENT_MODE_LABELS[row.paymentMode] ?? row.paymentMode,
             BOOKING_STATUS_BADGE[row.status].label,
             formatDateTimeShort(row.createdAt, timeZone),

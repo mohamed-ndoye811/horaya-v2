@@ -2,8 +2,10 @@ import {
   type ActivityEntry,
   amountDueOnline,
   awaitsOnlinePayment,
+  balanceLabel,
   type NotificationType,
   paidCents,
+  priceDetail,
 } from "@horaya/core";
 import {
   claimAlmostFull,
@@ -106,13 +108,17 @@ async function loadBooking(organizationId: string, bookingId: string) {
           ? payments.some((entry) => entry.method === "gift_card" && entry.kind === "charge")
             ? "réglé avec un bon cadeau"
             : booking.paymentMode === "deposit"
-              ? `acompte de ${formatMoney(booking.depositCents ?? 0)} payé, le reste sur place`
+              ? `acompte de ${formatMoney(booking.depositCents ?? 0)} payé, ${booking.event?.modules?.deposit ? balanceLabel(booking.event.modules.deposit) : "le reste sur place"}`
               : "payé en ligne"
           : onlinePayments
             ? "à payer en ligne"
             : "à régler auprès de l'organisateur";
+  // Tarifs et options choisis (lot 35) : « 1 Plein, 1 Réduit · Cuisson et émaillage × 2 ».
+  const detailLabel = priceDetail(booking.priceLines);
   const amount =
-    booking.amountCents > 0 ? `${formatMoney(booking.amountCents)} · ${paymentNote}` : null;
+    booking.amountCents > 0
+      ? `${formatMoney(booking.amountCents)}${detailLabel ? ` (${detailLabel})` : ""} · ${paymentNote}`
+      : null;
   // Récapitulatif des réponses du client : jamais les champs de description (internes compris).
   const answers = answerGroups(
     {

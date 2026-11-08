@@ -5,6 +5,7 @@ import type {
   EventTypeField,
   FieldValues,
   PaymentMode,
+  PriceLine,
 } from "@horaya/core";
 import {
   and,
@@ -80,6 +81,8 @@ export interface BookingRow {
   status: BookingStatus;
   seats: number;
   amountCents: number;
+  /** Détail du prix (lot 35) ; vide pour les réservations plus anciennes. */
+  priceLines: PriceLine[];
   paymentMode: PaymentMode;
   paymentStatus: BookingPaymentStatus;
   createdAt: Date;
@@ -121,6 +124,7 @@ export async function listBookings(
       status: booking.status,
       seats: booking.seats,
       amountCents: booking.amountCents,
+      priceLines: booking.priceLines,
       paymentMode: booking.paymentMode,
       paymentStatus: booking.paymentStatus,
       createdAt: booking.createdAt,
@@ -263,6 +267,9 @@ export async function listCounterEvents(
       locationName: event.locationName,
       capacity: event.capacity,
       priceCents: event.priceCents,
+      paymentMode: event.paymentMode,
+      /** Tarifs et options, moyens acceptés (lot 35). */
+      modules: event.modules,
       color: eventType.color,
       seriesId: event.seriesId,
       /** Questions de l'inscription (« Ce que tu demandes »), saisies au comptoir. */
@@ -342,6 +349,7 @@ export async function getBookingDetail(db: Executor, organizationId: string, boo
       absentAt: booking.absentAt,
       amountCents: booking.amountCents,
       depositCents: booking.depositCents,
+      priceLines: booking.priceLines,
       paymentMode: booking.paymentMode,
       paymentStatus: booking.paymentStatus,
       source: booking.source,

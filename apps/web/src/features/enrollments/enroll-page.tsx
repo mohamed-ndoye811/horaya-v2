@@ -120,7 +120,7 @@ export function EnrollPage({
                     : paymentNote(
                         event.paymentMode === "free" ? "on_site" : event.paymentMode,
                         null,
-                        null,
+                        undefined,
                       )}
                 </p>
               )}

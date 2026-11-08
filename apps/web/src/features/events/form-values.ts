@@ -1,6 +1,6 @@
 import { addDays, type EventModules, toZonedParts } from "@horaya/core";
 import { centsToInput } from "@/lib/money";
-import type { EventFormValues } from "./event-form";
+import { depositInputs, type EventFormValues, pricingInputs } from "./event-form";
 
 const pad = (value: number) => String(value).padStart(2, "0");
 
@@ -37,7 +37,8 @@ export function emptyEventValues(
     capacity: "",
     price: "",
     paymentMode: "free",
-    depositPercent: "",
+    ...depositInputs(null),
+    prices: {},
     paymentLinkUrl: "",
     requiresApproval: false,
     visibility: "public",
@@ -60,7 +61,6 @@ export function eventToValues(
     capacity: number | null;
     priceCents: number;
     paymentMode: string;
-    depositPercent: number | null;
     paymentLinkUrl: string | null;
     requiresApproval: boolean;
     visibility: string;
@@ -88,7 +88,8 @@ export function eventToValues(
     capacity: event.capacity === null ? "" : String(event.capacity),
     price: event.priceCents > 0 ? centsToInput(event.priceCents) : "",
     paymentMode: event.paymentMode,
-    depositPercent: event.depositPercent === null ? "" : String(event.depositPercent),
+    ...depositInputs(event.modules.deposit),
+    prices: pricingInputs(event.modules.pricing),
     paymentLinkUrl: event.paymentLinkUrl ?? "",
     requiresApproval: event.requiresApproval,
     visibility: event.visibility,

@@ -1,3 +1,4 @@
+import { priceDetail } from "@horaya/core";
 import type { ReactNode } from "react";
 import { BookingAnswers } from "@/components/app/field-answers";
 import { stagger, WordsReveal } from "@/components/motion/words";
@@ -74,6 +75,9 @@ export function ManagedBookingPage({
     missing > 0 ? `${named} · ${missing} participant${missing > 1 ? "s" : ""} à compléter` : named;
   const manageHref = `/${slug}/reservation/${token}`;
   const deposit = booking.paymentMode === "deposit";
+  const restWhere =
+    booking.eventModules?.deposit?.balance === "later" ? "à régler plus tard" : "sur place";
+  const detail = priceDetail(booking.priceLines);
   // `rest` à côté de la pastille, qui ne passe pas à la ligne (évite qu'elle déborde sur mobile).
   const paymentPill: { label: string; tone: Tone; rest?: string } | null =
     booking.amountCents === 0
@@ -84,7 +88,7 @@ export function ManagedBookingPage({
           ? {
               label: deposit ? "Acompte payé" : "Payé",
               rest: deposit
-                ? `reste ${formatMoney(booking.amountCents - paid)} sur place`
+                ? `reste ${formatMoney(booking.amountCents - paid)} ${restWhere}`
                 : undefined,
               tone: "success",
             }
@@ -94,7 +98,7 @@ export function ManagedBookingPage({
                   ? `Acompte de ${formatMoney(due)} à payer`
                   : `${formatMoney(due)} à payer en ligne`,
                 rest: deposit
-                  ? `reste ${formatMoney(booking.amountCents - due)} sur place`
+                  ? `reste ${formatMoney(booking.amountCents - due)} ${restWhere}`
                   : undefined,
                 tone: "warning",
               }
@@ -319,6 +323,9 @@ export function ManagedBookingPage({
               )}
               {paymentPill?.rest && (
                 <span className="text-[13px] font-medium text-ink-muted">{paymentPill.rest}</span>
+              )}
+              {detail && (
+                <span className="basis-full text-[13px] font-medium text-ink-muted">{detail}</span>
               )}
             </span>
           </Fact>

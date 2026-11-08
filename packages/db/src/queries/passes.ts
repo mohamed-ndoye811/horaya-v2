@@ -118,6 +118,7 @@ export async function listUsablePasses(
     .select({
       id: pass.id,
       name: pass.name,
+      planId: pass.planId,
       sessionsTotal: pass.sessionsTotal,
       expiresAt: pass.expiresAt,
       balance,
@@ -189,7 +190,7 @@ export async function getPublicPassPlan(db: Executor, organizationId: string, pl
 /** Type et début d'un événement (pour filtrer les cartes acceptées) ; null si l'événement n'existe pas. */
 export async function getEventTypeById(db: Executor, organizationId: string, eventId: string) {
   const [row] = await db
-    .select({ eventTypeId: event.eventTypeId, startsAt: event.startsAt })
+    .select({ eventTypeId: event.eventTypeId, startsAt: event.startsAt, modules: event.modules })
     .from(event)
     .where(and(eq(event.organizationId, organizationId), eq(event.id, eventId)));
   return row ?? null;

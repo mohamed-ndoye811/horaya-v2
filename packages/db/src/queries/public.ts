@@ -257,6 +257,7 @@ async function findManagedBooking(db: Executor, where: SQL | undefined) {
       seats: booking.seats,
       amountCents: booking.amountCents,
       depositCents: booking.depositCents,
+      priceLines: booking.priceLines,
       paymentMode: booking.paymentMode,
       paymentStatus: booking.paymentStatus,
       currency: booking.currency,

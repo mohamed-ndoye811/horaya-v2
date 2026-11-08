@@ -199,6 +199,13 @@ export function priceLinesLabel(lines: readonly PriceLine[]): string {
     .join(" · ");
 }
 
+/** Le détail à montrer au client, ou null s'il n'apprend rien (un seul tarif « Plein », sans option). */
+export function priceDetail(lines: readonly PriceLine[]): string | null {
+  const only = lines.length === 1 ? lines[0] : undefined;
+  if (lines.length === 0 || (only?.kind === "rate" && only.id === BASE_RATE_ID)) return null;
+  return priceLinesLabel(lines);
+}
+
 /* ---------- Moyens acceptés ---------- */
 
 /** Le type accepte-t-il les bons cadeaux ? Sans module, oui. */
