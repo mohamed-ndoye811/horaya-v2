@@ -13,6 +13,7 @@ import {
   uuid,
 } from "drizzle-orm/pg-core";
 import { cents, createdAt, currency, id, organizationId, updatedAt } from "./_columns";
+import { member } from "./auth";
 import { calendarLinkFilter, eventStatus, eventVisibility, paymentMode } from "./enums";
 
 export const eventType = pgTable(
@@ -96,6 +97,8 @@ export const event = pgTable(
     modules: jsonb().$type<EventModules>().notNull().default({}),
     /** Valeurs de « Ce que tu décris ». */
     fieldValues: jsonb().$type<FieldValues>().notNull().default({}),
+    /** Module Intervenant : le membre de l'équipe qui anime l'événement. */
+    staffMemberId: uuid().references(() => member.id, { onDelete: "set null" }),
     publishedAt: timestamp({ withTimezone: true }),
     cancelledAt: timestamp({ withTimezone: true }),
     /** Rappel de la veille envoyé à l'équipe (une seule fois). */
@@ -116,6 +119,7 @@ export const event = pgTable(
     index().on(t.organizationId, t.startsAt),
     index().on(t.organizationId, t.status),
     index().on(t.seriesId),
+    index().on(t.staffMemberId),
     check("event_period_valid", sql`${t.endsAt} > ${t.startsAt}`),
     check("event_capacity_positive", sql`${t.capacity} IS NULL OR ${t.capacity} > 0`),
     check("event_price_positive", sql`${t.priceCents} >= 0`),

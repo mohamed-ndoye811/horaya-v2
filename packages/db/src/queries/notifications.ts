@@ -46,6 +46,24 @@ export async function createNotifications(
   );
 }
 
+/** Une notification dans l'app pour un seul membre (l'intervenant d'un événement). */
+export async function createMemberNotification(
+  db: Executor,
+  organizationId: string,
+  memberId: string,
+  type: NotificationType,
+  content: { title: string; body?: string | null; link?: string | null },
+) {
+  await db.insert(notification).values({
+    organizationId,
+    memberId,
+    type,
+    title: content.title,
+    body: content.body ?? null,
+    link: content.link ?? null,
+  });
+}
+
 /** Dernières notifications d'un membre, les plus récentes d'abord. */
 export async function listNotifications(
   db: Executor,

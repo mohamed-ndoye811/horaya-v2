@@ -176,6 +176,20 @@ export async function getNotificationPreferences(db: Executor, memberId: string)
     .where(eq(notificationPreference.memberId, memberId));
 }
 
+/** E-mail d'un membre de l'espace (null s'il n'en fait plus partie). */
+export async function getMemberEmail(
+  db: Executor,
+  organizationId: string,
+  memberId: string,
+): Promise<string | null> {
+  const [row] = await db
+    .select({ email: user.email })
+    .from(member)
+    .innerJoin(user, eq(user.id, member.userId))
+    .where(and(eq(member.organizationId, organizationId), eq(member.id, memberId)));
+  return row?.email ?? null;
+}
+
 /** E-mails des membres qui veulent être prévenus par e-mail de ce type de notification. */
 export async function listNotificationRecipients(
   db: Executor,

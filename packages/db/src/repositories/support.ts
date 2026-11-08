@@ -124,6 +124,7 @@ export function tenantSettingsReader(db: Executor): TenantSettingsStore {
           lateCancellationRefundPercent: tenantSettings.lateCancellationRefundPercent,
           paymentAccountId: tenantSettings.stripeAccountId,
           paymentAccountStatus: tenantSettings.stripeAccountStatus,
+          address: tenantSettings.address,
         })
         .from(tenantSettings)
         .where(eq(tenantSettings.organizationId, organizationId));
@@ -137,6 +138,7 @@ export function tenantSettingsReader(db: Executor): TenantSettingsStore {
           lateCancellationRefundPercent: 50,
           paymentAccountId: null,
           paymentAccountStatus: "not_connected",
+          address: null,
         }
       );
     },

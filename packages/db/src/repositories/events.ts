@@ -8,7 +8,7 @@ import {
 } from "@horaya/core";
 import { and, asc, eq, gt, ne, notExists, sql } from "drizzle-orm";
 import type { Executor } from "../client";
-import { booking, event, eventSeries, eventType } from "../schema";
+import { booking, event, eventSeries, eventType, member } from "../schema";
 
 /** Nom déjà pris dans l'espace (contrainte unique organization_id + name). */
 function duplicateName(error: unknown): never {
@@ -125,6 +125,14 @@ export function eventRepository(db: Executor): EventRepository {
         .from(event)
         .where(and(eq(event.organizationId, organizationId), eq(event.slug, slug)))
         .limit(1);
+      return Boolean(found);
+    },
+
+    async memberBelongs(organizationId, memberId) {
+      const [found] = await db
+        .select({ id: member.id })
+        .from(member)
+        .where(and(eq(member.organizationId, organizationId), eq(member.id, memberId)));
       return Boolean(found);
     },
 

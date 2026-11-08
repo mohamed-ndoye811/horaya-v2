@@ -1,6 +1,17 @@
-import type { AllocationKind, FieldDefinition, ItemUnitStatus } from "@horaya/core";
-import { and, asc, desc, eq, inArray, isNull, sql } from "drizzle-orm";
+import {
+  type AllocationKind,
+  describeItemValues,
+  type EquipmentOffer,
+  type EventModules,
+  equipmentCandidates,
+  type FieldDefinition,
+  type ItemUnitStatus,
+  needQuantity,
+  unitLabel,
+} from "@horaya/core";
+import { and, asc, desc, eq, inArray, isNotNull, isNull, sql } from "drizzle-orm";
 import type { Executor } from "../client";
+import { equipmentUnitsOfType } from "../repositories/inventory";
 import { event as eventTable, item, itemAllocation, itemType, itemUnit } from "../schema";
 
 const iso = (date: Date) => sql`${date.toISOString()}::timestamptz`;
@@ -365,10 +376,106 @@ export async function listCounterItems(db: Executor, organizationId: string, eve
 export async function listItemTypes(
   db: Executor,
   organizationId: string,
-): Promise<Array<{ name: string; fields: FieldDefinition[] }>> {
+): Promise<Array<{ id: string; name: string; fields: FieldDefinition[] }>> {
   return db
-    .select({ name: itemType.name, fields: itemType.fields })
+    .select({ id: itemType.id, name: itemType.name, fields: itemType.fields })
     .from(itemType)
     .where(and(eq(itemType.organizationId, organizationId), isNull(itemType.archivedAt)))
     .orderBy(asc(itemType.name));
+}
+
+/**
+ * Module Matériel avancé, formulaire d'inscription : pour chaque besoin, ce que le client voit
+ * (quantité par place, exemplaires libres à choisir). Même calcul de disponibilité que la
+ * réservation (`equipmentCandidates`), qui reste seule juge au moment d'écrire.
+ */
+export async function listEquipmentOffers(
+  db: Executor,
+  event: {
+    id: string;
+    organizationId: string;
+    startsAt: Date;
+    endsAt: Date;
+    modules: EventModules;
+  },
+): Promise<EquipmentOffer[]> {
+  const period = { startsAt: event.startsAt, endsAt: event.endsAt };
+  const offers: EquipmentOffer[] = [];
+  for (const need of event.modules.equipment?.needs ?? []) {
+    const found = await equipmentUnitsOfType(db, event.organizationId, need.itemTypeId);
+    if (!found) continue;
+    const allocations =
+      found.units.length === 0
+        ? []
+        : await db
+            .select()
+            .from(itemAllocation)
+            .where(
+              and(
+                inArray(
+                  itemAllocation.itemUnitId,
+                  found.units.map((unit) => unit.id),
+                ),
+                isNull(itemAllocation.cancelledAt),
+                sql`${itemAllocation.startsAt} < ${iso(period.endsAt)} and ${itemAllocation.endsAt} > ${iso(period.startsAt)}`,
+              ),
+            );
+    const candidates = equipmentCandidates({
+      units: found.units,
+      allocations,
+      period,
+      eventId: event.id,
+      restrictTo: need.unitIds,
+    });
+    offers.push({
+      needId: need.id,
+      name: found.name,
+      quantity: needQuantity(need, 1),
+      required: need.required,
+      chooser: need.chooser,
+      options:
+        need.chooser === "student"
+          ? candidates.map(({ unit }) => ({
+              unitId: unit.id,
+              label: unitLabel(unit),
+              details: unit.details,
+            }))
+          : [],
+      available: candidates.length,
+    });
+  }
+  return offers;
+}
+
+/** Matériel réservé à une réservation par le module Matériel avancé, mis en forme. */
+export async function listBookingEquipment(db: Executor, bookingId: string): Promise<string[]> {
+  const rows = await db
+    .select({
+      label: itemUnit.label,
+      itemName: item.name,
+      fieldValues: item.fieldValues,
+      fields: itemType.fields,
+    })
+    .from(itemAllocation)
+    .innerJoin(itemUnit, eq(itemUnit.id, itemAllocation.itemUnitId))
+    .innerJoin(item, eq(item.id, itemUnit.itemId))
+    .leftJoin(itemType, eq(itemType.id, item.itemTypeId))
+    .where(
+      and(
+        eq(itemAllocation.bookingId, bookingId),
+        isNull(itemAllocation.cancelledAt),
+        isNotNull(itemAllocation.needId),
+      ),
+    )
+    .orderBy(asc(item.name), asc(itemUnit.label));
+  return rows.map((row) =>
+    unitLabel({
+      id: "",
+      label: row.label,
+      status: "available",
+      itemId: "",
+      itemName: row.itemName,
+      details: describeItemValues(row.fields ?? [], row.fieldValues),
+    }),
+  );
 }
