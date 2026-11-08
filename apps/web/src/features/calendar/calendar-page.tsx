@@ -245,10 +245,11 @@ export function CalendarPage({
                 ]}
               />
             )}
-            {/* Sur mobile, période et vues sur une seule ligne, vues en pleine largeur. */}
-            <div className="flex gap-3">
+            {/* Sur mobile, période et vues sur une ligne, vues en pleine largeur ; sur un petit
+                écran (360 px), les vues passent dessous plutôt que de déborder. */}
+            <div className="flex flex-wrap gap-3">
               {periodNav}
-              <div className="min-w-0 flex-1 sm:hidden">
+              <div className="min-w-fit flex-1 sm:hidden">
                 <SegmentedLinks
                   label="Vue du calendrier"
                   value={view}

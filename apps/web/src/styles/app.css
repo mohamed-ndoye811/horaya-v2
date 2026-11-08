@@ -45,6 +45,8 @@
   --color-on-ink-soft: #c9cbd1;
   --color-on-ink-muted: #9a9ea8;
   --color-on-ink-subtle: #6e727c;
+  /* Action destructrice sur fond noir (« Supprimer » dans une barre d'action). */
+  --color-on-ink-danger: #f0a3a3;
   --color-ink-line: #333333;
   --color-ink-raised: #1e1e1e;
   --color-ink-hover: #2c2c2c;
@@ -333,6 +335,14 @@ input[type="password"] {
     scale: 0.985;
     transition-duration: var(--dur-1);
   }
+}
+
+/*
+ * Mobile : un écran avec sa barre d'actions en bas (formulaire, éditeur de type en paramètre
+ * d'URL) masque la capsule du menu, qui passerait par-dessus ses boutons.
+ */
+:root:has([data-action-bar]) [data-tab-capsule] {
+  display: none;
 }
 
 /* Liens soulignés : au survol, le trait s'écarte un peu du texte. */

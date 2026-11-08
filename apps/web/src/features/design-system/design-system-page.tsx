@@ -447,6 +447,7 @@ export function DesignSystemPage() {
             className="xl:flex-1"
           />
           <SegmentedLinks
+            collapse
             label="Filtrer par statut"
             value="all"
             segments={[
@@ -577,7 +578,7 @@ export function DesignSystemPage() {
       </section>
 
       <Demo title="Onglets & historique">
-        <div className="grid gap-10 lg:grid-cols-[1fr_320px]">
+        <div className="grid grid-cols-[minmax(0,1fr)] gap-10 lg:grid-cols-[1fr_320px]">
           <div className="border-b border-line-soft">
             <Tabs
               label="Sections de l'événement"

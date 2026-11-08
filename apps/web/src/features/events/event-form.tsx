@@ -841,6 +841,8 @@ export function EventForm({
         </Collapse>
 
         <ActionBar
+          // Sur mobile, la liste « Prêt à publier » dit déjà ce qui manque.
+          messageOnMobile={false}
           message={
             ready === checklist.length ? (
               <>
