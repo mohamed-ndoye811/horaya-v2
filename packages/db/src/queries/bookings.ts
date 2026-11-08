@@ -219,6 +219,8 @@ export async function listCounterEvents(
       priceCents: event.priceCents,
       color: eventType.color,
       seriesId: event.seriesId,
+      /** Questions de l'inscription (« Ce que tu demandes »), saisies au comptoir. */
+      fields: event.fields,
       /** Prix de l'inscription à toute la série, si elle est ouverte. */
       enrollmentPriceCents: sql<
         number | null
@@ -294,6 +296,7 @@ export async function getBookingDetail(db: Executor, organizationId: string, boo
       paymentStatus: booking.paymentStatus,
       source: booking.source,
       customerMessage: booking.customerMessage,
+      answers: booking.answers,
       refusalReason: booking.refusalReason,
       createdAt: booking.createdAt,
       confirmedAt: booking.confirmedAt,
@@ -318,6 +321,7 @@ export async function getBookingDetail(db: Executor, organizationId: string, boo
         status: event.status,
         paymentLinkUrl: event.paymentLinkUrl,
         coverImageUrl: event.coverImageUrl,
+        fields: event.fields,
       },
       typeColor: eventType.color,
     })
@@ -333,7 +337,7 @@ export async function getBookingDetail(db: Executor, organizationId: string, boo
       .select()
       .from(bookingParticipant)
       .where(eq(bookingParticipant.bookingId, bookingId))
-      .orderBy(asc(bookingParticipant.createdAt)),
+      .orderBy(asc(bookingParticipant.createdAt), asc(bookingParticipant.id)),
     db
       .select(ACTIVITY_SELECT)
       .from(activityLog)

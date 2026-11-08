@@ -1,10 +1,13 @@
 import {
+  type BookingNoun,
   type BookingRules,
   type CalendarLink,
-  type CustomFieldDefinition,
   calendarLinkAllows,
+  type EventTypeField,
   type EventVisibility,
+  type FieldValues,
   type PaymentMode,
+  publicFieldsView,
 } from "@horaya/core";
 import { and, asc, eq, gte, type SQL, sql } from "drizzle-orm";
 import type { Executor } from "../client";
@@ -86,9 +89,17 @@ const publicEventColumns = {
   typeName: eventType.name,
   typeColor: eventType.color,
   bookingRules: eventType.bookingRules,
+  bookingNoun: eventType.bookingNoun,
   visibility: event.visibility,
+  fields: event.fields,
+  fieldValues: event.fieldValues,
   seatsHeld,
 };
+
+/** Les champs internes de « Ce que tu décris » ne quittent jamais le serveur. */
+function toPublic<R extends { fields: EventTypeField[]; fieldValues: FieldValues }>(row: R): R {
+  return { ...row, ...publicFieldsView(row.fields, row.fieldValues) };
+}
 
 export interface PublicEventRow {
   id: string;
@@ -112,7 +123,11 @@ export interface PublicEventRow {
   typeName: string;
   typeColor: string;
   bookingRules: BookingRules;
+  bookingNoun: BookingNoun;
   visibility: EventVisibility;
+  /** Champs de l'événement (sans les champs internes) et valeurs visibles. */
+  fields: EventTypeField[];
+  fieldValues: FieldValues;
   seatsHeld: number;
 }
 
@@ -135,7 +150,7 @@ export async function listPublicEvents(
     .innerJoin(eventType, eq(eventType.id, event.eventTypeId))
     .where(and(isPublic(organizationId), gte(event.startsAt, now)))
     .orderBy(asc(event.startsAt));
-  return rows as PublicEventRow[];
+  return (rows as PublicEventRow[]).map(toPublic);
 }
 
 /**
@@ -151,7 +166,6 @@ export async function getPublicEvent(
   const [row] = await db
     .select({
       ...publicEventColumns,
-      customFields: eventType.customFields,
       seriesRule: eventSeries.rrule,
       seriesId: event.seriesId,
       /** Cours à l'année : inscription à toute la série (voir getSeriesOffer). */
@@ -172,9 +186,8 @@ export async function getPublicEvent(
     row &&
     (row.visibility === "public" ||
       (link !== null && calendarLinkAllows(link, { id: row.id, eventTypeId: row.typeId })));
-  return (visible ? row : null) as
+  return (visible ? toPublic(row) : null) as
     | (PublicEventRow & {
-        customFields: CustomFieldDefinition[];
         seriesRule: string | null;
         seriesId: string | null;
         enrollmentEnabled: boolean;
@@ -250,6 +263,8 @@ async function findManagedBooking(db: Executor, where: SQL | undefined) {
       eventCoverImageUrl: event.coverImageUrl,
       priceCents: event.priceCents,
       eventPaymentMode: event.paymentMode,
+      answers: booking.answers,
+      eventFields: event.fields,
     })
     .from(booking)
     .innerJoin(customer, eq(customer.id, booking.customerId))
@@ -258,11 +273,17 @@ async function findManagedBooking(db: Executor, where: SQL | undefined) {
     .where(where);
   if (!row) return null;
   const participants = await db
-    .select({ firstName: bookingParticipant.firstName, lastName: bookingParticipant.lastName })
+    .select({
+      firstName: bookingParticipant.firstName,
+      lastName: bookingParticipant.lastName,
+      answers: bookingParticipant.answers,
+    })
     .from(bookingParticipant)
     .where(eq(bookingParticipant.bookingId, row.id))
-    .orderBy(asc(bookingParticipant.createdAt));
-  return { ...row, participants };
+    .orderBy(asc(bookingParticipant.createdAt), asc(bookingParticipant.id));
+  // Les champs internes de « Ce que tu décris » restent dans l'équipe.
+  const { fields: eventFields } = publicFieldsView(row.eventFields ?? [], {});
+  return { ...row, eventFields, participants };
 }
 export type ManagedBooking = NonNullable<Awaited<ReturnType<typeof findManagedBooking>>>;
 
@@ -305,5 +326,5 @@ export async function listCalendarLinkEvents(
       ),
     )
     .orderBy(asc(event.startsAt));
-  return rows as PublicEventRow[];
+  return (rows as PublicEventRow[]).map(toPublic);
 }

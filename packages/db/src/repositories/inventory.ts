@@ -68,6 +68,21 @@ export function inventoryRepository(db: Executor): InventoryRepository {
       return row.id;
     },
 
+    async itemTypeFields(organizationId, itemTypeId) {
+      const [row] = await db
+        .select({ fields: itemType.fields })
+        .from(itemType)
+        .where(and(eq(itemType.organizationId, organizationId), eq(itemType.id, itemTypeId)));
+      return row?.fields ?? [];
+    },
+
+    async setItemTypeFields(organizationId, itemTypeId, fields) {
+      await db
+        .update(itemType)
+        .set({ fields })
+        .where(and(eq(itemType.organizationId, organizationId), eq(itemType.id, itemTypeId)));
+    },
+
     async insertItem(values) {
       const [created] = await db.insert(item).values(values).returning().catch(translateConflict);
       return created as Item;

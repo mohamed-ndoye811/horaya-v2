@@ -6,9 +6,9 @@ import {
   type EventType,
   type EventTypeRepository,
 } from "@horaya/core";
-import { and, asc, eq } from "drizzle-orm";
+import { and, asc, eq, gt, ne, notExists, sql } from "drizzle-orm";
 import type { Executor } from "../client";
-import { event, eventSeries, eventType } from "../schema";
+import { booking, event, eventSeries, eventType } from "../schema";
 
 /** Nom déjà pris dans l'espace (contrainte unique organization_id + name). */
 function duplicateName(error: unknown): never {
@@ -126,6 +126,25 @@ export function eventRepository(db: Executor): EventRepository {
         .where(and(eq(event.organizationId, organizationId), eq(event.slug, slug)))
         .limit(1);
       return Boolean(found);
+    },
+
+    async applyTypeFields(organizationId, eventTypeId, fields, now) {
+      const updated = await db
+        .update(event)
+        .set({ fields })
+        .where(
+          and(
+            eq(event.organizationId, organizationId),
+            eq(event.eventTypeId, eventTypeId),
+            gt(event.startsAt, now),
+            ne(event.status, "cancelled"),
+            notExists(
+              db.select({ one: sql`1` }).from(booking).where(eq(booking.eventId, event.id)),
+            ),
+          ),
+        )
+        .returning({ id: event.id });
+      return updated.length;
     },
   };
 }

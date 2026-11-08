@@ -1,9 +1,11 @@
+import type { FieldDefinition, FieldValues } from "@horaya/core";
 import { sql } from "drizzle-orm";
 import {
   boolean,
   check,
   date,
   index,
+  jsonb,
   pgTable,
   text,
   timestamp,
@@ -24,6 +26,8 @@ export const itemType = pgTable(
     name: text().notNull(),
     color: text(),
     description: text(),
+    /** Champs de la catégorie, remplis sur chaque article. */
+    fields: jsonb().$type<FieldDefinition[]>().notNull().default([]),
     archivedAt: timestamp({ withTimezone: true }),
     createdAt: createdAt(),
   },
@@ -47,6 +51,8 @@ export const item = pgTable(
     photoUrl: text(),
     /** Louable seul par un client final (sinon réservé aux événements de l'organisateur). */
     rentable: boolean().notNull().default(false),
+    /** Valeurs des champs de sa catégorie. */
+    fieldValues: jsonb().$type<FieldValues>().notNull().default({}),
     archivedAt: timestamp({ withTimezone: true }),
     createdAt: createdAt(),
     updatedAt: updatedAt(),
