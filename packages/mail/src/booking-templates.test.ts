@@ -6,9 +6,11 @@ import {
   bookingFollowUpEmail,
   bookingRefusedEmail,
   bookingRescheduledEmail,
+  bookingRuleMessageEmail,
   enrollmentConfirmedEmail,
   passActivatedEmail,
   teamAlmostFullEmail,
+  teamRuleEmail,
   weeklyDigestEmail,
 } from "./booking-templates";
 import { giftCardEmail, teamGiftCardEmail } from "./gift-card-templates";
@@ -247,5 +249,32 @@ describe("changement de date", () => {
     expect(email.text).toContain("il reste 20 € à régler");
     expect(email.text).toContain("Payer 20 € : https://pay.example/atelier");
     expect(bookingRescheduledEmail(mail).text).not.toContain("plus élevé");
+  });
+});
+
+describe("règles « si… alors… »", () => {
+  it("message au client : l'objet de la règle et son texte", () => {
+    const email = bookingRuleMessageEmail({
+      ...mail,
+      subject: "Dernières infos",
+      message: "Prévois un tablier.",
+    });
+    expect(email.subject).toBe("Dernières infos · Séminaire annuel");
+    expect(email.text).toContain("Prévois un tablier.");
+  });
+
+  it("équipe prévenue : la règle, l'événement et l'inscription", () => {
+    const email = teamRuleEmail({
+      workspaceName: "Terre & Feu",
+      rule: "Dernières places",
+      title: "Cours débutants",
+      when: "Ven. 13 novembre · 10h",
+      customerName: "Julie Martin",
+      message: "Relance les anciens élèves.",
+      url: "https://horaya.app/app/reservations/x",
+    });
+    expect(email.subject).toBe("Règle « Dernières places » : Cours débutants");
+    expect(email.text).toContain("pour l'inscription de Julie Martin");
+    expect(email.text).toContain("Relance les anciens élèves.");
   });
 });

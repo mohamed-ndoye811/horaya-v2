@@ -598,6 +598,25 @@ const plans: Plan[] = [
       ["Marc", "Dupont", 1],
     ],
   },
+  // Lot 36 : à J-7 avec des places libres, la règle « Dernières places débutants » prévient l'équipe.
+  {
+    type: "tournage",
+    title: "Cours de tournage · débutants",
+    start: [5, 10],
+    end: [5, 12],
+    location: "Atelier Terre & Feu",
+    capacity: 8,
+    priceCents: 4500,
+    paymentMode: "on_site",
+    description:
+      "Premier contact avec le tour : centrage, ouverture et premiers cylindres, à ton rythme.",
+    fieldValues: { niveau: "Débutant", terre: "Grès blanc" },
+    answers: {
+      answers: { deja_tourne: false, reglement: "on" },
+      participants: [{ firstName: "Inès", lastName: "Moreau", answers: { age: "29" } }],
+    },
+    bookings: [["Inès", "Moreau", 1]],
+  },
   {
     type: "meetup",
     title: "Daily standup",

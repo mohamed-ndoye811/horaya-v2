@@ -7,6 +7,7 @@ import type {
   EventVisibility,
   FieldValues,
   PaymentMode,
+  Rule,
 } from "@horaya/core";
 import { and, asc, desc, eq, gt, gte, ilike, isNull, lt, ne, or, type SQL, sql } from "drizzle-orm";
 import type { Executor } from "../client";
@@ -203,6 +204,7 @@ export interface EventTypeRow {
   defaultPriceCents: number | null;
   modules: EventModules;
   fields: EventTypeField[];
+  rules: Rule[];
   bookingNoun: BookingNoun;
   eventCount: number;
   /** Événements à venir sans inscription : ceux que « Appliquer aussi » mettrait à jour. */
@@ -224,6 +226,7 @@ export async function listEventTypes(
       defaultPriceCents: eventType.defaultPriceCents,
       modules: eventType.modules,
       fields: eventType.fields,
+      rules: eventType.rules,
       bookingNoun: eventType.bookingNoun,
       eventCount: sql<number>`(select count(*) from event e where e.event_type_id = "event_type"."id")::int`,
       // Même sélection que EventRepository.applyTypeConfig.
@@ -267,6 +270,7 @@ export async function getEventDetail(db: Executor, organizationId: string, event
       fields: event.fields,
       fieldValues: event.fieldValues,
       modules: event.modules,
+      rules: event.rules,
     })
     .from(event)
     .innerJoin(eventType, eq(eventType.id, event.eventTypeId))
@@ -307,6 +311,7 @@ export async function getEventDetail(db: Executor, organizationId: string, event
       fields: EventTypeField[];
       fieldValues: FieldValues;
       modules: EventModules;
+      rules: Rule[];
     },
     bookings,
     waitlisted: bookings

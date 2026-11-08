@@ -11,6 +11,7 @@ export {
   bookingRefusedEmail,
   bookingReminderEmail,
   bookingRescheduledEmail,
+  bookingRuleMessageEmail,
   bookingSoonEmail,
   bookingWaitlistedEmail,
   enrollmentConfirmedEmail,
@@ -20,6 +21,7 @@ export {
   teamMinimumCancelledEmail,
   teamMinimumRiskEmail,
   teamReminderEmail,
+  teamRuleEmail,
   weeklyDigestEmail,
 } from "./booking-templates";
 export { type GiftCardMail, giftCardEmail, teamGiftCardEmail } from "./gift-card-templates";

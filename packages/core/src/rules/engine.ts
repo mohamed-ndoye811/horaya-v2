@@ -265,13 +265,13 @@ export function submissionOutcome(
 /**
  * Règles envoyées au formulaire d'inscription : seulement les questions, et des conditions
  * réduites à ce que le formulaire connaît. Ce qui tient à l'événement est tranché ici (rien
- * d'interne ne part chez le visiteur) ; ce qui tient au client est tenu pour vrai (la question
- * s'affiche au cas où, le serveur ne l'exige que si la règle s'applique vraiment).
+ * d'interne ne part chez le visiteur) ; le client et le matériel sont tenus pour vrais (la
+ * question s'affiche au cas où, le serveur ne l'exige que si la règle s'applique vraiment).
  */
 export function formRules(
   rules: readonly Rule[],
   fields: readonly EventTypeField[],
-  event: RuleFacts["event"],
+  event: Omit<NonNullable<RuleFacts["event"]>, "equipmentLeft">,
 ): Rule[] {
   return rulesFor(rules, "booking_submitted").flatMap((rule) => {
     const actions = rule.actions.filter((action) => action.kind === "ask");
@@ -281,8 +281,8 @@ export function formRules(
       const kept: RuleCondition[] = [];
       let possible = true;
       for (const condition of group) {
-        if (condition.kind === "customer") continue;
-        const known = conditionHolds(condition, fields, { event });
+        if (condition.kind === "customer" || condition.kind === "equipment") continue;
+        const known = conditionHolds(condition, fields, { event: { ...event, equipmentLeft: 0 } });
         if (known === false) possible = false;
         if (known === undefined) kept.push(condition);
       }

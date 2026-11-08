@@ -274,6 +274,9 @@ export async function listCounterEvents(
       seriesId: event.seriesId,
       /** Questions de l'inscription (« Ce que tu demandes »), saisies au comptoir. */
       fields: event.fields,
+      /** Règles et description : questions en plus des règles (lot 36). */
+      rules: event.rules,
+      fieldValues: event.fieldValues,
       /** Prix de l'inscription à toute la série, si elle est ouverte. */
       enrollmentPriceCents: sql<
         number | null
@@ -386,6 +389,9 @@ export async function getBookingDetail(db: Executor, organizationId: string, boo
         fields: event.fields,
         /** Modules copiés sur l'événement (messages et documents des e-mails). */
         modules: event.modules,
+        /** Règles copiées sur l'événement : questions en plus, documents à apporter. */
+        rules: event.rules,
+        timezone: event.timezone,
       },
       typeColor: eventType.color,
     })

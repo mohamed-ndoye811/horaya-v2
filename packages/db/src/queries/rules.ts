@@ -70,6 +70,21 @@ export async function listEventRuleRuns(db: Executor, organizationId: string, ev
     .limit(30);
 }
 
+/** Ce qu'il faut d'un événement pour prévenir l'équipe ou les inscrits (règle planifiée). */
+export async function getRuleEventSummary(db: Executor, organizationId: string, eventId: string) {
+  const [row] = await db
+    .select({
+      id: event.id,
+      title: event.title,
+      startsAt: event.startsAt,
+      endsAt: event.endsAt,
+      timezone: event.timezone,
+    })
+    .from(event)
+    .where(and(eq(event.organizationId, organizationId), eq(event.id, eventId)));
+  return row ?? null;
+}
+
 /** « Tester sur une inscription » : les dernières inscriptions aux événements du type. */
 export async function listRuleTestBookings(
   db: Executor,
