@@ -151,6 +151,7 @@ export function BookingForm({
   summary,
   recap,
   payment,
+  prefill,
 }: {
   slug: string;
   eventSlug: string;
@@ -171,6 +172,8 @@ export function BookingForm({
     deposit: boolean;
     rest: string;
   } | null;
+  /** Espace client connecté : son profil remplit le participant 1. */
+  prefill: { firstName: string; lastName: string; email: string; phone: string } | null;
 }) {
   const { state, onSubmit, pending } = useFormAction<FormState>(
     createPublicBookingAction.bind(null, slug, eventSlug, linkSlug, seats),
@@ -201,6 +204,7 @@ export function BookingForm({
                   <input
                     {...field}
                     name="firstName"
+                    defaultValue={prefill?.firstName}
                     required
                     maxLength={60}
                     autoComplete="given-name"
@@ -213,6 +217,7 @@ export function BookingForm({
                   <input
                     {...field}
                     name="lastName"
+                    defaultValue={prefill?.lastName}
                     required
                     maxLength={60}
                     autoComplete="family-name"
@@ -226,6 +231,7 @@ export function BookingForm({
                     {...field}
                     type="email"
                     name="email"
+                    defaultValue={prefill?.email}
                     required
                     autoComplete="email"
                     className={inputClasses()}
@@ -238,6 +244,7 @@ export function BookingForm({
                     {...field}
                     type="tel"
                     name="phone"
+                    defaultValue={prefill?.phone}
                     maxLength={30}
                     autoComplete="tel"
                     className={inputClasses()}

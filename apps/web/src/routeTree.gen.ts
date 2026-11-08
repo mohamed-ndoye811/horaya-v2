@@ -13,6 +13,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as SlugRouteImport } from './routes/$slug'
 import { Route as AppRouteImport } from './routes/app'
 import { Route as ConfidentialiteRouteImport } from './routes/confidentialite'
+import { Route as MonEspaceRouteImport } from './routes/mon-espace'
 import { Route as SlugIndexRouteImport } from './routes/$slug/index'
 import { Route as SlugMentionsLegalesRouteImport } from './routes/$slug/mentions-legales'
 import { Route as SlugMesReservationsRouteImport } from './routes/$slug/mes-reservations'
@@ -28,15 +29,22 @@ import { Route as AppDesignSystemRouteImport } from './routes/app/design-system'
 import { Route as AppPlusRouteImport } from './routes/app/plus'
 import { Route as FichiersSplatRouteImport } from './routes/fichiers/$'
 import { Route as InvitationIdRouteImport } from './routes/invitation/$id'
+import { Route as MonEspaceIndexRouteImport } from './routes/mon-espace/index'
+import { Route as MonEspaceConnexionRouteImport } from './routes/mon-espace/connexion'
+import { Route as MonEspaceProfilRouteImport } from './routes/mon-espace/profil'
 import { Route as PaiementTestCheckoutRouteImport } from './routes/paiement-test/$checkout'
 import { Route as PaiementTestCompteRouteImport } from './routes/paiement-test/compte'
 import { Route as RejoindreTokenRouteImport } from './routes/rejoindre/$token'
 import { Route as SlugEventIndexRouteImport } from './routes/$slug/$event/index'
 import { Route as SlugEventReserverRouteImport } from './routes/$slug/$event/reserver'
 import { Route as SlugCalendrierLienRouteImport } from './routes/$slug/calendrier/$lien'
+import { Route as SlugMonEspaceIndexRouteImport } from './routes/$slug/mon-espace/index'
+import { Route as SlugMonEspaceConnexionRouteImport } from './routes/$slug/mon-espace/connexion'
+import { Route as SlugMonEspaceProfilRouteImport } from './routes/$slug/mon-espace/profil'
 import { Route as authInscriptionIndexRouteImport } from './routes/(auth)/inscription/index'
 import { Route as authInscriptionEspaceRouteImport } from './routes/(auth)/inscription/espace'
 import { Route as authInscriptionPaiementsRouteImport } from './routes/(auth)/inscription/paiements'
+import { Route as AgendaClientChar123tokenChar125DoticsRouteImport } from './routes/agenda/client/{$token}[.]ics'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 import { Route as ApiPolarWebhookRouteImport } from './routes/api/polar/webhook'
 import { Route as ApiStripeWebhookRouteImport } from './routes/api/stripe/webhook'
@@ -63,6 +71,8 @@ import { Route as AppReservationsIndexRouteImport } from './routes/app/reservati
 import { Route as AppReservationsIdRouteImport } from './routes/app/reservations/$id'
 import { Route as AppReservationsExportRouteImport } from './routes/app/reservations/export'
 import { Route as AppReservationsNouvelleRouteImport } from './routes/app/reservations/nouvelle'
+import { Route as SlugMonEspaceReservationIndexRouteImport } from './routes/$slug/mon-espace/$reservation/index'
+import { Route as SlugMonEspaceReservationAgendaDoticsRouteImport } from './routes/$slug/mon-espace/$reservation/agenda[.]ics'
 import { Route as SlugReservationTokenIndexRouteImport } from './routes/$slug/reservation/$token/index'
 import { Route as SlugReservationTokenAgendaDoticsRouteImport } from './routes/$slug/reservation/$token/agenda[.]ics'
 import { Route as AppClientsIdIndexRouteImport } from './routes/app/clients/$id/index'
@@ -94,6 +104,11 @@ const AppRoute = AppRouteImport.update({
 const ConfidentialiteRoute = ConfidentialiteRouteImport.update({
   id: '/confidentialite',
   path: '/confidentialite',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MonEspaceRoute = MonEspaceRouteImport.update({
+  id: '/mon-espace',
+  path: '/mon-espace',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SlugIndexRoute = SlugIndexRouteImport.update({
@@ -172,6 +187,21 @@ const InvitationIdRoute = InvitationIdRouteImport.update({
   path: '/invitation/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
+const MonEspaceIndexRoute = MonEspaceIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => MonEspaceRoute,
+} as any)
+const MonEspaceConnexionRoute = MonEspaceConnexionRouteImport.update({
+  id: '/connexion',
+  path: '/connexion',
+  getParentRoute: () => MonEspaceRoute,
+} as any)
+const MonEspaceProfilRoute = MonEspaceProfilRouteImport.update({
+  id: '/profil',
+  path: '/profil',
+  getParentRoute: () => MonEspaceRoute,
+} as any)
 const PaiementTestCheckoutRoute = PaiementTestCheckoutRouteImport.update({
   id: '/paiement-test/$checkout',
   path: '/paiement-test/$checkout',
@@ -202,6 +232,21 @@ const SlugCalendrierLienRoute = SlugCalendrierLienRouteImport.update({
   path: '/calendrier/$lien',
   getParentRoute: () => SlugRoute,
 } as any)
+const SlugMonEspaceIndexRoute = SlugMonEspaceIndexRouteImport.update({
+  id: '/mon-espace/',
+  path: '/mon-espace/',
+  getParentRoute: () => SlugRoute,
+} as any)
+const SlugMonEspaceConnexionRoute = SlugMonEspaceConnexionRouteImport.update({
+  id: '/mon-espace/connexion',
+  path: '/mon-espace/connexion',
+  getParentRoute: () => SlugRoute,
+} as any)
+const SlugMonEspaceProfilRoute = SlugMonEspaceProfilRouteImport.update({
+  id: '/mon-espace/profil',
+  path: '/mon-espace/profil',
+  getParentRoute: () => SlugRoute,
+} as any)
 const authInscriptionIndexRoute = authInscriptionIndexRouteImport.update({
   id: '/(auth)/inscription/',
   path: '/inscription/',
@@ -216,6 +261,12 @@ const authInscriptionPaiementsRoute =
   authInscriptionPaiementsRouteImport.update({
     id: '/(auth)/inscription/paiements',
     path: '/inscription/paiements',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const AgendaClientChar123tokenChar125DoticsRoute =
+  AgendaClientChar123tokenChar125DoticsRouteImport.update({
+    id: '/agenda/client/{$token}.ics',
+    path: '/agenda/client/{$token}.ics',
     getParentRoute: () => rootRouteImport,
   } as any)
 const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
@@ -352,6 +403,18 @@ const AppReservationsNouvelleRoute = AppReservationsNouvelleRouteImport.update({
   path: '/reservations/nouvelle',
   getParentRoute: () => AppRoute,
 } as any)
+const SlugMonEspaceReservationIndexRoute =
+  SlugMonEspaceReservationIndexRouteImport.update({
+    id: '/mon-espace/$reservation/',
+    path: '/mon-espace/$reservation/',
+    getParentRoute: () => SlugRoute,
+  } as any)
+const SlugMonEspaceReservationAgendaDoticsRoute =
+  SlugMonEspaceReservationAgendaDoticsRouteImport.update({
+    id: '/mon-espace/$reservation/agenda.ics',
+    path: '/mon-espace/$reservation/agenda.ics',
+    getParentRoute: () => SlugRoute,
+  } as any)
 const SlugReservationTokenIndexRoute =
   SlugReservationTokenIndexRouteImport.update({
     id: '/reservation/$token/',
@@ -422,6 +485,7 @@ export interface FileRoutesByFullPath {
   '/$slug': typeof SlugRouteWithChildren
   '/app': typeof AppRouteWithChildren
   '/confidentialite': typeof ConfidentialiteRoute
+  '/mon-espace': typeof MonEspaceRouteWithChildren
   '/$slug/mentions-legales': typeof SlugMentionsLegalesRoute
   '/$slug/mes-reservations': typeof SlugMesReservationsRoute
   '/connexion': typeof authConnexionRoute
@@ -435,15 +499,21 @@ export interface FileRoutesByFullPath {
   '/app/plus': typeof AppPlusRoute
   '/fichiers/$': typeof FichiersSplatRoute
   '/invitation/$id': typeof InvitationIdRoute
+  '/mon-espace/connexion': typeof MonEspaceConnexionRoute
+  '/mon-espace/profil': typeof MonEspaceProfilRoute
   '/paiement-test/$checkout': typeof PaiementTestCheckoutRoute
   '/paiement-test/compte': typeof PaiementTestCompteRoute
   '/rejoindre/$token': typeof RejoindreTokenRoute
   '/$slug/': typeof SlugIndexRoute
   '/app/': typeof AppIndexRoute
+  '/mon-espace/': typeof MonEspaceIndexRoute
   '/$slug/$event/reserver': typeof SlugEventReserverRoute
   '/$slug/calendrier/$lien': typeof SlugCalendrierLienRoute
+  '/$slug/mon-espace/connexion': typeof SlugMonEspaceConnexionRoute
+  '/$slug/mon-espace/profil': typeof SlugMonEspaceProfilRoute
   '/inscription/espace': typeof authInscriptionEspaceRoute
   '/inscription/paiements': typeof authInscriptionPaiementsRoute
+  '/agenda/client/{$token}.ics': typeof AgendaClientChar123tokenChar125DoticsRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/polar/webhook': typeof ApiPolarWebhookRoute
   '/api/stripe/webhook': typeof ApiStripeWebhookRoute
@@ -465,6 +535,7 @@ export interface FileRoutesByFullPath {
   '/app/reservations/export': typeof AppReservationsExportRoute
   '/app/reservations/nouvelle': typeof AppReservationsNouvelleRoute
   '/$slug/$event/': typeof SlugEventIndexRoute
+  '/$slug/mon-espace/': typeof SlugMonEspaceIndexRoute
   '/inscription/': typeof authInscriptionIndexRoute
   '/app/clients/': typeof AppClientsIndexRoute
   '/app/evenements/': typeof AppEvenementsIndexRoute
@@ -472,6 +543,7 @@ export interface FileRoutesByFullPath {
   '/app/parametres/': typeof AppParametresIndexRoute
   '/app/plateforme/': typeof AppPlateformeIndexRoute
   '/app/reservations/': typeof AppReservationsIndexRoute
+  '/$slug/mon-espace/$reservation/agenda.ics': typeof SlugMonEspaceReservationAgendaDoticsRoute
   '/$slug/reservation/$token/agenda.ics': typeof SlugReservationTokenAgendaDoticsRoute
   '/app/clients/$id/modifier': typeof AppClientsIdModifierRoute
   '/app/evenements/$id/modifier': typeof AppEvenementsIdModifierRoute
@@ -479,6 +551,7 @@ export interface FileRoutesByFullPath {
   '/app/materiel/$id/modifier': typeof AppMaterielIdModifierRoute
   '/app/parametres/paiements/stripe': typeof AppParametresPaiementsStripeRoute
   '/app/plateforme/espaces/$id': typeof AppPlateformeEspacesIdRoute
+  '/$slug/mon-espace/$reservation/': typeof SlugMonEspaceReservationIndexRoute
   '/$slug/reservation/$token/': typeof SlugReservationTokenIndexRoute
   '/app/clients/$id/': typeof AppClientsIdIndexRoute
   '/app/evenements/$id/': typeof AppEvenementsIdIndexRoute
@@ -501,15 +574,21 @@ export interface FileRoutesByTo {
   '/app/plus': typeof AppPlusRoute
   '/fichiers/$': typeof FichiersSplatRoute
   '/invitation/$id': typeof InvitationIdRoute
+  '/mon-espace/connexion': typeof MonEspaceConnexionRoute
+  '/mon-espace/profil': typeof MonEspaceProfilRoute
   '/paiement-test/$checkout': typeof PaiementTestCheckoutRoute
   '/paiement-test/compte': typeof PaiementTestCompteRoute
   '/rejoindre/$token': typeof RejoindreTokenRoute
   '/$slug': typeof SlugIndexRoute
   '/app': typeof AppIndexRoute
+  '/mon-espace': typeof MonEspaceIndexRoute
   '/$slug/$event/reserver': typeof SlugEventReserverRoute
   '/$slug/calendrier/$lien': typeof SlugCalendrierLienRoute
+  '/$slug/mon-espace/connexion': typeof SlugMonEspaceConnexionRoute
+  '/$slug/mon-espace/profil': typeof SlugMonEspaceProfilRoute
   '/inscription/espace': typeof authInscriptionEspaceRoute
   '/inscription/paiements': typeof authInscriptionPaiementsRoute
+  '/agenda/client/{$token}.ics': typeof AgendaClientChar123tokenChar125DoticsRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/polar/webhook': typeof ApiPolarWebhookRoute
   '/api/stripe/webhook': typeof ApiStripeWebhookRoute
@@ -531,6 +610,7 @@ export interface FileRoutesByTo {
   '/app/reservations/export': typeof AppReservationsExportRoute
   '/app/reservations/nouvelle': typeof AppReservationsNouvelleRoute
   '/$slug/$event': typeof SlugEventIndexRoute
+  '/$slug/mon-espace': typeof SlugMonEspaceIndexRoute
   '/inscription': typeof authInscriptionIndexRoute
   '/app/clients': typeof AppClientsIndexRoute
   '/app/evenements': typeof AppEvenementsIndexRoute
@@ -538,6 +618,7 @@ export interface FileRoutesByTo {
   '/app/parametres': typeof AppParametresIndexRoute
   '/app/plateforme': typeof AppPlateformeIndexRoute
   '/app/reservations': typeof AppReservationsIndexRoute
+  '/$slug/mon-espace/$reservation/agenda.ics': typeof SlugMonEspaceReservationAgendaDoticsRoute
   '/$slug/reservation/$token/agenda.ics': typeof SlugReservationTokenAgendaDoticsRoute
   '/app/clients/$id/modifier': typeof AppClientsIdModifierRoute
   '/app/evenements/$id/modifier': typeof AppEvenementsIdModifierRoute
@@ -545,6 +626,7 @@ export interface FileRoutesByTo {
   '/app/materiel/$id/modifier': typeof AppMaterielIdModifierRoute
   '/app/parametres/paiements/stripe': typeof AppParametresPaiementsStripeRoute
   '/app/plateforme/espaces/$id': typeof AppPlateformeEspacesIdRoute
+  '/$slug/mon-espace/$reservation': typeof SlugMonEspaceReservationIndexRoute
   '/$slug/reservation/$token': typeof SlugReservationTokenIndexRoute
   '/app/clients/$id': typeof AppClientsIdIndexRoute
   '/app/evenements/$id': typeof AppEvenementsIdIndexRoute
@@ -557,6 +639,7 @@ export interface FileRoutesById {
   '/$slug': typeof SlugRouteWithChildren
   '/app': typeof AppRouteWithChildren
   '/confidentialite': typeof ConfidentialiteRoute
+  '/mon-espace': typeof MonEspaceRouteWithChildren
   '/$slug/mentions-legales': typeof SlugMentionsLegalesRoute
   '/$slug/mes-reservations': typeof SlugMesReservationsRoute
   '/(auth)/connexion': typeof authConnexionRoute
@@ -570,15 +653,21 @@ export interface FileRoutesById {
   '/app/plus': typeof AppPlusRoute
   '/fichiers/$': typeof FichiersSplatRoute
   '/invitation/$id': typeof InvitationIdRoute
+  '/mon-espace/connexion': typeof MonEspaceConnexionRoute
+  '/mon-espace/profil': typeof MonEspaceProfilRoute
   '/paiement-test/$checkout': typeof PaiementTestCheckoutRoute
   '/paiement-test/compte': typeof PaiementTestCompteRoute
   '/rejoindre/$token': typeof RejoindreTokenRoute
   '/$slug/': typeof SlugIndexRoute
   '/app/': typeof AppIndexRoute
+  '/mon-espace/': typeof MonEspaceIndexRoute
   '/$slug/$event/reserver': typeof SlugEventReserverRoute
   '/$slug/calendrier/$lien': typeof SlugCalendrierLienRoute
+  '/$slug/mon-espace/connexion': typeof SlugMonEspaceConnexionRoute
+  '/$slug/mon-espace/profil': typeof SlugMonEspaceProfilRoute
   '/(auth)/inscription/espace': typeof authInscriptionEspaceRoute
   '/(auth)/inscription/paiements': typeof authInscriptionPaiementsRoute
+  '/agenda/client/{$token}.ics': typeof AgendaClientChar123tokenChar125DoticsRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/polar/webhook': typeof ApiPolarWebhookRoute
   '/api/stripe/webhook': typeof ApiStripeWebhookRoute
@@ -600,6 +689,7 @@ export interface FileRoutesById {
   '/app/reservations/export': typeof AppReservationsExportRoute
   '/app/reservations/nouvelle': typeof AppReservationsNouvelleRoute
   '/$slug/$event/': typeof SlugEventIndexRoute
+  '/$slug/mon-espace/': typeof SlugMonEspaceIndexRoute
   '/(auth)/inscription/': typeof authInscriptionIndexRoute
   '/app/clients/': typeof AppClientsIndexRoute
   '/app/evenements/': typeof AppEvenementsIndexRoute
@@ -607,6 +697,7 @@ export interface FileRoutesById {
   '/app/parametres/': typeof AppParametresIndexRoute
   '/app/plateforme/': typeof AppPlateformeIndexRoute
   '/app/reservations/': typeof AppReservationsIndexRoute
+  '/$slug/mon-espace/$reservation/agenda.ics': typeof SlugMonEspaceReservationAgendaDoticsRoute
   '/$slug/reservation/$token/agenda.ics': typeof SlugReservationTokenAgendaDoticsRoute
   '/app/clients/$id/modifier': typeof AppClientsIdModifierRoute
   '/app/evenements/$id/modifier': typeof AppEvenementsIdModifierRoute
@@ -614,6 +705,7 @@ export interface FileRoutesById {
   '/app/materiel/$id/modifier': typeof AppMaterielIdModifierRoute
   '/app/parametres/paiements/stripe': typeof AppParametresPaiementsStripeRoute
   '/app/plateforme/espaces/$id': typeof AppPlateformeEspacesIdRoute
+  '/$slug/mon-espace/$reservation/': typeof SlugMonEspaceReservationIndexRoute
   '/$slug/reservation/$token/': typeof SlugReservationTokenIndexRoute
   '/app/clients/$id/': typeof AppClientsIdIndexRoute
   '/app/evenements/$id/': typeof AppEvenementsIdIndexRoute
@@ -627,6 +719,7 @@ export interface FileRouteTypes {
     | '/$slug'
     | '/app'
     | '/confidentialite'
+    | '/mon-espace'
     | '/$slug/mentions-legales'
     | '/$slug/mes-reservations'
     | '/connexion'
@@ -640,15 +733,21 @@ export interface FileRouteTypes {
     | '/app/plus'
     | '/fichiers/$'
     | '/invitation/$id'
+    | '/mon-espace/connexion'
+    | '/mon-espace/profil'
     | '/paiement-test/$checkout'
     | '/paiement-test/compte'
     | '/rejoindre/$token'
     | '/$slug/'
     | '/app/'
+    | '/mon-espace/'
     | '/$slug/$event/reserver'
     | '/$slug/calendrier/$lien'
+    | '/$slug/mon-espace/connexion'
+    | '/$slug/mon-espace/profil'
     | '/inscription/espace'
     | '/inscription/paiements'
+    | '/agenda/client/{$token}.ics'
     | '/api/auth/$'
     | '/api/polar/webhook'
     | '/api/stripe/webhook'
@@ -670,6 +769,7 @@ export interface FileRouteTypes {
     | '/app/reservations/export'
     | '/app/reservations/nouvelle'
     | '/$slug/$event/'
+    | '/$slug/mon-espace/'
     | '/inscription/'
     | '/app/clients/'
     | '/app/evenements/'
@@ -677,6 +777,7 @@ export interface FileRouteTypes {
     | '/app/parametres/'
     | '/app/plateforme/'
     | '/app/reservations/'
+    | '/$slug/mon-espace/$reservation/agenda.ics'
     | '/$slug/reservation/$token/agenda.ics'
     | '/app/clients/$id/modifier'
     | '/app/evenements/$id/modifier'
@@ -684,6 +785,7 @@ export interface FileRouteTypes {
     | '/app/materiel/$id/modifier'
     | '/app/parametres/paiements/stripe'
     | '/app/plateforme/espaces/$id'
+    | '/$slug/mon-espace/$reservation/'
     | '/$slug/reservation/$token/'
     | '/app/clients/$id/'
     | '/app/evenements/$id/'
@@ -706,15 +808,21 @@ export interface FileRouteTypes {
     | '/app/plus'
     | '/fichiers/$'
     | '/invitation/$id'
+    | '/mon-espace/connexion'
+    | '/mon-espace/profil'
     | '/paiement-test/$checkout'
     | '/paiement-test/compte'
     | '/rejoindre/$token'
     | '/$slug'
     | '/app'
+    | '/mon-espace'
     | '/$slug/$event/reserver'
     | '/$slug/calendrier/$lien'
+    | '/$slug/mon-espace/connexion'
+    | '/$slug/mon-espace/profil'
     | '/inscription/espace'
     | '/inscription/paiements'
+    | '/agenda/client/{$token}.ics'
     | '/api/auth/$'
     | '/api/polar/webhook'
     | '/api/stripe/webhook'
@@ -736,6 +844,7 @@ export interface FileRouteTypes {
     | '/app/reservations/export'
     | '/app/reservations/nouvelle'
     | '/$slug/$event'
+    | '/$slug/mon-espace'
     | '/inscription'
     | '/app/clients'
     | '/app/evenements'
@@ -743,6 +852,7 @@ export interface FileRouteTypes {
     | '/app/parametres'
     | '/app/plateforme'
     | '/app/reservations'
+    | '/$slug/mon-espace/$reservation/agenda.ics'
     | '/$slug/reservation/$token/agenda.ics'
     | '/app/clients/$id/modifier'
     | '/app/evenements/$id/modifier'
@@ -750,6 +860,7 @@ export interface FileRouteTypes {
     | '/app/materiel/$id/modifier'
     | '/app/parametres/paiements/stripe'
     | '/app/plateforme/espaces/$id'
+    | '/$slug/mon-espace/$reservation'
     | '/$slug/reservation/$token'
     | '/app/clients/$id'
     | '/app/evenements/$id'
@@ -761,6 +872,7 @@ export interface FileRouteTypes {
     | '/$slug'
     | '/app'
     | '/confidentialite'
+    | '/mon-espace'
     | '/$slug/mentions-legales'
     | '/$slug/mes-reservations'
     | '/(auth)/connexion'
@@ -774,15 +886,21 @@ export interface FileRouteTypes {
     | '/app/plus'
     | '/fichiers/$'
     | '/invitation/$id'
+    | '/mon-espace/connexion'
+    | '/mon-espace/profil'
     | '/paiement-test/$checkout'
     | '/paiement-test/compte'
     | '/rejoindre/$token'
     | '/$slug/'
     | '/app/'
+    | '/mon-espace/'
     | '/$slug/$event/reserver'
     | '/$slug/calendrier/$lien'
+    | '/$slug/mon-espace/connexion'
+    | '/$slug/mon-espace/profil'
     | '/(auth)/inscription/espace'
     | '/(auth)/inscription/paiements'
+    | '/agenda/client/{$token}.ics'
     | '/api/auth/$'
     | '/api/polar/webhook'
     | '/api/stripe/webhook'
@@ -804,6 +922,7 @@ export interface FileRouteTypes {
     | '/app/reservations/export'
     | '/app/reservations/nouvelle'
     | '/$slug/$event/'
+    | '/$slug/mon-espace/'
     | '/(auth)/inscription/'
     | '/app/clients/'
     | '/app/evenements/'
@@ -811,6 +930,7 @@ export interface FileRouteTypes {
     | '/app/parametres/'
     | '/app/plateforme/'
     | '/app/reservations/'
+    | '/$slug/mon-espace/$reservation/agenda.ics'
     | '/$slug/reservation/$token/agenda.ics'
     | '/app/clients/$id/modifier'
     | '/app/evenements/$id/modifier'
@@ -818,6 +938,7 @@ export interface FileRouteTypes {
     | '/app/materiel/$id/modifier'
     | '/app/parametres/paiements/stripe'
     | '/app/plateforme/espaces/$id'
+    | '/$slug/mon-espace/$reservation/'
     | '/$slug/reservation/$token/'
     | '/app/clients/$id/'
     | '/app/evenements/$id/'
@@ -830,6 +951,7 @@ export interface RootRouteChildren {
   SlugRoute: typeof SlugRouteWithChildren
   AppRoute: typeof AppRouteWithChildren
   ConfidentialiteRoute: typeof ConfidentialiteRoute
+  MonEspaceRoute: typeof MonEspaceRouteWithChildren
   authConnexionRoute: typeof authConnexionRoute
   authMotDePasseOublieRoute: typeof authMotDePasseOublieRoute
   authNouveauMotDePasseRoute: typeof authNouveauMotDePasseRoute
@@ -843,6 +965,7 @@ export interface RootRouteChildren {
   RejoindreTokenRoute: typeof RejoindreTokenRoute
   authInscriptionEspaceRoute: typeof authInscriptionEspaceRoute
   authInscriptionPaiementsRoute: typeof authInscriptionPaiementsRoute
+  AgendaClientChar123tokenChar125DoticsRoute: typeof AgendaClientChar123tokenChar125DoticsRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
   ApiPolarWebhookRoute: typeof ApiPolarWebhookRoute
   ApiStripeWebhookRoute: typeof ApiStripeWebhookRoute
@@ -877,6 +1000,13 @@ declare module '@tanstack/react-router' {
       path: '/confidentialite'
       fullPath: '/confidentialite'
       preLoaderRoute: typeof ConfidentialiteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/mon-espace': {
+      id: '/mon-espace'
+      path: '/mon-espace'
+      fullPath: '/mon-espace'
+      preLoaderRoute: typeof MonEspaceRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/$slug/': {
@@ -984,6 +1114,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof InvitationIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/mon-espace/': {
+      id: '/mon-espace/'
+      path: '/'
+      fullPath: '/mon-espace/'
+      preLoaderRoute: typeof MonEspaceIndexRouteImport
+      parentRoute: typeof MonEspaceRoute
+    }
+    '/mon-espace/connexion': {
+      id: '/mon-espace/connexion'
+      path: '/connexion'
+      fullPath: '/mon-espace/connexion'
+      preLoaderRoute: typeof MonEspaceConnexionRouteImport
+      parentRoute: typeof MonEspaceRoute
+    }
+    '/mon-espace/profil': {
+      id: '/mon-espace/profil'
+      path: '/profil'
+      fullPath: '/mon-espace/profil'
+      preLoaderRoute: typeof MonEspaceProfilRouteImport
+      parentRoute: typeof MonEspaceRoute
+    }
     '/paiement-test/$checkout': {
       id: '/paiement-test/$checkout'
       path: '/paiement-test/$checkout'
@@ -1026,6 +1177,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SlugCalendrierLienRouteImport
       parentRoute: typeof SlugRoute
     }
+    '/$slug/mon-espace/': {
+      id: '/$slug/mon-espace/'
+      path: '/mon-espace'
+      fullPath: '/$slug/mon-espace/'
+      preLoaderRoute: typeof SlugMonEspaceIndexRouteImport
+      parentRoute: typeof SlugRoute
+    }
+    '/$slug/mon-espace/connexion': {
+      id: '/$slug/mon-espace/connexion'
+      path: '/mon-espace/connexion'
+      fullPath: '/$slug/mon-espace/connexion'
+      preLoaderRoute: typeof SlugMonEspaceConnexionRouteImport
+      parentRoute: typeof SlugRoute
+    }
+    '/$slug/mon-espace/profil': {
+      id: '/$slug/mon-espace/profil'
+      path: '/mon-espace/profil'
+      fullPath: '/$slug/mon-espace/profil'
+      preLoaderRoute: typeof SlugMonEspaceProfilRouteImport
+      parentRoute: typeof SlugRoute
+    }
     '/(auth)/inscription/': {
       id: '/(auth)/inscription/'
       path: '/inscription'
@@ -1045,6 +1217,13 @@ declare module '@tanstack/react-router' {
       path: '/inscription/paiements'
       fullPath: '/inscription/paiements'
       preLoaderRoute: typeof authInscriptionPaiementsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/agenda/client/{$token}.ics': {
+      id: '/agenda/client/{$token}.ics'
+      path: '/agenda/client/{$token}.ics'
+      fullPath: '/agenda/client/{$token}.ics'
+      preLoaderRoute: typeof AgendaClientChar123tokenChar125DoticsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/auth/$': {
@@ -1229,6 +1408,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppReservationsNouvelleRouteImport
       parentRoute: typeof AppRoute
     }
+    '/$slug/mon-espace/$reservation/': {
+      id: '/$slug/mon-espace/$reservation/'
+      path: '/mon-espace/$reservation'
+      fullPath: '/$slug/mon-espace/$reservation/'
+      preLoaderRoute: typeof SlugMonEspaceReservationIndexRouteImport
+      parentRoute: typeof SlugRoute
+    }
+    '/$slug/mon-espace/$reservation/agenda.ics': {
+      id: '/$slug/mon-espace/$reservation/agenda.ics'
+      path: '/mon-espace/$reservation/agenda.ics'
+      fullPath: '/$slug/mon-espace/$reservation/agenda.ics'
+      preLoaderRoute: typeof SlugMonEspaceReservationAgendaDoticsRouteImport
+      parentRoute: typeof SlugRoute
+    }
     '/$slug/reservation/$token/': {
       id: '/$slug/reservation/$token/'
       path: '/reservation/$token'
@@ -1322,8 +1515,13 @@ interface SlugRouteChildren {
   SlugIndexRoute: typeof SlugIndexRoute
   SlugEventReserverRoute: typeof SlugEventReserverRoute
   SlugCalendrierLienRoute: typeof SlugCalendrierLienRoute
+  SlugMonEspaceConnexionRoute: typeof SlugMonEspaceConnexionRoute
+  SlugMonEspaceProfilRoute: typeof SlugMonEspaceProfilRoute
   SlugEventIndexRoute: typeof SlugEventIndexRoute
+  SlugMonEspaceIndexRoute: typeof SlugMonEspaceIndexRoute
+  SlugMonEspaceReservationAgendaDoticsRoute: typeof SlugMonEspaceReservationAgendaDoticsRoute
   SlugReservationTokenAgendaDoticsRoute: typeof SlugReservationTokenAgendaDoticsRoute
+  SlugMonEspaceReservationIndexRoute: typeof SlugMonEspaceReservationIndexRoute
   SlugReservationTokenIndexRoute: typeof SlugReservationTokenIndexRoute
 }
 
@@ -1333,8 +1531,14 @@ const SlugRouteChildren: SlugRouteChildren = {
   SlugIndexRoute: SlugIndexRoute,
   SlugEventReserverRoute: SlugEventReserverRoute,
   SlugCalendrierLienRoute: SlugCalendrierLienRoute,
+  SlugMonEspaceConnexionRoute: SlugMonEspaceConnexionRoute,
+  SlugMonEspaceProfilRoute: SlugMonEspaceProfilRoute,
   SlugEventIndexRoute: SlugEventIndexRoute,
+  SlugMonEspaceIndexRoute: SlugMonEspaceIndexRoute,
+  SlugMonEspaceReservationAgendaDoticsRoute:
+    SlugMonEspaceReservationAgendaDoticsRoute,
   SlugReservationTokenAgendaDoticsRoute: SlugReservationTokenAgendaDoticsRoute,
+  SlugMonEspaceReservationIndexRoute: SlugMonEspaceReservationIndexRoute,
   SlugReservationTokenIndexRoute: SlugReservationTokenIndexRoute,
 }
 
@@ -1422,11 +1626,28 @@ const AppRouteChildren: AppRouteChildren = {
 
 const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)
 
+interface MonEspaceRouteChildren {
+  MonEspaceConnexionRoute: typeof MonEspaceConnexionRoute
+  MonEspaceProfilRoute: typeof MonEspaceProfilRoute
+  MonEspaceIndexRoute: typeof MonEspaceIndexRoute
+}
+
+const MonEspaceRouteChildren: MonEspaceRouteChildren = {
+  MonEspaceConnexionRoute: MonEspaceConnexionRoute,
+  MonEspaceProfilRoute: MonEspaceProfilRoute,
+  MonEspaceIndexRoute: MonEspaceIndexRoute,
+}
+
+const MonEspaceRouteWithChildren = MonEspaceRoute._addFileChildren(
+  MonEspaceRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   SlugRoute: SlugRouteWithChildren,
   AppRoute: AppRouteWithChildren,
   ConfidentialiteRoute: ConfidentialiteRoute,
+  MonEspaceRoute: MonEspaceRouteWithChildren,
   authConnexionRoute: authConnexionRoute,
   authMotDePasseOublieRoute: authMotDePasseOublieRoute,
   authNouveauMotDePasseRoute: authNouveauMotDePasseRoute,
@@ -1440,6 +1661,8 @@ const rootRouteChildren: RootRouteChildren = {
   RejoindreTokenRoute: RejoindreTokenRoute,
   authInscriptionEspaceRoute: authInscriptionEspaceRoute,
   authInscriptionPaiementsRoute: authInscriptionPaiementsRoute,
+  AgendaClientChar123tokenChar125DoticsRoute:
+    AgendaClientChar123tokenChar125DoticsRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
   ApiPolarWebhookRoute: ApiPolarWebhookRoute,
   ApiStripeWebhookRoute: ApiStripeWebhookRoute,

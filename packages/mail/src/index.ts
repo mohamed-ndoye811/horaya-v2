@@ -3,13 +3,13 @@ export {
   bookingAwaitingPaymentEmail,
   bookingCancelledEmail,
   bookingConfirmedEmail,
-  bookingLinkEmail,
   bookingPaymentReceivedEmail,
   bookingPendingEmail,
   bookingPromotedEmail,
   bookingRefundedEmail,
   bookingRefusedEmail,
   bookingReminderEmail,
+  bookingRescheduledEmail,
   bookingWaitlistedEmail,
   teamAlmostFullEmail,
   teamBookingEmail,
@@ -18,4 +18,9 @@ export {
 } from "./booking-templates";
 export { escapeHtml } from "./layout";
 export { createConsoleMailer, createSmtpMailer, type EmailContent, type Mailer } from "./mailer";
-export { emailVerificationEmail, invitationEmail, passwordResetEmail } from "./templates";
+export {
+  customerLoginEmail,
+  emailVerificationEmail,
+  invitationEmail,
+  passwordResetEmail,
+} from "./templates";

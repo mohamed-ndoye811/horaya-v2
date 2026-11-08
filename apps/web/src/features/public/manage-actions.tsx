@@ -4,12 +4,9 @@ import { StatusBadge, type Tone } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Dialog } from "@/components/ui/dialog";
 import { FormAlert } from "@/components/ui/form-alert";
-import {
-  cancelManagedBookingAction,
-  payManagedBookingAction,
-  resendBookingEmailAction,
-} from "@/functions/public";
+import { resendBookingEmailAction } from "@/functions/public";
 import { useRouter } from "@/lib/navigation";
+import type { FormState } from "@/server/form-state";
 
 /** « Rien reçu ? … renvoie l'e-mail. » (sur le bandeau sombre de la maquette 5.4). */
 export function ResendEmail({ slug, token }: { slug: string; token: string }) {
@@ -42,19 +39,24 @@ export function ResendEmail({ slug, token }: { slug: string; token: string }) {
 
 /** Annulation par le client (maquette 5.6) : ce qui est remboursé, puis la confirmation. */
 export function CancelBooking({
-  slug,
-  token,
+  cancel,
   description,
   refund,
   policy,
+  trigger = "Annuler",
+  asButton = false,
 }: {
-  slug: string;
-  token: string;
+  /** Action serveur d'annulation (lien « Gérer ma réservation » ou espace client). */
+  cancel: () => Promise<FormState>;
   description: string;
   /** Montant remboursé si quelque chose a été payé. */
   refund: { label: string; amount: string; tone: Tone; text: string } | null;
   /** Politique d'annulation quand rien n'a été payé. */
   policy: string | null;
+  /** Libellé du lien qui ouvre la confirmation. */
+  trigger?: string;
+  /** Vrai bouton secondaire de ton danger plutôt que lien texte (espace client). */
+  asButton?: boolean;
 }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
@@ -62,13 +64,19 @@ export function CancelBooking({
   const [error, setError] = useState<string | null>(null);
   return (
     <>
-      <button
-        type="button"
-        onClick={() => setOpen(true)}
-        className="tap-area shrink-0 text-sm font-bold leading-[18px] text-danger hover:underline"
-      >
-        Annuler
-      </button>
+      {asButton ? (
+        <Button variant="danger" onClick={() => setOpen(true)}>
+          {trigger}
+        </Button>
+      ) : (
+        <button
+          type="button"
+          onClick={() => setOpen(true)}
+          className="tap-area shrink-0 text-sm font-bold leading-[18px] text-danger underline-offset-2 hover:underline"
+        >
+          {trigger}
+        </button>
+      )}
       {open && (
         <Dialog
           open
@@ -86,7 +94,7 @@ export function CancelBooking({
                 pending={pending}
                 onClick={() =>
                   startTransition(async () => {
-                    const result = await cancelManagedBookingAction(slug, token);
+                    const result = await cancel();
                     if (result.error) {
                       setError(result.error);
                       return;
@@ -122,7 +130,16 @@ export function CancelBooking({
 }
 
 /** Reprend le paiement en ligne (page de paiement sécurisée). */
-export function PayButton({ slug, token, label }: { slug: string; token: string; label: string }) {
+export function PayButton({
+  pay,
+  label,
+  size = "xl",
+}: {
+  /** Action serveur qui redirige vers la page de paiement. */
+  pay: () => Promise<FormState | undefined>;
+  label: string;
+  size?: "sm" | "lg" | "xl";
+}) {
   const router = useTanstackRouter();
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
@@ -131,12 +148,12 @@ export function PayButton({ slug, token, label }: { slug: string; token: string;
       {error && <FormAlert>{error}</FormAlert>}
       <Button
         variant="brand"
-        size="xl"
+        size={size}
         pending={pending}
         onClick={() =>
           startTransition(async () => {
             try {
-              const result = await payManagedBookingAction(slug, token);
+              const result = await pay();
               if (result?.error) setError(result.error);
             } catch (thrown) {
               // Page de paiement : le serveur répond par une redirection (Stripe, autre origine).

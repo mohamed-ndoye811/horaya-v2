@@ -5,13 +5,18 @@ import { StatusBadge, type Tone } from "@/components/ui/badge";
 import { ButtonLink, buttonClasses } from "@/components/ui/button";
 import { ArrowRight } from "@/components/ui/icons";
 import { inkCardClasses } from "@/components/ui/section";
-import type { getManagedBookingPage } from "@/functions/public";
+import {
+  cancelManagedBookingAction,
+  type getManagedBookingPage,
+  payManagedBookingAction,
+} from "@/functions/public";
 import { cn } from "@/lib/cn";
 import { displayFontClass } from "@/lib/fonts";
 import { formatEventRange, formatMoney } from "@/lib/format";
 import { googleCalendarUrl } from "@/lib/ics";
 import { Link } from "@/lib/navigation";
 import { cancellationPolicy } from "@/lib/public-booking";
+import { withParams } from "@/lib/search-params";
 import { CancelBooking, PayButton, PaymentPending, ResendEmail } from "./manage-actions";
 
 /** Maquette 5.4 : juste après la réservation (?nouvelle=1) et page « Gérer ma réservation ». */
@@ -32,7 +37,7 @@ export function ManagedBookingPage({
         wordmark={false}
         title="Ce lien de réservation n'est plus valable."
         text="Un lien plus récent t'a peut-être été envoyé. Demande-en un nouveau avec ton adresse e-mail."
-        primary={{ label: "Retrouver mes réservations", href: `/${slug}/mes-reservations` }}
+        primary={{ label: "Retrouver mes réservations", href: `/${slug}/mon-espace/connexion` }}
       />
     );
   }
@@ -182,7 +187,10 @@ export function ManagedBookingPage({
             <PaymentPending />
           )}
           {awaitsPayment && channel?.kind === "stripe" && paymentReturn !== "ok" && (
-            <PayButton slug={slug} token={token} label={`Payer ${formatMoney(due)}`} />
+            <PayButton
+              pay={() => payManagedBookingAction(slug, token)}
+              label={`Payer ${formatMoney(due)}`}
+            />
           )}
           {awaitsPayment && channel?.kind === "link" && (
             <ButtonLink
@@ -209,6 +217,25 @@ export function ManagedBookingPage({
           </div>
         </div>
       </section>
+
+      {fresh && (
+        <Link
+          href={withParams(`/${slug}/mon-espace/connexion`, {
+            email: booking.customerEmail ?? undefined,
+          })}
+          className="flex items-center justify-between gap-3 rounded-[20px] bg-surface px-5 py-[18px] text-ink hover:bg-field"
+        >
+          <span className="flex flex-col gap-0.5">
+            <span className="text-[15px] font-semibold leading-5">
+              Retrouver tes cours dans ton espace
+            </span>
+            <span className="text-[13px] leading-[18px] text-ink-muted">
+              Tes réservations, ton agenda et ton profil chez {workspace.name}, sans mot de passe.
+            </span>
+          </span>
+          <ArrowRight />
+        </Link>
+      )}
 
       <section className="flex flex-col rounded-3xl bg-surface px-6 py-2">
         <div className="flex h-14 items-center justify-between gap-4">
@@ -280,8 +307,7 @@ export function ManagedBookingPage({
           <div className="flex items-center justify-between gap-3 rounded-[20px] bg-surface px-5 py-[18px] sm:w-[300px]">
             <h2 className="text-[15px] font-semibold leading-5 text-ink">Un empêchement ?</h2>
             <CancelBooking
-              slug={slug}
-              token={token}
+              cancel={() => cancelManagedBookingAction(slug, token)}
               description={`${yourPlaces} pour « ${title} » ${agree("sera libérée", "seront libérées")} pour d'autres participants.`}
               refund={
                 refund === null

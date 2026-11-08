@@ -12,7 +12,7 @@ export interface BookingMail {
   seats: number;
   /** « 240,00 € · à régler sur place », absent si gratuit. */
   amount?: string | null;
-  /** Lien « Gérer ma réservation », ou page « Mes réservations » pour en recevoir un neuf. */
+  /** Lien « Gérer ma réservation », ou connexion à l'espace client quand le jeton n'est pas gardé. */
   manageUrl: string;
 }
 
@@ -134,8 +134,7 @@ export function bookingCancelledEmail(
   });
 }
 
-/** Lien neuf demandé depuis « Mes réservations » (un e-mail par réservation). */
-/** Rappel la veille : `manageUrl` mène à « Mes réservations » (le lien d'origine n'est pas gardé). */
+/** Rappel la veille : `manageUrl` mène à la connexion de l'espace client (le lien d'origine n'est pas gardé). */
 export function bookingReminderEmail(mail: BookingMail): EmailContent {
   return bookingEmail(mail, {
     subject: `C'est demain : ${mail.title}`,
@@ -246,14 +245,13 @@ export function weeklyDigestEmail(input: {
   };
 }
 
-export function bookingLinkEmail(mail: BookingMail): EmailContent {
+/** Espace client : la réservation a changé de date (maquette 8.3). */
+export function bookingRescheduledEmail(mail: BookingMail): EmailContent {
   return bookingEmail(mail, {
-    subject: `Ton lien de réservation : ${mail.title}`,
-    title: "Ta réservation",
-    preheader: "Le lien pour consulter ou annuler ta réservation.",
-    paragraphs: [
-      "Voici le lien pour consulter ou annuler ta réservation. Il remplace ceux reçus auparavant.",
-    ],
+    subject: `Nouvelle date : ${mail.title}`,
+    title: "Nouvelle date",
+    preheader: `Ta réservation passe au ${mail.when}.`,
+    paragraphs: ["Ta réservation a bien changé de date. Voici le nouveau récapitulatif."],
   });
 }
 

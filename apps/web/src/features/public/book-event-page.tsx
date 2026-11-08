@@ -13,7 +13,7 @@ import { BookingForm } from "./booking-form";
 /** Maquette 5.3 : coordonnées des participants et paiement (complet ou clos : redirigé avant). */
 export function BookEventPage({
   eventSlug,
-  data: { workspace, event, linkSlug, channel, now, seats },
+  data: { workspace, event, linkSlug, channel, now, seats, prefill },
 }: {
   eventSlug: string;
   data: Awaited<ReturnType<typeof getBookEventPage>>;
@@ -89,6 +89,7 @@ export function BookEventPage({
         customFields={event.customFields}
         workspaceName={workspace.name}
         submitLabel={submitLabel}
+        prefill={prefill}
         payment={
           paysOnline && channel
             ? {

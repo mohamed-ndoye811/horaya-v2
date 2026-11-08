@@ -62,3 +62,27 @@ export function invitationEmail(input: {
     }),
   };
 }
+
+/** Espace client (lot 29) : lien magique, au nom de l'espace quand il vient de ses pages. */
+export function customerLoginEmail(input: {
+  url: string;
+  minutes: number;
+  /** Espace depuis lequel le lien a été demandé ; sans lui, e-mail Horaya (vue horaya.app). */
+  workspace?: { name: string; color: string; textColor: string; logo?: string | null };
+}): EmailContent {
+  const where = input.workspace ? `chez ${input.workspace.name}` : "sur Horaya";
+  return {
+    subject: `Ton lien de connexion à ton espace ${where}`,
+    ...renderEmail({
+      preheader: `Un clic pour retrouver tes réservations ${where}. Lien valable ${input.minutes} minutes.`,
+      title: "Ton espace",
+      paragraphs: [
+        "Bonjour,",
+        `Voici ton lien pour te connecter à ton espace ${where} : tes réservations, ton agenda et ton profil. Pas de mot de passe à retenir.`,
+      ],
+      action: { label: "Me connecter", url: input.url },
+      footnote: `Ce lien est valable ${input.minutes} minutes et ne sert qu'une fois. Tu n'as rien demandé ? Ignore cet e-mail.`,
+      brand: input.workspace,
+    }),
+  };
+}

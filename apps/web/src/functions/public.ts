@@ -12,7 +12,6 @@ import {
   publicEventPage,
   publicHome,
   publicLayout,
-  requestBookingLinks,
   resendBookingEmail,
 } from "@/server/public-booking";
 
@@ -68,9 +67,6 @@ const bookFn = createServerFn({ method: "POST" })
       data,
     ),
   );
-const linksFn = createServerFn({ method: "POST" })
-  .validator(formDataInput)
-  .handler(({ data }) => requestBookingLinks(String(data.get("_slug") ?? ""), data));
 const payFn = createServerFn({ method: "POST" })
   .validator(withToken)
   .handler(({ data }) => payManagedBooking(data.slug, data.token));
@@ -95,12 +91,6 @@ export function createPublicBookingAction(
   form.set("_link", linkSlug ?? "");
   form.set("_seats", String(seats));
   return bookFn({ data: form });
-}
-
-/** « Mes réservations » : un lien neuf par réservation à venir. */
-export function requestBookingLinksAction(slug: string, _previous: FormState, form: FormData) {
-  form.set("_slug", slug);
-  return linksFn({ data: form });
 }
 
 /** Reprend un paiement abandonné : redirige (erreur de redirection) vers la page de paiement. */

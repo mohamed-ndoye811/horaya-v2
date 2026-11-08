@@ -3,6 +3,7 @@ import {
   type BookingMail,
   bookingConfirmedEmail,
   bookingRefusedEmail,
+  bookingRescheduledEmail,
   teamAlmostFullEmail,
   weeklyDigestEmail,
 } from "./booking-templates";
@@ -42,6 +43,14 @@ describe("e-mails aux participants", () => {
     });
     expect(email.text).toContain("Motif : Événement complet.");
     expect(email.text).toContain("Voir les autres événements : https://horaya.app/cabinet-vidal");
+  });
+
+  it("annonce la nouvelle date avec le récapitulatif", () => {
+    const email = bookingRescheduledEmail(mail);
+    expect(email.subject).toBe("Nouvelle date : Séminaire annuel");
+    expect(email.text).toContain(`Quand : ${mail.when}`);
+    expect(email.text).toContain(`Gérer ma réservation : ${mail.manageUrl}`);
+    expect(email.html).toContain("background:#528D74");
   });
 
   it("affiche le logo de l'espace dans l'en-tête quand il en a un", () => {

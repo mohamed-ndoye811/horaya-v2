@@ -3,6 +3,7 @@
 export * from "./auth";
 export * from "./billing";
 export * from "./bookings";
+export * from "./customer-accounts";
 export * from "./customers";
 export * from "./enums";
 export * from "./events";

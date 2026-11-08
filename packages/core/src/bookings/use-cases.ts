@@ -11,11 +11,8 @@ import { CHECK_IN_OPENS_BEFORE_HOURS, isCheckInOpen } from "./check-in";
 import type { Booking, ParticipantInput } from "./model";
 import { priceBooking } from "./pricing";
 import { formatBookingReference, referencePeriod } from "./reference";
-import {
-  type CreateEventBookingInput,
-  createEventBookingSchema,
-  customerContactSchema,
-} from "./schemas";
+import { rescheduleClosedReason, rescheduleTargetIssue } from "./reschedule";
+import { type CreateEventBookingInput, createEventBookingSchema } from "./schemas";
 import type { BookingSource } from "./types";
 import { promoteWaitlist } from "./waitlist";
 
@@ -368,59 +365,139 @@ export async function cancelBookingBySystem(
   return cancelLocked(repositories, actor, booking, event, now, reason);
 }
 
+/** Annulation par le client lui-même, jusqu'au début de l'événement ou de la location. */
+async function cancelByCustomer(
+  repositories: Repositories,
+  organizationId: string,
+  bookingId: string,
+  now: Date,
+): Promise<Booking> {
+  const actor: Actor = { type: "customer", organizationId };
+  const { booking, event } = await lockBooking(repositories, organizationId, bookingId);
+  const startsAt = event?.startsAt ?? booking.rentalStartsAt;
+  if (startsAt && startsAt <= now) {
+    throw new ConflictError(
+      event
+        ? "L'événement a commencé : contacte l'organisateur pour annuler"
+        : "La location a commencé : contacte l'organisateur pour annuler",
+    );
+  }
+  return cancelLocked(repositories, actor, booking, event, now, "customer_request");
+}
+
 /** Annulation par le client depuis son lien « Gérer ma réservation », jusqu'au début de l'événement. */
 export async function cancelBookingWithToken(
   deps: Deps,
   organizationId: string,
   manageToken: string,
 ): Promise<Booking> {
-  const actor: Actor = { type: "customer", organizationId };
   const tokenHash = await hashToken(manageToken);
-
   return deps.uow.run(async (repositories) => {
     const found = await repositories.bookings.findByManageTokenHash(organizationId, tokenHash);
     if (!found) throw new NotFoundError("Réservation", "lien");
-    const { booking, event } = await lockBooking(repositories, organizationId, found.id);
-    const now = deps.clock.now();
-    const startsAt = event?.startsAt ?? booking.rentalStartsAt;
-    if (startsAt && startsAt <= now) {
-      throw new ConflictError(
-        event
-          ? "L'événement a commencé : contacte l'organisateur pour annuler"
-          : "La location a commencé : contacte l'organisateur pour annuler",
-      );
-    }
-    return cancelLocked(repositories, actor, booking, event, now, "customer_request");
+    return cancelByCustomer(repositories, organizationId, found.id, deps.clock.now());
   });
 }
 
 /**
- * « Mes réservations » sur la page publique : renvoie un lien neuf pour chaque réservation
- * à venir de cet e-mail. Les jetons n'étant stockés que hachés, on en génère de nouveaux ;
- * les anciens liens cessent de marcher. Liste vide si l'e-mail n'a rien à venir.
+ * Espace client : une réservation n'appartient au client connecté que si sa fiche, dans cet
+ * espace, porte son e-mail. Sinon, elle n'existe pas pour lui.
  */
-export async function reissueManageLinks(
+async function findOwnBooking(
+  repositories: Repositories,
+  organizationId: string,
+  bookingId: string,
+  email: string,
+): Promise<Booking> {
+  const booking = await repositories.bookings.find(organizationId, bookingId);
+  const customer = booking
+    ? await repositories.customers.find(organizationId, booking.customerId)
+    : null;
+  if (!booking || customer?.email?.toLowerCase() !== email.toLowerCase()) {
+    throw new NotFoundError("Réservation", bookingId);
+  }
+  return booking;
+}
+
+/** Annulation depuis l'espace client (maquette 8.3). */
+export async function cancelBookingAsCustomer(
   deps: Deps,
   organizationId: string,
+  bookingId: string,
   email: string,
-): Promise<Array<{ booking: Booking; manageToken: string }>> {
-  const address = validate(customerContactSchema.shape.email, email);
+): Promise<Booking> {
   return deps.uow.run(async (repositories) => {
-    const bookings = await repositories.bookings.listUpcomingForCustomerEmail(
-      organizationId,
-      address,
-      deps.clock.now(),
-    );
-    const links: Array<{ booking: Booking; manageToken: string }> = [];
-    for (const booking of bookings) {
-      const manageToken = generateToken();
-      await repositories.bookings.setManageTokenHash(
-        organizationId,
-        booking.id,
-        await hashToken(manageToken),
-      );
-      links.push({ booking, manageToken });
+    await findOwnBooking(repositories, organizationId, bookingId, email);
+    return cancelByCustomer(repositories, organizationId, bookingId, deps.clock.now());
+  });
+}
+
+/**
+ * Changer de date depuis l'espace client (maquette 8.3) : la réservation passe sur une autre
+ * date du même type, au même prix, qui a assez de places, dans le délai d'annulation gratuite.
+ * La place quittée est libérée et profite à la liste d'attente. Les deux événements sont
+ * verrouillés dans un ordre fixe (pas d'interblocage entre deux échanges croisés).
+ */
+export async function rescheduleBookingAsCustomer(
+  deps: Deps,
+  organizationId: string,
+  bookingId: string,
+  email: string,
+  targetEventId: string,
+): Promise<Booking> {
+  const actor: Actor = { type: "customer", organizationId };
+  return deps.uow.run(async (repositories) => {
+    const found = await findOwnBooking(repositories, organizationId, bookingId, email);
+    if (!found.eventId) throw new ConflictError("Une location ne change pas de date ici");
+    const locks = new Map<string, { event: Event; eventType: EventType }>();
+    for (const eventId of [found.eventId, targetEventId].sort()) {
+      const locked = await repositories.events.lockForBooking(organizationId, eventId);
+      if (locked) locks.set(eventId, locked);
     }
-    return links;
+    const booking = await repositories.bookings.find(organizationId, bookingId);
+    const from = booking?.eventId ? locks.get(booking.eventId)?.event : undefined;
+    const to = locks.get(targetEventId);
+    if (!booking || !from) throw new NotFoundError("Réservation", bookingId);
+    if (!to) throw new NotFoundError("Événement", targetEventId);
+
+    const now = deps.clock.now();
+    const settings = await repositories.settings.get(organizationId);
+    const issue =
+      rescheduleClosedReason({
+        status: booking.status,
+        startsAt: from.startsAt,
+        now,
+        freeCancellationHours: settings.freeCancellationHours,
+      }) ??
+      rescheduleTargetIssue({
+        from,
+        to: {
+          ...to.event,
+          seatsHeld: await repositories.bookings.seatsHeld(to.event.id),
+          minAdvanceHours: to.eventType.bookingRules.minAdvanceHours,
+        },
+        seats: booking.seats,
+        now,
+      });
+    if (issue) throw new ConflictError(issue);
+
+    const status = to.event.requiresApproval ? "pending" : "confirmed";
+    const moved = await repositories.bookings.moveToEvent(organizationId, booking.id, {
+      eventId: to.event.id,
+      status,
+      confirmedAt: status === "confirmed" ? (booking.confirmedAt ?? now) : null,
+    });
+    // Le matériel attribué au comptoir pour l'ancienne date y retourne.
+    await repositories.inventory.releaseBookingAllocations(organizationId, booking.id);
+    await repositories.activity.record({
+      organizationId,
+      entityType: "booking",
+      entityId: booking.id,
+      action: "booking.rescheduled",
+      ...actorRef(actor),
+      data: { fromEventId: from.id, toEventId: to.event.id, status },
+    });
+    await promoteWaitlist(repositories, from, actor, now);
+    return moved;
   });
 }

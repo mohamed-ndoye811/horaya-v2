@@ -51,3 +51,42 @@ export function calendarFeedIcs(feed: {
     }),
   });
 }
+
+export interface CustomerFeedBooking {
+  id: string;
+  title: string;
+  status: string;
+  startsAt: Date;
+  endsAt: Date;
+  locationName: string | null;
+  reference: string;
+  workspaceName: string;
+  /** Page de la réservation dans l'espace client. */
+  url: string;
+}
+
+/**
+ * Agenda personnel d'un client (espace client, lot 29) : ses réservations, actives ou annulées
+ * (l'agenda abonné retire alors le cours). Même UID que le fichier .ics d'une réservation.
+ */
+export function customerFeedIcs(feed: {
+  name: string;
+  bookings: CustomerFeedBooking[];
+  now?: Date;
+}): string {
+  return buildIcsCalendar({
+    organizer: feed.name,
+    name: feed.name,
+    now: feed.now,
+    events: feed.bookings.map((booking) => ({
+      uid: `${booking.id}@horaya.app`,
+      title: booking.title,
+      startsAt: booking.startsAt,
+      endsAt: booking.endsAt,
+      location: booking.locationName,
+      description: `Réservation ${booking.reference} · ${booking.workspaceName}`,
+      url: booking.url,
+      cancelled: booking.status === "cancelled" || booking.status === "refused",
+    })),
+  });
+}

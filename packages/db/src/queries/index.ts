@@ -2,6 +2,7 @@ export * from "./billing";
 export * from "./bookings";
 export * from "./calendar-feeds";
 export * from "./calendar-links";
+export * from "./customer-space";
 export * from "./customers";
 export * from "./dashboard";
 export * from "./events";

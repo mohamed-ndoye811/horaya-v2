@@ -25,6 +25,8 @@ export const customer = pgTable(
   (t) => [
     // Un e-mail = un client par organisateur, insensible à la casse.
     uniqueIndex("customer_org_email_unique").on(t.organizationId, sql`lower(${t.email})`),
+    // Espace client : retrouver les fiches d'un e-mail dans tous les espaces (vue horaya.app).
+    index("customer_email_lower_idx").on(sql`lower(${t.email})`),
     index().on(t.organizationId, t.lastName),
   ],
 );

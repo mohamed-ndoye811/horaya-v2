@@ -173,6 +173,10 @@ export async function getCustomerDetail(
       marketingConsent: customer.marketingConsent,
       createdAt: customer.createdAt,
       anonymizedAt: customer.anonymizedAt,
+      /** Le client a un espace client (lot 29) avec cet e-mail. */
+      hasAccount: sql<boolean>`exists (
+        select 1 from customer_account a where a.email = lower("customer"."email")
+      )`,
       ...aggregates(now),
     })
     .from(customer)

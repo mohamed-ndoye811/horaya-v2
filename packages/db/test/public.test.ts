@@ -8,7 +8,6 @@ import {
   type Deps,
   hashToken,
   publishEvent,
-  reissueManageLinks,
 } from "@horaya/core";
 import { afterAll, beforeEach, describe, expect, it } from "vitest";
 import { getManagedBooking, getPublicEvent, listPublicEvents } from "../src/queries";
@@ -75,7 +74,7 @@ describe("pages publiques", () => {
     });
   });
 
-  it("retrouve une réservation par son jeton et en réémet de nouveaux", async () => {
+  it("retrouve une réservation par son jeton", async () => {
     const open = await event("Atelier", 10);
     const { manageToken } = await createEventBooking(deps, customerActor(organizationId), {
       eventId: open.id,
@@ -89,14 +88,6 @@ describe("pages publiques", () => {
       eventTitle: "Atelier",
       participants: [{ firstName: "Camille", lastName: "Roux" }],
     });
-
-    const links = await reissueManageLinks(deps, organizationId, "CAMILLE.ROUX@mail.com");
-    expect(links).toHaveLength(1);
-    expect(await getManagedBooking(db, organizationId, await hashToken(manageToken))).toBeNull();
-    expect(
-      await getManagedBooking(db, organizationId, await hashToken(links[0]?.manageToken ?? "")),
-    ).not.toBeNull();
-    expect(await reissueManageLinks(deps, organizationId, "inconnu@mail.com")).toEqual([]);
   });
 });
 
