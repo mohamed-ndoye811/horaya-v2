@@ -64,7 +64,7 @@ export function BookEventPage({
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex flex-col gap-1.5">
+      <div className="flex animate-rise flex-col gap-1.5">
         <Link
           href={eventHref}
           className="flex w-fit items-center gap-1.5 text-sm font-semibold leading-[18px] text-ink-muted hover:text-ink"
