@@ -677,7 +677,7 @@ export function EventTypeEditor({
           >
             {initial.id && (
               <Button
-                variant="inverse-danger"
+                variant="inverse-quiet-danger"
                 disabled={archiving}
                 onClick={() =>
                   startArchive(async () => {

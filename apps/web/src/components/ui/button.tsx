@@ -18,7 +18,8 @@ export type ButtonVariant =
   | "brand"
   | "inverse"
   | "inverse-outline"
-  | "inverse-danger";
+  | "inverse-danger"
+  | "inverse-quiet-danger";
 
 /**
  * `xs` (36 px, 13 px) et `sm` (40 px) : actions dans une carte ou une ligne. `md` : boutons de
@@ -69,6 +70,9 @@ const variants: Record<ButtonVariant, string> = {
     "bg-surface font-semibold text-ink hover:bg-field focus-visible:outline-on-ink disabled:opacity-50",
   /** Refuser, sur un bandeau de décision teinté. */
   "inverse-danger": "bg-surface font-semibold text-danger hover:bg-danger-bg disabled:opacity-50",
+  /** Action destructrice discrète dans une barre noire : texte seul (« Supprimer »). */
+  "inverse-quiet-danger":
+    "font-semibold text-on-ink-danger hover:bg-white/10 focus-visible:outline-on-ink disabled:opacity-50",
   "inverse-outline":
     "border border-ink-line font-semibold text-on-ink hover:bg-white/10 " +
     "focus-visible:outline-on-ink disabled:opacity-50 disabled:hover:bg-transparent",

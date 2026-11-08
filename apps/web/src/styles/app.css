@@ -45,6 +45,8 @@
   --color-on-ink-soft: #c9cbd1;
   --color-on-ink-muted: #9a9ea8;
   --color-on-ink-subtle: #6e727c;
+  /* Action destructrice sur fond noir (« Supprimer » dans une barre d'action). */
+  --color-on-ink-danger: #f0a3a3;
   --color-ink-line: #333333;
   --color-ink-raised: #1e1e1e;
   --color-ink-hover: #2c2c2c;
