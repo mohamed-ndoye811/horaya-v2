@@ -13,7 +13,7 @@ import {
 import { type ReactNode, useRef, useState, useTransition } from "react";
 import { Collapse } from "@/components/motion/collapse";
 import { PresenceItem, PresenceList } from "@/components/motion/presence";
-import { textLinkClasses } from "@/components/ui/button";
+import { Button, textLinkClasses } from "@/components/ui/button";
 import { Dialog } from "@/components/ui/dialog";
 import {
   AffixInput,
@@ -109,11 +109,14 @@ export function ModuleList({
   onChange,
   context,
   errors,
+  onCreateRule,
 }: {
   modules: EventModules;
   onChange: (next: EventModules) => void;
   context: ModuleContext;
   errors: Record<string, string>;
+  /** Carte « Règles si… alors… » du catalogue : ouvre une nouvelle règle (section 5). */
+  onCreateRule: () => void;
 }) {
   const [open, setOpen] = useState<ModuleKey | null>(null);
   const [catalog, setCatalog] = useState(false);
@@ -169,6 +172,10 @@ export function ModuleList({
         <ModuleCatalog
           modules={modules}
           onClose={() => setCatalog(false)}
+          onCreateRule={() => {
+            setCatalog(false);
+            onCreateRule();
+          }}
           onPick={(key) => {
             if (modules[key] === undefined) {
               set(key, structuredClone(definition(key).defaults) as EventModules[typeof key]);
@@ -935,10 +942,12 @@ function ModuleCatalog({
   modules,
   onPick,
   onClose,
+  onCreateRule,
 }: {
   modules: EventModules;
   onPick: (key: ModuleKey) => void;
   onClose: () => void;
+  onCreateRule: () => void;
 }) {
   const [query, setQuery] = useState("");
   const words = query
@@ -977,7 +986,7 @@ function ModuleCatalog({
         />
         {groups.length === 0 && (
           <p className="text-sm text-ink-muted">
-            Aucun module ne correspond. Les règles « si… alors… » arrivent bientôt pour le reste.
+            Aucun module ne correspond. Pour le reste, crée une règle « si… alors… ».
           </p>
         )}
         <div className="reveal-group flex flex-col gap-7">
@@ -1040,13 +1049,9 @@ function ModuleCatalog({
               de 4 inscrits à J-2, annuler et prévenir.
             </p>
           </div>
-          <button
-            type="button"
-            disabled
-            className="flex h-11 shrink-0 items-center self-start rounded-full bg-surface px-5 text-[15px] font-semibold leading-[18px] text-ink disabled:opacity-60 sm:self-center"
-          >
-            Bientôt
-          </button>
+          <Button variant="inverse" onClick={onCreateRule} className="self-start sm:self-center">
+            Créer une règle
+          </Button>
         </div>
       </div>
     </Dialog>

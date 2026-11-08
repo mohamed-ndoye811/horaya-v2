@@ -60,6 +60,7 @@ export function EnrollPage({
         linkSlug={null}
         seats={1}
         fields={event.fields}
+        rules={event.rules}
         workspaceName={workspace.name}
         submitLabel="Confirmer mon inscription"
         enrollment

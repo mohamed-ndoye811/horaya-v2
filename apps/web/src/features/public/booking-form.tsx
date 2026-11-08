@@ -1,6 +1,7 @@
-import { type EquipmentOffer, type EventTypeField, fieldsOfScope } from "@horaya/core";
+import { type EquipmentOffer, type EventTypeField, fieldsOfScope, type Rule } from "@horaya/core";
 import { type FormEvent, type ReactNode, useState } from "react";
 import { FieldInputs } from "@/components/app/field-inputs";
+import { RuleQuestions } from "@/components/app/rule-questions";
 import { Collapse } from "@/components/motion/collapse";
 import { Swap } from "@/components/motion/swap";
 import { EquipmentChoices } from "@/components/public/equipment-choices";
@@ -138,6 +139,7 @@ export function BookingForm({
   linkSlug,
   seats,
   fields,
+  rules = [],
   workspaceName,
   submitLabel,
   summary,
@@ -158,6 +160,8 @@ export function BookingForm({
   seats: number;
   /** Champs de l'événement : on en tire « Ce que tu demandes » (une fois, par participant). */
   fields: EventTypeField[];
+  /** Règles réduites aux questions du formulaire (lot 36). */
+  rules?: Rule[];
   workspaceName: string;
   submitLabel: string;
   summary: ReactNode;
@@ -323,6 +327,13 @@ export function BookingForm({
                 option.needId ? [[option.needId, option.name]] : [],
               ),
             )}
+          />
+          <RuleQuestions
+            rules={rules}
+            fields={fields}
+            seats={seats}
+            errors={errors}
+            title="Une dernière chose"
           />
           {Array.from({ length: seats - 1 }, (_, offset) => offset + 1).map((index) => (
             <ExtraParticipant
