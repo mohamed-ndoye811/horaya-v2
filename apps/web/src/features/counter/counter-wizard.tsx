@@ -724,7 +724,7 @@ export function CounterWizard({
                     maxLength={40}
                     autoComplete="off"
                     spellCheck={false}
-                    placeholder="TERRE-8K2F"
+                    placeholder="TERRE-8K2F7M3P"
                     className={cn(inputClasses(), "font-mono uppercase placeholder:normal-case")}
                   />
                 )}
