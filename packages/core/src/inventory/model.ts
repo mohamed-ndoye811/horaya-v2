@@ -39,10 +39,13 @@ export interface ItemAllocation {
   provider: string | null;
   costCents: number | null;
   note: string | null;
+  /** Besoin du module Matériel avancé qui l'a réservé (réservation d'événement). */
+  needId: string | null;
   cancelledAt: Date | null;
 }
 
-export type NewAllocation = Omit<ItemAllocation, "id" | "cancelledAt"> & {
+export type NewAllocation = Omit<ItemAllocation, "id" | "cancelledAt" | "needId"> & {
+  needId?: string | null;
   organizationId: string;
   createdByMemberId: string | null;
 };

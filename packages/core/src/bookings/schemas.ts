@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { rawFieldValuesSchema } from "../fields/schemas";
+import { equipmentChoiceSchema } from "../modules/registry";
 
 const optionalText = (max: number) =>
   z
@@ -43,6 +44,8 @@ export const createEventBookingSchema = z
     calendarLinkSlug: optionalText(120),
     /** Bon cadeau à déduire du prix. */
     giftCardCode: optionalText(40),
+    /** Module Matériel avancé : cases cochées et exemplaires choisis. */
+    equipment: z.array(equipmentChoiceSchema).max(10).default([]),
   })
   .refine((input) => input.participants.length <= input.seats, {
     message: "Plus de participants que de places",

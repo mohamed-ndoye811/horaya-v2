@@ -1,9 +1,11 @@
 import { promoteWaitlist } from "../bookings/waitlist";
 import { fieldsOfScope, validateFieldValues } from "../fields/values";
+import type { EventModules } from "../modules/registry";
+import { eventPlace, restrictEquipment, staffAllowed } from "../modules/resources";
 import { minimumState, withModuleFields } from "../modules/rules";
 import { recreditPassForBooking } from "../passes/use-cases";
 import { type Actor, actorRef, assertMemberCan } from "../shared/actor";
-import { NotFoundError } from "../shared/errors";
+import { NotFoundError, ValidationError } from "../shared/errors";
 import { toZonedParts } from "../shared/time";
 import type { Deps, Repositories } from "../shared/unit-of-work";
 import { validate } from "../shared/validate";
@@ -29,6 +31,42 @@ import {
   updateEventTypeSchema,
 } from "./schemas";
 
+/** Le module Matériel avancé ne peut viser qu'une catégorie de matériel de l'espace. */
+async function assertEquipmentTypesExist(
+  repositories: Repositories,
+  organizationId: string,
+  modules: EventModules,
+) {
+  for (const [index, need] of (modules.equipment?.needs ?? []).entries()) {
+    if (!(await repositories.inventory.unitsOfItemType(organizationId, need.itemTypeId))) {
+      throw new ValidationError("Type de matériel inconnu", [
+        {
+          path: `modules.equipment.needs.${index}.itemTypeId`,
+          message: "Choisis un type de matériel",
+        },
+      ]);
+    }
+  }
+}
+
+/** Module Intervenant : un membre de l'espace, et proposé pour le type s'il y a une liste. */
+async function assertStaffMember(
+  repositories: Repositories,
+  organizationId: string,
+  modules: EventModules,
+  memberId: string | null,
+) {
+  if (memberId === null) return;
+  if (
+    !(await repositories.events.memberBelongs(organizationId, memberId)) ||
+    !staffAllowed(modules.staff, memberId)
+  ) {
+    throw new ValidationError("Intervenant non proposé pour ce type", [
+      { path: "staffMemberId", message: "Choisis un membre proposé pour ce type" },
+    ]);
+  }
+}
+
 export async function createEventType(
   deps: Deps,
   actor: Actor,
@@ -40,6 +78,7 @@ export async function createEventType(
   const fields = withModuleFields(data.fields, data.modules);
 
   return deps.uow.run(async (repositories) => {
+    await assertEquipmentTypesExist(repositories, actor.organizationId, data.modules);
     const eventType = await repositories.eventTypes.insert({
       organizationId: actor.organizationId,
       ...data,
@@ -79,6 +118,9 @@ export async function updateEventType(
         patch.fields ?? existing.fields,
         patch.modules ?? existing.modules,
       );
+    }
+    if (patch.modules) {
+      await assertEquipmentTypesExist(repositories, actor.organizationId, patch.modules);
     }
     const updated = await repositories.eventTypes.update(actor.organizationId, eventTypeId, patch);
     // Les événements gardent leur version du type ; les passés et ceux qui ont des inscrits, toujours.
@@ -165,7 +207,7 @@ export async function createEvent(
   input: CreateEventInput,
 ): Promise<Event[]> {
   assertMemberCan(actor, "event", "create");
-  const { eventTypeId, recurrence, requiresApproval, ...details } = validate(
+  const { eventTypeId, recurrence, requiresApproval, equipmentUnits, ...details } = validate(
     createEventSchema,
     input,
   );
@@ -205,6 +247,17 @@ export async function createEvent(
           }),
         })
       : null;
+    await assertStaffMember(
+      repositories,
+      actor.organizationId,
+      eventType.modules,
+      details.staffMemberId,
+    );
+    // Module Lieu : adresse de l'espace ou lien de visio du type, sauf ce que l'équipe a saisi.
+    const place = eventPlace(eventType.modules.location, details, settings.address ?? null);
+    const modules = equipmentUnits
+      ? restrictEquipment(eventType.modules, equipmentUnits)
+      : eventType.modules;
     // Module « Conditions d'accès » sur invitation : jamais d'événement public de ce type.
     const visibility =
       eventType.modules.access?.inviteOnly && details.visibility === "public"
@@ -225,13 +278,14 @@ export async function createEvent(
         seriesId: series?.id ?? null,
         slug,
         ...details,
+        ...place,
         visibility,
         startsAt,
         endsAt: new Date(startsAt.getTime() + duration),
         currency: settings.currency,
         requiresApproval: requiresApproval ?? Boolean(eventType.modules.approval),
         fields: eventType.fields,
-        modules: eventType.modules,
+        modules,
         fieldValues,
       });
       await repositories.activity.record({
@@ -259,7 +313,7 @@ export async function updateEvent(
   input: UpdateEventInput,
 ): Promise<Event> {
   assertMemberCan(actor, "event", "update");
-  const { fieldValues, ...details } = validate(updateEventSchema, input);
+  const { fieldValues, equipmentUnits, ...details } = validate(updateEventSchema, input);
   const patch: EventPatch = details;
 
   return deps.uow.run(async (repositories) => {
@@ -275,6 +329,16 @@ export async function updateEvent(
         "fieldValues",
       );
     }
+
+    if (patch.staffMemberId !== undefined) {
+      await assertStaffMember(
+        repositories,
+        actor.organizationId,
+        event.modules,
+        patch.staffMemberId,
+      );
+    }
+    if (equipmentUnits) patch.modules = restrictEquipment(event.modules, equipmentUnits);
 
     const merged = { ...event, ...patch };
     assertEventConsistency(merged);

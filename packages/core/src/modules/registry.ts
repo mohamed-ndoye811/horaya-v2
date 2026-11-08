@@ -104,6 +104,60 @@ export const documentsModuleSchema = z.object({
     .max(5, "5 documents au plus"),
 });
 
+/** Quantité de matériel par place, qui le choisit (lot 34b). */
+export const EQUIPMENT_CHOOSERS = ["workshop", "student"] as const;
+export type EquipmentChooser = (typeof EQUIPMENT_CHOOSERS)[number];
+
+export const equipmentNeedSchema = z.object({
+  /** Clé stable du besoin (les réservations la gardent). */
+  id: z.string().trim().min(1).max(40),
+  /** Catégorie de matériel (`item_type`) dont on tire les exemplaires. */
+  itemTypeId: z.uuid({ error: "Choisis un type de matériel" }),
+  perSeat: z.int({ error: "Quantité invalide" }).min(1, "Au moins 1").max(20, "20 au plus"),
+  /** Obligatoire : réservé à chaque inscription ; facultatif : case à cocher dans le formulaire. */
+  required: z.boolean(),
+  /** `workshop` : l'atelier attribue ; `student` : l'élève choisit l'exemplaire en ligne. */
+  chooser: z.enum(EQUIPMENT_CHOOSERS),
+  /** Exemplaires proposés sur cet événement (restriction posée à sa création) ; absent : tous. */
+  unitIds: z.array(z.uuid()).max(500).optional(),
+});
+
+export const equipmentModuleSchema = z
+  .object({ needs: z.array(equipmentNeedSchema).max(10, "10 besoins au plus") })
+  .refine((value) => new Set(value.needs.map((need) => need.id)).size === value.needs.length, {
+    message: "Deux besoins portent le même identifiant",
+    path: ["needs"],
+  });
+
+/** Ce que le client décide dans le formulaire d'inscription, besoin par besoin. */
+export const equipmentChoiceSchema = z.object({
+  needId: z.string().trim().min(1).max(40),
+  /** Matériel facultatif : coché ou non. */
+  wanted: z.boolean().optional(),
+  /** « L'élève choisit » : les exemplaires désignés. */
+  unitIds: z.array(z.uuid()).max(100).optional(),
+});
+export type EquipmentChoice = z.output<typeof equipmentChoiceSchema>;
+
+export const LOCATION_MODES = ["venue", "online", "client"] as const;
+export type LocationMode = (typeof LOCATION_MODES)[number];
+
+export const locationModuleSchema = z.object({
+  /** À l'atelier, en ligne, ou chez le client. */
+  mode: z.enum(LOCATION_MODES),
+  /** À l'atelier : une autre adresse que celle de l'espace. */
+  address: z.string().trim().max(300).optional(),
+  /** En ligne : lien de visio par défaut des événements (jamais public avant l'inscription). */
+  onlineUrl: z.url({ error: "Lien invalide" }).optional(),
+});
+
+export const staffModuleSchema = z.object({
+  /** Membres proposés pour le type (absent ou vide : toute l'équipe). */
+  memberIds: z.array(z.uuid()).max(50).optional(),
+  /** Le prénom de l'intervenant est affiché sur la page publique. */
+  showOnPublicPage: z.boolean().optional(),
+});
+
 /** Schéma de chaque module disponible (les modules « Bientôt » n'en ont pas encore). */
 export const MODULE_SCHEMAS = {
   places: placesModuleSchema,
@@ -115,6 +169,9 @@ export const MODULE_SCHEMAS = {
   series: seriesModuleSchema,
   messages: messagesModuleSchema,
   documents: documentsModuleSchema,
+  equipment: equipmentModuleSchema,
+  location: locationModuleSchema,
+  staff: staffModuleSchema,
 } as const;
 
 export type ModuleKey = keyof typeof MODULE_SCHEMAS;
@@ -134,6 +191,10 @@ export type AccessModule = z.output<typeof accessModuleSchema>;
 export type SeriesModule = z.output<typeof seriesModuleSchema>;
 export type MessagesModule = z.output<typeof messagesModuleSchema>;
 export type DocumentsModule = z.output<typeof documentsModuleSchema>;
+export type EquipmentNeed = z.output<typeof equipmentNeedSchema>;
+export type EquipmentModule = z.output<typeof equipmentModuleSchema>;
+export type LocationModule = z.output<typeof locationModuleSchema>;
+export type StaffModule = z.output<typeof staffModuleSchema>;
 
 export const MODULE_GROUPS = [
   { id: "reserve", label: "Réserver" },
@@ -270,7 +331,7 @@ export const MODULE_CATALOG: readonly ModuleDefinition[] = [
     group: "resources",
     description: "Ce qu'il faut par place, qui le choisit.",
     keywords: "matériel tour tablier",
-    soon: "lot 34b",
+    defaults: { needs: [] },
   },
   {
     key: "location",
@@ -278,7 +339,7 @@ export const MODULE_CATALOG: readonly ModuleDefinition[] = [
     group: "resources",
     description: "À l'atelier, en ligne, ou chez le client.",
     keywords: "adresse visio domicile",
-    soon: "lot 34b",
+    defaults: { mode: "venue" },
   },
   {
     key: "staff",
@@ -286,7 +347,7 @@ export const MODULE_CATALOG: readonly ModuleDefinition[] = [
     group: "resources",
     description: "Un membre de l'équipe par séance, au choix de l'élève ou non.",
     keywords: "professeur animateur équipe",
-    soon: "lot 34b",
+    defaults: { showOnPublicPage: true },
   },
   {
     key: "messages",

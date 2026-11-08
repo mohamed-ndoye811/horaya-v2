@@ -58,9 +58,6 @@ describe("registre des modules", () => {
       "pricing",
       "deposit",
       "payment_methods",
-      "equipment",
-      "location",
-      "staff",
     ]);
     expect(eventTypeModulesSchema.parse({ pricing: { tiers: [] }, waitlist: {} })).toEqual({
       waitlist: {},

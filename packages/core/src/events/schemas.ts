@@ -83,6 +83,10 @@ const eventFields = {
   requiresApproval: z.boolean(),
   highlights: z.array(z.string().trim().min(1).max(80)).max(6),
   paymentLinkUrl: paymentLinkSchema,
+  /** Module Intervenant : membre de l'équipe qui anime l'événement. */
+  staffMemberId: z.uuid().nullable(),
+  /** Module Matériel avancé : exemplaires proposés sur cet événement, besoin par besoin. */
+  equipmentUnits: z.record(z.string(), z.array(z.uuid()).max(500)),
   /** « Ce que tu décris », validé contre les champs de l'événement par le cas d'usage. */
   fieldValues: rawFieldValuesSchema,
 };
@@ -101,6 +105,8 @@ export const createEventSchema = z.object({
   highlights: eventFields.highlights.default([]),
   paymentLinkUrl: eventFields.paymentLinkUrl.default(null),
   fieldValues: eventFields.fieldValues.default({}),
+  staffMemberId: eventFields.staffMemberId.default(null),
+  equipmentUnits: eventFields.equipmentUnits.optional(),
   recurrence: recurrenceSchema.optional(),
 });
 export type CreateEventInput = z.input<typeof createEventSchema>;

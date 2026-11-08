@@ -61,6 +61,8 @@ export const EVENT_TYPE_TEMPLATES: readonly EventTypeTemplate[] = [
       waitlist: {},
       opening: { closesHoursBefore: 24 },
       cancellation: { freeHours: 48, lateRefundPercent: 0 },
+      location: { mode: "venue" },
+      staff: { showOnPublicPage: true },
     },
     fields: [
       level,
@@ -138,6 +140,7 @@ export const EVENT_TYPE_TEMPLATES: readonly EventTypeTemplate[] = [
       places: { capacity: 1, maxPerBooking: 1 },
       opening: { closesHoursBefore: 24 },
       cancellation: { freeHours: 24, lateRefundPercent: 0 },
+      staff: { showOnPublicPage: true },
     },
     fields: [
       {
@@ -157,7 +160,7 @@ export const EVENT_TYPE_TEMPLATES: readonly EventTypeTemplate[] = [
     defaultDurationMinutes: 240,
     defaultPriceCents: 4000,
     bookingNoun: "location",
-    modules: { places: { capacity: 1 }, approval: {} },
+    modules: { places: { capacity: 1 }, approval: {}, location: { mode: "venue" } },
     fields: [
       {
         key: "usage",

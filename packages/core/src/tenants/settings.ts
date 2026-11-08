@@ -11,6 +11,8 @@ export interface TenantSettingsSnapshot {
   /** Compte de paiement de l'organisateur (Stripe Connect). */
   paymentAccountId: string | null;
   paymentAccountStatus: StripeAccountStatus;
+  /** Adresse de l'espace : celle des événements « à l'atelier » (module Lieu). */
+  address: string | null;
 }
 
 export interface TenantSettingsReader {
