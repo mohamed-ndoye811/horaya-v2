@@ -69,7 +69,8 @@ async function equipmentLoad(
   for (const need of needs) {
     const found = await repositories.inventory.unitsOfItemType(organizationId, need.itemTypeId);
     const units = (found?.units ?? []).filter(
-      (unit) => unit.status === "available" && (!need.unitIds?.length || need.unitIds.includes(unit.id)),
+      (unit) =>
+        unit.status === "available" && (!need.unitIds?.length || need.unitIds.includes(unit.id)),
     );
     const allocations = await repositories.inventory.activeAllocations(
       units.map((unit) => unit.id),
@@ -113,7 +114,13 @@ export async function findSlots(
   };
   const members = slots.memberIds ?? [];
   const [taken, staffBusy, equipment] = await Promise.all([
-    repositories.slots.taken(organizationId, eventType.id, period, options.now, options.exceptHoldId),
+    repositories.slots.taken(
+      organizationId,
+      eventType.id,
+      period,
+      options.now,
+      options.exceptHoldId,
+    ),
     members.length
       ? repositories.slots.staffBusy(
           organizationId,
@@ -126,7 +133,9 @@ export async function findSlots(
     equipmentLoad(repositories, organizationId, eventType, period),
   ]);
   return generateSlots({
-    slots: options.team ? { ...slots, opensDaysBefore: undefined, closesHoursBefore: undefined } : slots,
+    slots: options.team
+      ? { ...slots, opensDaysBefore: undefined, closesHoursBefore: undefined }
+      : slots,
     durationMinutes: slotMinutes(
       eventType.modules,
       eventType.defaultDurationMinutes,

@@ -324,17 +324,24 @@ export type DurationOption = z.output<typeof durationOptionSchema>;
 
 export const durationModuleSchema = z
   .object({
-    options: z.array(durationOptionSchema).min(1, "Au moins une durée").max(10, "10 durées au plus"),
+    options: z
+      .array(durationOptionSchema)
+      .min(1, "Au moins une durée")
+      .max(10, "10 durées au plus"),
     /** Durée choisie d'office ; absent : la première. */
     defaultId: priceId.optional(),
   })
-  .refine((value) => new Set(value.options.map((option) => option.id)).size === value.options.length, {
-    message: "Deux durées ont le même identifiant",
-    path: ["options"],
-  })
+  .refine(
+    (value) => new Set(value.options.map((option) => option.id)).size === value.options.length,
+    {
+      message: "Deux durées ont le même identifiant",
+      path: ["options"],
+    },
+  )
   .refine(
     (value) =>
-      value.defaultId === undefined || value.options.some((option) => option.id === value.defaultId),
+      value.defaultId === undefined ||
+      value.options.some((option) => option.id === value.defaultId),
     { message: "Durée par défaut inconnue", path: ["defaultId"] },
   );
 export type DurationModule = z.output<typeof durationModuleSchema>;

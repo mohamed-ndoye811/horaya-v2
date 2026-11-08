@@ -6,6 +6,7 @@ import type { CounterEvent } from "@/features/counter/counter-wizard";
 import { startOfDay, todayIn } from "@/lib/dates";
 import { formatDayNumber, formatHour, formatMoney, formatWeekdayShort } from "@/lib/format";
 import { searchText } from "@/lib/search-params";
+import { counterSlots } from "@/server/counter-slots";
 import { db } from "@/server/db";
 import { getWorkspaceContext } from "@/server/workspace";
 
@@ -103,7 +104,8 @@ export const getCounter = createServerFn({ method: "GET" })
     });
 
     return {
-      events: counterEvents,
+      // Créneaux libres des types « sur rendez-vous » (lot 37), à la suite des séances.
+      events: [...counterEvents, ...(await counterSlots(workspace.id, timeZone, now))],
       initialCustomer: customer
         ? {
             id: customer.customer.id,

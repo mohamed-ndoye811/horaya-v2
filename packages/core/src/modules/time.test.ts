@@ -145,7 +145,9 @@ describe("créneaux : génération à la volée", () => {
     const slots = run({
       slots: tuesday({ memberIds: ["a", "b"] }),
       taken: [taken("14:00", "15:00", { staffMemberId: "a" })],
-      staffBusy: { b: [{ startsAt: paris("2026-11-10T15:00:00"), endsAt: paris("2026-11-10T16:00:00") }] },
+      staffBusy: {
+        b: [{ startsAt: paris("2026-11-10T15:00:00"), endsAt: paris("2026-11-10T16:00:00") }],
+      },
     });
     const at = (hour: string) =>
       slots[hours(slots).indexOf(hour)]?.options.map((option) => option.staffMemberId);

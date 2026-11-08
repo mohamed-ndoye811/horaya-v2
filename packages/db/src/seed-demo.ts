@@ -14,6 +14,7 @@ import {
   addCustomerNote,
   addDays,
   cancelBooking,
+  createCounterBooking,
   createEvent,
   createEventBooking,
   createEventType,
@@ -21,6 +22,7 @@ import {
   createPassPlan,
   createRentalBooking,
   enrollInSeries,
+  findSlots,
   fromZonedParts,
   payBookingWithPass,
   publishEvent,
@@ -1263,6 +1265,205 @@ await purchaseGiftCard(
     recipientEmail: null,
   },
 );
+
+// Le temps (lot 37) : « Cours particulier de tournage » sur créneaux (mardi, jeudi, samedi,
+// trois durées, Thomas ou l'atelier au choix de l'élève), deux créneaux déjà réservés ; et
+// « Stage tour : de la motte au bol », trois samedis, une inscription, le même tour à chaque
+// séance, quatre inscrits sur huit.
+{
+  const [thomas] = await db
+    .select({ id: member.id })
+    .from(member)
+    .innerJoin(user, eq(user.id, member.userId))
+    .where(
+      and(eq(member.organizationId, org.id), eq(user.email, "thomas.bernard@cabinet-vidal.fr")),
+    );
+  const staffIds = [thomas?.id, owner.id].filter((id): id is string => Boolean(id));
+  const lesson = await createEventType(deps, actor, {
+    name: "Cours particulier de tournage",
+    color: "#CF879C",
+    description: "Un tour, l'atelier rien que pour toi. Tu choisis la durée, le jour et l'heure.",
+    defaultDurationMinutes: 60,
+    bookingNoun: "reservation",
+    modules: {
+      places: { maxPerBooking: 1 },
+      cancellation: { freeHours: 24, lateRefundPercent: 0 },
+      slots: {
+        weekly: [
+          [],
+          [{ start: "14:00", end: "18:00" }],
+          [],
+          [
+            { start: "14:00", end: "18:00" },
+            { start: "18:30", end: "20:30" },
+          ],
+          [],
+          [{ start: "10:00", end: "17:00" }],
+          [],
+        ],
+        closures: [{ from: "2026-12-23", to: "2027-01-02", label: "vacances" }],
+        intervalMinutes: 30,
+        breakMinutes: 15,
+        seatsPerSlot: 1,
+        opensDaysBefore: 30,
+        closesHoursBefore: 24,
+        memberIds: staffIds,
+        chooseStaff: true,
+      },
+      duration: {
+        options: [
+          { id: "1h", label: "1 h", minutes: 60, priceCents: 4500, description: "Découverte" },
+          {
+            id: "2h",
+            label: "2 h",
+            minutes: 120,
+            priceCents: 8000,
+            description: "Une pièce du centrage au tournassage",
+          },
+          {
+            id: "journee",
+            label: "Journée",
+            minutes: 360,
+            priceCents: 18000,
+            description: "Repas compris",
+          },
+        ],
+        defaultId: "1h",
+      },
+      equipment: {
+        needs: [
+          {
+            id: "tour",
+            itemTypeId: tourShimpo.itemTypeId ?? "",
+            perSeat: 1,
+            required: true,
+            chooser: "workshop" as const,
+          },
+        ],
+      },
+    },
+  });
+  // Deux créneaux déjà pris (comptoir), visibles dans le calendrier de l'équipe.
+  const demoSlots = [
+    { durationId: "1h", pick: 1, who: ["Antoine", "Leroy"] },
+    { durationId: "2h", pick: 4, who: ["Sophie", "Martin"] },
+  ] as const;
+  for (const { durationId, pick, who } of demoSlots) {
+    const free = await deps.uow.run(async (repositories) => {
+      const type = await repositories.eventTypes.find(org.id, lesson.id);
+      return type
+        ? findSlots(repositories, org.id, type, {
+            from: addDays(today, 2),
+            days: 7,
+            now: new Date(),
+            timeZone: TZ,
+            durationId,
+            team: true,
+          })
+        : [];
+    });
+    const slot = free[pick];
+    if (!slot) continue;
+    await createCounterBooking(deps, actor, {
+      slot: { eventTypeId: lesson.id, startsAt: slot.startsAt, durationId },
+      seats: 1,
+      customer: {
+        firstName: who[0],
+        lastName: who[1],
+        email: `${who[0]}.${who[1]}@mail.com`.toLowerCase(),
+      },
+    }).catch((error) => console.warn("Créneau de démonstration non réservé :", error));
+  }
+
+  const stageType = await createEventType(deps, actor, {
+    name: "Stage",
+    color: "#528D74",
+    defaultDurationMinutes: 420,
+    bookingNoun: "inscription",
+    modules: {
+      places: { capacity: 8 },
+      sessions: { sameEquipment: true },
+      cancellation: { freeHours: 168, lateRefundPercent: 50 },
+      pricing: {
+        rates: [
+          { id: "plein", name: "Plein", priceCents: 24000 },
+          {
+            id: "reduit",
+            name: "Réduit",
+            priceCents: 20000,
+            description: "étudiant, demandeur d'emploi",
+          },
+        ],
+      },
+      equipment: {
+        needs: [
+          {
+            id: "tour",
+            itemTypeId: tourShimpo.itemTypeId ?? "",
+            perSeat: 1,
+            required: true,
+            chooser: "workshop" as const,
+          },
+        ],
+      },
+    },
+  });
+  // Trois samedis à partir de la semaine prochaine.
+  let saturday = 7;
+  while (
+    new Intl.DateTimeFormat("en-US", { timeZone: TZ, weekday: "short" }).format(
+      new Date(at(saturday, 12)),
+    ) !== "Sat"
+  )
+    saturday++;
+  const stageSessions = await createEvent(deps, actor, {
+    eventTypeId: stageType.id,
+    title: "Stage tour : de la motte au bol",
+    description:
+      "Trois samedis pour passer de la motte de terre au bol émaillé : centrage, tournassage, émaillage.",
+    startsAt: at(saturday, 10),
+    endsAt: at(saturday, 17),
+    timezone: TZ,
+    locationName: "Studio Démo, Puget-Ville",
+    capacity: 8,
+    paymentMode: "on_site",
+    prices: { plein: 24000, reduit: 20000 },
+    sessions: [
+      {
+        startsAt: at(saturday, 10),
+        endsAt: at(saturday, 17),
+        topic: "Centrage et premières formes",
+      },
+      { startsAt: at(saturday + 7, 10), endsAt: at(saturday + 7, 17), topic: "Tournassage" },
+      { startsAt: at(saturday + 21, 10), endsAt: at(saturday + 21, 13), topic: "Émaillage" },
+    ],
+    sameEquipment: true,
+  });
+  for (const session of stageSessions) await publishEvent(deps, actor, session.id);
+  const stageSeries = stageSessions[0]?.seriesId;
+  if (stageSeries) {
+    for (const [firstName, lastName, rateId] of [
+      ["Léa", "Petit", "plein"],
+      ["Hugo", "Garnier", "reduit"],
+      ["Sophie", "Martin", "plein"],
+      ["Thomas", "Bernard", "plein"],
+    ] as const) {
+      await enrollInSeries(deps, actor, {
+        seriesId: stageSeries,
+        customer: {
+          firstName,
+          lastName,
+          email: `${firstName}.${lastName}@mail.com`
+            .toLowerCase()
+            .normalize("NFD")
+            .replace(/\p{Diacritic}/gu, ""),
+        },
+        rateId,
+        paid: firstName !== "Hugo",
+      }).catch((error) => console.warn("Inscription au stage non enregistrée :", error));
+    }
+  }
+}
 
 console.info(
   `Espace « ${org.name} » : ${Object.keys(types).length} types, ${plans.length} événements, ${bookingCount} réservations, ${Object.keys(items).length} articles, ${rentals.length} locations, ${teammates.length} coéquipiers.`,

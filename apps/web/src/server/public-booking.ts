@@ -28,6 +28,7 @@ import {
   listEquipmentOffers,
   listPublicEvents,
   listPublicPassPlans,
+  listPublicSlotTypes,
   listUsablePasses,
   type ManagedBooking,
   type PublicWorkspace,
@@ -88,11 +89,12 @@ export async function publicLayout(slug: string) {
 export async function publicHome(slug: string) {
   const workspace = await publicWorkspace(slug);
   const now = new Date();
-  const [events, passPlans] = await Promise.all([
+  const [events, passPlans, slotTypes] = await Promise.all([
     listPublicEvents(db, workspace.id, now),
     listPublicPassPlans(db, workspace.id),
+    listPublicSlotTypes(db, workspace.id),
   ]);
-  return { workspace, events, now, hasPassPlans: passPlans.length > 0 };
+  return { workspace, events, now, hasPassPlans: passPlans.length > 0, slotTypes };
 }
 
 /** Lien calendrier : les événements choisis par l'équipe, « sur invitation » compris. */
@@ -291,11 +293,14 @@ export async function createPublicBooking(
   linkSlug: string | null,
   seats: number,
   form: FormData,
+  /** Module Créneaux : le créneau gardé (l'événement naît de la réservation). */
+  holdId?: string,
 ): Promise<FormState> {
   const workspace = await getWorkspaceBySlug(slug);
   const link = workspace ? await getCalendarLink(workspace.id, linkSlug ?? undefined) : null;
-  const event = workspace ? await getPublicEvent(db, workspace.id, eventSlug, link) : null;
-  if (!workspace || !event) return { error: "Cet événement n'est plus disponible." };
+  const event =
+    workspace && !holdId ? await getPublicEvent(db, workspace.id, eventSlug, link) : null;
+  if (!workspace || (!event && !holdId)) return { error: "Cet événement n'est plus disponible." };
   const blocked = await rateLimited(`booking:ip:${await clientIp()}`, 20, 3600);
   if (blocked) return { error: blocked };
 
@@ -331,7 +336,7 @@ export async function createPublicBooking(
       deps,
       { type: "customer", organizationId: workspace.id },
       {
-        eventId: event.id,
+        ...(holdId ? { holdId } : { eventId: event?.id }),
         seats,
         customer,
         answers: rawFieldValues(form, "a."),
@@ -356,7 +361,9 @@ export async function createPublicBooking(
     next = `/${slug}/reservation/${manageToken}?nouvelle=1`;
     // Paiement intégré (tout ou l'acompte) : direction la page de paiement sécurisée.
     // Avec un lien externe, la page de confirmation propose le bouton « Payer ».
+    // Créneau : réglé sur place ou par le lien de l'atelier (pas de page de paiement intégrée).
     if (
+      event &&
       workspacePaymentChannel(workspace, event.paymentMode, event.paymentLinkUrl)?.kind ===
         "stripe" &&
       !paidWithPass &&

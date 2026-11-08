@@ -109,37 +109,38 @@ export const stageSessionSchema = z
   });
 export type StageSessionInput = z.input<typeof stageSessionSchema>;
 
-export const createEventSchema = z.object({
-  eventTypeId: z.uuid(),
-  ...eventFields,
-  description: eventFields.description.default(""),
-  visibility: eventFields.visibility.default("public"),
-  capacity: eventFields.capacity.default(null),
-  priceCents: eventFields.priceCents.default(0),
-  paymentMode: eventFields.paymentMode.default("free"),
-  /** Absent : celui du type. */
-  deposit: eventFields.deposit.optional(),
-  prices: eventFields.prices.optional(),
-  /** Par défaut, celui du type d'événement. */
-  requiresApproval: eventFields.requiresApproval.optional(),
-  highlights: eventFields.highlights.default([]),
-  paymentLinkUrl: eventFields.paymentLinkUrl.default(null),
-  fieldValues: eventFields.fieldValues.default({}),
-  staffMemberId: eventFields.staffMemberId.default(null),
-  equipmentUnits: eventFields.equipmentUnits.optional(),
-  recurrence: recurrenceSchema.optional(),
-  /** Module « Durée au choix » : la durée de l'événement (fixe sa fin et son prix). */
-  durationId: z.string().max(40).optional(),
-  /**
-   * Module « Plusieurs séances » : les séances du stage (une série, une inscription). Les prix
-   * (`priceCents`, `prices`) sont alors ceux de tout le stage.
-   */
-  sessions: z.array(stageSessionSchema).min(1, "Ajoute une séance").max(30).optional(),
-  /** Stage : inscription possible à une seule séance (absent : réglage du type). */
-  singleSession: z.boolean().optional(),
-  /** Stage : le même matériel à chaque séance (absent : réglage du type). */
-  sameEquipment: z.boolean().optional(),
-})
+export const createEventSchema = z
+  .object({
+    eventTypeId: z.uuid(),
+    ...eventFields,
+    description: eventFields.description.default(""),
+    visibility: eventFields.visibility.default("public"),
+    capacity: eventFields.capacity.default(null),
+    priceCents: eventFields.priceCents.default(0),
+    paymentMode: eventFields.paymentMode.default("free"),
+    /** Absent : celui du type. */
+    deposit: eventFields.deposit.optional(),
+    prices: eventFields.prices.optional(),
+    /** Par défaut, celui du type d'événement. */
+    requiresApproval: eventFields.requiresApproval.optional(),
+    highlights: eventFields.highlights.default([]),
+    paymentLinkUrl: eventFields.paymentLinkUrl.default(null),
+    fieldValues: eventFields.fieldValues.default({}),
+    staffMemberId: eventFields.staffMemberId.default(null),
+    equipmentUnits: eventFields.equipmentUnits.optional(),
+    recurrence: recurrenceSchema.optional(),
+    /** Module « Durée au choix » : la durée de l'événement (fixe sa fin et son prix). */
+    durationId: z.string().max(40).optional(),
+    /**
+     * Module « Plusieurs séances » : les séances du stage (une série, une inscription). Les prix
+     * (`priceCents`, `prices`) sont alors ceux de tout le stage.
+     */
+    sessions: z.array(stageSessionSchema).min(1, "Ajoute une séance").max(30).optional(),
+    /** Stage : inscription possible à une seule séance (absent : réglage du type). */
+    singleSession: z.boolean().optional(),
+    /** Stage : le même matériel à chaque séance (absent : réglage du type). */
+    sameEquipment: z.boolean().optional(),
+  })
   .refine((input) => !(input.sessions && input.recurrence), {
     message: "Un stage a ses séances : pas de répétition en plus",
     path: ["recurrence"],

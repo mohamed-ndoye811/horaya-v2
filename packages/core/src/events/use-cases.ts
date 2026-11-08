@@ -201,6 +201,7 @@ export async function archiveEventType(
 /** Pages publiques d'un espace dont l'adresse ne peut pas servir à un événement. */
 const RESERVED_EVENT_SLUGS: ReadonlySet<string> = new Set([
   "calendrier",
+  "creneaux",
   "mentions-legales",
   "mes-reservations",
   "reservation",
@@ -294,10 +295,14 @@ export async function createEvent(
           )
         : { [BASE_RATE_ID]: fromInput.priceCents }
       : null;
-    const share = (cents: number) =>
-      Math.round(cents / (sessions?.length ?? 1) / 100) * 100;
+    const share = (cents: number) => Math.round(cents / (sessions?.length ?? 1) / 100) * 100;
     const prices = stagePrices
-      ? { ...inputPrices, ...Object.fromEntries(Object.entries(stagePrices).map(([id, cents]) => [id, share(cents)])) }
+      ? {
+          ...inputPrices,
+          ...Object.fromEntries(
+            Object.entries(stagePrices).map(([id, cents]) => [id, share(cents)]),
+          ),
+        }
       : inputPrices;
     // Tarifs et acompte : ceux du type, prix et acompte ajustés sur l'événement.
     const money = eventMoney(
@@ -348,20 +353,20 @@ export async function createEvent(
           sameEquipment: sameEquipment ?? stage?.sameEquipment ?? false,
         })
       : recurrence
-      ? await repositories.events.insertSeries({
-          organizationId: actor.organizationId,
-          rrule: toRRule(recurrence),
-          until: starts.at(-1) ?? null,
-          timezone: details.timezone,
-          ...(preset && {
-            enrollmentEnabled: true,
-            enrollmentPriceCents: preset.priceCents ?? details.priceCents * starts.length,
-            dropInAllowed: preset.dropInAllowed ?? true,
-            enrollmentProrata: preset.prorata ?? true,
-            makeupAllowed: preset.makeupAllowed ?? true,
-          }),
-        })
-      : null;
+        ? await repositories.events.insertSeries({
+            organizationId: actor.organizationId,
+            rrule: toRRule(recurrence),
+            until: starts.at(-1) ?? null,
+            timezone: details.timezone,
+            ...(preset && {
+              enrollmentEnabled: true,
+              enrollmentPriceCents: preset.priceCents ?? details.priceCents * starts.length,
+              dropInAllowed: preset.dropInAllowed ?? true,
+              enrollmentProrata: preset.prorata ?? true,
+              makeupAllowed: preset.makeupAllowed ?? true,
+            }),
+          })
+        : null;
     await assertStaffMember(
       repositories,
       actor.organizationId,

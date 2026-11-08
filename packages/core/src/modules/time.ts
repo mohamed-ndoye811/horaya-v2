@@ -262,7 +262,8 @@ export function pickSlotOption(
   seats: number,
 ): SlotOption | null {
   const fitting = (slot?.options ?? []).filter((option) => option.seatsLeft >= seats);
-  if (staffMemberId) return fitting.find((option) => option.staffMemberId === staffMemberId) ?? null;
+  if (staffMemberId)
+    return fitting.find((option) => option.staffMemberId === staffMemberId) ?? null;
   return fitting.find((option) => option.eventId !== null) ?? fitting[0] ?? null;
 }
 

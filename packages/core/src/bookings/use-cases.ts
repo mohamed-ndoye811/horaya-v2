@@ -20,9 +20,9 @@ import { checkSubmissionRules, recordRuleRuns, runBookingRules } from "../rules/
 import { type Actor, actorRef, assertMemberCan } from "../shared/actor";
 import { ConflictError, ForbiddenError, NotFoundError, ValidationError } from "../shared/errors";
 import { generateToken, hashToken } from "../shared/tokens";
-import { findSlotHold, lockSlotEvent } from "../slots/use-cases";
 import type { Deps, Repositories } from "../shared/unit-of-work";
 import { validate } from "../shared/validate";
+import { findSlotHold, lockSlotEvent } from "../slots/use-cases";
 import { decideBookingStatus, SEAT_HOLDING_STATUSES } from "./capacity";
 import { CHECK_IN_OPENS_BEFORE_HOURS, isCheckInOpen } from "./check-in";
 import type { Booking } from "./model";
@@ -312,7 +312,8 @@ export async function insertEventBooking(
       created.id,
       data.seats,
       data.equipment ?? [],
-      actor.type !== "customer" || enrolled,
+      // Créneau : l'événement naît de la réservation, l'atelier attribue le matériel.
+      actor.type !== "customer" || enrolled || event.fromSlot,
       optionNeedSeats(event, data.seats, created.priceLines),
     );
   }
@@ -696,6 +697,12 @@ export async function rescheduleBookingAsCustomer(
     const to = locks.get(targetEventId);
     if (!booking || !from) throw new NotFoundError("Réservation", bookingId);
     if (!to) throw new NotFoundError("Événement", targetEventId);
+    // Créneau (lot 37) : on annule et on choisit un autre créneau sur la page du type.
+    if (from.fromSlot || to.event.fromSlot) {
+      throw new ConflictError(
+        "Un créneau ne change pas de date : annule-le et choisis-en un autre",
+      );
+    }
 
     const now = deps.clock.now();
     const settings = await repositories.settings.get(organizationId);

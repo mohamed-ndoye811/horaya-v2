@@ -136,20 +136,20 @@ export function quoteBooking(
         },
       ]
     : rates.flatMap((rate) => {
-    const quantity = counts.get(rate.id) ?? 0;
-    return quantity > 0
-      ? [
-          {
-            kind: "rate" as const,
-            id: rate.id,
-            label: rate.name,
-            unitCents: rate.priceCents,
-            quantity,
-            totalCents: rate.priceCents * quantity,
-          },
-        ]
-      : [];
-  });
+        const quantity = counts.get(rate.id) ?? 0;
+        return quantity > 0
+          ? [
+              {
+                kind: "rate" as const,
+                id: rate.id,
+                label: rate.name,
+                unitCents: rate.priceCents,
+                quantity,
+                totalCents: rate.priceCents * quantity,
+              },
+            ]
+          : [];
+      });
 
   const options = pricing?.options ?? [];
   for (const [id, quantity] of Object.entries(selection.options ?? {})) {

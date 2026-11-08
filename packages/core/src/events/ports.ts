@@ -41,6 +41,8 @@ export interface EventTypeRepository {
   insert(eventType: NewEventType): Promise<EventType>;
   find(organizationId: string, eventTypeId: string): Promise<EventType | null>;
   update(organizationId: string, eventTypeId: string, patch: EventTypePatch): Promise<EventType>;
+  /** Types actifs avec le module Créneaux (lot 37). */
+  listWithSlots(organizationId: string): Promise<EventType[]>;
 }
 
 export interface EventRepository {

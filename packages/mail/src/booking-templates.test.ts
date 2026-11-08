@@ -9,6 +9,7 @@ import {
   bookingRuleMessageEmail,
   enrollmentConfirmedEmail,
   passActivatedEmail,
+  stageCancelledEmail,
   teamAlmostFullEmail,
   teamRuleEmail,
   weeklyDigestEmail,
@@ -174,6 +175,40 @@ describe("e-mail d'inscription à une série", () => {
     expect(email.subject).toBe("Inscription confirmée : Tournage du mardi");
     expect(email.text).toContain("Séance 2 : mar. 25 nov., 18 h 30");
     expect(email.text).toContain(`Gérer mon inscription : ${mail.manageUrl}`);
+  });
+
+  it("stage : la confirmation liste les séances et parle d'annuler le stage", () => {
+    const email = enrollmentConfirmedEmail({
+      workspace: mail.workspace,
+      firstName: "Léa",
+      title: "Stage tour : de la motte au bol",
+      sessions: ["Sam. 14 nov. · 10h – 17h · Centrage", "Sam. 21 nov. · 10h – 17h · Tournassage"],
+      manageUrl: mail.manageUrl,
+      stage: true,
+    });
+    expect(email.text).toContain("Stage : Stage tour : de la motte au bol");
+    expect(email.text).toContain("Séance 2 : Sam. 21 nov. · 10h – 17h · Tournassage");
+    expect(email.text).toContain("annuler ton inscription au stage");
+  });
+
+  it("stage annulé : un seul message, par l'atelier ou par l'élève avec son remboursement", () => {
+    const base = {
+      workspace: mail.workspace,
+      firstName: "Léa",
+      title: "Stage tour",
+      sessions: ["Sam. 14 nov.", "Sam. 21 nov."],
+      eventsUrl: "https://horaya.app/atelier",
+    };
+    const byTeam = stageCancelledEmail({ ...base, byCustomer: false });
+    expect(byTeam.subject).toBe("Stage annulé : Stage tour");
+    expect(byTeam.text).toContain("toutes ses séances sont annulées");
+    const byCustomer = stageCancelledEmail({
+      ...base,
+      byCustomer: true,
+      refund: "50 % remboursés",
+    });
+    expect(byCustomer.subject).toBe("Inscription annulée : Stage tour");
+    expect(byCustomer.text).toContain("Remboursement : 50 % remboursés.");
   });
 });
 

@@ -5,8 +5,16 @@ import { getEnrollEventPage } from "@/functions/public";
 /** Cours à l'année : inscription à toutes les séances restantes de la série. */
 export const Route = createFileRoute("/$slug/$event/inscription")({
   loader: ({ params }) => getEnrollEventPage({ data: { slug: params.slug, event: params.event } }),
-  head: () => ({
-    meta: [{ title: "Inscris-toi au trimestre" }, { name: "robots", content: "noindex" }],
+  head: ({ loaderData }) => ({
+    meta: [
+      {
+        title:
+          loaderData?.event?.seriesKind === "stage"
+            ? "Inscris-toi au stage"
+            : "Inscris-toi au trimestre",
+      },
+      { name: "robots", content: "noindex" },
+    ],
   }),
   component: Enroll,
 });

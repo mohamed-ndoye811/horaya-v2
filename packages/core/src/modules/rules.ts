@@ -8,8 +8,8 @@ import type {
   OpeningModule,
   PlacesModule,
 } from "./registry";
-import { durationTitle } from "./time";
 import { CLIENT_ADDRESS_FIELD_KEY, type ResourceNames, resourceSummary } from "./resources";
+import { durationTitle } from "./time";
 
 const HOUR = 3_600_000;
 const DAY = 24 * HOUR;

@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { requireFeature } from "../billing/use-cases";
+import { isWithinFreeCancellation } from "../bookings/cancellation";
 import { remainingSeats, SEAT_HOLDING_STATUSES } from "../bookings/capacity";
 import {
   counterCustomerChoice,
@@ -7,24 +8,18 @@ import {
   resolveCounterCustomer,
 } from "../bookings/counter";
 import type { Booking } from "../bookings/model";
+import { type PriceLine, ratesOf } from "../bookings/pricing";
 import { customerContactSchema, participantSchema } from "../bookings/schemas";
 import { assertCustomerCanBook, insertEventBooking, SOURCE_BY_ACTOR } from "../bookings/use-cases";
 import { promoteWaitlist } from "../bookings/waitlist";
-import { type PriceLine, ratesOf } from "../bookings/pricing";
 import type { Event, EventSeries } from "../events/model";
 import { cancelLockedEvent } from "../events/use-cases";
-import { reserveSameEquipment } from "../inventory/equipment";
 import { rawFieldValuesSchema } from "../fields/schemas";
-import { isWithinFreeCancellation } from "../bookings/cancellation";
+import { reserveSameEquipment } from "../inventory/equipment";
 import { cancellationPolicyOf } from "../modules/rules";
 import { runBookingRules } from "../rules/use-cases";
 import { type Actor, actorRef, assertMemberCan } from "../shared/actor";
-import {
-  ConflictError,
-  ForbiddenError,
-  NotFoundError,
-  ValidationError,
-} from "../shared/errors";
+import { ConflictError, ForbiddenError, NotFoundError, ValidationError } from "../shared/errors";
 import { generateToken, hashToken } from "../shared/tokens";
 import type { Deps, Repositories } from "../shared/unit-of-work";
 import { validate } from "../shared/validate";
@@ -750,7 +745,10 @@ export async function cancelStageEnrollmentWithToken(
     if (!first || first.startsAt <= now) {
       throw new ConflictError("Le stage a commencé : contacte l'atelier pour annuler");
     }
-    const policy = cancellationPolicyOf(first.modules, await repositories.settings.get(organizationId));
+    const policy = cancellationPolicyOf(
+      first.modules,
+      await repositories.settings.get(organizationId),
+    );
     const refundPercent = isWithinFreeCancellation({
       startsAt: first.startsAt,
       now,

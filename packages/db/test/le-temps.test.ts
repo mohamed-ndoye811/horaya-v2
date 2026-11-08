@@ -19,17 +19,17 @@ import {
 } from "@horaya/core";
 import { and, asc, eq, isNull } from "drizzle-orm";
 import { afterAll, beforeEach, describe, expect, it } from "vitest";
-import { repositoriesFor } from "../src/unit-of-work";
 import {
   activityLog,
   booking,
-  event as eventTable,
   eventSeries,
+  event as eventTable,
   itemAllocation,
   itemUnit,
   seriesEnrollment,
   slotHold,
 } from "../src/schema";
+import { repositoriesFor } from "../src/unit-of-work";
 import {
   contact,
   createMember,
@@ -120,7 +120,10 @@ describe("créneaux", () => {
     });
     expect(created.amountCents).toBe(8000);
     expect(created.priceLines[0]).toMatchObject({ kind: "duration", id: "2h" });
-    const [event] = await db.select().from(eventTable).where(eq(eventTable.id, created.eventId ?? ""));
+    const [event] = await db
+      .select()
+      .from(eventTable)
+      .where(eq(eventTable.id, created.eventId ?? ""));
     expect(event).toMatchObject({ fromSlot: true, status: "published", capacity: 1 });
     expect(event?.modules.duration?.options.map((option) => option.id)).toEqual(["2h"]);
     expect(await db.select().from(slotHold).where(eq(slotHold.id, hold.id))).toHaveLength(0);
@@ -174,7 +177,10 @@ describe("créneaux", () => {
   it("la base refuse deux créneaux qui se chevauchent pour le même intervenant", async () => {
     const type = await slotType({ slots: slots({ memberIds: [memberId(camille)] }) });
     await counter(type.id, AT_14);
-    const [existing] = await db.select().from(eventTable).where(eq(eventTable.eventTypeId, type.id));
+    const [existing] = await db
+      .select()
+      .from(eventTable)
+      .where(eq(eventTable.eventTypeId, type.id));
     if (!existing) throw new Error("créneau");
     const { id: _id, createdAt: _c, updatedAt: _u, ...copy } = existing;
     await expect(
@@ -191,9 +197,9 @@ describe("créneaux", () => {
     await expect(
       holdSlot(deps, customerActor(organizationId), { eventTypeId: type.id, startsAt: AT_14 }),
     ).rejects.toThrow(ConflictError);
-    expect((await slotsOn(type.id)).some((slot) => slot.startsAt.getTime() === AT_14.getTime())).toBe(
-      false,
-    );
+    expect(
+      (await slotsOn(type.id)).some((slot) => slot.startsAt.getTime() === AT_14.getTime()),
+    ).toBe(false);
 
     // 11 minutes plus tard : expiré, le créneau est de nouveau libre…
     clock.set(new Date(clock.now().getTime() + 11 * 60_000));
@@ -255,9 +261,7 @@ describe("créneaux", () => {
     // Camille est libre, mais le seul tour est pris : plus de créneau qui chevauche 14:00–15:00.
     const free = (await slotsOn(type.id)).map((slot) => slot.startsAt.toISOString());
     expect(free[0]).toBe("2026-11-10T14:00:00.000Z");
-    await expect(counter(type.id, new Date("2026-11-10T13:30:00Z"))).rejects.toThrow(
-      ConflictError,
-    );
+    await expect(counter(type.id, new Date("2026-11-10T13:30:00Z"))).rejects.toThrow(ConflictError);
   });
 
   it("créneau à plusieurs places : le second élève rejoint le même événement", async () => {
@@ -343,7 +347,14 @@ describe("plusieurs séances (stage)", () => {
     const { enrollment, bookings } = await enroll(seriesId, "lea@mail.fr", "reduit");
     expect(enrollment.amountCents).toBe(20000);
     expect(enrollment.priceLines).toEqual([
-      { kind: "rate", id: "reduit", label: "Réduit", unitCents: 20000, quantity: 1, totalCents: 20000 },
+      {
+        kind: "rate",
+        id: "reduit",
+        label: "Réduit",
+        unitCents: 20000,
+        quantity: 1,
+        totalCents: 20000,
+      },
     ]);
     expect(bookings.map((entry) => entry.eventId)).toEqual(sessions.map((session) => session.id));
     // À l'unité, c'est fermé.
@@ -428,7 +439,12 @@ describe("plusieurs séances (stage)", () => {
     const logged = await db
       .select({ data: activityLog.data })
       .from(activityLog)
-      .where(and(eq(activityLog.action, "booking.cancelled"), eq(activityLog.organizationId, organizationId)));
+      .where(
+        and(
+          eq(activityLog.action, "booking.cancelled"),
+          eq(activityLog.organizationId, organizationId),
+        ),
+      );
     expect(logged.map((entry) => (entry.data as { reason: string }).reason)).toEqual([
       "event_cancelled",
     ]);
@@ -454,7 +470,9 @@ describe("plusieurs séances (stage)", () => {
         .select({ action: activityLog.action, data: activityLog.data })
         .from(activityLog)
         .where(eq(activityLog.organizationId, organizationId))
-    ).filter((entry) => entry.action === "booking.cancelled" || entry.action === "enrollment.cancelled");
+    ).filter(
+      (entry) => entry.action === "booking.cancelled" || entry.action === "enrollment.cancelled",
+    );
     expect(reasons.map((entry) => (entry.data as { reason: string }).reason)).toEqual([
       ...sessions.map(() => "stage_cancelled"),
       "stage_cancelled",

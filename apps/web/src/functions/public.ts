@@ -3,6 +3,7 @@ import { z } from "zod";
 import { formDataInput } from "@/lib/form-data";
 import {
   cancelAbsence,
+  cancelStageEnrollment,
   createPublicEnrollment,
   enrollEventPage,
   reportAbsence,
@@ -89,6 +90,9 @@ const absenceFn = createServerFn({ method: "POST" })
 const cancelAbsenceFn = createServerFn({ method: "POST" })
   .validator(withToken.extend({ eventId: z.string().uuid() }))
   .handler(({ data }) => cancelAbsence(data.slug, data.token, data.eventId));
+const cancelStageFn = createServerFn({ method: "POST" })
+  .validator(withToken)
+  .handler(({ data }) => cancelStageEnrollment(data.slug, data.token));
 const payFn = createServerFn({ method: "POST" })
   .validator(withToken)
   .handler(({ data }) => payManagedBooking(data.slug, data.token));
@@ -142,3 +146,7 @@ export const cancelManagedBookingAction = (slug: string, token: string) =>
   cancelFn({ data: { slug, token } });
 export const resendBookingEmailAction = (slug: string, token: string) =>
   resendFn({ data: { slug, token } });
+
+/** Stage : annuler son inscription (toutes les séances), depuis le lien de gestion. */
+export const cancelStageEnrollmentAction = (slug: string, token: string) =>
+  cancelStageFn({ data: { slug, token } });

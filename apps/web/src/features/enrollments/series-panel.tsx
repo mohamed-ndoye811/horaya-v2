@@ -10,13 +10,15 @@ import { AffixInput, Field } from "@/components/ui/field";
 import { FormAlert } from "@/components/ui/form-alert";
 import { ActionMenu } from "@/components/ui/menu";
 import { Eyebrow } from "@/components/ui/section";
+import { InfoLine, SettingRow, SettingRows } from "@/components/ui/setting-rows";
 import { Switch } from "@/components/ui/switch";
 import {
   cancelEnrollmentAction,
+  cancelStageAction,
   saveSeriesEnrollmentAction,
   setEnrollmentPaidAction,
 } from "@/functions/enrollments";
-import { formatDateTimeShort, formatRelativeDateTime } from "@/lib/format";
+import { formatDateTimeShort, formatMoney, formatRelativeDateTime } from "@/lib/format";
 import { centsToInput } from "@/lib/money";
 import { useRouter } from "@/lib/navigation";
 import { useFormAction } from "@/lib/use-form-action";
@@ -34,7 +36,10 @@ export function SeriesPanel({
   enrollments,
   targets,
   timeZone,
+  rates = [],
 }: {
+  /** Stage : les tarifs (noms) de la séance, pour lire les prix du stage. */
+  rates?: Array<{ id: string; name: string }>;
   seriesId: string;
   eventId: string;
   offer: SeriesOffer;
@@ -46,7 +51,11 @@ export function SeriesPanel({
   const active = enrollments.filter((row) => row.cancelledAt === null);
   return (
     <div className="reveal-group grid gap-6 px-4 pb-8 lg:grid-cols-[340px_minmax(0,1fr)] lg:items-start">
-      <SeriesSettingsForm seriesId={seriesId} offer={offer} timeZone={timeZone} />
+      {offer.kind === "stage" ? (
+        <StageSettings seriesId={seriesId} offer={offer} rates={rates} />
+      ) : (
+        <SeriesSettingsForm seriesId={seriesId} offer={offer} timeZone={timeZone} />
+      )}
       <div className="flex flex-col gap-3">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <p className="flex items-baseline gap-2.5">
@@ -265,6 +274,85 @@ function EnrollmentActions({
 }
 
 /** Réglage « Inscription à la série » : prix de la série, séance à l'unité ou non. */
+/** Stage (lot 37) : ses prix et réglages (posés à la création), et « Annuler le stage ». */
+function StageSettings({
+  seriesId,
+  offer,
+  rates,
+}: {
+  seriesId: string;
+  offer: SeriesOffer;
+  rates: Array<{ id: string; name: string }>;
+}) {
+  const router = useRouter();
+  const [confirm, setConfirm] = useState(false);
+  const [pending, startTransition] = useTransition();
+  const [result, setResult] = useState<FormState | null>(null);
+  const prices = offer.enrollmentPrices ?? {};
+  const priced = rates.filter((rate) => prices[rate.id] !== undefined);
+  return (
+    <div className="flex flex-col gap-3 rounded-3xl bg-surface p-5">
+      <Eyebrow>Le stage</Eyebrow>
+      <SettingRows>
+        <SettingRow title="Prix du stage" description="Pour toutes les séances">
+          <span className="text-sm font-semibold text-ink">
+            {priced.length
+              ? priced
+                  .map((rate) => `${rate.name} ${formatMoney(prices[rate.id] ?? 0)}`)
+                  .join(" · ")
+              : formatMoney(offer.enrollmentPriceCents ?? 0)}
+          </span>
+        </SettingRow>
+        <SettingRow title="Inscription à une seule séance">
+          <span className="text-sm text-ink-muted">{offer.dropInAllowed ? "Oui" : "Non"}</span>
+        </SettingRow>
+        <SettingRow title="Même matériel à chaque séance">
+          <span className="text-sm text-ink-muted">{offer.sameEquipment ? "Oui" : "Non"}</span>
+        </SettingRow>
+      </SettingRows>
+      <InfoLine>
+        Annuler une séance (sa fiche) prévient ses inscrits. Annuler le stage annule toutes ses
+        séances et les inscriptions.
+      </InfoLine>
+      {result?.error && <FormAlert>{result.error}</FormAlert>}
+      {result?.success && <FormAlert tone="success">{result.success}</FormAlert>}
+      <Button variant="danger" size="sm" onClick={() => setConfirm(true)} className="self-start">
+        Annuler le stage
+      </Button>
+      {confirm && (
+        <Dialog
+          open
+          onClose={() => setConfirm(false)}
+          density="compact"
+          title="Annuler tout le stage ?"
+          description="Toutes les séances à venir sont annulées, le matériel libéré, et chaque inscrit reçoit un seul e-mail."
+          footer={
+            <>
+              <Button variant="secondary" size="sm" onClick={() => setConfirm(false)}>
+                Garder le stage
+              </Button>
+              <Button
+                variant="danger"
+                size="sm"
+                pending={pending}
+                onClick={() =>
+                  startTransition(async () => {
+                    setResult(await cancelStageAction(seriesId));
+                    setConfirm(false);
+                    router.refresh();
+                  })
+                }
+              >
+                Annuler le stage
+              </Button>
+            </>
+          }
+        />
+      )}
+    </div>
+  );
+}
+
 function SeriesSettingsForm({
   seriesId,
   offer,

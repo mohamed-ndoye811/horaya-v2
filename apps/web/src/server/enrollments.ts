@@ -6,6 +6,8 @@ import {
   assignMakeup,
   cancelAbsenceWithToken,
   cancelEnrollment,
+  cancelStage,
+  cancelStageEnrollmentWithToken,
   type EnrollInSeriesInput,
   enrollInSeries,
   enrollmentProgress,
@@ -82,6 +84,8 @@ export async function createPublicEnrollment(
         // « Ce que tu demandes » : une fois pour l'inscription, et pour la personne inscrite.
         answers: rawFieldValues(form, "a."),
         participants: [{ ...customer, answers: rawFieldValues(form, "p0.") }],
+        // Stage : le tarif choisi (le core revérifie qu'il existe).
+        rateId: text(form, "rateId") || null,
       },
     );
     manageToken = created.manageToken;
@@ -110,7 +114,10 @@ export async function managedEnrollment(
   if (!enrollment) return null;
   return {
     ...enrollment,
-    progress: enrollmentProgress(enrollment.sessions, now),
+    progress: {
+      ...enrollmentProgress(enrollment.sessions, now),
+      stage: enrollment.seriesKind === "stage",
+    },
     payment: enrollmentPayment(enrollment, workspace.paymentLinkUrl),
   };
 }
@@ -130,6 +137,25 @@ export async function reportAbsence(
     return toFormState(error);
   }
   return { success: "C'est noté : ta place profite à quelqu'un d'autre." };
+}
+
+/** Stage : l'élève annule son inscription (toutes les séances), selon la règle du type. */
+export async function cancelStageEnrollment(slug: string, token: string): Promise<FormState> {
+  const workspace = await getWorkspaceBySlug(slug);
+  if (!workspace) return { error: "Espace introuvable." };
+  try {
+    const { refundPercent } = await cancelStageEnrollmentWithToken(deps, workspace.id, token);
+    return {
+      success:
+        refundPercent === 100
+          ? "C'est noté : ton inscription est annulée, et remboursée en entier."
+          : refundPercent > 0
+            ? `C'est noté : ton inscription est annulée, ${refundPercent} % te sont remboursés.`
+            : "C'est noté : ton inscription est annulée. Selon la règle d'annulation, rien n'est remboursé.",
+    };
+  } catch (error) {
+    return toFormState(error);
+  }
 }
 
 /** « Annuler mon absence » : la place est rendue si elle est toujours libre. */
@@ -213,6 +239,19 @@ export async function cancelEnrollmentImpl(enrollmentId: string): Promise<FormSt
     const { releasedSessions } = await cancelEnrollment(deps, actor, enrollmentId);
     return {
       success: `Désinscription faite : ${releasedSessions} séance${releasedSessions > 1 ? "s" : ""} libérée${releasedSessions > 1 ? "s" : ""}.`,
+    };
+  } catch (error) {
+    return toFormState(error);
+  }
+}
+
+/** « Annuler le stage » : toutes ses séances et ses inscriptions, un e-mail par inscrit. */
+export async function cancelStageImpl(seriesId: string): Promise<FormState> {
+  const { actor } = await getWorkspaceContext();
+  try {
+    const { cancelledSessions, cancelledEnrollments } = await cancelStage(deps, actor, seriesId);
+    return {
+      success: `Stage annulé : ${cancelledSessions} séance${cancelledSessions > 1 ? "s" : ""}, ${cancelledEnrollments} inscrit${cancelledEnrollments > 1 ? "s" : ""} prévenu${cancelledEnrollments > 1 ? "s" : ""}.`,
     };
   } catch (error) {
     return toFormState(error);

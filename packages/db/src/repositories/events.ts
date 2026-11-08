@@ -6,7 +6,7 @@ import {
   type EventType,
   type EventTypeRepository,
 } from "@horaya/core";
-import { and, asc, eq, gt, ne, notExists, sql } from "drizzle-orm";
+import { and, asc, eq, gt, isNull, ne, notExists, sql } from "drizzle-orm";
 import type { Executor } from "../client";
 import { booking, event, eventSeries, eventType, member } from "../schema";
 
@@ -31,6 +31,21 @@ export function eventTypeRepository(db: Executor): EventTypeRepository {
         .from(eventType)
         .where(and(eq(eventType.organizationId, organizationId), eq(eventType.id, eventTypeId)));
       return (found as EventType | undefined) ?? null;
+    },
+
+    async listWithSlots(organizationId) {
+      const rows = await db
+        .select()
+        .from(eventType)
+        .where(
+          and(
+            eq(eventType.organizationId, organizationId),
+            isNull(eventType.archivedAt),
+            sql`${eventType.modules} ? 'slots'`,
+          ),
+        )
+        .orderBy(asc(eventType.name));
+      return rows as EventType[];
     },
 
     async update(organizationId, eventTypeId, patch) {

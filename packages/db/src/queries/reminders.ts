@@ -82,6 +82,8 @@ export async function claimAlmostFull(db: Executor, eventId: string) {
         eq(event.status, "published"),
         isNull(event.almostFullNotifiedAt),
         isNotNull(event.capacity),
+        // Un créneau (lot 37) est fait pour être pris : pas d'alerte « presque complet ».
+        eq(event.fromSlot, false),
         gt(event.endsAt, sql`now()`),
         sql`${heldSeats} * 5 >= ${event.capacity} * 4`,
       ),

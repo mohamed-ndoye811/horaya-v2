@@ -124,6 +124,8 @@ export async function listCandidatesForTypes(
         inArray(event.eventTypeId, eventTypeIds),
         eq(event.status, "published"),
         eq(event.visibility, "public"),
+        // Créneau réservé : celui d'un autre élève, jamais une autre date proposée.
+        eq(event.fromSlot, false),
         gt(event.startsAt, now),
       ),
     )

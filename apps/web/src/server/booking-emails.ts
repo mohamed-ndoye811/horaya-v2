@@ -7,6 +7,7 @@ import {
   type NotificationType,
   paidCents,
   priceDetail,
+  priceLinesLabel,
   type RuleAction,
 } from "@horaya/core";
 import {
@@ -16,6 +17,7 @@ import {
   getEnrollment,
   getPassForEmail,
   getRuleEventSummary,
+  getStageSessions,
   getWeeklyDigest,
   getWorkspaceSettings,
   listBookingPayments,
@@ -42,6 +44,7 @@ import {
   type EmailContent,
   enrollmentConfirmedEmail,
   passActivatedEmail,
+  stageCancelledEmail,
   teamAlmostFullEmail,
   teamBookingEmail,
   teamMinimumCancelledEmail,
@@ -60,6 +63,7 @@ import {
   formatHour,
   formatMoney,
   formatMonthShort,
+  formatTimeRange,
   formatWeekdayShort,
 } from "@/lib/format";
 import { paymentChannel } from "@/lib/payment-channel";
@@ -254,9 +258,15 @@ export async function sendEnrollmentEmail(
   const first = enrollment?.sessions[0];
   if (!enrollment || !workspace || !first) return;
   const payment = enrollmentPayment(enrollment, workspace.paymentLinkUrl ?? null);
+  const stage = enrollment.seriesKind === "stage";
+  const rate =
+    stage && enrollment.priceLines.length
+      ? ` (${priceLinesLabel(enrollment.priceLines).replace(/^1 /, "")})`
+      : "";
   await send(
     enrollment.customerEmail,
     enrollmentConfirmedEmail({
+      stage,
       workspace: {
         name: workspace.name,
         color: workspace.brandColor,
@@ -266,14 +276,72 @@ export async function sendEnrollmentEmail(
       firstName: enrollment.customerFirstName,
       title: first.title,
       sessions: enrollment.sessions.map((session) =>
-        formatDateTimeShort(session.startsAt, settings.timezone),
+        stage
+          ? stageSessionLine(session, settings.timezone)
+          : formatDateTimeShort(session.startsAt, settings.timezone),
       ),
       where: first.locationName,
       amount: payment
-        ? `${formatMoney(enrollment.amountCents)} · ${payment.label.toLowerCase()}`
+        ? `${formatMoney(enrollment.amountCents)}${rate} · ${payment.label.toLowerCase()}`
         : null,
       payUrl: payment?.payUrl ?? null,
       manageUrl: manageUrl(workspace.slug, manageToken),
+    }),
+  );
+}
+
+/** « Sam. 14 nov. · 10h – 17h · Centrage » : une séance de stage dans un e-mail. */
+const stageSessionLine = (
+  session: { startsAt: Date; endsAt: Date; sessionTopic: string | null },
+  timeZone: string,
+) =>
+  [
+    `${formatWeekdayShort(session.startsAt, timeZone)} ${formatDayNumber(session.startsAt, timeZone)} ${formatMonthShort(session.startsAt, timeZone).toLowerCase()}`,
+    formatTimeRange(session.startsAt, session.endsAt, timeZone),
+    session.sessionTopic,
+  ]
+    .filter(Boolean)
+    .join(" · ");
+
+/**
+ * Stage annulé (lot 37) : un seul e-mail par inscrit, que l'atelier annule tout le stage ou
+ * que l'élève annule son inscription (avec le remboursement prévu par la règle du type).
+ */
+async function sendStageCancelledEmail(entry: ActivityEntry) {
+  const reason = entry.data?.reason;
+  if (entry.action !== "enrollment.cancelled") return;
+  if (reason !== "stage_cancelled" && reason !== "customer_request") return;
+  const [enrollment, workspace, settings] = await Promise.all([
+    getEnrollment(db, entry.organizationId, { id: entry.entityId }),
+    getWorkspaceSettings(db, entry.organizationId),
+    tenantSettingsReader(db).get(entry.organizationId),
+  ]);
+  if (!enrollment || !workspace || enrollment.seriesKind !== "stage") return;
+  // Séances annulées avec le stage : relues toutes, annulées comprises.
+  const stage = await getStageSessions(db, entry.organizationId, enrollment.seriesId);
+  const sessions = stage.sessions.map((session) => stageSessionLine(session, settings.timezone));
+  const percent = typeof entry.data?.refundPercent === "number" ? entry.data.refundPercent : null;
+  const title = stage.title ?? "Stage";
+  await send(
+    enrollment.customerEmail,
+    stageCancelledEmail({
+      workspace: {
+        name: workspace.name,
+        color: workspace.brandColor,
+        textColor: textOn(workspace.brandColor),
+        logo: workspace.logo ? absoluteUrl(workspace.logo) : null,
+      },
+      firstName: enrollment.customerFirstName,
+      title,
+      sessions,
+      byCustomer: reason === "customer_request",
+      refund:
+        percent === null || enrollment.amountCents === 0
+          ? null
+          : percent === 0
+            ? "rien n'est remboursé, selon la règle d'annulation"
+            : `${percent} % (${formatMoney(Math.round((enrollment.amountCents * percent) / 100))})`,
+      eventsUrl: absoluteUrl(`/${workspace.slug}`),
     }),
   );
 }
@@ -302,7 +370,14 @@ async function notifyEnrollmentCreated(entry: ActivityEntry) {
       status: `inscription à ${enrollment.sessions.length} séances`,
       url: absoluteUrl(link),
     }),
-    { title: "Nouvelle inscription à la série", body: summary, link },
+    {
+      title:
+        enrollment.seriesKind === "stage"
+          ? "Nouvelle inscription au stage"
+          : "Nouvelle inscription à la série",
+      body: summary,
+      link,
+    },
   );
 }
 
@@ -575,7 +650,10 @@ async function notifyEventRule(entry: ActivityEntry) {
 /** Branché sur la fin des transactions (createDeps) : chaque changement de statut prévient qui de droit. */
 export async function notifyFromActivity(entries: ActivityEntry[]) {
   for (const entry of entries) {
-    if (entry.entityType === "enrollment") await notifyEnrollmentCreated(entry);
+    if (entry.entityType === "enrollment") {
+      await notifyEnrollmentCreated(entry);
+      await sendStageCancelledEmail(entry);
+    }
     if (entry.entityType === "event" && entry.action === "event.rule_applied") {
       await notifyEventRule(entry);
       continue;
@@ -781,6 +859,8 @@ export async function notifyFromActivity(entries: ActivityEntry[]) {
         );
         break;
       case "booking.cancelled": {
+        // Stage annulé : un seul e-mail par inscription (enrollment.cancelled), pas par séance.
+        if (reason === "stage_cancelled") break;
         const byCustomer = entry.actorType === "customer";
         await send(
           to,
