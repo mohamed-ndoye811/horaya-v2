@@ -636,15 +636,17 @@ export function EventForm({
           <ul className="flex flex-col gap-2.5 pt-1">
             {checklist.map((item) => (
               <li key={item.label} className="flex items-center gap-2.5 text-sm text-ink">
-                <Swap value={String(item.done)} className="flex">
-                  {item.done ? (
-                    <span className="flex size-[18px] items-center justify-center rounded-full bg-success text-white">
-                      <Check size={10} />
-                    </span>
-                  ) : (
-                    <span className="size-[18px] rounded-full border-[1.5px] border-line" />
-                  )}
-                </Swap>
+                <span className="flex">
+                  <Swap value={String(item.done)}>
+                    {item.done ? (
+                      <span className="flex size-[18px] items-center justify-center rounded-full bg-success text-white">
+                        <Check size={10} />
+                      </span>
+                    ) : (
+                      <span className="size-[18px] rounded-full border-[1.5px] border-line" />
+                    )}
+                  </Swap>
+                </span>
                 <span
                   className={item.done ? "transition-colors" : "text-ink-muted transition-colors"}
                 >

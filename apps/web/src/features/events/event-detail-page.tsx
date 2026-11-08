@@ -83,7 +83,7 @@ export function EventDetailPage({
         }
       />
 
-      <div className="grid grid-cols-2 gap-3 px-4 xl:grid-cols-[236px_repeat(4,minmax(0,1fr))]">
+      <div className="reveal-group grid grid-cols-2 gap-3 px-4 xl:grid-cols-[236px_repeat(4,minmax(0,1fr))]">
         <EventCover id={event.id} cover={event.coverImageUrl} color={event.typeColor} />
         <Stat
           label="Inscrits"
@@ -376,7 +376,7 @@ export function EventDetailPage({
         />
       ) : (
         <div className="grid gap-10 px-4 py-8 lg:grid-cols-[minmax(0,1fr)_340px]">
-          <div className="flex flex-col gap-4">
+          <div className="reveal-group flex flex-col gap-4">
             <Eyebrow>Description</Eyebrow>
             <p className="whitespace-pre-line text-base font-medium leading-7 text-ink">
               {event.description || (

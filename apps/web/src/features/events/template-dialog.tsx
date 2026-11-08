@@ -41,7 +41,7 @@ export function TemplateDialog({
       description="Pars d'un modèle : ses réglages et ses champs sont déjà prêts. Tu pourras tout changer ensuite."
       footer={
         <div className="flex w-full flex-wrap items-center justify-between gap-3 border-t border-line-soft pt-3">
-          <Swap value={String(duplicating)} className="contents">
+          <Swap value={String(duplicating)} block>
             {duplicating ? (
               <div className="flex flex-wrap items-center gap-2">
                 <Select
