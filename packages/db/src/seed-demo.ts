@@ -182,13 +182,83 @@ const types = Object.fromEntries(
         defaultPriceCents: 12000,
         requiresApproval: true,
         bookingRules: { waitlistEnabled: true },
-        customFields: [
+        fields: [
           {
             key: "regime",
             label: "Régime alimentaire",
-            type: "select" as const,
+            type: "choice" as const,
+            scope: "booking" as const,
             required: false,
             options: ["Aucun", "Végétarien", "Végan", "Sans gluten", "Autre"],
+          },
+        ],
+      },
+      // Lot 33 : un type sur mesure, avec des champs de chaque portée.
+      {
+        key: "tournage",
+        name: "Cours de tournage",
+        color: "#A9663F",
+        defaultDurationMinutes: 120,
+        defaultPriceCents: 4500,
+        defaultCapacity: 12,
+        bookingNoun: "inscription" as const,
+        bookingRules: { waitlistEnabled: true },
+        fields: [
+          {
+            key: "niveau",
+            label: "Niveau",
+            type: "choice" as const,
+            scope: "event" as const,
+            required: true,
+            options: ["Débutant", "Intermédiaire", "Confirmé"],
+            publicFilter: true,
+          },
+          {
+            key: "terre",
+            label: "Terre utilisée",
+            type: "short_text" as const,
+            scope: "event" as const,
+            required: false,
+            help: "ex. Grès chamotté",
+          },
+          {
+            key: "pieces",
+            label: "Pièces à emporter",
+            type: "number" as const,
+            scope: "event" as const,
+            required: false,
+            visibility: "internal" as const,
+          },
+          {
+            key: "deja_tourne",
+            label: "Tu as déjà tourné ?",
+            type: "boolean" as const,
+            scope: "booking" as const,
+            required: true,
+          },
+          {
+            key: "depuis_quand",
+            label: "Depuis combien de temps ?",
+            type: "choice" as const,
+            scope: "booking" as const,
+            required: false,
+            options: ["Moins d'un an", "1 à 3 ans", "Plus de 3 ans"],
+            condition: { fieldKey: "deja_tourne", equals: true },
+          },
+          {
+            key: "reglement",
+            label: "J'ai lu le règlement de l'atelier",
+            type: "acceptance" as const,
+            scope: "booking" as const,
+            required: true,
+          },
+          {
+            key: "age",
+            label: "Âge",
+            type: "number" as const,
+            scope: "participant" as const,
+            required: true,
+            help: "12 ans minimum",
           },
         ],
       },
@@ -235,6 +305,13 @@ type Plan = {
   description?: string;
   highlights?: string[];
   bookings?: Array<[string, string, number, ("pending" | "cancel")?, string?]>;
+  /** « Ce que tu décris » (lot 33). */
+  fieldValues?: Record<string, string | number>;
+  /** Réponses données aux réservations de l'événement. */
+  answers?: {
+    answers: Record<string, string | boolean>;
+    participants: Array<{ firstName: string; lastName: string; answers: Record<string, string> }>;
+  };
 };
 
 const plans: Plan[] = [
@@ -257,6 +334,30 @@ const plans: Plan[] = [
       ["Hugo", "Petit", 1, "pending"],
       ["Léa", "Fontaine", 1],
       ["Antoine", "Leroy", 4],
+    ],
+  },
+  {
+    type: "tournage",
+    title: "Cours de tournage · confirmé",
+    start: [3, 18, 30],
+    end: [3, 20, 30],
+    location: "Atelier Terre & Feu",
+    capacity: 12,
+    priceCents: 4500,
+    paymentMode: "on_site",
+    description:
+      "Deux heures au tour pour reprendre centrage, tournage de cylindres et tournassage. Les pièces sont cuites et émaillées par l'atelier.",
+    fieldValues: { niveau: "Confirmé", terre: "Grès chamotté", pieces: 2 },
+    answers: {
+      answers: { deja_tourne: true, depuis_quand: "1 à 3 ans", reglement: "on" },
+      participants: [
+        { firstName: "Léa", lastName: "Fontaine", answers: { age: "34" } },
+        { firstName: "Noé", lastName: "Fontaine", answers: { age: "13" } },
+      ],
+    },
+    bookings: [
+      ["Léa", "Fontaine", 2],
+      ["Marc", "Dupont", 1],
     ],
   },
   {
@@ -439,6 +540,7 @@ for (const plan of plans) {
     description: plan.description ?? "",
     highlights: plan.highlights ?? [],
     visibility: plan.internal ? "invite_only" : "public",
+    fieldValues: plan.fieldValues ?? {},
   });
   if (!created) continue;
   eventIds.set(plan.title, created.id);
@@ -461,6 +563,12 @@ for (const plan of plans) {
         seats,
         customer: { firstName, lastName, email },
         customerMessage: message ?? null,
+        answers: plan.answers?.answers ?? {},
+        // Les participants nommés sont ceux de la première réservation (celle de Léa).
+        participants:
+          plan.answers?.participants[0]?.firstName === firstName
+            ? plan.answers.participants.slice(0, seats)
+            : [],
       });
       if (state === "cancel") await cancelBooking(deps, actor, booking.id, "Empêchement");
       bookingCount++;
