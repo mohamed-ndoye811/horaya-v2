@@ -26,6 +26,12 @@ export const NOTIFICATION_TYPES = [
     email: true,
     inApp: true,
   },
+  {
+    value: "rule_applied",
+    label: "Une règle « si… alors… » prévient l'équipe",
+    email: true,
+    inApp: true,
+  },
   { value: "weekly_digest", label: "Récap hebdomadaire", email: true, inApp: false },
 ] as const;
 export type NotificationType = (typeof NOTIFICATION_TYPES)[number]["value"];

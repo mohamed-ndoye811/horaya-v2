@@ -7,11 +7,11 @@ import {
   type FieldDefinition,
 } from "./model";
 
-const fieldKeySchema = z
+export const fieldKeySchema = z
   .string()
   .regex(/^[a-z][a-z0-9_]{0,39}$/, "Clé en minuscules, chiffres et _");
 
-const fieldShape = {
+export const fieldShape = {
   key: fieldKeySchema,
   label: z.string().trim().min(1, "Libellé requis").max(200),
   type: z.enum(FIELD_TYPES),

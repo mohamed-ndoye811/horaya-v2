@@ -1,5 +1,6 @@
 import type { EventTypeField } from "../fields/model";
 import type { EventModules } from "../modules/registry";
+import type { Rule } from "../rules/model";
 import type { Event, EventSeries, EventType } from "./model";
 
 export type NewEventType = Omit<EventType, "id" | "archivedAt">;
@@ -63,7 +64,7 @@ export interface EventRepository {
   /** Le membre fait-il partie de l'espace (module Intervenant) ? */
   memberBelongs(organizationId: string, memberId: string): Promise<boolean>;
   /**
-   * « Appliquer aussi aux événements à venir » : remplace les champs et les modules des
+   * « Appliquer aussi aux événements à venir » : remplace les champs, modules et règles des
    * événements du type qui n'ont pas commencé, ne sont pas annulés et n'ont aucune réservation.
    * Chaque événement garde son acompte (lié à son mode de paiement) ; `priceCents` : prix du
    * tarif par défaut du type, repris par les événements payants. Renvoie leur nombre.
@@ -71,7 +72,12 @@ export interface EventRepository {
   applyTypeConfig(
     organizationId: string,
     eventTypeId: string,
-    config: { fields?: EventTypeField[]; modules?: EventModules; priceCents?: number },
+    config: {
+      fields?: EventTypeField[];
+      modules?: EventModules;
+      priceCents?: number;
+      rules?: Rule[];
+    },
     now: Date,
   ): Promise<number>;
 }

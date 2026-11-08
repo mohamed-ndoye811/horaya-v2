@@ -5,6 +5,7 @@ import type { EventModules } from "../modules/registry";
 import { eventPlace, restrictEquipment, staffAllowed } from "../modules/resources";
 import { minimumState, withModuleFields } from "../modules/rules";
 import { recreditPassForBooking } from "../passes/use-cases";
+import { assertRulesFit } from "../rules/engine";
 import { type Actor, actorRef, assertMemberCan } from "../shared/actor";
 import { NotFoundError, ValidationError } from "../shared/errors";
 import { toZonedParts } from "../shared/time";
@@ -79,6 +80,7 @@ export async function createEventType(
 
   const fields = withModuleFields(data.fields, data.modules);
   const pricing = data.modules.pricing;
+  assertRulesFit(data.rules, fields);
 
   return deps.uow.run(async (repositories) => {
     await assertEquipmentTypesExist(repositories, actor.organizationId, data.modules);
@@ -130,16 +132,20 @@ export async function updateEventType(
     // Avec « Tarifs et options », le prix par défaut est celui du tarif par défaut.
     const pricing = (patch.modules ?? existing.modules).pricing;
     if (pricing) patch.defaultPriceCents = defaultRate(pricing).priceCents;
+    if (patch.fields || patch.rules) {
+      assertRulesFit(patch.rules ?? existing.rules, patch.fields ?? existing.fields);
+    }
     const updated = await repositories.eventTypes.update(actor.organizationId, eventTypeId, patch);
     // Les événements gardent leur version du type ; les passés et ceux qui ont des inscrits, toujours.
     const appliedTo =
-      applyToUpcoming && (patch.fields || patch.modules)
+      applyToUpcoming && (patch.fields || patch.modules || patch.rules)
         ? await repositories.events.applyTypeConfig(
             actor.organizationId,
             eventTypeId,
             {
               fields: updated.fields,
               modules: updated.modules,
+              rules: updated.rules,
               ...(updated.modules.pricing && {
                 priceCents: defaultRate(updated.modules.pricing).priceCents,
               }),
@@ -315,6 +321,7 @@ export async function createEvent(
         requiresApproval: requiresApproval ?? Boolean(eventType.modules.approval),
         fields: eventType.fields,
         modules,
+        rules: eventType.rules,
         fieldValues,
       });
       await repositories.activity.record({
@@ -466,7 +473,7 @@ export async function setEventCover(
  * le matériel est libéré, les séances des cartes sont toujours rendues, chaque inscrit est
  * prévenu par l'e-mail d'annulation (journal `booking.cancelled`).
  */
-async function cancelLockedEvent(
+export async function cancelLockedEvent(
   repositories: Repositories,
   actor: Actor,
   locked: Event,

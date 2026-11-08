@@ -16,6 +16,7 @@ import {
 } from "../modules/rules";
 import { recreditPassForBooking } from "../passes/use-cases";
 import { paidCents } from "../payments/rules";
+import { checkSubmissionRules, recordRuleRuns, runBookingRules } from "../rules/use-cases";
 import { type Actor, actorRef, assertMemberCan } from "../shared/actor";
 import { ConflictError, ForbiddenError, NotFoundError, ValidationError } from "../shared/errors";
 import { generateToken, hashToken } from "../shared/tokens";
@@ -167,6 +168,8 @@ export async function insertEventBooking(
     enrollmentId?: string;
     /** Rattrapage d'une absence : confirmé d'office, sans paiement ni question. */
     makeupForBookingId?: string;
+    /** Séances 2 et suivantes d'une inscription à la série : les règles n'envoient rien de plus. */
+    quietRules?: boolean;
   },
 ): Promise<Booking> {
   if (event.endsAt <= now) throw new ConflictError("Cet événement est terminé");
@@ -199,13 +202,31 @@ export async function insertEventBooking(
     // L'équipe saisit ce qu'elle sait : les questions requises le sont pour le client.
     { now, enforceRequired: actor.type !== "member" && !makeup },
   );
+  // Règles « Une inscription est envoyée » (lot 36) : questions en plus, refus, validation.
+  // Un rattrapage n'en relève pas : l'inscription d'origine est déjà passée par elles.
+  const rules = makeup
+    ? null
+    : await checkSubmissionRules(repositories, event, {
+        customerId: data.customerId,
+        answers: answered.answers,
+        participants: answered.participants,
+        rawAnswers: data.answers ?? {},
+        now,
+        enrollmentId: data.enrollmentId,
+        enforceRequired: actor.type !== "member",
+      });
   // Conditions d'accès (module) : contrôlées pour le client, l'équipe garde la main.
   const issues = [
     ...answered.issues,
+    ...(rules?.issues ?? []),
     ...(actor.type === "member" ? [] : ageIssues(event.modules.access, answered.participants)),
   ];
   if (issues.length > 0) {
     throw new ValidationError("Vérifie les réponses en rouge.", issues);
+  }
+  // Un refus par règle vaut pour le client ; l'équipe garde la main (comme pour l'accès).
+  if (rules?.outcome.refusal && actor.type !== "member") {
+    throw new ConflictError(rules.outcome.refusal);
   }
   const requiredTags = event.modules.access?.tags;
   if (actor.type === "customer" && requiredTags?.length) {
@@ -222,7 +243,10 @@ export async function insertEventBooking(
     seatsHeld: await repositories.bookings.seatsHeld(event.id),
     seatsRequested: data.seats,
     // Une réservation saisie par l'équipe vaut validation ; l'inscription à la série aussi.
-    requiresApproval: !enrolled && actor.type !== "member" && event.requiresApproval,
+    requiresApproval:
+      !enrolled &&
+      actor.type !== "member" &&
+      (event.requiresApproval || Boolean(rules?.outcome.approval)),
     waitlistEnabled: !enrolled && Boolean(event.modules.waitlist),
   });
 
@@ -247,7 +271,7 @@ export async function insertEventBooking(
       enrollmentId: data.enrollmentId ?? null,
       makeupForBookingId: data.makeupForBookingId ?? null,
       customerMessage: data.customerMessage,
-      answers: answered.answers,
+      answers: { ...answered.answers, ...rules?.answers },
       source: SOURCE_BY_ACTOR[actor.type],
       confirmedAt: status === "confirmed" ? now : null,
       manageTokenHash: data.manageTokenHash,
@@ -279,6 +303,22 @@ export async function insertEventBooking(
       seats: data.seats,
       ...(makeup && { absentBookingId: data.makeupForBookingId }),
     },
+  });
+  // Journal des règles : seulement ce qui a vraiment agi (l'équipe n'est ni refusée ni mise
+  // en validation ; une séance d'inscription à la série est confirmée d'office).
+  const skipped = new Set<string>([
+    ...(actor.type === "member" ? ["refuse"] : []),
+    ...(status !== "pending" || enrolled ? ["require_approval"] : []),
+  ]);
+  await recordRuleRuns(repositories, actor, {
+    event,
+    bookingId: created.id,
+    trigger: "booking_submitted",
+    runs: (rules?.outcome.matched ?? []).map((rule) => ({
+      rule,
+      actions: rule.actions.filter((action) => !skipped.has(action.kind)),
+    })),
+    notify: !data.quietRules,
   });
   return created;
 }
@@ -368,6 +408,7 @@ export async function refuseBooking(
     );
     await restoreGiftCardForBooking(repositories, booking, "organizer", null, deps.clock.now());
     if (event && SEAT_HOLDING_STATUSES.has(booking.status)) {
+      await runBookingRules(repositories, actor, "seat_released", event, booking, deps.clock.now());
       await promoteWaitlist(repositories, event, actor, deps.clock.now());
     }
     return refused;
@@ -471,7 +512,9 @@ async function cancelLocked(
     event?.startsAt ?? booking.rentalStartsAt,
     now,
   );
+  if (event) await runBookingRules(repositories, actor, "booking_cancelled", event, booking, now);
   if (event && SEAT_HOLDING_STATUSES.has(booking.status)) {
+    await runBookingRules(repositories, actor, "seat_released", event, booking, now);
     await promoteWaitlist(repositories, event, actor, now);
   }
   return cancelled;
