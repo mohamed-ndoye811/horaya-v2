@@ -1,5 +1,6 @@
 import type { EventTypeField } from "../fields/model";
-import type { BookingNoun, BookingRules } from "./model";
+import type { EventModules } from "../modules/registry";
+import type { BookingNoun } from "./model";
 
 /** Point de départ d'un nouveau type (maquette 9.3) : constantes, pas de table. */
 export interface EventTypeTemplate {
@@ -9,10 +10,9 @@ export interface EventTypeTemplate {
   color: string;
   defaultDurationMinutes: number | null;
   defaultPriceCents: number | null;
-  defaultCapacity: number | null;
-  requiresApproval: boolean;
   bookingNoun: BookingNoun;
-  bookingRules: BookingRules;
+  /** Modules du modèle (lot 34). */
+  modules: EventModules;
   fields: EventTypeField[];
 }
 
@@ -55,10 +55,29 @@ export const EVENT_TYPE_TEMPLATES: readonly EventTypeTemplate[] = [
     color: "#A9663F",
     defaultDurationMinutes: 120,
     defaultPriceCents: 4500,
-    defaultCapacity: 12,
-    requiresApproval: false,
     bookingNoun: "inscription",
-    bookingRules: { waitlistEnabled: true, minAdvanceHours: 24 },
+    modules: {
+      places: { capacity: 12, minimum: { seats: 4, daysBefore: 2 } },
+      waitlist: {},
+      opening: { closesHoursBefore: 24 },
+      cancellation: { freeHours: 48, lateRefundPercent: 0 },
+      location: { mode: "venue" },
+      staff: { showOnPublicPage: true },
+      pricing: {
+        rates: [
+          { id: "plein", name: "Plein", priceCents: 4500 },
+          {
+            id: "reduit",
+            name: "Réduit",
+            priceCents: 3500,
+            description: "étudiant, demandeur d'emploi",
+          },
+        ],
+        options: [
+          { id: "cuisson", name: "Cuisson et émaillage", priceCents: 800, per: "participant" },
+        ],
+      },
+    },
     fields: [
       level,
       bring,
@@ -84,14 +103,38 @@ export const EVENT_TYPE_TEMPLATES: readonly EventTypeTemplate[] = [
   {
     id: "stage",
     name: "Stage",
-    description: "Plusieurs jours, une seule inscription.",
+    description: "Plusieurs séances, une seule inscription.",
     color: "#528D74",
     defaultDurationMinutes: 1440,
     defaultPriceCents: 25000,
-    defaultCapacity: 8,
-    requiresApproval: false,
     bookingNoun: "inscription",
-    bookingRules: { minAdvanceHours: 168 },
+    modules: {
+      places: { capacity: 8, minimum: { seats: 4, daysBefore: 7 } },
+      opening: { closesHoursBefore: 168 },
+      sessions: { singleSession: false, sameEquipment: true },
+      cancellation: { freeHours: 168, lateRefundPercent: 50 },
+      pricing: {
+        rates: [
+          { id: "plein", name: "Plein", priceCents: 25000 },
+          {
+            id: "reduit",
+            name: "Réduit",
+            priceCents: 21000,
+            description: "étudiant, demandeur d'emploi",
+          },
+        ],
+        options: [
+          {
+            id: "dejeuner",
+            name: "Déjeuner sur place",
+            priceCents: 1500,
+            per: "participant",
+            max: 3,
+          },
+        ],
+      },
+      deposit: { percent: 30, balance: "on_site" },
+    },
     fields: [
       level,
       { key: "programme", label: "Programme", type: "long_text", scope: "event", required: false },
@@ -113,23 +156,61 @@ export const EVENT_TYPE_TEMPLATES: readonly EventTypeTemplate[] = [
     color: "#3165B8",
     defaultDurationMinutes: 120,
     defaultPriceCents: 3000,
-    defaultCapacity: 10,
-    requiresApproval: false,
     bookingNoun: "inscription",
-    bookingRules: { waitlistEnabled: true },
+    modules: {
+      places: { capacity: 10 },
+      waitlist: {},
+      series: { dropInAllowed: true, prorata: true, makeupAllowed: true },
+      pricing: {
+        rates: [
+          { id: "plein", name: "Plein", priceCents: 3000 },
+          {
+            id: "reduit",
+            name: "Réduit",
+            priceCents: 2500,
+            description: "étudiant, moins de 18 ans",
+          },
+        ],
+      },
+    },
     fields: [level, firstName, rules],
   },
   {
     id: "rendez-vous",
     name: "Rendez-vous",
-    description: "Cours particulier, sur une heure fixée.",
+    description: "Cours particulier : l'élève choisit son créneau et sa durée.",
     color: "#CF879C",
     defaultDurationMinutes: 60,
-    defaultPriceCents: 6000,
-    defaultCapacity: 1,
-    requiresApproval: false,
+    defaultPriceCents: 4500,
     bookingNoun: "reservation",
-    bookingRules: { maxSeatsPerBooking: 1, minAdvanceHours: 24 },
+    modules: {
+      places: { maxPerBooking: 1 },
+      cancellation: { freeHours: 24, lateRefundPercent: 0 },
+      slots: {
+        weekly: [
+          [],
+          [{ start: "14:00", end: "18:00" }],
+          [],
+          [{ start: "14:00", end: "18:00" }],
+          [],
+          [{ start: "10:00", end: "13:00" }],
+          [],
+        ],
+        intervalMinutes: 30,
+        breakMinutes: 15,
+        seatsPerSlot: 1,
+        opensDaysBefore: 30,
+        closesHoursBefore: 24,
+        chooseStaff: true,
+      },
+      duration: {
+        options: [
+          { id: "1h", label: "1 h", minutes: 60, priceCents: 4500, description: "Découverte" },
+          { id: "2h", label: "2 h", minutes: 120, priceCents: 8000 },
+        ],
+        defaultId: "1h",
+      },
+    },
     fields: [
       {
         key: "objectif",
@@ -147,10 +228,27 @@ export const EVENT_TYPE_TEMPLATES: readonly EventTypeTemplate[] = [
     color: "#D8BC66",
     defaultDurationMinutes: 240,
     defaultPriceCents: 4000,
-    defaultCapacity: 1,
-    requiresApproval: true,
     bookingNoun: "location",
-    bookingRules: {},
+    modules: {
+      places: { capacity: 1 },
+      approval: {},
+      location: { mode: "venue" },
+      duration: {
+        options: [
+          { id: "2h", label: "2 h", minutes: 120, priceCents: 2500 },
+          { id: "demi-journee", label: "Demi-journée", minutes: 240, priceCents: 4000 },
+          { id: "journee", label: "Journée", minutes: 480, priceCents: 7000 },
+        ],
+        defaultId: "demi-journee",
+      },
+      pricing: {
+        rates: [{ id: "demi-journee", name: "Demi-journée", priceCents: 4000 }],
+        options: [
+          { id: "terre", name: "Pain de terre (10 kg)", priceCents: 1800, per: "booking", max: 5 },
+        ],
+      },
+      deposit: { amountCents: 2000, balance: "on_site" },
+    },
     fields: [
       {
         key: "usage",
@@ -168,11 +266,23 @@ export const EVENT_TYPE_TEMPLATES: readonly EventTypeTemplate[] = [
     description: "Anniversaire, team building, sur demande.",
     color: "#66537C",
     defaultDurationMinutes: 180,
-    defaultPriceCents: null,
-    defaultCapacity: null,
-    requiresApproval: true,
+    defaultPriceCents: 3500,
     bookingNoun: "demande",
-    bookingRules: {},
+    modules: {
+      approval: {},
+      pricing: {
+        rates: [
+          { id: "adulte", name: "Adulte", priceCents: 3500 },
+          { id: "enfant", name: "Enfant", priceCents: 2500, description: "moins de 12 ans" },
+        ],
+        options: [
+          { id: "gouter", name: "Goûter d'anniversaire", priceCents: 4000, per: "booking" },
+          { id: "cuisson", name: "Cuisson des pièces", priceCents: 600, per: "participant" },
+        ],
+      },
+      deposit: { percent: 30, balance: "later" },
+      payment_methods: { passes: false },
+    },
     fields: [
       {
         key: "occasion",
@@ -205,10 +315,8 @@ export const EVENT_TYPE_TEMPLATES: readonly EventTypeTemplate[] = [
     color: "#111111",
     defaultDurationMinutes: 180,
     defaultPriceCents: null,
-    defaultCapacity: 60,
-    requiresApproval: false,
     bookingNoun: "inscription",
-    bookingRules: { waitlistEnabled: true },
+    modules: { places: { capacity: 60 }, waitlist: {} },
     fields: [
       { key: "programme", label: "Programme", type: "long_text", scope: "event", required: false },
     ],
@@ -220,10 +328,8 @@ export const EVENT_TYPE_TEMPLATES: readonly EventTypeTemplate[] = [
     color: "#528D74",
     defaultDurationMinutes: null,
     defaultPriceCents: null,
-    defaultCapacity: null,
-    requiresApproval: false,
     bookingNoun: "reservation",
-    bookingRules: {},
+    modules: {},
     fields: [],
   },
 ];

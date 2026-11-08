@@ -1,8 +1,13 @@
 import {
+  type DepositModule,
+  type DurationOption,
+  defaultRate,
+  durationLabel,
   type EventTypeField,
   type FieldValues,
   fieldsOfScope,
   generateOccurrences,
+  type PricingModule,
 } from "@horaya/core";
 import { type ReactNode, useMemo, useState } from "react";
 import { FieldInputs } from "@/components/app/field-inputs";
@@ -29,10 +34,11 @@ import { saveEvent } from "@/functions/events";
 import { cn } from "@/lib/cn";
 import { parseCivilDate } from "@/lib/dates";
 import { formatHour, formatWeekdayShort, plural } from "@/lib/format";
-import { parseEuroToCents } from "@/lib/money";
+import { centsToInput, parseEuroToCents } from "@/lib/money";
 import { useFormAction } from "@/lib/use-form-action";
 import { useInvalidMessage } from "@/lib/use-invalid-message";
 import type { FormState } from "@/server/form-state";
+import { type SessionDraft, StageSessions } from "./stage-sessions";
 
 export interface EventTypeOption {
   id: string;
@@ -44,7 +50,55 @@ export interface EventTypeOption {
   defaultPriceCents: number | null;
   defaultCapacity: number | null;
   requiresApproval: boolean;
+  /** Module « Conditions d'accès » sur invitation. */
+  inviteOnly: boolean;
+  /** Tarifs et options du type (à la modification : ceux de l'événement). */
+  pricing: PricingModule | null;
+  /** Acompte de départ du type. */
+  deposit: DepositModule | null;
+  /** Module Intervenant : membres proposés (liste vide : toute l'équipe), null sans le module. */
+  staff: { memberIds: string[] } | null;
+  /** Module Matériel avancé : un besoin par type de matériel visé. */
+  needs: Array<{ id: string; itemTypeId: string }>;
+  /** Module Lieu. */
+  locationMode: "venue" | "online" | "client" | null;
+  /** Module « Durée au choix » : les durées du type (l'événement en prend une). */
+  durations: DurationOption[] | null;
+  defaultDurationId: string | null;
+  /** Module « Plusieurs séances » : réglages de départ d'un stage. */
+  stage: { singleSession: boolean; sameEquipment: boolean } | null;
+  /** Module Créneaux : les événements naissent des réservations. */
+  slots: boolean;
 }
+
+/** Équipe et exemplaires de l'espace, pour l'intervenant et les exemplaires proposés. */
+export interface ResourceChoices {
+  members: Array<{ id: string; name: string }>;
+  itemTypes: Record<string, { name: string; units: Array<{ id: string; label: string }> }>;
+}
+
+/** Saisie de l'acompte à partir du module. */
+export function depositInputs(deposit: DepositModule | null | undefined) {
+  return {
+    depositKind: deposit?.amountCents !== undefined ? "fixed" : "percent",
+    depositValue:
+      deposit?.amountCents !== undefined
+        ? centsToInput(deposit.amountCents)
+        : deposit?.percent !== undefined
+          ? String(deposit.percent)
+          : "",
+    depositBalance: deposit?.balance ?? "on_site",
+  };
+}
+
+/** Prix saisis des tarifs et options, par identifiant. */
+export const pricingInputs = (pricing: PricingModule | null | undefined) =>
+  Object.fromEntries(
+    [...(pricing?.rates ?? []), ...(pricing?.options ?? [])].map((entry) => [
+      entry.id,
+      centsToInput(entry.priceCents),
+    ]),
+  );
 
 export interface EventFormValues {
   title: string;
@@ -55,23 +109,39 @@ export interface EventFormValues {
   endDate: string;
   endTime: string;
   locationName: string;
+  locationAddress: string;
+  /** Module Intervenant : membre choisi (vide : aucun). */
+  staffMemberId: string;
+  /** Module Matériel avancé : exemplaires proposés par besoin (liste vide : tous). */
+  equipmentUnits: Record<string, string[]>;
   onlineUrl: string;
   capacity: string;
   price: string;
   paymentMode: string;
-  depositPercent: string;
+  /** Acompte : en pourcentage ou montant fixe par place, le reste sur place ou plus tard. */
+  depositKind: string;
+  depositValue: string;
+  depositBalance: string;
+  /** Prix des tarifs et options du type (module « Tarifs et options »). */
+  prices: Record<string, string>;
   /** Lien de paiement propre à l'événement (sinon celui des paramètres). */
   paymentLinkUrl: string;
   requiresApproval: boolean;
   visibility: string;
   /** Points forts séparés par des virgules (« Déjeuner inclus, Accessible PMR »). */
   highlights: string;
+  /** Module « Durée au choix » : la durée de l'événement. */
+  durationId: string;
+  /** Module « Plusieurs séances » : les séances du stage et ses deux réglages. */
+  sessions: SessionDraft[];
+  singleSession: boolean;
+  sameEquipment: boolean;
 }
 
 const PAYMENT_OPTIONS = [
   { value: "free", label: "Gratuit", description: "Inscription seule" },
   { value: "online", label: "Paiement en ligne", description: "Lien de paiement" },
-  { value: "deposit", label: "Acompte", description: "Le reste sur place" },
+  { value: "deposit", label: "Acompte", description: "Une part à l'inscription" },
   { value: "on_site", label: "Sur place", description: "Espèces ou carte" },
 ];
 
@@ -106,7 +176,9 @@ export function EventForm({
   formId,
   actions,
   fieldValues = {},
+  resources,
 }: {
+  resources: ResourceChoices;
   eventId: string | null;
   types: EventTypeOption[];
   initial: EventFormValues;
@@ -128,16 +200,33 @@ export function EventForm({
   const described = fieldsOfScope(type?.fields ?? [], "event");
   const set = (patch: Partial<EventFormValues>) =>
     setValues((current) => ({ ...current, ...patch }));
+  // Exemplaires proposés : seulement les besoins du type choisi, une liste vide = tous.
+  const restrictions = Object.fromEntries(
+    (type?.needs ?? []).map((need) => [need.id, values.equipmentUnits[need.id] ?? []]),
+  );
 
   function changeType(id: string) {
     const next = types.find((entry) => entry.id === id);
     if (!next || eventId) return set({ eventTypeId: id });
-    const end = next.defaultDurationMinutes
-      ? shift(values.startDate, values.startTime, next.defaultDurationMinutes)
-      : null;
+    const duration =
+      next.durations?.find((option) => option.id === next.defaultDurationId) ?? next.durations?.[0];
+    const minutes = duration?.minutes ?? next.defaultDurationMinutes;
+    const end = minutes ? shift(values.startDate, values.startTime, minutes) : null;
     set({
+      durationId: duration?.id ?? "",
+      // Stage : une première séance à la date choisie, à compléter.
+      ...(next.stage
+        ? {
+            singleSession: next.stage.singleSession,
+            sameEquipment: next.stage.sameEquipment,
+            sessions: values.sessions.length
+              ? values.sessions
+              : [{ date: values.startDate, start: "10:00", end: "17:00", topic: "" }],
+          }
+        : {}),
       eventTypeId: id,
       requiresApproval: next.requiresApproval,
+      ...(next.inviteOnly ? { visibility: "invite_only" } : {}),
       ...(values.capacity === "" && next.defaultCapacity
         ? { capacity: String(next.defaultCapacity) }
         : {}),
@@ -147,6 +236,10 @@ export function EventForm({
             paymentMode: values.paymentMode === "free" ? "on_site" : values.paymentMode,
           }
         : {}),
+      // Tarifs du type, et son acompte s'il en a un.
+      prices: pricingInputs(next.pricing),
+      ...(next.pricing && values.paymentMode === "free" ? { paymentMode: "on_site" } : {}),
+      ...(next.deposit ? { paymentMode: "deposit", ...depositInputs(next.deposit) } : {}),
       ...(end ? { endDate: end.date, endTime: end.time } : {}),
     });
   }
@@ -178,7 +271,17 @@ export function EventForm({
     }
   }, [recurring, start, frequency, count]);
 
-  const priceCents = values.paymentMode === "free" ? 0 : parseEuroToCents(values.price);
+  const pricing = type?.pricing ?? null;
+  // Stage : les séances remplacent la date unique et la répétition (à la création).
+  const stage = !eventId && type?.stage ? type.stage : null;
+  const durations = !eventId && !stage && !type?.slots ? (type?.durations ?? null) : null;
+  const firstSession = values.sessions[0];
+  const priceCents =
+    values.paymentMode === "free"
+      ? 0
+      : pricing
+        ? parseEuroToCents(values.prices[defaultRate(pricing).id] ?? "")
+        : parseEuroToCents(values.price);
   const checklist = [
     { label: "Informations", done: values.title.trim().length >= 2 && Boolean(type) },
     {
@@ -190,8 +293,10 @@ export function EventForm({
     {
       label: "Places & paiement",
       done:
-        (values.paymentMode === "free" || priceCents > 0) &&
-        (values.paymentMode !== "deposit" || values.depositPercent !== ""),
+        (values.paymentMode === "free" ||
+          priceCents > 0 ||
+          Object.values(values.prices).some((price) => parseEuroToCents(price) > 0)) &&
+        (values.paymentMode !== "deposit" || values.depositValue !== ""),
     },
   ];
   const ready = checklist.filter((item) => item.done).length;
@@ -309,115 +414,177 @@ export function EventForm({
           <div className="xl:hidden">{visibilityField("visibility")}</div>
         </FormSection>
 
-        <FormSection number={2} title="Date & lieu">
-          <div className="grid gap-4 sm:grid-cols-[1fr_128px] lg:grid-cols-[1fr_128px_1fr_128px]">
-            <Field label="Début" required error={errors.startsAt}>
-              {(field) => (
-                <AffixInput
-                  {...field}
-                  type="date"
-                  name="startDate"
-                  required
-                  value={values.startDate}
-                  onChange={(event) => set({ startDate: event.target.value })}
-                  leading={<CalendarIcon size={16} />}
-                />
-              )}
-            </Field>
-            <Field label="Heure">
-              {(field) => (
-                <AffixInput
-                  {...field}
-                  type="time"
-                  name="startTime"
-                  required
-                  value={values.startTime}
-                  onChange={(event) => set({ startTime: event.target.value })}
-                  mono
-                />
-              )}
-            </Field>
-            <Field label="Fin" required error={errors.endsAt}>
-              {(field) => (
-                <AffixInput
-                  {...field}
-                  type="date"
-                  name="endDate"
-                  required
-                  value={values.endDate}
-                  onChange={(event) => set({ endDate: event.target.value })}
-                  leading={<CalendarIcon size={16} />}
-                />
-              )}
-            </Field>
-            <Field label="Heure">
-              {(field) => (
-                <AffixInput
-                  {...field}
-                  type="time"
-                  name="endTime"
-                  required
-                  value={values.endTime}
-                  onChange={(event) => set({ endTime: event.target.value })}
-                  mono
-                />
-              )}
-            </Field>
-          </div>
-
-          {!eventId && (
-            <div className="flex flex-wrap items-center justify-between gap-4 rounded-xl border border-line-soft bg-field px-4 py-4">
-              <Switch
-                name="recurring"
-                checked={recurring}
-                onChange={(event) => setRecurring(event.target.checked)}
-                label="Événement récurrent"
-                description={
-                  recurring
-                    ? nextOccurrence
-                      ? `Prochaine occurrence : ${formatWeekdayShort(nextOccurrence, "UTC")} ${nextOccurrence.getUTCDate()} ${nextOccurrence.toLocaleDateString("fr-FR", { month: "long", timeZone: "UTC" })}`
-                      : "Choisis une date de début"
-                    : "Une seule date"
-                }
+        <FormSection
+          number={2}
+          title={stage ? "Les séances" : "Date & lieu"}
+          description={stage ? "Une seule inscription pour toutes les dates" : undefined}
+        >
+          {stage ? (
+            <>
+              {/* Repères de l'événement : la première séance (le serveur lit les séances). */}
+              <input type="hidden" name="startDate" value={firstSession?.date ?? ""} />
+              <input type="hidden" name="startTime" value={firstSession?.start ?? ""} />
+              <input type="hidden" name="endDate" value={firstSession?.date ?? ""} />
+              <input type="hidden" name="endTime" value={firstSession?.end ?? ""} />
+              <StageSessions
+                sessions={values.sessions}
+                onChange={(sessions) => set({ sessions })}
+                pricing={pricing}
+                prices={values.prices}
+                onPricesChange={(prices) => set({ prices })}
+                price={values.price}
+                onPriceChange={(price) => set({ price })}
+                paid={values.paymentMode !== "free"}
+                singleSession={values.singleSession}
+                sameEquipment={values.sameEquipment}
+                onSettingsChange={(patch) => set(patch)}
+                hasEquipment={(type?.needs.length ?? 0) > 0}
+                error={errors.sessions ?? errors.prices}
               />
-              <Collapse open={recurring}>
-                <div className="flex flex-wrap items-center gap-3">
-                  <input type="hidden" name="frequency" value={frequency.split(":")[0]} />
-                  <input type="hidden" name="interval" value={frequency.split(":")[1]} />
-                  <Select
-                    variant="compact"
-                    aria-label="Fréquence"
-                    value={frequency}
-                    onChange={(event) => setFrequency(event.target.value)}
-                    className="w-52"
-                  >
-                    {FREQUENCIES.map((option) => (
-                      <option key={option.value} value={option.value}>
-                        {option.label}
-                      </option>
-                    ))}
-                  </Select>
-                  <label
-                    className="flex items-center gap-2 text-sm font-semibold text-ink"
-                    {...countInvalid.handlers}
-                  >
-                    <input
-                      type="number"
-                      name="count"
-                      min={2}
-                      max={104}
-                      value={count}
-                      onChange={(event) => setCount(event.target.value)}
-                      className={cn(inputClasses("sm"), "w-20 font-mono")}
+            </>
+          ) : (
+            <>
+              {durations && (
+                <Field label="Durée" error={errors.durationId}>
+                  {(field) => (
+                    <Select
+                      {...field}
+                      name="durationId"
+                      value={values.durationId}
+                      onChange={(event) => {
+                        const option = durations.find((entry) => entry.id === event.target.value);
+                        const end = option
+                          ? shift(values.startDate, values.startTime, option.minutes)
+                          : null;
+                        set({
+                          durationId: event.target.value,
+                          ...(end ? { endDate: end.date, endTime: end.time } : {}),
+                        });
+                      }}
+                      className="sm:max-w-[360px]"
+                    >
+                      {durations.map((option) => (
+                        <option key={option.id} value={option.id}>
+                          {option.label === durationLabel(option.minutes)
+                            ? option.label
+                            : `${option.label} (${durationLabel(option.minutes)})`}{" "}
+                          · {(option.priceCents / 100).toLocaleString("fr-FR")} €
+                        </option>
+                      ))}
+                    </Select>
+                  )}
+                </Field>
+              )}
+              <div className="grid gap-4 sm:grid-cols-[1fr_128px] lg:grid-cols-[1fr_128px_1fr_128px]">
+                <Field label="Début" required error={errors.startsAt}>
+                  {(field) => (
+                    <AffixInput
+                      {...field}
+                      type="date"
+                      name="startDate"
+                      required
+                      value={values.startDate}
+                      onChange={(event) => set({ startDate: event.target.value })}
+                      leading={<CalendarIcon size={16} />}
                     />
-                    fois
-                  </label>
+                  )}
+                </Field>
+                <Field label="Heure">
+                  {(field) => (
+                    <AffixInput
+                      {...field}
+                      type="time"
+                      name="startTime"
+                      required
+                      value={values.startTime}
+                      onChange={(event) => set({ startTime: event.target.value })}
+                      mono
+                    />
+                  )}
+                </Field>
+                <Field label="Fin" required error={errors.endsAt}>
+                  {(field) => (
+                    <AffixInput
+                      {...field}
+                      type="date"
+                      name="endDate"
+                      required
+                      value={values.endDate}
+                      onChange={(event) => set({ endDate: event.target.value })}
+                      leading={<CalendarIcon size={16} />}
+                    />
+                  )}
+                </Field>
+                <Field label="Heure">
+                  {(field) => (
+                    <AffixInput
+                      {...field}
+                      type="time"
+                      name="endTime"
+                      required
+                      value={values.endTime}
+                      onChange={(event) => set({ endTime: event.target.value })}
+                      mono
+                    />
+                  )}
+                </Field>
+              </div>
+
+              {!eventId && (
+                <div className="flex flex-wrap items-center justify-between gap-4 rounded-xl border border-line-soft bg-field px-4 py-4">
+                  <Switch
+                    name="recurring"
+                    checked={recurring}
+                    onChange={(event) => setRecurring(event.target.checked)}
+                    label="Événement récurrent"
+                    description={
+                      recurring
+                        ? nextOccurrence
+                          ? `Prochaine occurrence : ${formatWeekdayShort(nextOccurrence, "UTC")} ${nextOccurrence.getUTCDate()} ${nextOccurrence.toLocaleDateString("fr-FR", { month: "long", timeZone: "UTC" })}`
+                          : "Choisis une date de début"
+                        : "Une seule date"
+                    }
+                  />
+                  <Collapse open={recurring}>
+                    <div className="flex flex-wrap items-center gap-3">
+                      <input type="hidden" name="frequency" value={frequency.split(":")[0]} />
+                      <input type="hidden" name="interval" value={frequency.split(":")[1]} />
+                      <Select
+                        variant="compact"
+                        aria-label="Fréquence"
+                        value={frequency}
+                        onChange={(event) => setFrequency(event.target.value)}
+                        className="w-52"
+                      >
+                        {FREQUENCIES.map((option) => (
+                          <option key={option.value} value={option.value}>
+                            {option.label}
+                          </option>
+                        ))}
+                      </Select>
+                      <label
+                        className="flex items-center gap-2 text-sm font-semibold text-ink"
+                        {...countInvalid.handlers}
+                      >
+                        <input
+                          type="number"
+                          name="count"
+                          min={2}
+                          max={104}
+                          value={count}
+                          onChange={(event) => setCount(event.target.value)}
+                          className={cn(inputClasses("sm"), "w-20 font-mono")}
+                        />
+                        fois
+                      </label>
+                    </div>
+                  </Collapse>
                 </div>
-              </Collapse>
-            </div>
-          )}
-          {(countInvalid.message ?? errors.recurrence) && (
-            <FieldError>{countInvalid.message ?? errors.recurrence}</FieldError>
+              )}
+              {(countInvalid.message ?? errors.recurrence) && (
+                <FieldError>{countInvalid.message ?? errors.recurrence}</FieldError>
+              )}
+            </>
           )}
 
           <div className="grid gap-4 sm:grid-cols-2">
@@ -434,6 +601,18 @@ export function EventForm({
                 />
               )}
             </Field>
+            <Field label="Adresse" error={errors.locationAddress}>
+              {(field) => (
+                <AffixInput
+                  {...field}
+                  name="locationAddress"
+                  maxLength={300}
+                  value={values.locationAddress}
+                  onChange={(event) => set({ locationAddress: event.target.value })}
+                  placeholder="Adresse de l'espace par défaut"
+                />
+              )}
+            </Field>
             <Field label="Lien de visio (si en ligne)" error={errors.onlineUrl}>
               {(field) => (
                 <AffixInput
@@ -447,6 +626,70 @@ export function EventForm({
               )}
             </Field>
           </div>
+          <Collapse open={Boolean(type?.staff)}>
+            <Field label="Intervenant" error={errors.staffMemberId}>
+              {(field) => (
+                <Select
+                  {...field}
+                  name="staffMemberId"
+                  value={values.staffMemberId}
+                  onChange={(event) => set({ staffMemberId: event.target.value })}
+                >
+                  <option value="">Pas encore choisi</option>
+                  {resources.members
+                    .filter(
+                      (entry) =>
+                        !type?.staff?.memberIds.length || type.staff.memberIds.includes(entry.id),
+                    )
+                    .map((entry) => (
+                      <option key={entry.id} value={entry.id}>
+                        {entry.name}
+                      </option>
+                    ))}
+                </Select>
+              )}
+            </Field>
+          </Collapse>
+          {(type?.needs.length ?? 0) > 0 && (
+            <>
+              <input type="hidden" name="equipmentUnits" value={JSON.stringify(restrictions)} />
+              {type?.needs.map((need) => {
+                const category = resources.itemTypes[need.itemTypeId];
+                if (!category) return null;
+                const restricted = values.equipmentUnits[need.id] ?? [];
+                const checked =
+                  restricted.length === 0 ? category.units.map((u) => u.id) : restricted;
+                const toggle = (unitId: string) => {
+                  const next = checked.includes(unitId)
+                    ? checked.filter((entry) => entry !== unitId)
+                    : [...checked, unitId];
+                  set({
+                    equipmentUnits: {
+                      ...values.equipmentUnits,
+                      [need.id]: next.length === category.units.length ? [] : next,
+                    },
+                  });
+                };
+                return (
+                  <Field key={need.id} label={`${category.name} proposés`} group>
+                    {() => (
+                      <div className="flex flex-wrap gap-x-5 gap-y-2">
+                        {category.units.map((unit) => (
+                          <Checkbox
+                            key={unit.id}
+                            checked={checked.includes(unit.id)}
+                            disabled={checked.length === 1 && checked.includes(unit.id)}
+                            onChange={() => toggle(unit.id)}
+                            label={unit.label}
+                          />
+                        ))}
+                      </div>
+                    )}
+                  </Field>
+                );
+              })}
+            </>
+          )}
         </FormSection>
 
         <FormSection number={3} title="Places & paiement">
@@ -479,7 +722,7 @@ export function EventForm({
                 />
               )}
             </Field>
-            <Collapse open={values.paymentMode !== "free"}>
+            <Collapse open={values.paymentMode !== "free" && !pricing && !stage && !durations}>
               <Field label="Prix par personne" required error={errors.priceCents}>
                 {(field) => (
                   <AffixInput
@@ -495,24 +738,58 @@ export function EventForm({
                 )}
               </Field>
             </Collapse>
-            <Collapse open={values.paymentMode === "deposit"}>
-              <Field label="Acompte" required error={errors.depositPercent}>
+          </div>
+          <Collapse open={values.paymentMode !== "free" && pricing !== null && !stage}>
+            <PriceInputs
+              pricing={pricing}
+              prices={values.prices}
+              onChange={(prices) => set({ prices })}
+              error={errors.prices}
+            />
+          </Collapse>
+          <Collapse open={values.paymentMode === "deposit"}>
+            <div className="grid gap-4 sm:grid-cols-3">
+              <Field label="Acompte" required error={errors.deposit ?? errors["deposit.percent"]}>
                 {(field) => (
                   <AffixInput
                     {...field}
-                    name="depositPercent"
-                    inputMode="numeric"
-                    value={values.depositPercent}
-                    onChange={(event) =>
-                      set({ depositPercent: event.target.value.replace(/\D/g, "") })
-                    }
-                    suffix="%"
+                    name="depositValue"
+                    inputMode={values.depositKind === "fixed" ? "decimal" : "numeric"}
+                    value={values.depositValue}
+                    onChange={(event) => set({ depositValue: event.target.value })}
+                    suffix={values.depositKind === "fixed" ? "€ par place" : "%"}
                     mono
                   />
                 )}
               </Field>
-            </Collapse>
-          </div>
+              <Field label="Calculé">
+                {(field) => (
+                  <Select
+                    {...field}
+                    name="depositKind"
+                    value={values.depositKind}
+                    onChange={(event) => set({ depositKind: event.target.value, depositValue: "" })}
+                  >
+                    <option value="percent">En pourcentage du total</option>
+                    <option value="fixed">Montant fixe par place</option>
+                  </Select>
+                )}
+              </Field>
+              <Field label="Le reste">
+                {(field) => (
+                  <Select
+                    {...field}
+                    name="depositBalance"
+                    value={values.depositBalance}
+                    onChange={(event) => set({ depositBalance: event.target.value })}
+                  >
+                    <option value="on_site">Sur place</option>
+                    <option value="later">Plus tard, en ligne</option>
+                  </Select>
+                )}
+              </Field>
+            </div>
+          </Collapse>
           <Collapse open={values.paymentMode === "online" || values.paymentMode === "deposit"}>
             <Field
               label="Lien de paiement"
@@ -610,7 +887,7 @@ export function EventForm({
                 values.paymentMode === "free"
                   ? "Gratuit"
                   : priceCents > 0
-                    ? `${values.price} € / pers.`
+                    ? `${centsToInput(priceCents)} € / pers.`
                     : null,
               ]
                 .filter(Boolean)
@@ -665,5 +942,68 @@ export function EventForm({
         </div>
       </aside>
     </form>
+  );
+}
+
+/** Tarifs et options de l'événement : les noms viennent du type, les prix se changent ici. */
+function PriceInputs({
+  pricing,
+  prices,
+  onChange,
+  error,
+}: {
+  pricing: PricingModule | null;
+  prices: Record<string, string>;
+  onChange: (prices: Record<string, string>) => void;
+  error: string | undefined;
+}) {
+  if (!pricing) return null;
+  const rows = [
+    ...pricing.rates.map((rate) => ({
+      id: rate.id,
+      name: rate.name,
+      hint: [
+        rate.description,
+        rate.id === defaultRate(pricing).id && pricing.rates.length > 1 ? "par défaut" : null,
+      ]
+        .filter(Boolean)
+        .join(" · "),
+    })),
+    ...(pricing.options ?? []).map((option) => ({
+      id: option.id,
+      name: `+ ${option.name}`,
+      hint: option.per === "participant" ? "option, par participant" : "option, par inscription",
+    })),
+  ];
+  return (
+    <fieldset className="flex flex-col gap-2">
+      <legend className="pb-2 text-[13px] font-semibold leading-[17px] text-ink">
+        Tarifs et options
+      </legend>
+      {rows.map((row) => (
+        <div key={row.id} className="flex items-center gap-3">
+          <span className="flex min-w-0 grow flex-col">
+            <span className="truncate text-sm font-semibold leading-[18px] text-ink">
+              {row.name}
+            </span>
+            {row.hint && (
+              <span className="truncate text-[13px] leading-[17px] text-ink-muted">{row.hint}</span>
+            )}
+          </span>
+          <div className="w-32 shrink-0">
+            <AffixInput
+              aria-label={`Prix : ${row.name}`}
+              name={`prix.${row.id}`}
+              inputMode="decimal"
+              value={prices[row.id] ?? ""}
+              onChange={(event) => onChange({ ...prices, [row.id]: event.target.value })}
+              suffix="€"
+              mono
+            />
+          </div>
+        </div>
+      ))}
+      {error && <FieldError>{error}</FieldError>}
+    </fieldset>
   );
 }

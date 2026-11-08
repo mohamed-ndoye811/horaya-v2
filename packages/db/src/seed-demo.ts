@@ -6,11 +6,15 @@
  *
  * --reset vide d'abord l'espace (matériel, événements, réservations, clients, historique).
  */
+
+import { randomUUID } from "node:crypto";
+import { createRequire } from "node:module";
 import {
   type Actor,
   addCustomerNote,
   addDays,
   cancelBooking,
+  createCounterBooking,
   createEvent,
   createEventBooking,
   createEventType,
@@ -18,6 +22,7 @@ import {
   createPassPlan,
   createRentalBooking,
   enrollInSeries,
+  findSlots,
   fromZonedParts,
   payBookingWithPass,
   publishEvent,
@@ -166,10 +171,117 @@ await updateTenantSettings(deps, actor, {
   paymentLinkUrl: "https://example.com/paiement-cabinet-vidal",
 });
 
+/** PDF d'une page avec quelques lignes de texte (document joint de démonstration). */
+function demoPdf(lines: string[]): string {
+  const text = lines
+    .map(
+      (line, index) =>
+        `BT /F1 ${index === 0 ? 16 : 11} Tf 56 ${780 - index * 24} Td (${line}) Tj ET`,
+    )
+    .join("\n");
+  const objects = [
+    "<< /Type /Catalog /Pages 2 0 R >>",
+    "<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
+    "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Contents 4 0 R /Resources << /Font << /F1 5 0 R >> >> >>",
+    `<< /Length ${text.length} >>\nstream\n${text}\nendstream`,
+    "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>",
+  ];
+  let pdf = "%PDF-1.4\n";
+  const offsets = objects.map((object, index) => {
+    const offset = pdf.length;
+    pdf += `${index + 1} 0 obj\n${object}\nendobj\n`;
+    return offset;
+  });
+  const xref = pdf.length;
+  pdf += `xref\n0 ${objects.length + 1}\n0000000000 65535 f \n${offsets.map((offset) => `${String(offset).padStart(10, "0")} 00000 n \n`).join("")}`;
+  return `${pdf}trailer\n<< /Size ${objects.length + 1} /Root 1 0 R >>\nstartxref\n${xref}\n%%EOF\n`;
+}
+
+/**
+ * Module « Documents joints » : un règlement factice déposé dans le stockage de l'app, si ce
+ * poste en a un (variables STORAGE_*). Sinon, pas de document. Le client S3 est celui de l'app
+ * web (aws4fetch), pas une dépendance de plus.
+ */
+async function demoDocuments(organizationId: string) {
+  const { STORAGE_ENDPOINT, STORAGE_BUCKET, STORAGE_ACCESS_KEY_ID, STORAGE_SECRET_ACCESS_KEY } =
+    process.env;
+  if (!STORAGE_ENDPOINT || !STORAGE_BUCKET || !STORAGE_ACCESS_KEY_ID || !STORAGE_SECRET_ACCESS_KEY)
+    return undefined;
+  try {
+    const web = createRequire(new URL("../../../apps/web/package.json", import.meta.url));
+    const { AwsClient } = (await import(web.resolve("aws4fetch"))) as {
+      AwsClient: new (options: {
+        accessKeyId: string;
+        secretAccessKey: string;
+        service: string;
+        region: string;
+      }) => { fetch(url: string, init?: RequestInit): Promise<Response> };
+    };
+    const client = new AwsClient({
+      accessKeyId: STORAGE_ACCESS_KEY_ID,
+      secretAccessKey: STORAGE_SECRET_ACCESS_KEY,
+      service: "s3",
+      region: process.env.STORAGE_REGION ?? "us-east-1",
+    });
+    const key = `${organizationId}/documents/${randomUUID()}.pdf`;
+    const body = demoPdf([
+      "Reglement de l'atelier (document de demonstration)",
+      "1. Arrive 10 minutes avant le debut du cours.",
+      "2. Tenue qui ne craint rien, cheveux attaches.",
+      "3. Les pieces sont cuites et emaillees par l'atelier.",
+    ]);
+    const response = await client.fetch(`${STORAGE_ENDPOINT}/${STORAGE_BUCKET}/${key}`, {
+      method: "PUT",
+      body,
+      headers: { "Content-Type": "application/pdf" },
+    });
+    if (!response.ok) throw new Error(`envoi refusé (${response.status})`);
+    return {
+      files: [{ name: "Règlement de l'atelier", url: `/fichiers/${key}`, size: body.length }],
+    };
+  } catch (error) {
+    console.warn("Document de démonstration non déposé :", error);
+    return undefined;
+  }
+}
+const documents = await demoDocuments(org.id);
+
 const today = toZonedParts(new Date(), TZ);
 /** Date dans `days` jours à `hour` h `minute` (heure de Paris). */
 const at = (days: number, hour: number, minute = 0) =>
   fromZonedParts({ ...addDays(today, days), hour, minute }, TZ).toISOString();
+
+// Lot 34b : le matériel du cours de tournage (tours choisis par type d'assise, tabliers).
+const tourFields = [
+  {
+    key: "assise",
+    label: "Assise",
+    type: "choice" as const,
+    required: false,
+    options: ["Basse", "Haute"],
+  },
+];
+const tourShimpo = await createItem(deps, actor, {
+  name: "Tour Shimpo",
+  typeName: "Tours de potier",
+  quantity: 3,
+  storageLocation: "Atelier",
+  typeFields: tourFields,
+  fieldValues: { assise: "Basse" },
+});
+await createItem(deps, actor, {
+  name: "Tour Brent",
+  typeName: "Tours de potier",
+  quantity: 2,
+  storageLocation: "Atelier",
+  fieldValues: { assise: "Haute" },
+});
+const tabliers = await createItem(deps, actor, {
+  name: "Tablier d'atelier",
+  typeName: "Tabliers",
+  quantity: 6,
+  storageLocation: "Vestiaire",
+});
 
 const types = Object.fromEntries(
   await Promise.all(
@@ -180,8 +292,7 @@ const types = Object.fromEntries(
         color: "#528D74",
         defaultDurationMinutes: 60 * 24,
         defaultPriceCents: 12000,
-        requiresApproval: true,
-        bookingRules: { waitlistEnabled: true },
+        modules: { approval: {}, waitlist: {} },
         fields: [
           {
             key: "regime",
@@ -200,9 +311,70 @@ const types = Object.fromEntries(
         color: "#A9663F",
         defaultDurationMinutes: 120,
         defaultPriceCents: 4500,
-        defaultCapacity: 12,
         bookingNoun: "inscription" as const,
-        bookingRules: { waitlistEnabled: true },
+        // Lot 34 : seuil de maintien, annulation propre, 12 ans minimum, « À apporter ».
+        modules: {
+          places: { capacity: 12, maxPerBooking: 4, minimum: { seats: 4, daysBefore: 2 } },
+          waitlist: {},
+          cancellation: { freeHours: 48, lateRefundPercent: 0 },
+          access: { minAge: 12 },
+          // Lot 34b : un tour par place (attribué par l'atelier), un tablier au choix de l'élève.
+          equipment: {
+            needs: [
+              {
+                id: "tour",
+                itemTypeId: tourShimpo.itemTypeId ?? "",
+                perSeat: 1,
+                required: true,
+                chooser: "workshop" as const,
+              },
+              {
+                id: "tablier",
+                itemTypeId: tabliers.itemTypeId ?? "",
+                perSeat: 1,
+                required: false,
+                chooser: "student" as const,
+              },
+            ],
+          },
+          location: { mode: "venue" as const },
+          staff: { memberIds: [owner.id], showOnPublicPage: true },
+          // Lot 35 : deux tarifs et une option par participant.
+          pricing: {
+            rates: [
+              { id: "plein", name: "Plein", priceCents: 4500 },
+              {
+                id: "reduit",
+                name: "Réduit",
+                priceCents: 3500,
+                description: "étudiant, demandeur d'emploi",
+              },
+            ],
+            options: [
+              {
+                id: "cuisson",
+                name: "Cuisson et émaillage",
+                priceCents: 800,
+                per: "participant" as const,
+              },
+              // Le tablier facultatif est payant : son option le réserve.
+              {
+                id: "tablier",
+                name: "Location d'un tablier",
+                priceCents: 300,
+                per: "participant" as const,
+                needId: "tablier",
+              },
+            ],
+          },
+          messages: {
+            bring: "Une tenue qui ne craint rien et les cheveux attachés",
+            reminder: { kind: "eve" as const, hour: 18 },
+            after:
+              "Merci d'être venu·e ! Tes pièces sèchent une semaine avant la cuisson : on te prévient quand elles sont prêtes.",
+          },
+          ...(documents && { documents }),
+        },
         fields: [
           {
             key: "niveau",
@@ -261,6 +433,78 @@ const types = Object.fromEntries(
             help: "12 ans minimum",
           },
         ],
+        // Lot 36 : trois règles « si… alors… ».
+        rules: [
+          {
+            id: "autorisation-mineurs",
+            name: "Autorisation des mineurs",
+            trigger: { kind: "booking_submitted" as const },
+            conditions: [
+              [
+                {
+                  kind: "field" as const,
+                  fieldKey: "age",
+                  operator: "less_than" as const,
+                  value: 16,
+                },
+              ],
+            ],
+            actions: [
+              {
+                kind: "ask" as const,
+                field: {
+                  key: "accord_representant",
+                  label: "Je suis son représentant légal et j'autorise sa participation",
+                  type: "acceptance" as const,
+                },
+              },
+              {
+                kind: "remind_document" as const,
+                label: "l'autorisation parentale signée",
+              },
+            ],
+          },
+          {
+            id: "dernieres-places-debutants",
+            name: "Dernières places débutants",
+            trigger: { kind: "before_start" as const, hours: 7 * 24 },
+            conditions: [
+              [
+                {
+                  kind: "field" as const,
+                  fieldKey: "niveau",
+                  operator: "equals" as const,
+                  value: "Débutant",
+                },
+                {
+                  kind: "seats" as const,
+                  measure: "remaining" as const,
+                  operator: "greater_than" as const,
+                  value: 0,
+                },
+              ],
+            ],
+            actions: [
+              {
+                kind: "notify_team" as const,
+                message: "Il reste des places au cours débutants : relance les anciens élèves.",
+              },
+            ],
+          },
+          // Tarifs dans les règles : la cuisson offerte à moitié prix aux nouveaux élèves.
+          {
+            id: "bienvenue-cuisson",
+            name: "Bienvenue",
+            trigger: { kind: "booking_submitted" as const },
+            conditions: [
+              [
+                { kind: "customer" as const, is: "new" as const },
+                { kind: "pricing" as const, target: "option" as const, id: "cuisson" },
+              ],
+            ],
+            actions: [{ kind: "price" as const, apply: "amount" as const, amountCents: 400 }],
+          },
+        ],
       },
       {
         key: "atelier",
@@ -275,7 +519,7 @@ const types = Object.fromEntries(
         name: "Meetup",
         color: "#66537C",
         defaultDurationMinutes: 150,
-        bookingRules: { waitlistEnabled: true },
+        modules: { waitlist: {} },
       },
       {
         key: "formation",
@@ -299,6 +543,11 @@ type Plan = {
   priceCents?: number;
   paymentMode?: "free" | "online" | "deposit" | "on_site";
   depositPercent?: number;
+  /** Module Intervenant : le propriétaire de l'espace anime l'événement. */
+  staff?: boolean;
+  /** Tarif de chaque place et options des réservations de démonstration (lot 35). */
+  rates?: string[];
+  options?: Record<string, number>;
   publish?: boolean;
   /** Réunions internes : publiées pour l'équipe, absentes de la page publique. */
   internal?: boolean;
@@ -347,7 +596,11 @@ const plans: Plan[] = [
     paymentMode: "on_site",
     description:
       "Deux heures au tour pour reprendre centrage, tournage de cylindres et tournassage. Les pièces sont cuites et émaillées par l'atelier.",
+    staff: true,
     fieldValues: { niveau: "Confirmé", terre: "Grès chamotté", pieces: 2 },
+    // Léa au plein tarif, Noé au réduit, la cuisson pour les deux.
+    rates: ["plein", "reduit"],
+    options: { cuisson: 2 },
     answers: {
       answers: { deja_tourne: true, depuis_quand: "1 à 3 ans", reglement: "on" },
       participants: [
@@ -359,6 +612,25 @@ const plans: Plan[] = [
       ["Léa", "Fontaine", 2],
       ["Marc", "Dupont", 1],
     ],
+  },
+  // Lot 36 : à J-7 avec des places libres, la règle « Dernières places débutants » prévient l'équipe.
+  {
+    type: "tournage",
+    title: "Cours de tournage · débutants",
+    start: [5, 10],
+    end: [5, 12],
+    location: "Atelier Terre & Feu",
+    capacity: 8,
+    priceCents: 4500,
+    paymentMode: "on_site",
+    description:
+      "Premier contact avec le tour : centrage, ouverture et premiers cylindres, à ton rythme.",
+    fieldValues: { niveau: "Débutant", terre: "Grès blanc" },
+    answers: {
+      answers: { deja_tourne: false, reglement: "on" },
+      participants: [{ firstName: "Inès", lastName: "Moreau", answers: { age: "29" } }],
+    },
+    bookings: [["Inès", "Moreau", 1]],
   },
   {
     type: "meetup",
@@ -536,11 +808,12 @@ for (const plan of plans) {
     capacity: plan.capacity === undefined ? 20 : plan.capacity,
     priceCents: plan.priceCents ?? 0,
     paymentMode: plan.paymentMode ?? "free",
-    depositPercent: plan.depositPercent ?? null,
+    ...(plan.depositPercent && { deposit: { percent: plan.depositPercent } }),
     description: plan.description ?? "",
     highlights: plan.highlights ?? [],
     visibility: plan.internal ? "invite_only" : "public",
     fieldValues: plan.fieldValues ?? {},
+    staffMemberId: plan.staff ? owner.id : null,
   });
   if (!created) continue;
   eventIds.set(plan.title, created.id);
@@ -558,6 +831,7 @@ for (const plan of plans) {
     const bookingActor: Actor =
       state === "pending" ? { type: "customer", organizationId: org.id } : actor;
     try {
+      const named = plan.answers?.participants[0]?.firstName === firstName;
       const { booking } = await createEventBooking(deps, bookingActor, {
         eventId: created.id,
         seats,
@@ -565,10 +839,8 @@ for (const plan of plans) {
         customerMessage: message ?? null,
         answers: plan.answers?.answers ?? {},
         // Les participants nommés sont ceux de la première réservation (celle de Léa).
-        participants:
-          plan.answers?.participants[0]?.firstName === firstName
-            ? plan.answers.participants.slice(0, seats)
-            : [],
+        participants: named ? (plan.answers?.participants ?? []).slice(0, seats) : [],
+        ...(named && { rates: plan.rates?.slice(0, seats), options: plan.options }),
       });
       if (state === "cancel") await cancelBooking(deps, actor, booking.id, "Empêchement");
       bookingCount++;
@@ -885,6 +1157,8 @@ await db.insert(invitation).values({
       enrollmentEnabled: true,
       enrollmentPriceCents: 24000,
       dropInAllowed: true,
+      enrollmentProrata: true,
+      makeupAllowed: true,
     });
     for (const [firstName, lastName] of [
       ["Antoine", "Leroy"],
@@ -991,6 +1265,205 @@ await purchaseGiftCard(
     recipientEmail: null,
   },
 );
+
+// Le temps (lot 37) : « Cours particulier de tournage » sur créneaux (mardi, jeudi, samedi,
+// trois durées, Thomas ou l'atelier au choix de l'élève), deux créneaux déjà réservés ; et
+// « Stage tour : de la motte au bol », trois samedis, une inscription, le même tour à chaque
+// séance, quatre inscrits sur huit.
+{
+  const [thomas] = await db
+    .select({ id: member.id })
+    .from(member)
+    .innerJoin(user, eq(user.id, member.userId))
+    .where(
+      and(eq(member.organizationId, org.id), eq(user.email, "thomas.bernard@cabinet-vidal.fr")),
+    );
+  const staffIds = [thomas?.id, owner.id].filter((id): id is string => Boolean(id));
+  const lesson = await createEventType(deps, actor, {
+    name: "Cours particulier de tournage",
+    color: "#CF879C",
+    description: "Un tour, l'atelier rien que pour toi. Tu choisis la durée, le jour et l'heure.",
+    defaultDurationMinutes: 60,
+    bookingNoun: "reservation",
+    modules: {
+      places: { maxPerBooking: 1 },
+      cancellation: { freeHours: 24, lateRefundPercent: 0 },
+      slots: {
+        weekly: [
+          [],
+          [{ start: "14:00", end: "18:00" }],
+          [],
+          [
+            { start: "14:00", end: "18:00" },
+            { start: "18:30", end: "20:30" },
+          ],
+          [],
+          [{ start: "10:00", end: "17:00" }],
+          [],
+        ],
+        closures: [{ from: "2026-12-23", to: "2027-01-02", label: "vacances" }],
+        intervalMinutes: 30,
+        breakMinutes: 15,
+        seatsPerSlot: 1,
+        opensDaysBefore: 30,
+        closesHoursBefore: 24,
+        memberIds: staffIds,
+        chooseStaff: true,
+      },
+      duration: {
+        options: [
+          { id: "1h", label: "1 h", minutes: 60, priceCents: 4500, description: "Découverte" },
+          {
+            id: "2h",
+            label: "2 h",
+            minutes: 120,
+            priceCents: 8000,
+            description: "Une pièce du centrage au tournassage",
+          },
+          {
+            id: "journee",
+            label: "Journée",
+            minutes: 360,
+            priceCents: 18000,
+            description: "Repas compris",
+          },
+        ],
+        defaultId: "1h",
+      },
+      equipment: {
+        needs: [
+          {
+            id: "tour",
+            itemTypeId: tourShimpo.itemTypeId ?? "",
+            perSeat: 1,
+            required: true,
+            chooser: "workshop" as const,
+          },
+        ],
+      },
+    },
+  });
+  // Deux créneaux déjà pris (comptoir), visibles dans le calendrier de l'équipe.
+  const demoSlots = [
+    { durationId: "1h", pick: 1, who: ["Antoine", "Leroy"] },
+    { durationId: "2h", pick: 4, who: ["Sophie", "Martin"] },
+  ] as const;
+  for (const { durationId, pick, who } of demoSlots) {
+    const free = await deps.uow.run(async (repositories) => {
+      const type = await repositories.eventTypes.find(org.id, lesson.id);
+      return type
+        ? findSlots(repositories, org.id, type, {
+            from: addDays(today, 2),
+            days: 7,
+            now: new Date(),
+            timeZone: TZ,
+            durationId,
+            team: true,
+          })
+        : [];
+    });
+    const slot = free[pick];
+    if (!slot) continue;
+    await createCounterBooking(deps, actor, {
+      slot: { eventTypeId: lesson.id, startsAt: slot.startsAt, durationId },
+      seats: 1,
+      customer: {
+        firstName: who[0],
+        lastName: who[1],
+        email: `${who[0]}.${who[1]}@mail.com`.toLowerCase(),
+      },
+    }).catch((error) => console.warn("Créneau de démonstration non réservé :", error));
+  }
+
+  const stageType = await createEventType(deps, actor, {
+    name: "Stage",
+    color: "#528D74",
+    defaultDurationMinutes: 420,
+    bookingNoun: "inscription",
+    modules: {
+      places: { capacity: 8 },
+      sessions: { sameEquipment: true },
+      cancellation: { freeHours: 168, lateRefundPercent: 50 },
+      pricing: {
+        rates: [
+          { id: "plein", name: "Plein", priceCents: 24000 },
+          {
+            id: "reduit",
+            name: "Réduit",
+            priceCents: 20000,
+            description: "étudiant, demandeur d'emploi",
+          },
+        ],
+      },
+      equipment: {
+        needs: [
+          {
+            id: "tour",
+            itemTypeId: tourShimpo.itemTypeId ?? "",
+            perSeat: 1,
+            required: true,
+            chooser: "workshop" as const,
+          },
+        ],
+      },
+    },
+  });
+  // Trois samedis à partir de la semaine prochaine.
+  let saturday = 7;
+  while (
+    new Intl.DateTimeFormat("en-US", { timeZone: TZ, weekday: "short" }).format(
+      new Date(at(saturday, 12)),
+    ) !== "Sat"
+  )
+    saturday++;
+  const stageSessions = await createEvent(deps, actor, {
+    eventTypeId: stageType.id,
+    title: "Stage tour : de la motte au bol",
+    description:
+      "Trois samedis pour passer de la motte de terre au bol émaillé : centrage, tournassage, émaillage.",
+    startsAt: at(saturday, 10),
+    endsAt: at(saturday, 17),
+    timezone: TZ,
+    locationName: "Studio Démo, Puget-Ville",
+    capacity: 8,
+    paymentMode: "on_site",
+    prices: { plein: 24000, reduit: 20000 },
+    sessions: [
+      {
+        startsAt: at(saturday, 10),
+        endsAt: at(saturday, 17),
+        topic: "Centrage et premières formes",
+      },
+      { startsAt: at(saturday + 7, 10), endsAt: at(saturday + 7, 17), topic: "Tournassage" },
+      { startsAt: at(saturday + 21, 10), endsAt: at(saturday + 21, 13), topic: "Émaillage" },
+    ],
+    sameEquipment: true,
+  });
+  for (const session of stageSessions) await publishEvent(deps, actor, session.id);
+  const stageSeries = stageSessions[0]?.seriesId;
+  if (stageSeries) {
+    for (const [firstName, lastName, rateId] of [
+      ["Léa", "Petit", "plein"],
+      ["Hugo", "Garnier", "reduit"],
+      ["Sophie", "Martin", "plein"],
+      ["Thomas", "Bernard", "plein"],
+    ] as const) {
+      await enrollInSeries(deps, actor, {
+        seriesId: stageSeries,
+        customer: {
+          firstName,
+          lastName,
+          email: `${firstName}.${lastName}@mail.com`
+            .toLowerCase()
+            .normalize("NFD")
+            .replace(/\p{Diacritic}/gu, ""),
+        },
+        rateId,
+        paid: firstName !== "Hugo",
+      }).catch((error) => console.warn("Inscription au stage non enregistrée :", error));
+    }
+  }
+}
 
 console.info(
   `Espace « ${org.name} » : ${Object.keys(types).length} types, ${plans.length} événements, ${bookingCount} réservations, ${Object.keys(items).length} articles, ${rentals.length} locations, ${teammates.length} coéquipiers.`,

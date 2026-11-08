@@ -16,15 +16,38 @@ export interface BookingMail {
   manageUrl: string;
   /** Réponses aux questions du type (« Niveau », « Léa · Allergies »), déjà mises en forme. */
   answers?: Array<[string, string]>;
+  /** Module Messages : texte ajouté à la confirmation et « À apporter ». */
+  note?: string | null;
+  bring?: string | null;
+  /** Module Documents joints : liens absolus (règlement, plan d'accès). */
+  documents?: Array<{ name: string; url: string }>;
+  /** Module Lieu en ligne : lien de la visio (confirmation et rappel seulement). */
+  onlineUrl?: string | null;
+  /** Module Matériel avancé : matériel réservé avec la place. */
+  equipment?: string[];
+}
+
+/** Ce que les modules ajoutent : « À apporter », le texte de l'atelier (confirmation seulement). */
+function practical(mail: BookingMail, withNote: boolean): string[] {
+  return [
+    ...(withNote && mail.note ? [mail.note] : []),
+    ...(mail.bring ? [`À apporter : ${mail.bring}`] : []),
+  ];
 }
 
 const places = (seats: number) => `${seats} place${seats > 1 ? "s" : ""}`;
 
-function details(mail: BookingMail): Array<[string, string]> {
+function details(mail: BookingMail, withLink: boolean): Array<[string, string]> {
   return [
     ["Événement", mail.title],
     ["Quand", mail.when],
     ...(mail.where ? [["Où", mail.where] as [string, string]] : []),
+    ...(withLink && mail.onlineUrl
+      ? [["Lien de la visio", mail.onlineUrl] as [string, string]]
+      : []),
+    ...(mail.equipment?.length
+      ? [["Matériel", mail.equipment.join(", ")] as [string, string]]
+      : []),
     ["Places", String(mail.seats)],
     ...(mail.amount ? [["Montant", mail.amount] as [string, string]] : []),
     ["Réservation", mail.reference],
@@ -40,6 +63,8 @@ function bookingEmail(
     preheader: string;
     paragraphs: string[];
     action?: { label: string; url: string };
+    /** Joindre les documents du type (confirmation, rappel). */
+    documents?: boolean;
   },
 ): EmailContent {
   return {
@@ -48,7 +73,10 @@ function bookingEmail(
       preheader: content.preheader,
       title: content.title,
       paragraphs: [`Bonjour ${mail.firstName},`, ...content.paragraphs],
-      details: details(mail),
+      details: details(mail, Boolean(content.documents)),
+      links: content.documents
+        ? (mail.documents ?? []).map((document) => ({ label: document.name, url: document.url }))
+        : [],
       action: content.action ?? { label: "Gérer ma réservation", url: mail.manageUrl },
       footnote: `Cet e-mail t'est envoyé par ${mail.workspace.name} via Horaya, suite à ta réservation.`,
       brand: mail.workspace,
@@ -61,7 +89,11 @@ export function bookingConfirmedEmail(mail: BookingMail): EmailContent {
     subject: `C'est réservé : ${mail.title}`,
     title: "C'est réservé !",
     preheader: `${places(mail.seats)} confirmée${mail.seats > 1 ? "s" : ""} pour ${mail.title}.`,
-    paragraphs: [`Tes ${places(mail.seats)} pour « ${mail.title} » sont confirmées. À bientôt !`],
+    paragraphs: [
+      `Tes ${places(mail.seats)} pour « ${mail.title} » sont confirmées. À bientôt !`,
+      ...practical(mail, true),
+    ],
+    documents: true,
   });
 }
 
@@ -98,7 +130,9 @@ export function bookingPromotedEmail(mail: BookingMail & { confirmed: boolean })
       mail.confirmed
         ? `Bonne nouvelle : des places se sont libérées pour « ${mail.title} ». Ta réservation est confirmée.`
         : `Des places se sont libérées pour « ${mail.title} ». Ta demande passe en attente de validation : tu recevras un e-mail dès que ${mail.workspace.name} l'aura validée.`,
+      ...(mail.confirmed ? practical(mail, true) : []),
     ],
+    documents: mail.confirmed,
   });
 }
 
@@ -145,10 +179,132 @@ export function bookingReminderEmail(mail: BookingMail): EmailContent {
     preheader: `${mail.title} · ${mail.when}`,
     paragraphs: [
       `Petit rappel : « ${mail.title} », c'est demain. On t'attend !`,
+      ...practical(mail, false),
       "Un empêchement ? Tu peux gérer ta réservation en ligne.",
     ],
     action: { label: "Voir mes réservations", url: mail.manageUrl },
+    documents: true,
   });
+}
+
+/** Rappel au moment choisi par l'atelier (module Messages) : « C'est bientôt ». */
+export function bookingSoonEmail(mail: BookingMail): EmailContent {
+  return bookingEmail(mail, {
+    subject: `Bientôt : ${mail.title}`,
+    title: "C'est bientôt !",
+    preheader: `${mail.title} · ${mail.when}`,
+    paragraphs: [
+      `Petit rappel : « ${mail.title} », ${mail.when}. On t'attend !`,
+      ...practical(mail, false),
+      "Un empêchement ? Tu peux gérer ta réservation en ligne.",
+    ],
+    action: { label: "Voir mes réservations", url: mail.manageUrl },
+    documents: true,
+  });
+}
+
+/** Message après la séance (module Messages), envoyé par la tâche planifiée. */
+export function bookingFollowUpEmail(mail: BookingMail & { message: string }): EmailContent {
+  return bookingEmail(mail, {
+    subject: `Merci : ${mail.title}`,
+    title: "Merci d'être venu·e",
+    preheader: mail.message.slice(0, 90),
+    paragraphs: [mail.message],
+    action: { label: "Voir les prochains rendez-vous", url: mail.manageUrl },
+  });
+}
+
+/** Règle « si… alors… » (lot 36) : message de l'atelier au client. */
+export function bookingRuleMessageEmail(
+  mail: BookingMail & { subject: string; message: string },
+): EmailContent {
+  return bookingEmail(mail, {
+    subject: `${mail.subject} · ${mail.title}`,
+    title: mail.subject,
+    preheader: mail.message.slice(0, 90),
+    paragraphs: [mail.message],
+  });
+}
+
+/** Règle « si… alors… » (lot 36) : l'équipe est prévenue. */
+export function teamRuleEmail(input: {
+  workspaceName: string;
+  rule: string;
+  title: string;
+  when: string;
+  /** « Camille Roux » quand la règle porte sur une inscription. */
+  customerName?: string | null;
+  message?: string | null;
+  url: string;
+}): EmailContent {
+  return {
+    subject: `Règle « ${input.rule} » : ${input.title}`,
+    ...renderEmail({
+      preheader: input.message ?? `${input.title} · ${input.when}`,
+      title: `Règle « ${input.rule} »`,
+      paragraphs: [
+        `La règle « ${input.rule} » s'applique à « ${input.title} » (${input.when})${input.customerName ? `, pour l'inscription de ${input.customerName}` : ""}.`,
+        ...(input.message ? [input.message] : []),
+      ],
+      action: {
+        label: input.customerName ? "Voir l'inscription" : "Voir l'événement",
+        url: input.url,
+      },
+      footnote: teamFootnote(input.workspaceName),
+    }),
+  };
+}
+
+/** Seuil de maintien, la veille de J-x : il manque des inscrits. */
+export function teamMinimumRiskEmail(input: {
+  workspaceName: string;
+  title: string;
+  when: string;
+  seats: number;
+  minimum: number;
+  decision: string;
+  url: string;
+}): EmailContent {
+  return {
+    subject: `Risque d'annulation : ${input.title}`,
+    ...renderEmail({
+      preheader: `${input.seats} inscrit${input.seats > 1 ? "s" : ""} sur ${input.minimum} nécessaires`,
+      title: "Risque d'annulation",
+      paragraphs: [
+        `« ${input.title} » (${input.when}) : ${places(input.seats)} prise${input.seats > 1 ? "s" : ""}, il en faut ${input.minimum} pour le maintenir.`,
+        `Sans inscriptions d'ici ${input.decision}, il sera annulé automatiquement et chaque inscrit prévenu. Pour le maintenir quand même, ouvre l'événement et choisis « Maintenir quand même ».`,
+      ],
+      action: { label: "Voir l'événement", url: input.url },
+      footnote: teamFootnote(input.workspaceName),
+    }),
+  };
+}
+
+/** Seuil de maintien à J-x : l'événement a été annulé. */
+export function teamMinimumCancelledEmail(input: {
+  workspaceName: string;
+  title: string;
+  when: string;
+  seats: number;
+  minimum: number;
+  cancelledBookings: number;
+  url: string;
+}): EmailContent {
+  return {
+    subject: `Annulé faute d'inscrits : ${input.title}`,
+    ...renderEmail({
+      preheader: `${input.seats} inscrit${input.seats > 1 ? "s" : ""} sur ${input.minimum}`,
+      title: "Événement annulé",
+      paragraphs: [
+        `« ${input.title} » (${input.when}) n'a pas atteint son seuil de maintien : ${places(input.seats)} prise${input.seats > 1 ? "s" : ""} sur ${input.minimum} nécessaires.`,
+        input.cancelledBookings > 0
+          ? `Horaya l'a annulé et a prévenu ${input.cancelledBookings > 1 ? `les ${input.cancelledBookings} inscrits` : "l'inscrit"} ; les séances payées avec une carte sont recréditées. Pense aux remboursements éventuels.`
+          : "Horaya l'a annulé ; personne n'était inscrit.",
+      ],
+      action: { label: "Voir l'événement", url: input.url },
+      footnote: teamFootnote(input.workspaceName),
+    }),
+  };
 }
 
 /** Rappel la veille à l'équipe : l'événement de demain et ses inscrits. */
@@ -402,6 +558,8 @@ export function enrollmentConfirmedEmail(input: {
   /** Lien de paiement externe, si l'inscription se règle en ligne. */
   payUrl?: string | null;
   manageUrl: string;
+  /** Stage (lot 37) : on annule tout le stage, plutôt que de signaler une absence. */
+  stage?: boolean;
 }): EmailContent {
   const count = `${input.sessions.length} séance${input.sessions.length > 1 ? "s" : ""}`;
   return {
@@ -417,10 +575,12 @@ export function enrollmentConfirmedEmail(input: {
               `Règle ton inscription via le lien de paiement de ${input.workspace.name} : ${input.payUrl}`,
             ]
           : []),
-        "Un empêchement ? Signale ton absence depuis le lien ci-dessous : ta place profite à quelqu'un d'autre, ton inscription reste.",
+        input.stage
+          ? "Un empêchement ? Tu peux annuler ton inscription au stage depuis le lien ci-dessous, selon la règle d'annulation de l'atelier."
+          : "Un empêchement ? Signale ton absence depuis le lien ci-dessous : ta place profite à quelqu'un d'autre, ton inscription reste.",
       ],
       details: [
-        ["Cours", input.title],
+        [input.stage ? "Stage" : "Cours", input.title],
         ...(input.where ? [["Où", input.where] as [string, string]] : []),
         ...(input.amount ? [["Montant", input.amount] as [string, string]] : []),
         ...input.sessions.map(
@@ -428,6 +588,45 @@ export function enrollmentConfirmedEmail(input: {
         ),
       ],
       action: { label: "Gérer mon inscription", url: input.manageUrl },
+      footnote: `Cet e-mail t'est envoyé par ${input.workspace.name} via Horaya, suite à ton inscription.`,
+      brand: input.workspace,
+    }),
+  };
+}
+
+/**
+ * Stage annulé (lot 37) : par l'atelier (toutes les séances), ou par l'élève (son inscription,
+ * remboursée selon la règle d'annulation). Un seul message, pas un par séance.
+ */
+export function stageCancelledEmail(input: {
+  workspace: BookingMail["workspace"];
+  firstName: string;
+  title: string;
+  /** Séances annulées, déjà mises en forme. */
+  sessions: string[];
+  byCustomer: boolean;
+  /** Élève : « 100 % remboursés », « 50 % remboursés », « rien n'est remboursé ». */
+  refund?: string | null;
+  eventsUrl: string;
+}): EmailContent {
+  return {
+    subject: `${input.byCustomer ? "Inscription annulée" : "Stage annulé"} : ${input.title}`,
+    ...renderEmail({
+      preheader: input.byCustomer
+        ? "Ton annulation est bien prise en compte."
+        : `${input.workspace.name} a annulé le stage.`,
+      title: input.byCustomer ? "Inscription annulée" : "Stage annulé",
+      paragraphs: [
+        `Bonjour ${input.firstName},`,
+        input.byCustomer
+          ? `Ton inscription au stage « ${input.title} » est annulée, pour toutes ses séances.`
+          : `${input.workspace.name} a annulé le stage « ${input.title} » : toutes ses séances sont annulées.`,
+        ...(input.refund ? [`Remboursement : ${input.refund}.`] : []),
+      ],
+      details: input.sessions.map(
+        (session, index) => [`Séance ${index + 1}`, session] as [string, string],
+      ),
+      action: { label: "Voir les autres événements", url: input.eventsUrl },
       footnote: `Cet e-mail t'est envoyé par ${input.workspace.name} via Horaya, suite à ton inscription.`,
       brand: input.workspace,
     }),

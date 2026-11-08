@@ -1,14 +1,50 @@
+import { defaultRate } from "../bookings/pricing";
+import type { DepositModule, EventModules, PricingModule } from "../modules/registry";
 import { ConflictError, ValidationError } from "../shared/errors";
 import type { Event, EventDetails } from "./model";
+import type { PaymentMode } from "./types";
 
 type Issue = { path: string; message: string };
 
+/** Nouveaux prix d'un module « Tarifs et options » : les noms et le reste ne changent pas. */
+export function withPrices(pricing: PricingModule, prices: Record<string, number>): PricingModule {
+  const price = <T extends { id: string; priceCents: number }>(entry: T): T => ({
+    ...entry,
+    priceCents: prices[entry.id] ?? entry.priceCents,
+  });
+  return {
+    ...pricing,
+    rates: pricing.rates.map(price),
+    ...(pricing.options && { options: pricing.options.map(price) }),
+  };
+}
+
+/**
+ * L'argent d'un événement (lot 35) : ses tarifs (ceux du type, prix modifiables), son acompte
+ * (`deposit` absent : inchangé, null : retiré) et son prix affiché, celui du tarif par défaut.
+ */
+export function eventMoney(
+  base: { modules: EventModules; priceCents: number; paymentMode: PaymentMode },
+  input: {
+    deposit?: DepositModule | null | undefined;
+    prices?: Record<string, number> | undefined;
+  },
+): { modules: EventModules; priceCents: number } {
+  const { pricing: basePricing, deposit: baseDeposit, ...rest } = base.modules;
+  const pricing = basePricing && input.prices ? withPrices(basePricing, input.prices) : basePricing;
+  const deposit = input.deposit === undefined ? baseDeposit : (input.deposit ?? undefined);
+  return {
+    modules: { ...rest, ...(pricing && { pricing }), ...(deposit && { deposit }) },
+    priceCents:
+      base.paymentMode === "free" ? 0 : pricing ? defaultRate(pricing).priceCents : base.priceCents,
+  };
+}
+
 /** Cohérence d'un événement : période, prix et mode de paiement. */
 export function assertEventConsistency(
-  event: Pick<
-    EventDetails,
-    "startsAt" | "endsAt" | "priceCents" | "paymentMode" | "depositPercent"
-  >,
+  event: Pick<EventDetails, "startsAt" | "endsAt" | "priceCents" | "paymentMode"> & {
+    modules: EventModules;
+  },
 ): void {
   const issues: Issue[] = [];
   if (event.endsAt <= event.startsAt) {
@@ -17,14 +53,20 @@ export function assertEventConsistency(
   if (event.paymentMode === "free" && event.priceCents !== 0) {
     issues.push({ path: "priceCents", message: "Un événement gratuit n'a pas de prix" });
   }
-  if (event.paymentMode !== "free" && event.priceCents === 0) {
-    issues.push({ path: "priceCents", message: "Indique un prix ou choisis « gratuit »" });
+  const pricing = event.modules.pricing;
+  const paid = event.modules.duration
+    ? event.modules.duration.options.some((option) => option.priceCents > 0)
+    : pricing
+      ? [...pricing.rates, ...(pricing.options ?? [])].some((entry) => entry.priceCents > 0)
+      : event.priceCents > 0;
+  if (event.paymentMode !== "free" && !paid) {
+    issues.push({
+      path: pricing ? "prices" : "priceCents",
+      message: "Indique un prix ou choisis « gratuit »",
+    });
   }
-  if (event.paymentMode === "deposit" && event.depositPercent === null) {
-    issues.push({ path: "depositPercent", message: "Indique le pourcentage d'acompte" });
-  }
-  if (event.paymentMode !== "deposit" && event.depositPercent !== null) {
-    issues.push({ path: "depositPercent", message: "L'acompte ne s'applique qu'au mode acompte" });
+  if (event.paymentMode === "deposit" && !event.modules.deposit) {
+    issues.push({ path: "deposit", message: "Indique l'acompte" });
   }
   if (issues.length > 0) throw new ValidationError("Événement incohérent", issues);
 }

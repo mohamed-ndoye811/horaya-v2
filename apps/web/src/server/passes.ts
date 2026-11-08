@@ -1,5 +1,6 @@
 /** Cartes de séances : logique serveur des formulaires (voir functions/passes.ts). */
 import {
+  acceptsPass,
   adjustPass,
   cancelPendingPass,
   createPassPlan,
@@ -132,14 +133,24 @@ export async function payBookingWithPassImpl(
 /** Comptoir : cartes utilisables par le client pour le type de la séance choisie. */
 export async function counterPassesImpl(customerId: string, eventId: string) {
   const { workspace } = await getWorkspaceContext();
-  const eventType = await getEventTypeById(db, workspace.id, eventId);
-  const passes = await listUsablePasses(db, workspace.id, customerId, eventType, new Date());
-  return passes.map((entry) => ({
-    id: entry.id,
-    name: entry.name,
-    balance: entry.balance,
-    expiresAt: entry.expiresAt.toISOString(),
-  }));
+  const target = await getEventTypeById(db, workspace.id, eventId);
+  const passes = await listUsablePasses(
+    db,
+    workspace.id,
+    customerId,
+    target?.eventTypeId ?? null,
+    new Date(),
+    target?.startsAt,
+  );
+  // Module « Moyens acceptés » : seulement les formules que le type accepte.
+  return passes
+    .filter((entry) => acceptsPass(target?.modules.payment_methods, entry))
+    .map((entry) => ({
+      id: entry.id,
+      name: entry.name,
+      balance: entry.balance,
+      expiresAt: entry.expiresAt.toISOString(),
+    }));
 }
 
 /** Page publique : « Acheter une carte ». La carte attend que l'organisateur la marque payée. */

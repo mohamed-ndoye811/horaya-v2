@@ -2,7 +2,7 @@ import type { ComponentProps, ReactNode } from "react";
 import { cn } from "@/lib/cn";
 import { ChevronDown } from "./icons";
 
-type SelectVariant = "field" | "filter" | "compact";
+type SelectVariant = "field" | "filter" | "compact" | "dense" | "pill";
 
 // Sous `lg`, 16 px au moins : en dessous, Safari sur iPhone zoome la page au toucher.
 const variants: Record<SelectVariant, string> = {
@@ -15,6 +15,11 @@ const variants: Record<SelectVariant, string> = {
   /** Dans une ligne de tableau (rôle d'un membre) ou une carte. */
   compact:
     "h-10 rounded-xl border border-line-soft bg-field pl-3.5 pr-10 text-base font-semibold focus:border-ink focus:bg-surface lg:text-sm",
+  /** 36 px, dans une ligne dense (constructeur de règle) : va avec `inputClasses("xs")`. */
+  dense:
+    "h-9 rounded-xl border border-line-soft bg-field pl-3 pr-8 text-base font-semibold focus:border-ink focus:bg-surface lg:text-[13px]",
+  /** 32 px, pastille d'une ligne de réglage (« toutes les 30 min ⌄ ») : va avec `SettingRow`. */
+  pill: "h-8 rounded-lg border border-bg bg-field pl-2.5 pr-7 text-base font-semibold focus:border-ink lg:text-[13px]",
 };
 
 /**
@@ -46,7 +51,16 @@ export function Select({
       >
         {children}
       </select>
-      <ChevronDown className="pointer-events-none absolute top-1/2 right-3.5 -translate-y-1/2 text-ink" />
+      <ChevronDown
+        className={cn(
+          "pointer-events-none absolute top-1/2 -translate-y-1/2",
+          variant === "pill"
+            ? "right-2.5 h-[7px] w-2.5 text-ink-muted"
+            : variant === "dense"
+              ? "right-3 text-ink"
+              : "right-3.5 text-ink",
+        )}
+      />
     </div>
   );
 }

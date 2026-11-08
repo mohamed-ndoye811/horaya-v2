@@ -1,3 +1,4 @@
+import { type RuleAction, ruleJournalLine } from "@horaya/core";
 import { formatMoney } from "./format";
 
 /** Phrases de l'historique d'une réservation (journal d'activité). */
@@ -103,6 +104,15 @@ export function describeBookingActivity(
       return { title: "Absence signalée par le client · place libérée", tone: "warning" };
     case "booking.unenrolled":
       return { title: `Désinscription de la série${by(entry)}`, tone: "danger" };
+    case "booking.rule_applied":
+      // « Règle « Autorisation des mineurs » : accord demandé » (lot 36).
+      return {
+        title: ruleJournalLine(
+          String(entry.data?.rule ?? ""),
+          (entry.data?.actions ?? []) as unknown as RuleAction[],
+        ),
+        tone: "warning",
+      };
     case "booking.check_in_undone":
       return { title: `Pointage annulé${by(entry)}`, tone: "ink" };
     default:

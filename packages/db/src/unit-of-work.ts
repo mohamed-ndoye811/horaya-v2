@@ -17,6 +17,8 @@ import { giftCardRepository } from "./repositories/gift-cards";
 import { inventoryRepository } from "./repositories/inventory";
 import { passRepository } from "./repositories/passes";
 import { paymentRepository } from "./repositories/payments";
+import { ruleRepository } from "./repositories/rules";
+import { slotRepository } from "./repositories/slots";
 import {
   activityLogRepository,
   customerRepository,
@@ -44,6 +46,8 @@ export function repositoriesFor(db: Executor): Repositories {
     enrollments: enrollmentRepository(db),
     passes: passRepository(db),
     giftCards: giftCardRepository(db),
+    rules: ruleRepository(db),
+    slots: slotRepository(db),
   };
 }
 

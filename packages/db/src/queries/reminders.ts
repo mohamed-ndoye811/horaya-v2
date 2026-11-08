@@ -29,6 +29,8 @@ export async function claimEventReminders(db: Executor, from: Date, to: Date) {
       endsAt: event.endsAt,
       timezone: event.timezone,
       capacity: event.capacity,
+      /** Rappel client à un autre moment (module Messages) : envoyé par claimDueCustomReminders. */
+      customReminder: sql<boolean>`(${event.modules}->'messages'->'reminder') is not null`,
     });
 }
 
@@ -80,6 +82,8 @@ export async function claimAlmostFull(db: Executor, eventId: string) {
         eq(event.status, "published"),
         isNull(event.almostFullNotifiedAt),
         isNotNull(event.capacity),
+        // Un créneau (lot 37) est fait pour être pris : pas d'alerte « presque complet ».
+        eq(event.fromSlot, false),
         gt(event.endsAt, sql`now()`),
         sql`${heldSeats} * 5 >= ${event.capacity} * 4`,
       ),
@@ -176,4 +180,127 @@ export async function getWeeklyDigest(db: Executor, organizationId: string, now:
     revenueCents: money?.cents ?? 0,
     upcoming,
   };
+}
+
+/* ---------- Modules (lot 34) ---------- */
+
+const minimum = sql`(${event.modules}->'places'->'minimum')`;
+const minimumSeats = sql`(${minimum}->>'seats')::int`;
+/** J-x : instant de la décision du seuil de maintien. */
+const decisionAt = sql`(${event.startsAt} - make_interval(days => (${minimum}->>'daysBefore')::int))`;
+
+const eventSummary = {
+  id: event.id,
+  organizationId: event.organizationId,
+  title: event.title,
+  startsAt: event.startsAt,
+  endsAt: event.endsAt,
+  timezone: event.timezone,
+  capacity: event.capacity,
+  seats: heldSeats,
+  minimum: sql<number>`${minimumSeats}`,
+};
+
+/**
+ * Seuil de maintien, la veille de J-x : événements publiés à qui il manque des inscrits, dont
+ * l'équipe n'a pas encore été prévenue. Marqués et renvoyés.
+ */
+export async function claimMinimumWarnings(db: Executor, now: Date) {
+  return db
+    .update(event)
+    .set({ minimumWarnedAt: now })
+    .where(
+      and(
+        eq(event.status, "published"),
+        isNull(event.minimumWarnedAt),
+        isNull(event.minimumDecidedAt),
+        sql`${minimum} is not null`,
+        sql`${iso(now)} >= ${decisionAt} - interval '1 day'`,
+        sql`${iso(now)} < ${decisionAt}`,
+        sql`${heldSeats} < ${minimumSeats}`,
+      ),
+    )
+    .returning(eventSummary);
+}
+
+/**
+ * Seuil de maintien à J-x : événements publiés à venir dont la décision n'est pas prise. Marqués
+ * (une seule décision) et renvoyés ; le core annule ceux qui restent sous le seuil.
+ */
+export async function claimMinimumDecisions(db: Executor, now: Date) {
+  return db
+    .update(event)
+    .set({ minimumDecidedAt: now })
+    .where(
+      and(
+        eq(event.status, "published"),
+        isNull(event.minimumDecidedAt),
+        sql`${minimum} is not null`,
+        sql`${iso(now)} >= ${decisionAt}`,
+        gt(event.startsAt, now),
+      ),
+    )
+    .returning(eventSummary);
+}
+
+/** Moment du rappel choisi dans le module Messages : la veille à H heures (fuseau de l'événement) ou X heures avant. */
+const reminderAt = sql`(case when ${event.modules}->'messages'->'reminder'->>'kind' = 'eve'
+  then (date_trunc('day', ${event.startsAt} at time zone ${event.timezone}) - interval '1 day'
+    + make_interval(hours => (${event.modules}->'messages'->'reminder'->>'hour')::int)) at time zone ${event.timezone}
+  else ${event.startsAt} - make_interval(hours => (${event.modules}->'messages'->'reminder'->>'hours')::int)
+end)`;
+
+/**
+ * Rappels au moment choisi (module Messages) : réservations confirmées, faites avant ce moment,
+ * d'événements publiés qui n'ont pas commencé. Marquées et renvoyées.
+ */
+export async function claimDueCustomReminders(db: Executor, now: Date) {
+  return db
+    .update(booking)
+    .set({ reminderSentAt: sql`now()` })
+    .from(event)
+    .where(
+      and(
+        eq(event.id, booking.eventId),
+        eq(event.status, "published"),
+        gt(event.startsAt, now),
+        sql`(${event.modules}->'messages'->'reminder') is not null`,
+        sql`${reminderAt} <= ${iso(now)}`,
+        sql`${booking.createdAt} < ${reminderAt}`,
+        eq(booking.status, "confirmed"),
+        isNull(booking.reminderSentAt),
+      ),
+    )
+    .returning({ id: booking.id, organizationId: booking.organizationId });
+}
+
+/**
+ * Message après la séance (module Messages) : événements terminés depuis moins de deux jours,
+ * pas encore traités. Marqués et renvoyés avec le texte.
+ */
+export async function claimFollowUps(db: Executor, now: Date) {
+  return db
+    .update(event)
+    .set({ followUpSentAt: now })
+    .where(
+      and(
+        eq(event.status, "published"),
+        isNull(event.followUpSentAt),
+        sql`coalesce(${event.modules}->'messages'->>'after', '') <> ''`,
+        lte(event.endsAt, now),
+        gt(event.endsAt, new Date(now.getTime() - 2 * DAY)),
+      ),
+    )
+    .returning({ id: event.id, organizationId: event.organizationId });
+}
+
+/** Réservations confirmées d'un événement (message après la séance), sans les absences signalées. */
+export async function listConfirmedBookingIds(db: Executor, eventId: string) {
+  const rows = await db
+    .select({ id: booking.id })
+    .from(booking)
+    .where(
+      and(eq(booking.eventId, eventId), eq(booking.status, "confirmed"), isNull(booking.absentAt)),
+    );
+  return rows.map((row) => row.id);
 }

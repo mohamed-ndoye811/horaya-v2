@@ -1,3 +1,4 @@
+import type { EventModules } from "@horaya/core";
 import { FabLink } from "@/components/app/fab";
 import { PageHeader } from "@/components/app/page-header";
 import { ButtonLink } from "@/components/ui/button";
@@ -19,16 +20,13 @@ function formatDuration(minutes: number | null): string {
   return rest ? `${hours} h ${rest}` : `${hours} h`;
 }
 
-function summary(type: {
-  requiresApproval: boolean;
-  fields: Array<{ scope: string }>;
-  bookingRules: { waitlistEnabled?: boolean };
-}): string {
+function summary(type: { fields: Array<{ scope: string }>; modules: EventModules }): string {
   const described = type.fields.filter((field) => field.scope === "event").length;
   const asked = type.fields.length - described;
+  const modules = Object.keys(type.modules).length;
   return [
-    type.requiresApproval ? "Validation manuelle" : "Réservation automatique",
-    type.bookingRules.waitlistEnabled ? "Liste d'attente" : null,
+    type.modules.approval ? "Validation manuelle" : "Réservation automatique",
+    modules > 0 ? `${modules} module${modules > 1 ? "s" : ""}` : null,
     described > 0 ? `${described} info${described > 1 ? "s" : ""}` : null,
     asked > 0 ? `${asked} question${asked > 1 ? "s" : ""}` : null,
   ]

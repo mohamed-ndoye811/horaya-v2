@@ -22,6 +22,8 @@ export interface EnrollmentProgressData {
   finished: boolean;
   endsAt: Date | null;
   sessions: ReadonlyArray<{ state: SessionState; absent: boolean }>;
+  /** Stage (lot 37) : on parle du stage, pas du trimestre. */
+  stage?: boolean;
 }
 
 export interface NextSession {
@@ -31,6 +33,8 @@ export interface NextSession {
   startsAt: Date;
   endsAt: Date;
   locationName: string | null;
+  /** Stage : le sujet de la séance. */
+  sessionTopic?: string | null;
 }
 
 const day = (date: Date, timeZone: string, options: Intl.DateTimeFormatOptions) =>
@@ -62,7 +66,9 @@ export function EnrollmentProgress({
     >
       <div className="flex flex-col gap-2.5">
         <p className="flex items-baseline justify-between gap-3">
-          <span className="text-sm font-semibold leading-[18px] text-ink">Ton trimestre</span>
+          <span className="text-sm font-semibold leading-[18px] text-ink">
+            {progress.stage ? "Ton stage" : "Ton trimestre"}
+          </span>
           <span className="text-[13px] leading-4 text-ink-muted">
             <Swap value={`${progress.finished}${progress.current}`}>
               {progress.finished ? "terminé" : `séance ${progress.current} sur ${progress.total}`}
@@ -99,7 +105,13 @@ export function EnrollmentProgress({
         </p>
         {progress.endsAt && (
           <p>
-            {progress.finished ? "Trimestre terminé le " : "Fin du trimestre le "}
+            {progress.stage
+              ? progress.finished
+                ? "Stage terminé le "
+                : "Fin du stage le "
+              : progress.finished
+                ? "Trimestre terminé le "
+                : "Fin du trimestre le "}
             {day(progress.endsAt, timeZone, { day: "numeric", month: "long" })}
           </p>
         )}
@@ -170,6 +182,68 @@ export function AbsenceButton({
   );
 }
 
+/**
+ * « Annuler mon absence » : confirme, puis reprend la place (si la liste d'attente ne l'a pas
+ * prise). `onCancel` : l'action du lien de gestion, ou celle de l'espace client.
+ */
+export function CancelAbsenceButton({
+  session,
+  timeZone,
+  onCancel,
+  size = "sm",
+}: {
+  session: Pick<NextSession, "eventId" | "title" | "startsAt">;
+  timeZone: string;
+  onCancel: (eventId: string) => Promise<FormState>;
+  size?: "xs" | "sm";
+}) {
+  const router = useRouter();
+  const [open, setOpen] = useState(false);
+  const [pending, startTransition] = useTransition();
+  const [error, setError] = useState<string | null>(null);
+  return (
+    <>
+      <Button variant="secondary" size={size} onClick={() => setOpen(true)}>
+        Annuler l'absence
+      </Button>
+      {open && (
+        <Dialog
+          open
+          onClose={() => setOpen(false)}
+          title="Finalement, tu viens ?"
+          description={`Tu reprends ta place du ${formatDateTimeShort(session.startsAt, timeZone)} pour « ${session.title} », si personne ne l'a prise entre-temps. Le rattrapage que tu n'as pas utilisé disparaît.`}
+          footer={
+            <>
+              <Button variant="secondary" onClick={() => setOpen(false)} className="flex-1">
+                Retour
+              </Button>
+              <Button
+                className="flex-1"
+                pending={pending}
+                onClick={() =>
+                  startTransition(async () => {
+                    const result = await onCancel(session.eventId);
+                    if (result.error) {
+                      setError(result.error);
+                      return;
+                    }
+                    setOpen(false);
+                    router.refresh();
+                  })
+                }
+              >
+                Reprendre ma place
+              </Button>
+            </>
+          }
+        >
+          {error ? <FormAlert>{error}</FormAlert> : null}
+        </Dialog>
+      )}
+    </>
+  );
+}
+
 /** « Ton prochain cours » (date, cours, actions) avec le bloc « Ton trimestre » à droite. */
 export function EnrollmentNextSession({
   next,
@@ -190,8 +264,8 @@ export function EnrollmentNextSession({
       <div className="flex flex-col gap-6 rounded-[20px] bg-surface p-6 sm:flex-row sm:items-center">
         <p className="flex-1 text-[15px] leading-[22px] text-ink-muted">
           {progress.finished
-            ? "Ton trimestre est terminé. Merci d'être venu·e !"
-            : "Pas d'autre séance prévue pour toi dans ce trimestre."}
+            ? `Ton ${progress.stage ? "stage" : "trimestre"} est terminé. Merci d'être venu·e !`
+            : `Pas d'autre séance prévue pour toi dans ce ${progress.stage ? "stage" : "trimestre"}.`}
         </p>
         <EnrollmentProgress progress={progress} timeZone={timeZone} />
       </div>
@@ -217,13 +291,19 @@ export function EnrollmentNextSession({
               <span className="text-[13px] font-semibold leading-4 text-ink-muted">
                 Ton prochain cours
               </span>
-              <StatusBadge tone="info">Inscrit·e au trimestre</StatusBadge>
+              <StatusBadge tone="info">
+                {progress.stage ? "Inscrit·e au stage" : "Inscrit·e au trimestre"}
+              </StatusBadge>
             </p>
             <p className="text-[26px] font-semibold leading-8 tracking-[-0.02em] text-ink">
               {next.title}
             </p>
             <p className="text-[15px] leading-[22px] text-ink-muted">
-              {[formatTimeRange(next.startsAt, next.endsAt, timeZone), next.locationName]
+              {[
+                formatTimeRange(next.startsAt, next.endsAt, timeZone),
+                next.sessionTopic,
+                next.locationName,
+              ]
                 .filter(Boolean)
                 .join(" · ")}
             </p>
@@ -238,5 +318,59 @@ export function EnrollmentNextSession({
       </div>
       <EnrollmentProgress progress={progress} timeZone={timeZone} />
     </div>
+  );
+}
+
+/** Stage (lot 37) : l'élève annule son inscription, toutes les séances, selon la règle du type. */
+export function CancelStageButton({ onCancel }: { onCancel: () => Promise<FormState> }) {
+  const router = useRouter();
+  const [open, setOpen] = useState(false);
+  const [pending, startTransition] = useTransition();
+  const [result, setResult] = useState<FormState | null>(null);
+  return (
+    <>
+      <Button variant="secondary" onClick={() => setOpen(true)}>
+        Annuler mon inscription
+      </Button>
+      {open && (
+        <Dialog
+          open
+          onClose={() => setOpen(false)}
+          title="Annuler ton inscription au stage ?"
+          description="Toutes tes séances sont libérées. Le remboursement suit la règle d'annulation de l'atelier, comptée depuis la première séance."
+          footer={
+            result?.success ? (
+              <Button className="flex-1" onClick={() => setOpen(false)}>
+                Fermer
+              </Button>
+            ) : (
+              <>
+                <Button variant="secondary" onClick={() => setOpen(false)} className="flex-1">
+                  Je garde ma place
+                </Button>
+                <Button
+                  className="flex-1"
+                  pending={pending}
+                  onClick={() =>
+                    startTransition(async () => {
+                      const next = await onCancel();
+                      setResult(next);
+                      if (!next.error) router.refresh();
+                    })
+                  }
+                >
+                  Annuler l'inscription
+                </Button>
+              </>
+            )
+          }
+        >
+          {result?.error ? <FormAlert>{result.error}</FormAlert> : null}
+          {result?.success ? (
+            <p className="text-[15px] leading-6 text-ink">{result.success}</p>
+          ) : null}
+        </Dialog>
+      )}
+    </>
   );
 }

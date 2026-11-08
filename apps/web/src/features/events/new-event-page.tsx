@@ -6,7 +6,7 @@ import { EventForm } from "./event-form";
 
 /** Écran 09 : création d'un événement (ou d'une série). */
 export function NewEventPage({ data }: { data: Awaited<ReturnType<typeof getNewEvent>> }) {
-  const { timeZone, types, initial } = data;
+  const { timeZone, types, initial, resources } = data;
 
   if (types.length === 0) {
     return (
@@ -36,6 +36,7 @@ export function NewEventPage({ data }: { data: Awaited<ReturnType<typeof getNewE
         formId="event-form"
         eventId={null}
         types={types}
+        resources={resources}
         timeZone={timeZone}
         initial={initial}
         actions={

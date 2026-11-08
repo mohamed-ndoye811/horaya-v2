@@ -1,3 +1,4 @@
+import type { PriceLine } from "../bookings/pricing";
 import type { BookingSource } from "../bookings/types";
 
 /**
@@ -9,9 +10,11 @@ export interface Enrollment {
   organizationId: string;
   seriesId: string;
   customerId: string;
-  /** Prix de la série au moment de l'inscription. */
+  /** Prix payé : celui de la série, au prorata des séances restantes si la série le prévoit. */
   amountCents: number;
   currency: string;
+  /** Stage : le tarif choisi (une ligne) ; vide pour une série. */
+  priceLines: PriceLine[];
   /** Paiement noté par l'équipe (lien externe, sur place). */
   paidAt: Date | null;
   source: BookingSource;

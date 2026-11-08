@@ -1,5 +1,8 @@
 import type { Event } from "../events/model";
+import { reserveEquipment } from "../inventory/equipment";
+import { optionNeedSeats } from "../modules/resources";
 import { type Actor, actorRef } from "../shared/actor";
+import { ConflictError } from "../shared/errors";
 import type { Repositories } from "../shared/unit-of-work";
 import { remainingSeats } from "./capacity";
 import type { Booking } from "./model";
@@ -32,6 +35,19 @@ export async function promoteWaitlist(
     });
     held += candidate.seats;
     promoted.push(updated);
+    // Matériel avancé : retenu à la promotion ; sans matériel libre, la place est tout de même donnée.
+    await reserveEquipment(
+      repositories,
+      actor,
+      event,
+      candidate.id,
+      candidate.seats,
+      [],
+      true,
+      optionNeedSeats(event, candidate.seats, candidate.priceLines),
+    ).catch((error: unknown) => {
+      if (!(error instanceof ConflictError)) throw error;
+    });
     await repositories.activity.record({
       organizationId: event.organizationId,
       entityType: "booking",

@@ -1,4 +1,11 @@
-import type { BookingRules } from "@horaya/core";
+import {
+  balanceLabel,
+  bookingWindow,
+  type DepositModule,
+  depositLabel,
+  type EventModules,
+  windowState,
+} from "@horaya/core";
 
 export type AvailabilityTone = "success" | "warning" | "info";
 
@@ -34,21 +41,22 @@ export type BookingState =
   | { kind: "open"; maxSeats: number }
   | { kind: "waitlist"; maxSeats: number }
   | { kind: "full" }
+  | { kind: "upcoming"; opensAt: Date }
   | { kind: "closed" };
 
-/** Peut-on réserver en ligne, et combien de places au plus ? */
+/** Peut-on réserver en ligne, et combien de places au plus ? (modules de l'événement) */
 export function bookingState(
-  event: { startsAt: Date; capacity: number | null; seatsHeld: number; bookingRules: BookingRules },
+  event: { startsAt: Date; capacity: number | null; seatsHeld: number; modules: EventModules },
   now: Date,
 ): BookingState {
-  const closesAt = event.startsAt.getTime() - (event.bookingRules.minAdvanceHours ?? 0) * 3_600_000;
-  if (now.getTime() >= closesAt) return { kind: "closed" };
-  const perBooking = event.bookingRules.maxSeatsPerBooking ?? 20;
+  const window = bookingWindow(event.startsAt, event.modules.opening);
+  const timing = windowState(window, now);
+  if (timing === "closed") return { kind: "closed" };
+  if (timing === "upcoming" && window.opensAt) return { kind: "upcoming", opensAt: window.opensAt };
+  const perBooking = event.modules.places?.maxPerBooking ?? 20;
   const { remaining } = availability(event.capacity, event.seatsHeld);
   if (remaining === 0) {
-    return event.bookingRules.waitlistEnabled
-      ? { kind: "waitlist", maxSeats: perBooking }
-      : { kind: "full" };
+    return event.modules.waitlist ? { kind: "waitlist", maxSeats: perBooking } : { kind: "full" };
   }
   return {
     kind: "open",
@@ -103,14 +111,14 @@ export const pluralize = (word: string) => (/[sxz]$/i.test(word) ? word : `${wor
 export function paymentNote(
   paymentMode: string,
   channel: { kind: "stripe" } | { kind: "link"; url: string } | null,
-  depositPercent: number | null,
+  deposit: DepositModule | undefined,
 ): string {
   if (paymentMode === "free") return "Gratuit";
   if (paymentMode === "on_site") return "Paiement sur place";
   if (!channel) return "Paiement auprès de l'organisateur";
   const how = channel.kind === "stripe" ? "par carte" : "en ligne";
   return paymentMode === "deposit"
-    ? `Acompte de ${depositPercent ?? 0} % ${how}, le reste sur place`
+    ? `Acompte de ${deposit ? depositLabel(deposit) : "—"} ${how}, ${deposit ? balanceLabel(deposit) : "le reste sur place"}`
     : channel.kind === "stripe"
       ? "Paiement sécurisé par carte"
       : "Paiement en ligne après la réservation";

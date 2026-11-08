@@ -1,4 +1,5 @@
 import type { Booking } from "../bookings/model";
+import { acceptsGiftCards } from "../bookings/pricing";
 import type { PaymentMethod } from "../bookings/types";
 import { paidCents, refundForCancellation } from "../payments/rules";
 import { type Actor, actorRef, assertMemberCan } from "../shared/actor";
@@ -236,6 +237,15 @@ export async function applyGiftCardToBooking(
   rawCode: string,
   now: Date,
 ): Promise<number> {
+  // Module « Moyens acceptés » : le type peut refuser les bons cadeaux.
+  const event = booking.eventId
+    ? await repositories.events.find(booking.organizationId, booking.eventId)
+    : null;
+  if (event && !acceptsGiftCards(event.modules.payment_methods)) {
+    throw new ValidationError("Les bons cadeaux ne sont pas acceptés pour cet événement", [
+      { path: "giftCardCode", message: "Les bons cadeaux ne sont pas acceptés ici" },
+    ]);
+  }
   const card = await repositories.giftCards.lockByCode(
     booking.organizationId,
     normalizeGiftCardCode(rawCode),

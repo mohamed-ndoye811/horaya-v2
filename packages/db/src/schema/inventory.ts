@@ -100,6 +100,8 @@ export const itemAllocation = pgTable(
     provider: text(),
     costCents: cents(),
     note: text(),
+    /** Besoin du module Matériel avancé (event.modules.equipment) qui a réservé l'exemplaire. */
+    needId: text(),
     createdByMemberId: uuid().references(() => member.id, { onDelete: "set null" }),
     cancelledAt: timestamp({ withTimezone: true }),
     createdAt: createdAt(),

@@ -91,7 +91,7 @@ async function paidEvent(paymentMode: "online" | "deposit", capacity = 10) {
     capacity,
     priceCents: 3500,
     paymentMode,
-    depositPercent: paymentMode === "deposit" ? 30 : null,
+    ...(paymentMode === "deposit" && { deposit: { percent: 30 } }),
   });
   if (!created) throw new Error("événement");
   return publishEvent(deps, owner, created.id);

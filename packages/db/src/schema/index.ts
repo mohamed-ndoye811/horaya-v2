@@ -10,4 +10,5 @@ export * from "./events";
 export * from "./gift-cards";
 export * from "./inventory";
 export * from "./passes";
+export * from "./rules";
 export * from "./tenants";

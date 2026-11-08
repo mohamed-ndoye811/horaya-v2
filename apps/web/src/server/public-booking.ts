@@ -4,14 +4,18 @@
  * et, pour « Gérer ma réservation », par le jeton du lien.
  */
 import {
+  acceptsPass,
   amountDueOnline,
   awaitsOnlinePayment,
   cancelBookingWithToken,
+  cancellationPolicyOf,
   createEventBooking,
+  enrollmentQuote,
   getCurrentPlan,
   hasFeature,
   hashToken,
   paidCents,
+  passSessionsFor,
   refundForCancellation,
   startCheckout,
 } from "@horaya/core";
@@ -21,8 +25,10 @@ import {
   getSeriesOffer,
   listBookingPayments,
   listCalendarLinkEvents,
+  listEquipmentOffers,
   listPublicEvents,
   listPublicPassPlans,
+  listPublicSlotTypes,
   listUsablePasses,
   type ManagedBooking,
   type PublicWorkspace,
@@ -45,6 +51,24 @@ import { deps } from "./services";
 
 const text = (form: FormData, key: string) => String(form.get(key) ?? "").trim();
 
+/**
+ * Module Matériel avancé : `eq.<besoin>.wanted` (case du matériel facultatif) et
+ * `eq.<besoin>.unit` (exemplaire choisi, une valeur par place). Le core juge de tout.
+ */
+function equipmentChoices(form: FormData) {
+  const byNeed = new Map<string, { needId: string; wanted: boolean; unitIds: string[] }>();
+  for (const [key, value] of form.entries()) {
+    const found = /^eq\.([^.]+)\.(wanted|unit)$/.exec(key);
+    const needId = found?.[1];
+    if (!needId) continue;
+    const entry = byNeed.get(needId) ?? { needId, wanted: false, unitIds: [] };
+    if (found[2] === "wanted") entry.wanted = value === "on";
+    else if (String(value)) entry.unitIds.push(String(value));
+    byNeed.set(needId, entry);
+  }
+  return [...byNeed.values()];
+}
+
 /** Mise en page publique : l'espace, ou introuvable. */
 export async function publicWorkspace(slug: string) {
   const workspace = await getWorkspaceBySlug(slug);
@@ -65,11 +89,12 @@ export async function publicLayout(slug: string) {
 export async function publicHome(slug: string) {
   const workspace = await publicWorkspace(slug);
   const now = new Date();
-  const [events, passPlans] = await Promise.all([
+  const [events, passPlans, slotTypes] = await Promise.all([
     listPublicEvents(db, workspace.id, now),
     listPublicPassPlans(db, workspace.id),
+    listPublicSlotTypes(db, workspace.id),
   ]);
-  return { workspace, events, now, hasPassPlans: passPlans.length > 0 };
+  return { workspace, events, now, hasPassPlans: passPlans.length > 0, slotTypes };
 }
 
 /** Lien calendrier : les événements choisis par l'équipe, « sur invitation » compris. */
@@ -111,7 +136,16 @@ export async function publicEventPage(slug: string, eventSlug: string, lien: str
       offer.enrollmentPriceCents !== null &&
       offer.sessions.length > 0 &&
       offer.sessions.every((session) => session.visibility === "public")
-        ? offer
+        ? {
+            ...offer,
+            // Prix à payer aujourd'hui : au prorata des séances restantes si la série le prévoit.
+            quote: enrollmentQuote({
+              fullCents: offer.enrollmentPriceCents,
+              remaining: offer.sessions.length,
+              total: offer.totalSessions,
+              prorata: offer.enrollmentProrata,
+            }),
+          }
         : null,
     now,
   };
@@ -125,10 +159,15 @@ export async function bookEventPage(
   places: string | undefined,
 ) {
   const data = await publicEventPage(slug, eventSlug, lien);
-  if (!data.event) return { ...data, seats: 1, prefill: null, pass: null };
+  if (!data.event) return { ...data, seats: 1, prefill: null, pass: null, equipment: [] };
   const state = bookingState(data.event, data.now);
   const dropInClosed = data.event.enrollmentEnabled && !data.event.dropInAllowed;
-  if (state.kind === "full" || state.kind === "closed" || dropInClosed) {
+  if (
+    state.kind === "full" ||
+    state.kind === "closed" ||
+    state.kind === "upcoming" ||
+    dropInClosed
+  ) {
     throw redirect({
       href: withParams(`/${slug}/${eventSlug}`, { lien: data.linkSlug ?? undefined }),
     });
@@ -145,14 +184,20 @@ export async function bookEventPage(
         identity.customerId,
         data.event.typeId,
         data.now,
+        data.event.startsAt,
       )
     : [];
-  const pass = passes.find((entry) => entry.balance >= seats);
+  // Module « Moyens acceptés » : formules acceptées et séances par place.
+  const methods = data.event.modules.payment_methods;
+  const sessions = passSessionsFor(methods, seats);
+  const pass = passes.find((entry) => acceptsPass(methods, entry) && entry.balance >= sessions);
   return {
     ...data,
     seats,
     prefill: await customerPrefill(),
-    pass: pass ? { id: pass.id, name: pass.name, balance: pass.balance } : null,
+    pass: pass ? { id: pass.id, name: pass.name, balance: pass.balance, sessions } : null,
+    // Module Matériel avancé : besoins de l'événement et exemplaires encore libres.
+    equipment: await listEquipmentOffers(db, data.event.id),
   };
 }
 
@@ -219,13 +264,27 @@ export async function bookingMoney(workspace: PublicWorkspace, booking: ManagedB
             cancelledBy: "customer",
             startsAt: booking.eventStartsAt ?? booking.rentalStartsAt,
             now,
-            policy: workspace,
+            policy: cancellationPolicyOf(booking.eventModules ?? {}, workspace),
           })
         : null,
   };
 }
 
 /* ---------- Actions ---------- */
+
+/** Tarifs et options choisis (champ `price`, JSON) ; illisible : le tarif par défaut. */
+export function priceChoice(form: FormData): {
+  rates?: string[];
+  options?: Record<string, number>;
+} {
+  try {
+    // Forme non vérifiée ici : le schéma du core la valide.
+    const parsed = JSON.parse(text(form, "price") || "{}");
+    return { rates: parsed.rates, options: parsed.options };
+  } catch {
+    return {};
+  }
+}
 
 /** Étape 2 (écran 18) : coordonnées des participants, puis réservation au nom du client. */
 export async function createPublicBooking(
@@ -234,11 +293,14 @@ export async function createPublicBooking(
   linkSlug: string | null,
   seats: number,
   form: FormData,
+  /** Module Créneaux : le créneau gardé (l'événement naît de la réservation). */
+  holdId?: string,
 ): Promise<FormState> {
   const workspace = await getWorkspaceBySlug(slug);
   const link = workspace ? await getCalendarLink(workspace.id, linkSlug ?? undefined) : null;
-  const event = workspace ? await getPublicEvent(db, workspace.id, eventSlug, link) : null;
-  if (!workspace || !event) return { error: "Cet événement n'est plus disponible." };
+  const event =
+    workspace && !holdId ? await getPublicEvent(db, workspace.id, eventSlug, link) : null;
+  if (!workspace || (!event && !holdId)) return { error: "Cet événement n'est plus disponible." };
   const blocked = await rateLimited(`booking:ip:${await clientIp()}`, 20, 3600);
   if (blocked) return { error: blocked };
 
@@ -274,15 +336,18 @@ export async function createPublicBooking(
       deps,
       { type: "customer", organizationId: workspace.id },
       {
-        eventId: event.id,
+        ...(holdId ? { holdId } : { eventId: event?.id }),
         seats,
         customer,
         answers: rawFieldValues(form, "a."),
         participants,
         customerMessage: text(form, "customerMessage") || null,
+        // Tarifs et options : le core revérifie tout contre l'événement.
+        ...priceChoice(form),
         // Le core revérifie que le lien est actif et contient l'événement.
         calendarLinkSlug: link?.slug ?? null,
         giftCardCode: giftCardCode || null,
+        equipment: equipmentChoices(form),
       },
     );
     manageToken = created.manageToken;
@@ -296,7 +361,9 @@ export async function createPublicBooking(
     next = `/${slug}/reservation/${manageToken}?nouvelle=1`;
     // Paiement intégré (tout ou l'acompte) : direction la page de paiement sécurisée.
     // Avec un lien externe, la page de confirmation propose le bouton « Payer ».
+    // Créneau : réglé sur place ou par le lien de l'atelier (pas de page de paiement intégrée).
     if (
+      event &&
       workspacePaymentChannel(workspace, event.paymentMode, event.paymentLinkUrl)?.kind ===
         "stripe" &&
       !paidWithPass &&

@@ -10,8 +10,9 @@ import { ConflictError, NotFoundError } from "../shared/errors";
 import { generateToken, hashToken } from "../shared/tokens";
 import type { Deps, Repositories } from "../shared/unit-of-work";
 import { validate } from "../shared/validate";
+import { lockSlotEvent, slotChoiceSchema } from "../slots/use-cases";
 import type { Booking } from "./model";
-import { participantSchema } from "./schemas";
+import { participantSchema, priceOptionsSchema, priceRatesSchema } from "./schemas";
 import { PAYMENT_METHODS } from "./types";
 import { insertEventBooking } from "./use-cases";
 
@@ -59,7 +60,9 @@ export function refineCounterCustomer(
 
 export const counterBookingSchema = z
   .object({
-    eventId: z.uuid(),
+    /** L'événement ; ou `slot`, un créneau (module Créneaux, lot 37). */
+    eventId: z.uuid().optional(),
+    slot: slotChoiceSchema.optional(),
     seats: z.int().min(1, "Au moins une place").max(1000),
     ...counterCustomerChoice,
     items: z
@@ -76,9 +79,15 @@ export const counterBookingSchema = z
     /** Réponses aux questions du type, saisies par l'équipe (rien n'est requis au comptoir). */
     answers: rawFieldValuesSchema.default({}),
     participants: z.array(participantSchema).max(1000).default([]),
+    /** Tarif de chaque place et options (lot 35). */
+    rates: priceRatesSchema,
+    options: priceOptionsSchema,
   })
   .superRefine((input, context) => {
     refineCounterCustomer(input, context);
+    if ((input.eventId === undefined) === (input.slot === undefined)) {
+      context.addIssue({ code: "custom", path: ["eventId"], message: "Choisis un événement" });
+    }
     if (input.passId && (input.paid || !input.customerId)) {
       context.addIssue({
         code: "custom",
@@ -140,8 +149,15 @@ export async function createCounterBooking(
 
   return deps.uow.run(async (repositories) => {
     await requireFeature(repositories, actor.organizationId, "counter", deps.clock.now());
-    const locked = await repositories.events.lockForBooking(actor.organizationId, data.eventId);
-    if (!locked) throw new NotFoundError("Événement", data.eventId);
+    const locked = data.slot
+      ? await lockSlotEvent(
+          repositories,
+          actor,
+          { ...data.slot, seats: data.seats },
+          deps.clock.now(),
+        )
+      : await repositories.events.lockForBooking(actor.organizationId, data.eventId as string);
+    if (!locked) throw new NotFoundError("Événement", data.eventId ?? "");
     if (locked.event.status !== "published") {
       throw new ConflictError(
         locked.event.status === "cancelled"
@@ -160,6 +176,7 @@ export async function createCounterBooking(
       participants: data.participants,
       customerMessage: null,
       manageTokenHash,
+      selection: { rates: data.rates, options: data.options },
     });
     if (
       booking.status !== "confirmed" &&

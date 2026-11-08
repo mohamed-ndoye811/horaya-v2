@@ -1,13 +1,28 @@
-import { can, EVENT_TYPE_TEMPLATES, type EventTypeField, isCheckInOpen } from "@horaya/core";
+import {
+  can,
+  EVENT_TYPE_TEMPLATES,
+  type EventModules,
+  type EventTypeField,
+  isCheckInOpen,
+  unitLabel,
+} from "@horaya/core";
 import {
   countEventsByTab,
+  equipmentUnitsOfType,
   getEventDetail,
   listCalendarLinks,
   listEventItems,
+  listEventRuleRuns,
+  listEventStaff,
   listEvents,
   listEventTypes,
   listItemsAvailableBetween,
+  listItemTypes,
   listLinkableEvents,
+  listPassPlans,
+  listRuleTestBookings,
+  listTeam,
+  tenantSettingsReader,
 } from "@horaya/db";
 import { notFound, redirect } from "@tanstack/react-router";
 import { createServerFn } from "@tanstack/react-start";
@@ -25,8 +40,10 @@ import {
   archiveEventTypeActionImpl,
   cancelEventActionImpl,
   deleteCalendarLinkImpl,
+  keepEventActionImpl,
   publishEventActionImpl,
   removeEventItemActionImpl,
+  ruleTestFactsImpl,
   saveCalendarLink,
   saveEvent as saveEventImpl,
   saveEventType as saveEventTypeImpl,
@@ -43,6 +60,7 @@ export const eventsSearch = z.object({
   onglet: z.enum(EVENT_TABS).optional().catch(undefined),
   q: searchText,
   type: searchText,
+  intervenant: searchText,
 });
 
 /** Écran 04 : événements filtrés, compteurs des onglets, types pour le filtre. */
@@ -51,15 +69,17 @@ export const getEvents = createServerFn({ method: "GET" })
   .handler(async ({ data }) => {
     const { workspace, timeZone } = await getWorkspaceContext();
     const now = new Date();
-    const [counts, events, types] = await Promise.all([
+    const [counts, events, types, staff] = await Promise.all([
       countEventsByTab(db, workspace.id, now),
       listEvents(db, workspace.id, {
         tab: data.onglet ?? "all",
         now,
         search: data.q,
         typeId: data.type,
+        staffMemberId: data.intervenant,
       }),
       listEventTypes(db, workspace.id),
+      listEventStaff(db, workspace.id),
     ]);
     return {
       timeZone,
@@ -67,29 +87,85 @@ export const getEvents = createServerFn({ method: "GET" })
       counts,
       events,
       types: types.map((type) => ({ id: type.id, name: type.name })),
+      staff,
     };
   });
 
 /** Types proposés dans le formulaire d'événement. */
-const typeOption = (type: {
-  id: string;
-  name: string;
-  color: string;
-  fields: EventTypeField[];
-  defaultDurationMinutes: number | null;
-  defaultPriceCents: number | null;
-  defaultCapacity: number | null;
-  requiresApproval: boolean;
-}) => ({
+const typeOption = (
+  type: {
+    id: string;
+    name: string;
+    color: string;
+    fields: EventTypeField[];
+    defaultDurationMinutes: number | null;
+    defaultPriceCents: number | null;
+    modules: EventModules;
+  },
+  resourceModules: EventModules = type.modules,
+) => ({
   id: type.id,
   name: type.name,
   color: type.color,
   fields: type.fields,
   defaultDurationMinutes: type.defaultDurationMinutes,
   defaultPriceCents: type.defaultPriceCents,
-  defaultCapacity: type.defaultCapacity,
-  requiresApproval: type.requiresApproval,
+  // Réglages de départ des modules (places, validation, invitation, tarifs, acompte).
+  pricing: type.modules.pricing ?? null,
+  deposit: type.modules.deposit ?? null,
+  defaultCapacity: type.modules.places?.capacity ?? null,
+  requiresApproval: Boolean(type.modules.approval),
+  inviteOnly: Boolean(type.modules.access?.inviteOnly),
+  // Modules Ressources : intervenant, matériel et lieu (ceux de l'événement à la modification).
+  staff: resourceModules.staff ? { memberIds: resourceModules.staff.memberIds ?? [] } : null,
+  needs: (resourceModules.equipment?.needs ?? []).map((need) => ({
+    id: need.id,
+    itemTypeId: need.itemTypeId,
+  })),
+  locationMode: resourceModules.location?.mode ?? null,
+  // Le temps (lot 37) : durées, stage, créneaux.
+  durations: type.modules.duration?.options ?? null,
+  defaultDurationId: type.modules.duration?.defaultId ?? null,
+  stage: type.modules.sessions
+    ? {
+        singleSession: type.modules.sessions.singleSession ?? false,
+        sameEquipment: type.modules.sessions.sameEquipment ?? false,
+      }
+    : null,
+  slots: Boolean(type.modules.slots),
 });
+
+/** Équipe et exemplaires des types de matériel visés, pour l'intervenant et les exemplaires proposés. */
+async function resourceChoices(workspaceId: string, modulesList: EventModules[]) {
+  const wanted = new Set(
+    modulesList.flatMap((modules) => (modules.equipment?.needs ?? []).map((n) => n.itemTypeId)),
+  );
+  const [team, ...categories] = await Promise.all([
+    listTeam(db, workspaceId, new Date()),
+    ...[...wanted].map((id) => equipmentUnitsOfType(db, workspaceId, id)),
+  ]);
+  return {
+    members: team.members.map((entry) => ({ id: entry.id, name: entry.name })),
+    itemTypes: Object.fromEntries(
+      [...wanted].flatMap((id, index) => {
+        const found = categories[index];
+        return found
+          ? [
+              [
+                id,
+                {
+                  name: found.name,
+                  units: found.units
+                    .filter((unit) => unit.status !== "retired")
+                    .map((unit) => ({ id: unit.id, label: unitLabel(unit) })),
+                },
+              ],
+            ]
+          : [];
+      }),
+    ),
+  };
+}
 
 export const newEventSearch = z.object({ date: searchText, titre: searchText });
 
@@ -102,7 +178,11 @@ export const getNewEvent = createServerFn({ method: "GET" })
     const day = parseCivilDate(data.date) ?? undefined;
     return {
       timeZone,
-      types: types.map(typeOption),
+      types: types.map((type) => typeOption(type)),
+      resources: await resourceChoices(
+        workspace.id,
+        types.map((type) => type.modules),
+      ),
       initial: { ...emptyEventValues(timeZone, day), title: data.titre ?? "" },
     };
   });
@@ -117,9 +197,10 @@ export const getEvent = createServerFn({ method: "GET" })
   .validator(z.object({ id: z.string().uuid(), onglet: eventSearch.shape.onglet }))
   .handler(async ({ data }) => {
     const { workspace, timeZone } = await getWorkspaceContext();
-    const [detail, items] = await Promise.all([
+    const [detail, items, ruleRuns] = await Promise.all([
       getEventDetail(db, workspace.id, data.id),
       listEventItems(db, workspace.id, data.id),
+      data.onglet === "infos" ? listEventRuleRuns(db, workspace.id, data.id) : [],
     ]);
     if (!detail) throw notFound();
     const now = new Date();
@@ -128,6 +209,8 @@ export const getEvent = createServerFn({ method: "GET" })
       now,
       detail,
       items,
+      // Onglet « Infos » : ce que les règles « si… alors… » ont fait (lot 36).
+      ruleRuns,
       // Check-in : à partir de la veille, la fiche sert à pointer les arrivées.
       checkIn: detail.event.status === "published" && isCheckInOpen(detail.event, now),
       candidates:
@@ -155,7 +238,7 @@ export const getEditEvent = createServerFn({ method: "GET" })
     if (detail.event.status === "cancelled") throw redirect({ href: `/app/evenements/${id}` });
     const { event } = detail;
     // Le type actuel reste proposé même s'il a été archivé depuis, avec la version de ses
-    // champs copiée sur l'événement.
+    // champs et de ses tarifs copiée sur l'événement.
     const current = {
       id: event.typeId,
       name: event.typeName,
@@ -163,15 +246,15 @@ export const getEditEvent = createServerFn({ method: "GET" })
       fields: event.fields,
       defaultDurationMinutes: null,
       defaultPriceCents: null,
-      defaultCapacity: null,
-      requiresApproval: false,
+      modules: event.modules.pricing ? { pricing: event.modules.pricing } : {},
     };
     const options = [
-      ...types.filter((type) => type.id !== event.typeId).map(typeOption),
-      typeOption(current),
+      ...types.filter((type) => type.id !== event.typeId).map((type) => typeOption(type)),
+      typeOption(current, event.modules),
     ];
     return {
       timeZone,
+      resources: await resourceChoices(workspace.id, [event.modules]),
       event: { id: event.id, title: event.title, status: event.status },
       types: options,
       initial: eventToValues(event, timeZone),
@@ -190,8 +273,17 @@ export const eventTypesSearch = z.object({
 export const getEventTypes = createServerFn({ method: "GET" })
   .validator(eventTypesSearch)
   .handler(async ({ data }) => {
-    const { workspace } = await getWorkspaceContext();
-    const types = await listEventTypes(db, workspace.id);
+    const { workspace, timeZone } = await getWorkspaceContext();
+    const [types, settings, itemTypes, team, plans, testBookings] = await Promise.all([
+      listEventTypes(db, workspace.id),
+      tenantSettingsReader(db).get(workspace.id),
+      listItemTypes(db, workspace.id),
+      listTeam(db, workspace.id, new Date()),
+      listPassPlans(db, workspace.id),
+      data.type && data.type !== "nouveau"
+        ? listRuleTestBookings(db, workspace.id, data.type).catch(() => [])
+        : [],
+    ]);
     const existing = types.find((type) => type.id === data.type);
     const source = types.find((type) => type.id === data.depuis);
     const template = EVENT_TYPE_TEMPLATES.find((entry) => entry.id === data.modele);
@@ -200,6 +292,8 @@ export const getEventTypes = createServerFn({ method: "GET" })
       upcomingUnbooked: 0,
       bookingNoun: "reservation" as const,
       fields: [],
+      modules: {},
+      rules: [],
     };
     // Nouveau type : copie d'un type, ou modèle du core (nom libre si déjà pris).
     const base = existing ?? source ?? template;
@@ -224,6 +318,21 @@ export const getEventTypes = createServerFn({ method: "GET" })
               : source
                 ? `Copie de « ${source.name} »`
                 : `Créé depuis le modèle « ${template?.name} »`,
+            structure: {
+              freeCancellationHours: settings.freeCancellationHours,
+              lateCancellationRefundPercent: settings.lateCancellationRefundPercent,
+            },
+            timeZone,
+            itemTypes: itemTypes.map((type) => ({ id: type.id, name: type.name })),
+            members: team.members.map((entry) => ({ id: entry.id, name: entry.name })),
+            passPlans: plans
+              .filter((plan) => !plan.archivedAt)
+              .map((plan) => ({ id: plan.id, name: plan.name })),
+            // « Tester sur une inscription » : les dernières inscriptions aux événements du type.
+            testBookings: testBookings.map((entry) => ({
+              id: entry.id,
+              label: `${entry.customerName || entry.reference} · ${entry.eventTitle} · ${formatShortDateTime(entry.startsAt, timeZone)}`,
+            })),
           };
     return {
       workspaceName: workspace.name,
@@ -299,9 +408,15 @@ const publishFn = createServerFn({ method: "POST" })
 const cancelFn = createServerFn({ method: "POST" })
   .validator(z.object({ eventId: id, reason: z.string().max(500) }))
   .handler(({ data }) => cancelEventActionImpl(data.eventId, data.reason));
+const keepFn = createServerFn({ method: "POST" })
+  .validator(id)
+  .handler(({ data }) => keepEventActionImpl(data));
 const saveTypeFn = createServerFn({ method: "POST" })
   .validator(formDataInput)
   .handler(({ data }) => saveEventTypeImpl(idOf(data), data));
+const ruleTestFactsFn = createServerFn({ method: "GET" })
+  .validator(id)
+  .handler(({ data }) => ruleTestFactsImpl(data));
 const archiveTypeFn = createServerFn({ method: "POST" })
   .validator(id)
   .handler(({ data }) => archiveEventTypeActionImpl(data));
@@ -329,6 +444,7 @@ export function saveEvent(eventId: string | null, _previous: FormState, form: Fo
 export const publishEventAction = (eventId: string) => publishFn({ data: eventId });
 export const cancelEventAction = (eventId: string, reason: string) =>
   cancelFn({ data: { eventId, reason } });
+export const keepEventAction = (eventId: string) => keepFn({ data: eventId });
 
 /** Création (typeId null) ou modification d'un type ; renvoie vers son panneau. */
 export function saveEventType(typeId: string | null, _previous: FormState, form: FormData) {
@@ -337,6 +453,8 @@ export function saveEventType(typeId: string | null, _previous: FormState, form:
 }
 /** Archive le type puis renvoie vers la liste (redirection levée, à suivre par l'appelant). */
 export const archiveEventTypeAction = (typeId: string) => archiveTypeFn({ data: typeId });
+/** Ce qu'on sait d'une inscription pour « Tester sur une inscription » (rien n'est exécuté). */
+export const getRuleTestFacts = (bookingId: string) => ruleTestFactsFn({ data: bookingId });
 
 export const setEventItemAction = (eventId: string, itemId: string, quantity: number) =>
   setItemFn({ data: { eventId, itemId, quantity } });

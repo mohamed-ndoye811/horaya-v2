@@ -4,19 +4,25 @@
  * organisateurs (Better Auth) : son propre cookie, jamais l'un pour l'autre.
  */
 import {
+  acceptsPass,
   amountDueOnline,
   awaitsOnlinePayment,
+  bookMakeupAsCustomer,
   type CustomerAccount,
+  cancelAbsenceAsCustomer,
   cancelBookingAsCustomer,
+  cancellationPolicyOf,
   customerAccountForSession,
   deleteCustomerAccount,
   enrollmentProgress,
   LOGIN_LINK_MINUTES,
+  passSessionsFor,
   reportAbsenceAsCustomer,
   requestCustomerLoginLink,
   rescheduleBookingAsCustomer,
   rescheduleClosedReason,
   rescheduleDeadline,
+  reschedulePricing,
   rescheduleTargetIssue,
   signInWithLoginLink,
   signOutCustomer,
@@ -30,6 +36,8 @@ import {
   getEnrollment,
   listAccountBookings,
   listCandidatesForTypes,
+  listCustomerEnrollmentIds,
+  listMakeupTargets,
   listRescheduleCandidates,
   listUsablePasses,
 } from "@horaya/db";
@@ -110,7 +118,7 @@ function toCard(row: AccountBooking, now: Date, candidates: Candidates) {
         status: row.status,
         startsAt: row.startsAt,
         now,
-        freeCancellationHours: row.workspace.freeCancellationHours,
+        freeCancellationHours: row.freeCancellationHours,
       }) === null &&
       (candidates.get(row.eventTypeId) ?? []).some(
         (to) =>
@@ -121,7 +129,7 @@ function toCard(row: AccountBooking, now: Date, candidates: Candidates) {
               priceCents: row.eventPriceCents ?? 0,
               paymentMode: row.eventPaymentMode as NonNullable<typeof row.eventPaymentMode>,
             },
-            to: { ...to, minAdvanceHours: to.bookingRules.minAdvanceHours },
+            to: { ...to, minAdvanceHours: to.modules.opening?.closesHoursBefore },
             seats: row.seats,
             now,
           }) === null,
@@ -201,7 +209,10 @@ async function enrollmentOf(
   if (!enrollment || enrollment.cancelledAt) return null;
   return {
     amountCents: enrollment.amountCents,
-    progress: enrollmentProgress(enrollment.sessions, now),
+    progress: {
+      ...enrollmentProgress(enrollment.sessions, now),
+      stage: enrollment.seriesKind === "stage",
+    },
     payment: enrollmentPayment(enrollment, workspace.paymentLinkUrl),
   };
 }
@@ -304,6 +315,40 @@ export async function customerGiftCards(slug: string) {
   return giftCardsForCustomer(workspace.id, account.email);
 }
 
+/**
+ * Séances à rattraper du client connecté (ses inscriptions en cours) : disponibles, avec les
+ * séances où il peut les rattraper, ou déjà rattrapées. Le prochain état de chaque absence
+ * (annulable tant que la séance n'a pas commencé) vient de `absentStartsAt`.
+ */
+export async function customerMakeups(slug: string) {
+  const workspace = await publicWorkspace(slug);
+  const account = await requireAccount(slug);
+  const now = new Date();
+  const customerId = await findCustomerIdByEmail(db, workspace.id, account.email);
+  if (!customerId) return [];
+  const result = [];
+  for (const id of await listCustomerEnrollmentIds(db, workspace.id, customerId)) {
+    const enrollment = await getEnrollment(db, workspace.id, { id }, now);
+    if (!enrollment?.makeupAllowed) continue;
+    for (const makeup of enrollment.makeups) {
+      result.push({
+        ...makeup,
+        targets:
+          makeup.state === "available"
+            ? await listMakeupTargets(db, workspace.id, {
+                absentEventId: makeup.absentEventId,
+                seriesId: enrollment.seriesId,
+                customerId,
+                now,
+                publicOnly: true,
+              })
+            : [],
+      });
+    }
+  }
+  return result;
+}
+
 /** Maquette 8.3 : une réservation, son paiement, l'agenda, changer de date, annuler. */
 export async function customerBookingPage(slug: string, bookingId: string) {
   const workspace = await publicWorkspace(slug);
@@ -313,6 +358,8 @@ export async function customerBookingPage(slug: string, bookingId: string) {
   const now = new Date();
   const money = await bookingMoney(workspace, booking, now);
   const startsAt = booking.eventStartsAt;
+  // Règle d'annulation de l'événement (module Annulation), sinon de la structure.
+  const policy = cancellationPolicyOf(booking.eventModules ?? {}, workspace);
   const closed = booking.enrollmentId
     ? "Séance de ton inscription au trimestre : signale plutôt ton absence"
     : booking.eventId && booking.eventTypeId && startsAt
@@ -320,7 +367,7 @@ export async function customerBookingPage(slug: string, bookingId: string) {
           status: booking.status,
           startsAt,
           now,
-          freeCancellationHours: workspace.freeCancellationHours,
+          freeCancellationHours: policy.freeCancellationHours,
         })
       : "Pas de changement de date pour une location";
   const from =
@@ -344,7 +391,7 @@ export async function customerBookingPage(slug: string, bookingId: string) {
         )
           .map((candidate) => ({
             ...candidate,
-            minAdvanceHours: candidate.bookingRules.minAdvanceHours,
+            minAdvanceHours: candidate.modules.opening?.closesHoursBefore,
           }))
           .filter((to) => rescheduleTargetIssue({ from, to, seats: booking.seats, now }) === null)
           .slice(0, 6)
@@ -353,11 +400,10 @@ export async function customerBookingPage(slug: string, bookingId: string) {
             startsAt: to.startsAt,
             endsAt: to.endsAt,
             remaining: to.capacity === null ? null : to.capacity - to.seatsHeld,
-            // Écart de prix pour ces places (une carte de séances ne change rien).
+            // Écart de prix pour ces places, mêmes tarifs et options (une carte ne change rien).
             deltaCents:
-              booking.paymentStatus === "paid_with_pass"
-                ? 0
-                : (to.priceCents - from.priceCents) * booking.seats,
+              reschedulePricing({ booking, to, paidCents: money.paid }).amountCents -
+              booking.amountCents,
           }))
       : [];
   // Lot 31 : « Payer avec ma carte » si la réservation reste à régler et qu'une carte du client
@@ -371,8 +417,19 @@ export async function customerBookingPage(slug: string, bookingId: string) {
       ? await findCustomerIdByEmail(db, workspace.id, account.email)
       : null;
   const pass = customerId
-    ? (await listUsablePasses(db, workspace.id, customerId, booking.eventTypeId ?? null, now)).find(
-        (entry) => entry.balance >= booking.seats,
+    ? (
+        await listUsablePasses(
+          db,
+          workspace.id,
+          customerId,
+          booking.eventTypeId ?? null,
+          now,
+          startsAt ?? undefined,
+        )
+      ).find(
+        (entry) =>
+          acceptsPass(booking.eventModules?.payment_methods, entry) &&
+          entry.balance >= passSessionsFor(booking.eventModules?.payment_methods, booking.seats),
       )
     : undefined;
   return {
@@ -385,7 +442,7 @@ export async function customerBookingPage(slug: string, bookingId: string) {
       : null,
     reschedule: {
       closed,
-      deadline: startsAt ? rescheduleDeadline(startsAt, workspace.freeCancellationHours) : null,
+      deadline: startsAt ? rescheduleDeadline(startsAt, policy.freeCancellationHours) : null,
       options,
     },
   };
@@ -480,6 +537,34 @@ export async function reportCustomerAbsence(slug: string, bookingId: string): Pr
     return toFormState(error);
   }
   return { success: "C'est noté : ta place profite à quelqu'un d'autre." };
+}
+
+/** « Annuler mon absence » depuis l'espace client : la place est rendue si elle est libre. */
+export async function cancelCustomerAbsence(slug: string, bookingId: string): Promise<FormState> {
+  const workspace = await publicWorkspace(slug);
+  const account = await requireAccount(slug);
+  try {
+    await cancelAbsenceAsCustomer(deps, workspace.id, bookingId, account.email);
+  } catch (error) {
+    return toFormState(error);
+  }
+  return { success: "C'est noté : ta place t'attend." };
+}
+
+/** Réserve une séance à rattraper sur une autre séance du même type. */
+export async function bookCustomerMakeup(
+  slug: string,
+  absentBookingId: string,
+  eventId: string,
+): Promise<FormState> {
+  const workspace = await publicWorkspace(slug);
+  const account = await requireAccount(slug);
+  try {
+    await bookMakeupAsCustomer(deps, workspace.id, absentBookingId, account.email, eventId);
+  } catch (error) {
+    return toFormState(error);
+  }
+  return { success: "Rattrapage réservé : ta place est confirmée." };
 }
 
 export async function saveCustomerProfile(slug: string | null, form: FormData): Promise<FormState> {

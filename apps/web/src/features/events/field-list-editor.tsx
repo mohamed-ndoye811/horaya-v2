@@ -159,7 +159,7 @@ function FieldEditor({
           if (draft.label.trim()) save();
         }
       }}
-      className="flex animate-fade flex-col gap-4 rounded-2xl border-[1.5px] border-ink bg-surface p-4"
+      className="flex animate-fade flex-col gap-4 rounded-2xl bg-surface p-4 outline-[1.5px] -outline-offset-[1.5px] outline-ink"
     >
       <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_180px]">
         <Field label={draft.type === "acceptance" ? "Texte à accepter" : "Libellé"} required>

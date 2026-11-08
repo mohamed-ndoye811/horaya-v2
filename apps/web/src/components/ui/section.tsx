@@ -67,12 +67,15 @@ export function FormSection({
   number,
   title,
   description,
+  aside,
   children,
 }: {
   number: number;
   title: string;
   /** Précision grise après le titre (« Rempli sur chaque événement »). */
   description?: string;
+  /** Information à droite du titre (« 6 modules »). */
+  aside?: ReactNode;
   children: ReactNode;
 }) {
   return (
@@ -84,6 +87,9 @@ export function FormSection({
         <span className="text-lg font-semibold leading-[22px] text-ink">{title}</span>
         {description && (
           <span className="text-sm font-normal leading-[18px] text-ink-subtle">{description}</span>
+        )}
+        {aside && (
+          <span className="ml-auto text-[13px] font-normal leading-4 text-ink-subtle">{aside}</span>
         )}
       </h2>
       {children}

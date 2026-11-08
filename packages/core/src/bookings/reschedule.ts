@@ -3,7 +3,13 @@ import type { EventStatus, EventVisibility, PaymentMode } from "../events/types"
 import { amountDueOnline } from "../payments/rules";
 import { remainingSeats } from "./capacity";
 import type { Booking } from "./model";
-import { priceBooking } from "./pricing";
+import {
+  adjustmentsFromLines,
+  type PriceLine,
+  quoteBooking,
+  selectionFor,
+  selectionFromLines,
+} from "./pricing";
 import type { BookingPaymentStatus, BookingStatus } from "./types";
 
 /**
@@ -78,18 +84,21 @@ export function rescheduleTargetIssue(input: {
  * reste à payer (`dueCents`, la réservation repasse « à payer » si elle était réglée). Moins
  * cher : rien n'est remboursé tout seul, le trop-perçu (`overpaidCents`) est signalé à l'équipe.
  * Payée avec une carte de séances : une séance vaut une séance, rien ne change.
+ * Les tarifs et options choisis suivent (ceux que la nouvelle date n'a plus tombent au défaut) ;
+ * une réservation d'avant le lot 35 (sans détail) prend le tarif par défaut de la nouvelle date.
  */
 export function reschedulePricing(input: {
   booking: Pick<
     Booking,
-    "seats" | "amountCents" | "depositCents" | "paymentMode" | "paymentStatus"
+    "seats" | "amountCents" | "depositCents" | "paymentMode" | "paymentStatus" | "priceLines"
   >;
-  to: Pick<Event, "priceCents" | "paymentMode" | "depositPercent">;
+  to: Pick<Event, "priceCents" | "paymentMode" | "modules">;
   /** Encaissé sur la réservation, remboursements déduits. */
   paidCents: number;
 }): {
   amountCents: number;
   depositCents: number | null;
+  priceLines: PriceLine[];
   paymentMode: PaymentMode;
   paymentStatus: BookingPaymentStatus;
   dueCents: number;
@@ -100,17 +109,26 @@ export function reschedulePricing(input: {
     return {
       amountCents: booking.amountCents,
       depositCents: booking.depositCents,
+      priceLines: booking.priceLines,
       paymentMode: booking.paymentMode,
       paymentStatus: booking.paymentStatus,
       dueCents: 0,
       overpaidCents: 0,
     };
   }
-  const { amountCents, depositCents } = priceBooking(to, booking.seats);
+  const selection = selectionFor(to, booking.seats, selectionFromLines(booking.priceLines));
+  // Les réductions des règles suivent l'inscription (le passage à un tarif est déjà dans son choix).
+  const { lines, amountCents, depositCents } = quoteBooking(
+    to,
+    booking.seats,
+    selection,
+    adjustmentsFromLines(booking.priceLines),
+  );
   const priced = { amountCents, depositCents, paymentMode: to.paymentMode };
   const dueCents = amountDueOnline(priced, paidCents);
   return {
     ...priced,
+    priceLines: lines,
     paymentStatus:
       booking.paymentStatus === "paid" && dueCents > 0 ? "none" : booking.paymentStatus,
     dueCents,

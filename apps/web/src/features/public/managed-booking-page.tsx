@@ -1,3 +1,4 @@
+import { priceDetail } from "@horaya/core";
 import type { ReactNode } from "react";
 import { BookingAnswers } from "@/components/app/field-answers";
 import { stagger, WordsReveal } from "@/components/motion/words";
@@ -74,6 +75,9 @@ export function ManagedBookingPage({
     missing > 0 ? `${named} · ${missing} participant${missing > 1 ? "s" : ""} à compléter` : named;
   const manageHref = `/${slug}/reservation/${token}`;
   const deposit = booking.paymentMode === "deposit";
+  const restWhere =
+    booking.eventModules?.deposit?.balance === "later" ? "à régler plus tard" : "sur place";
+  const detail = priceDetail(booking.priceLines);
   // `rest` à côté de la pastille, qui ne passe pas à la ligne (évite qu'elle déborde sur mobile).
   const paymentPill: { label: string; tone: Tone; rest?: string } | null =
     booking.amountCents === 0
@@ -84,7 +88,7 @@ export function ManagedBookingPage({
           ? {
               label: deposit ? "Acompte payé" : "Payé",
               rest: deposit
-                ? `reste ${formatMoney(booking.amountCents - paid)} sur place`
+                ? `reste ${formatMoney(booking.amountCents - paid)} ${restWhere}`
                 : undefined,
               tone: "success",
             }
@@ -94,7 +98,7 @@ export function ManagedBookingPage({
                   ? `Acompte de ${formatMoney(due)} à payer`
                   : `${formatMoney(due)} à payer en ligne`,
                 rest: deposit
-                  ? `reste ${formatMoney(booking.amountCents - due)} sur place`
+                  ? `reste ${formatMoney(booking.amountCents - due)} ${restWhere}`
                   : undefined,
                 tone: "warning",
               }
@@ -264,7 +268,42 @@ export function ManagedBookingPage({
             <Fact label="Quand">{formatEventRange(startsAt, endsAt, tz)}</Fact>
           )}
           {where && <Fact label="Où">{where}</Fact>}
+          {booking.onlineUrl && (
+            <Fact label="Lien de la visio">
+              <a
+                href={booking.onlineUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="underline underline-offset-2"
+              >
+                {booking.onlineUrl}
+              </a>
+            </Fact>
+          )}
+          {booking.equipment.length > 0 && (
+            <Fact label="Matériel">{booking.equipment.join(", ")}</Fact>
+          )}
           <Fact label="Participants">{participants}</Fact>
+          {booking.eventModules?.messages?.bring && (
+            <Fact label="À apporter">{booking.eventModules.messages.bring}</Fact>
+          )}
+          {(booking.eventModules?.documents?.files.length ?? 0) > 0 && (
+            <Fact label="Documents">
+              <span className="flex flex-col gap-1">
+                {booking.eventModules?.documents?.files.map((file) => (
+                  <a
+                    key={file.url}
+                    href={file.url}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="underline underline-offset-2 hover:text-link"
+                  >
+                    {file.name}
+                  </a>
+                ))}
+              </span>
+            </Fact>
+          )}
           {(Object.keys(booking.answers ?? {}).length > 0 ||
             booking.participants.some((entry) => Object.keys(entry.answers).length > 0)) && (
             <Fact label="Tes réponses">
@@ -284,6 +323,9 @@ export function ManagedBookingPage({
               )}
               {paymentPill?.rest && (
                 <span className="text-[13px] font-medium text-ink-muted">{paymentPill.rest}</span>
+              )}
+              {detail && (
+                <span className="basis-full text-[13px] font-medium text-ink-muted">{detail}</span>
               )}
             </span>
           </Fact>

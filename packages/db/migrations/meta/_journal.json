@@ -155,6 +155,48 @@
       "when": 1794138005790,
       "tag": "0021_types_sur_mesure",
       "breakpoints": true
+    },
+    {
+      "idx": 22,
+      "version": "7",
+      "when": 1794142770542,
+      "tag": "0022_restes_trimestre_cartes",
+      "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "7",
+      "when": 1794146151610,
+      "tag": "0023_fonctionnement_modules",
+      "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1794148975025,
+      "tag": "0024_ressources",
+      "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "7",
+      "when": 1794151494890,
+      "tag": "0025_argent",
+      "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "7",
+      "when": 1794151977281,
+      "tag": "0026_regles",
+      "breakpoints": true
+    },
+    {
+      "idx": 27,
+      "version": "7",
+      "when": 1794154231650,
+      "tag": "0027_le_temps",
+      "breakpoints": true
     }
   ]
 }

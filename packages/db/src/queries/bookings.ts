@@ -5,6 +5,7 @@ import type {
   EventTypeField,
   FieldValues,
   PaymentMode,
+  PriceLine,
 } from "@horaya/core";
 import {
   and,
@@ -33,6 +34,7 @@ import {
   itemUnit,
   user,
 } from "../schema";
+import { listBookingEquipment } from "./inventory";
 
 const toDate = (value: unknown): Date | null =>
   value === null || value === undefined ? null : new Date(String(value));
@@ -79,6 +81,8 @@ export interface BookingRow {
   status: BookingStatus;
   seats: number;
   amountCents: number;
+  /** Détail du prix (lot 35) ; vide pour les réservations plus anciennes. */
+  priceLines: PriceLine[];
   paymentMode: PaymentMode;
   paymentStatus: BookingPaymentStatus;
   createdAt: Date;
@@ -120,6 +124,7 @@ export async function listBookings(
       status: booking.status,
       seats: booking.seats,
       amountCents: booking.amountCents,
+      priceLines: booking.priceLines,
       paymentMode: booking.paymentMode,
       paymentStatus: booking.paymentStatus,
       createdAt: booking.createdAt,
@@ -262,15 +267,25 @@ export async function listCounterEvents(
       locationName: event.locationName,
       capacity: event.capacity,
       priceCents: event.priceCents,
+      paymentMode: event.paymentMode,
+      /** Tarifs et options, moyens acceptés (lot 35). */
+      modules: event.modules,
       color: eventType.color,
       seriesId: event.seriesId,
       /** Questions de l'inscription (« Ce que tu demandes »), saisies au comptoir. */
       fields: event.fields,
+      /** Règles et description : questions en plus des règles (lot 36). */
+      rules: event.rules,
+      fieldValues: event.fieldValues,
       /** Prix de l'inscription à toute la série, si elle est ouverte. */
       enrollmentPriceCents: sql<
         number | null
       >`(select s.enrollment_price_cents from event_series s where s.id = ${event.seriesId} and s.enrollment_enabled)`,
-      waitlistEnabled: sql<boolean>`coalesce((${eventType.bookingRules}->>'waitlistEnabled')::boolean, false)`,
+      /** Prorata : séances publiées de la série, passées comprises, et celles qui restent. */
+      enrollmentProrata: sql<boolean>`coalesce((select s.enrollment_prorata from event_series s where s.id = ${event.seriesId}), false)`,
+      seriesTotal: sql<number>`coalesce((select count(*) from event e where e.series_id = ${event.seriesId} and e.status = 'published'), 0)::int`,
+      seriesRemaining: sql<number>`coalesce((select count(*) from event e where e.series_id = ${event.seriesId} and e.status = 'published' and e.starts_at > ${options.now.toISOString()}::timestamptz), 0)::int`,
+      waitlistEnabled: sql<boolean>`(${event.modules}->'waitlist') is not null`,
       seatsHeld: sql<number>`coalesce((select sum(b.seats) from booking b where b.event_id = "event"."id" and b.status in ('pending', 'confirmed')), 0)::int`,
     })
     .from(event)
@@ -337,6 +352,7 @@ export async function getBookingDetail(db: Executor, organizationId: string, boo
       absentAt: booking.absentAt,
       amountCents: booking.amountCents,
       depositCents: booking.depositCents,
+      priceLines: booking.priceLines,
       paymentMode: booking.paymentMode,
       paymentStatus: booking.paymentStatus,
       source: booking.source,
@@ -362,11 +378,20 @@ export async function getBookingDetail(db: Executor, organizationId: string, boo
         startsAt: event.startsAt,
         endsAt: event.endsAt,
         locationName: event.locationName,
+        locationAddress: event.locationAddress,
+        /** Lien de visio : pour la confirmation et le rappel, jamais pour une page publique. */
+        onlineUrl: event.onlineUrl,
+        staffMemberId: event.staffMemberId,
         capacity: event.capacity,
         status: event.status,
         paymentLinkUrl: event.paymentLinkUrl,
         coverImageUrl: event.coverImageUrl,
         fields: event.fields,
+        /** Modules copiés sur l'événement (messages et documents des e-mails). */
+        modules: event.modules,
+        /** Règles copiées sur l'événement : questions en plus, documents à apporter. */
+        rules: event.rules,
+        timezone: event.timezone,
       },
       typeColor: eventType.color,
     })
@@ -377,7 +402,7 @@ export async function getBookingDetail(db: Executor, organizationId: string, boo
     .where(and(eq(booking.organizationId, organizationId), eq(booking.id, bookingId)));
   if (!row) return null;
 
-  const [participants, activity, [stats], [held], items] = await Promise.all([
+  const [participants, activity, [stats], [held], items, equipment] = await Promise.all([
     db
       .select()
       .from(bookingParticipant)
@@ -417,6 +442,7 @@ export async function getBookingDetail(db: Executor, organizationId: string, boo
           )
       : Promise.resolve([{ value: 0 }]),
     bookingItems(db, bookingId, row.kind === "event"),
+    listBookingEquipment(db, bookingId),
   ]);
 
   return {
@@ -432,6 +458,8 @@ export async function getBookingDetail(db: Executor, organizationId: string, boo
     }>,
     customerStats: stats ?? { bookings: 0, spentCents: 0, cancellations: 0 },
     eventSeatsHeld: held?.value ?? 0,
+    /** Matériel réservé par le module Matériel avancé (« Tour Shimpo · Assise basse · #2 »). */
+    equipment,
     rentalItems: row.kind === "rental" ? items : [],
     /** Matériel attribué à une réservation d'événement (comptoir). */
     assignedItems: row.kind === "event" ? items : [],

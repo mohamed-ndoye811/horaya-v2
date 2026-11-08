@@ -3,6 +3,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import {
   cancelBookingActionImpl,
+  cancelRecreditInfoImpl,
   checkInActionImpl,
   confirmBookingActionImpl,
   counterItemsActionImpl,
@@ -23,6 +24,7 @@ export type { CounterResult } from "@/server/reservations";
  */
 const id = z.string().uuid();
 const withReason = z.object({ bookingId: id, reason: z.string().max(500) });
+const cancelWithRecredit = withReason.extend({ recredit: z.boolean().optional() });
 const withAmount = z.object({ bookingId: id, amount: z.string().max(20) });
 
 const confirmFn = createServerFn({ method: "POST" })
@@ -32,8 +34,11 @@ const refuseFn = createServerFn({ method: "POST" })
   .validator(withReason)
   .handler(({ data }) => refuseBookingActionImpl(data.bookingId, data.reason));
 const cancelFn = createServerFn({ method: "POST" })
-  .validator(withReason)
-  .handler(({ data }) => cancelBookingActionImpl(data.bookingId, data.reason));
+  .validator(cancelWithRecredit)
+  .handler(({ data }) => cancelBookingActionImpl(data.bookingId, data.reason, data.recredit));
+const recreditInfoFn = createServerFn({ method: "GET" })
+  .validator(id)
+  .handler(({ data }) => cancelRecreditInfoImpl(data));
 const checkInFn = createServerFn({ method: "POST" })
   .validator(z.object({ bookingId: id, present: z.boolean() }))
   .handler(({ data }) => checkInActionImpl(data.bookingId, data.present));
@@ -60,8 +65,10 @@ const recordRefundFn = createServerFn({ method: "POST" })
 export const confirmBookingAction = (bookingId: string) => confirmFn({ data: bookingId });
 export const refuseBookingAction = (bookingId: string, reason: string) =>
   refuseFn({ data: { bookingId, reason } });
-export const cancelBookingAction = (bookingId: string, reason: string) =>
-  cancelFn({ data: { bookingId, reason } });
+export const cancelBookingAction = (bookingId: string, reason: string, recredit?: boolean) =>
+  cancelFn({ data: { bookingId, reason, recredit } });
+/** La case « Recréditer la séance sur la carte » : null si la réservation n'est pas payée avec une carte. */
+export const cancelRecreditInfoAction = (bookingId: string) => recreditInfoFn({ data: bookingId });
 export const checkInAction = (bookingId: string, present: boolean) =>
   checkInFn({ data: { bookingId, present } });
 export const searchCounterCustomersAction = (search: string) => searchCustomersFn({ data: search });

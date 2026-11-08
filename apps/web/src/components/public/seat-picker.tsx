@@ -11,12 +11,15 @@ export function SeatPicker({
   priceCents,
   maxSeats,
   label,
+  note,
 }: {
   bookHref: string;
   priceCents: number;
   maxSeats: number;
   /** « Réserver mes places », « Rejoindre la liste d'attente »… */
   label: string;
+  /** Tarifs et options au choix (« Plein 45 € · Réduit 35 € · options à l'étape suivante »). */
+  note?: string | null;
 }) {
   const [seats, setSeats] = useState(1);
   return (
@@ -41,6 +44,7 @@ export function SeatPicker({
           {priceCents > 0 ? formatMoney(priceCents * seats) : "Gratuit"}
         </span>
       </div>
+      {note && <p className="-mt-2 text-[13px] leading-[18px] text-ink-muted">{note}</p>}
       <ButtonLink
         href={`${bookHref}${bookHref.includes("?") ? "&" : "?"}places=${seats}`}
         variant="brand"

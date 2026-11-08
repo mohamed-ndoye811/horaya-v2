@@ -6,7 +6,7 @@ import { useInvalidMessage } from "@/lib/use-invalid-message";
 
 // DA v4 : champ gris clair arrondi, qui blanchit et prend un contour noir au focus.
 const inputBase =
-  "w-full min-w-0 rounded-xl border border-line-soft bg-field font-medium text-ink outline-none " +
+  "min-w-0 rounded-xl border border-line-soft bg-field font-medium text-ink outline-none " +
   "placeholder:text-ink-subtle transition-[border-color,background-color,box-shadow] " +
   "focus:border-ink focus:bg-surface " +
   "aria-invalid:border-danger aria-invalid:focus:shadow-[0_0_0_0.5px_var(--color-danger)] " +
@@ -17,6 +17,8 @@ const inputBase =
  * dès qu'on touche le champ.
  */
 const sizes = {
+  /** 36 px : champ d'une ligne dense (constructeur de règle, fenêtre compacte). */
+  xs: "h-9 pl-3 text-base lg:text-[13px]",
   /** 40 px : champ dans une ligne ou à côté d'une pastille (code couleur). */
   sm: "h-10 pl-3.5 text-base lg:text-sm",
   md: "h-11 pl-3.5 text-base lg:text-[15px]",
@@ -25,18 +27,20 @@ const sizes = {
 
 /** Marge droite : normale, ou réservée à une icône / un bouton placé dans le champ. */
 const trailingPadding = {
-  none: { sm: "pr-3.5", md: "pr-3.5", lg: "pr-4" },
-  icon: { sm: "pr-10", md: "pr-10", lg: "pr-10" },
-  action: { sm: "pr-24", md: "pr-24", lg: "pr-24" },
+  none: { xs: "pr-3", sm: "pr-3.5", md: "pr-3.5", lg: "pr-4" },
+  icon: { xs: "pr-9", sm: "pr-10", md: "pr-10", lg: "pr-10" },
+  action: { xs: "pr-24", sm: "pr-24", md: "pr-24", lg: "pr-24" },
 };
 
 export type InputSize = keyof typeof sizes;
 
+/** `width` : « fit » laisse la largeur au parent (champ court dans une ligne de contrôles). */
 export function inputClasses(
   size: InputSize = "md",
   trailing: keyof typeof trailingPadding = "none",
+  width: "full" | "fit" = "full",
 ) {
-  return cn(inputBase, sizes[size], trailingPadding[trailing][size]);
+  return cn(inputBase, width === "full" && "w-full", sizes[size], trailingPadding[trailing][size]);
 }
 
 interface FieldProps {
@@ -122,7 +126,7 @@ export function Field({
 
 /** Zone de texte multiligne (description). */
 export function textareaClasses() {
-  return cn(inputBase, "min-h-32 resize-y px-3.5 py-3 text-base leading-[23px]");
+  return cn(inputBase, "w-full min-h-32 resize-y px-3.5 py-3 text-base leading-[23px]");
 }
 
 interface AffixInputProps extends Omit<ComponentProps<"input">, "size" | "className" | "prefix"> {

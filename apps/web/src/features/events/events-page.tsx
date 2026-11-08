@@ -34,10 +34,10 @@ export function EventsPage({
   filters,
 }: {
   data: Awaited<ReturnType<typeof getEvents>>;
-  filters: { onglet?: EventTab; q?: string; type?: string };
+  filters: { onglet?: EventTab; q?: string; type?: string; intervenant?: string };
 }) {
   const router = useRouter();
-  const { timeZone, now, counts, events, types } = data;
+  const { timeZone, now, counts, events, types, staff } = data;
   const tab = filters.onglet ?? "all";
   const search = filters.q;
   const typeId = filters.type;
@@ -86,6 +86,7 @@ export function EventsPage({
       onglet: tab === "all" ? undefined : tab,
       q: search,
       type: typeId,
+      intervenant: filters.intervenant,
       ...overrides,
     });
 
@@ -192,6 +193,17 @@ export function EventsPage({
                   ...types.map((type) => ({ value: type.id, label: type.name })),
                 ]}
               />
+              {staff.length > 0 && (
+                <FilterSelect
+                  param="intervenant"
+                  label="Intervenant"
+                  className="hidden md:block md:w-[170px]"
+                  options={[
+                    { value: "", label: "Tous les intervenants" },
+                    ...staff.map((entry) => ({ value: entry.id, label: entry.name })),
+                  ]}
+                />
+              )}
             </div>
           </>
         }

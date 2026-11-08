@@ -74,6 +74,7 @@ export function eventBadge(
   requiresApproval: boolean,
 ): { label: string; tone: Tone } | null {
   if (state.kind === "closed") return { label: "Réservations closes", tone: "draft" };
+  if (state.kind === "upcoming") return { label: "Ouverture prochaine", tone: "info" };
   if (state.kind !== "open") return { label: "Complet", tone: "draft" };
   if (requiresApproval) return { label: "Sur validation", tone: "info" };
   if (seats.tone === "warning") return { label: seats.label, tone: "warning" };
@@ -84,6 +85,7 @@ const ACTIONS: Record<BookingState["kind"], { label: string; className: string }
   open: { label: "Réserver →", className: "text-[var(--brand-text)]" },
   waitlist: { label: "Liste d'attente →", className: "text-ink" },
   full: { label: "Complet", className: "text-ink-subtle" },
+  upcoming: { label: "Voir →", className: "text-ink" },
   closed: { label: "Voir →", className: "text-ink-subtle" },
 };
 
@@ -378,7 +380,10 @@ function EventCard({
             style={{ backgroundColor: event.typeColor }}
           />
           <span className="truncate">
-            {event.typeName} · {formatPublicSchedule(event.startsAt, event.endsAt, tz).hours}
+            {event.typeName} ·{" "}
+            {event.seriesKind === "stage"
+              ? "plusieurs séances, une inscription"
+              : formatPublicSchedule(event.startsAt, event.endsAt, tz).hours}
           </span>
         </p>
         <p className="text-lg font-semibold leading-[22px] tracking-[-0.01em] text-ink">
@@ -401,7 +406,12 @@ function EventCard({
         )}
         <div className="mt-auto flex items-center justify-between pt-0.5">
           <span className="text-[15px] font-semibold leading-5 text-ink">
-            {event.priceCents > 0 ? (
+            {event.stagePriceCents ? (
+              <>
+                {formatMoney(event.stagePriceCents)}{" "}
+                <span className="font-normal text-ink-subtle">le stage</span>
+              </>
+            ) : event.priceCents > 0 ? (
               <>
                 {formatMoney(event.priceCents)}{" "}
                 <span className="font-normal text-ink-subtle">/ pers.</span>
@@ -458,7 +468,11 @@ function EventRow({
         {seats.label}
       </span>
       <span className="w-[72px] shrink-0 text-right text-[15px] font-semibold leading-5 text-ink lg:w-[90px]">
-        {event.priceCents > 0 ? formatMoney(event.priceCents) : "Gratuit"}
+        {event.stagePriceCents
+          ? formatMoney(event.stagePriceCents)
+          : event.priceCents > 0
+            ? formatMoney(event.priceCents)
+            : "Gratuit"}
       </span>
       {/* Pas de bouton dans un lien : la pilule n'est qu'un repère visuel. */}
       <span className="hidden shrink-0 sm:block">

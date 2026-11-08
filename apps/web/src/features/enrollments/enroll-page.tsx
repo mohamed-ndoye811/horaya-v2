@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { eventCover } from "@/components/public/public-events";
 import { NotFoundScreen } from "@/components/public/public-not-found";
 import { ArrowLeft } from "@/components/ui/icons";
@@ -8,6 +9,8 @@ import { displayFontClass } from "@/lib/fonts";
 import { formatDateTimeShort, formatMoney } from "@/lib/format";
 import { Link } from "@/lib/navigation";
 import { paymentNote } from "@/lib/public-booking";
+import { RateTiles } from "../public/price-choice";
+import { StageSessionList } from "../public/stage-card";
 
 /** « Inscris-toi pour tout le trimestre » : coordonnées, récapitulatif des séances, un paiement. */
 export function EnrollPage({
@@ -18,6 +21,15 @@ export function EnrollPage({
   data: Awaited<ReturnType<typeof getEnrollEventPage>>;
 }) {
   const slug = workspace.slug;
+  // Stage (lot 37) : un tarif à choisir, au prix de tout le stage.
+  const stage = event?.seriesKind === "stage";
+  const rates = (event?.modules.pricing?.rates ?? []).map((rate) => ({
+    ...rate,
+    priceCents: offer?.enrollmentPrices?.[rate.id] ?? rate.priceCents,
+  }));
+  const fallbackRate =
+    rates.find((rate) => rate.id === event?.modules.pricing?.defaultRateId) ?? rates[0];
+  const [rateId, setRateId] = useState(fallbackRate?.id ?? "");
   if (!event || !offer) {
     return (
       <NotFoundScreen
@@ -27,9 +39,11 @@ export function EnrollPage({
       />
     );
   }
-  const price = offer.enrollmentPriceCents ?? 0;
+  const { quote } = offer;
+  const chosenRate = stage ? rates.find((rate) => rate.id === rateId) : undefined;
+  const price = chosenRate?.priceCents ?? quote.priceCents;
   const count = `${offer.sessions.length} séance${offer.sessions.length > 1 ? "s" : ""}`;
-  const place = event.locationName ?? (event.onlineUrl ? "En ligne" : null);
+  const place = event.locationName ?? (event.online ? "En ligne" : null);
   // Paiement par le lien externe de l'atelier (le paiement intégré ne couvre pas les inscriptions).
   const link = channel?.kind === "link" && price > 0 ? channel : null;
 
@@ -49,7 +63,7 @@ export function EnrollPage({
             displayFontClass(workspace.displayFont),
           )}
         >
-          Inscris-toi au trimestre
+          {stage ? "Inscris-toi au stage" : "Inscris-toi au trimestre"}
         </h1>
       </div>
 
@@ -58,10 +72,12 @@ export function EnrollPage({
         eventSlug={eventSlug}
         linkSlug={null}
         seats={1}
-        fields={[]}
+        fields={event.fields}
+        rules={event.rules}
         workspaceName={workspace.name}
         submitLabel="Confirmer mon inscription"
         enrollment
+        giftCards={false}
         prefill={prefill}
         action={createPublicEnrollmentAction.bind(null, slug, eventSlug)}
         payment={
@@ -89,16 +105,35 @@ export function EnrollPage({
                   {[count, place].filter(Boolean).join(" · ")}
                 </p>
               </div>
-              <ol className="flex flex-col gap-1.5 border-t border-bg pt-3.5 text-sm leading-[18px] text-ink/85">
-                {offer.sessions.map((session, index) => (
-                  <li key={session.id} className="flex gap-3">
-                    <span className="w-5 shrink-0 font-mono text-xs leading-[18px] text-ink-subtle">
-                      {index + 1}
-                    </span>
-                    {formatDateTimeShort(session.startsAt, workspace.timezone)}
-                  </li>
-                ))}
-              </ol>
+              {stage && rates.length > 1 && event.paymentMode !== "free" && (
+                <div className="border-t border-bg pt-3.5">
+                  <RateTiles rates={rates} value={rateId} onChange={setRateId} name="rateId" />
+                </div>
+              )}
+              {stage && rates.length <= 1 && <input type="hidden" name="rateId" value={rateId} />}
+              {stage ? (
+                <div className="border-t border-bg pt-3.5">
+                  <StageSessionList sessions={offer.sessions} timeZone={workspace.timezone} />
+                </div>
+              ) : (
+                <ol className="flex flex-col gap-1.5 border-t border-bg pt-3.5 text-sm leading-[18px] text-ink/85">
+                  {offer.sessions.map((session, index) => (
+                    <li key={session.id} className="flex gap-3">
+                      <span className="w-5 shrink-0 font-mono text-xs leading-[18px] text-ink-subtle">
+                        {index + 1}
+                      </span>
+                      {formatDateTimeShort(session.startsAt, workspace.timezone)}
+                    </li>
+                  ))}
+                </ol>
+              )}
+              {quote.prorated && (
+                <p className="rounded-[14px] bg-field p-3.5 text-sm font-semibold leading-[18px] text-ink">
+                  {quote.remaining} séance{quote.remaining > 1 ? "s" : ""} restante
+                  {quote.remaining > 1 ? "s" : ""} sur {quote.total} : {formatMoney(price)} au lieu
+                  de {formatMoney(quote.fullCents)}
+                </p>
+              )}
               <p className="flex items-baseline justify-between gap-4 border-t border-bg pt-3.5">
                 <span className="text-[15px] font-bold leading-5 text-ink">Total TTC</span>
                 <span className="text-xl font-semibold leading-6 text-ink">
@@ -112,13 +147,14 @@ export function EnrollPage({
                     : paymentNote(
                         event.paymentMode === "free" ? "on_site" : event.paymentMode,
                         null,
-                        null,
+                        undefined,
                       )}
                 </p>
               )}
               <p className="text-xs leading-[17px] text-ink-subtle">
-                Un empêchement ? Tu signales ton absence depuis ton lien : la place profite à la
-                liste d'attente, ton inscription reste.
+                {stage
+                  ? "Un empêchement ? Tu annules ton inscription depuis ton lien, selon la règle d'annulation de l'atelier."
+                  : "Un empêchement ? Tu signales ton absence depuis ton lien : la place profite à la liste d'attente, ton inscription reste."}
               </p>
             </div>
           </>

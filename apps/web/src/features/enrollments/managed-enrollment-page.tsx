@@ -1,14 +1,25 @@
+import { BookingAnswers } from "@/components/app/field-answers";
 import { Swap } from "@/components/motion/swap";
 import { stagger, WordsReveal } from "@/components/motion/words";
 import { StatusBadge } from "@/components/ui/badge";
 import { ButtonLink } from "@/components/ui/button";
 import { inkCardClasses } from "@/components/ui/section";
-import { reportAbsenceAction } from "@/functions/public";
+import {
+  cancelAbsenceAction,
+  cancelStageEnrollmentAction,
+  reportAbsenceAction,
+} from "@/functions/public";
 import { cn } from "@/lib/cn";
 import { displayFontClass } from "@/lib/fonts";
 import { formatDateTimeShort, formatMoney } from "@/lib/format";
+import { Link } from "@/lib/navigation";
 import type { ManagedEnrollment } from "@/server/enrollments";
-import { AbsenceButton, EnrollmentNextSession } from "./enrollment-progress";
+import {
+  AbsenceButton,
+  CancelAbsenceButton,
+  CancelStageButton,
+  EnrollmentNextSession,
+} from "./enrollment-progress";
 
 /**
  * Lien de gestion d'une inscription à une série (même adresse que « Gérer ma réservation ») :
@@ -33,7 +44,13 @@ export function ManagedEnrollmentPage({
   const cancelled = enrollment.cancelledAt !== null;
   const { progress, payment } = enrollment;
   const onAbsent = (eventId: string) => reportAbsenceAction(slug, token, eventId);
+  const onCancelAbsence = (eventId: string) => cancelAbsenceAction(slug, token, eventId);
+  const makeupOf = (bookingId: string) =>
+    enrollment.makeups.find((makeup) => makeup.absentBookingId === bookingId);
+  const toCatchUp = enrollment.makeups.filter((makeup) => makeup.state === "available").length;
+  const { answers } = enrollment;
   const count = `${progress.total} séance${progress.total > 1 ? "s" : ""}`;
+  const stage = enrollment.seriesKind === "stage";
 
   return (
     <div className="mx-auto flex w-full max-w-[1000px] flex-col gap-4">
@@ -42,7 +59,9 @@ export function ManagedEnrollmentPage({
           {cancelled ? (
             <StatusBadge tone="draft">Désinscrit·e</StatusBadge>
           ) : (
-            <StatusBadge tone="info">Inscrit·e au trimestre</StatusBadge>
+            <StatusBadge tone="info">
+              {stage ? "Inscrit·e au stage" : "Inscrit·e au trimestre"}
+            </StatusBadge>
           )}
         </span>
         <h1
@@ -60,8 +79,12 @@ export function ManagedEnrollmentPage({
           style={stagger(3)}
         >
           {cancelled
-            ? `${workspace.name} a mis fin à ton inscription à « ${title} ». Les séances à venir sont libérées.`
-            : `${fresh ? `Merci ${enrollment.customerFirstName}. ` : ""}Une place t'attend à chacune des ${count} de « ${title} ». Un empêchement ? Signale ton absence ici : ta place profite à quelqu'un d'autre, ton inscription reste.`}
+            ? stage
+              ? `Ton inscription au stage « ${title} » est annulée, pour toutes ses séances.`
+              : `${workspace.name} a mis fin à ton inscription à « ${title} ». Les séances à venir sont libérées.`
+            : stage
+              ? `${fresh ? `Merci ${enrollment.customerFirstName}. ` : ""}Une place t'attend à chacune des ${count} du stage « ${title} ». Un empêchement ? Tu peux annuler ton inscription ici, selon la règle d'annulation de l'atelier.`
+              : `${fresh ? `Merci ${enrollment.customerFirstName}. ` : ""}Une place t'attend à chacune des ${count} de « ${title} ». Un empêchement ? Signale ton absence ici : ta place profite à quelqu'un d'autre, ton inscription reste.`}
         </p>
         <div className="flex flex-col gap-3.5 pt-1 sm:flex-row sm:items-center">
           {payment?.payUrl && !cancelled && (
@@ -74,6 +97,9 @@ export function ManagedEnrollmentPage({
             >
               Payer {formatMoney(enrollment.amountCents)} ↗
             </ButtonLink>
+          )}
+          {stage && !cancelled && (
+            <CancelStageButton onCancel={() => cancelStageEnrollmentAction(slug, token)} />
           )}
           {enrollment.customerEmail && (
             <p className="text-sm leading-[18px] text-notch-idle">
@@ -124,10 +150,38 @@ export function ManagedEnrollmentPage({
                 >
                   {formatDateTimeShort(session.startsAt, tz)}
                 </span>
+                {session.sessionTopic && (
+                  <span className="text-ink-muted">{session.sessionTopic}</span>
+                )}
               </p>
-              <Swap value={session.absent ? "absent" : session.status}>
+              <Swap
+                value={
+                  session.absent ? `absent${makeupOf(session.bookingId)?.state}` : session.status
+                }
+              >
                 {session.absent ? (
-                  <StatusBadge tone="neutral">Absence signalée</StatusBadge>
+                  <span className="flex flex-wrap items-center gap-2">
+                    <StatusBadge tone="neutral">Absence signalée</StatusBadge>
+                    {makeupOf(session.bookingId) && (
+                      <StatusBadge
+                        tone={makeupOf(session.bookingId)?.state === "available" ? "info" : "draft"}
+                      >
+                        {makeupOf(session.bookingId)?.state === "used"
+                          ? "Rattrapée"
+                          : makeupOf(session.bookingId)?.state === "available"
+                            ? "À rattraper"
+                            : "Rattrapage échu"}
+                      </StatusBadge>
+                    )}
+                    {!cancelled && session.startsAt > now && (
+                      <CancelAbsenceButton
+                        session={session}
+                        timeZone={tz}
+                        onCancel={onCancelAbsence}
+                        size="xs"
+                      />
+                    )}
+                  </span>
                 ) : session.status === "cancelled" ? (
                   <StatusBadge tone="draft">Libérée</StatusBadge>
                 ) : session.startsAt <= now ? (
@@ -144,6 +198,43 @@ export function ManagedEnrollmentPage({
           ))}
         </ol>
       </section>
+
+      {!cancelled && toCatchUp > 0 && (
+        <p
+          className="reveal rounded-3xl bg-surface px-6 py-5 text-[15px] leading-[22px] text-ink-muted"
+          style={stagger(6)}
+        >
+          Tu as {toCatchUp} séance{toCatchUp > 1 ? "s" : ""} à rattraper avant la fin du trimestre.
+          Choisis la date depuis{" "}
+          <Link href={`/${slug}/mon-espace`} className="font-semibold text-ink underline">
+            ton espace client
+          </Link>
+          .
+        </p>
+      )}
+
+      {answers &&
+        (Object.keys(answers.answers).length > 0 ||
+          Object.keys(answers.participant).length > 0) && (
+          <section
+            className="reveal flex flex-col gap-3.5 rounded-3xl bg-surface p-6"
+            style={stagger(7)}
+          >
+            <h2 className="text-lg font-semibold leading-[22px] text-ink">Tes réponses</h2>
+            <BookingAnswers
+              fields={answers.fields}
+              answers={answers.answers}
+              participants={[
+                {
+                  firstName: enrollment.customerFirstName,
+                  lastName: enrollment.customerLastName,
+                  answers: answers.participant,
+                },
+              ]}
+              timeZone={tz}
+            />
+          </section>
+        )}
     </div>
   );
 }

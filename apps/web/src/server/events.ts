@@ -10,8 +10,12 @@ import {
   createEventType,
   deleteCalendarLink,
   fromZonedParts,
+  keepEventDespiteMinimum,
   publishEvent,
+  type RuleFacts,
   removeEventItem,
+  ruleTestFacts,
+  type StageSessionInput,
   setEventItemQuantity,
   type UpdateEventInput,
   type UpdateEventTypeInput,
@@ -37,12 +41,50 @@ function zoned(form: FormData, dateKey: string, timeKey: string, timeZone: strin
   return fromZonedParts({ ...date, hour: Number(time[1]), minute: Number(time[2]) }, timeZone);
 }
 
+/** Restriction des exemplaires (JSON `{ besoin: [exemplaires] }`, liste vide : tous). */
+function equipmentUnits(form: FormData) {
+  const raw = text(form, "equipmentUnits");
+  if (!raw) return {};
+  try {
+    return { equipmentUnits: JSON.parse(raw) as Record<string, string[]> };
+  } catch {
+    return {};
+  }
+}
+
+/** Séances d'un stage (JSON du formulaire, heures murales de l'espace) ; null hors stage. */
+function stageSessions(form: FormData, timeZone: string): StageSessionInput[] | null {
+  const raw = text(form, "sessions");
+  if (!raw) return null;
+  try {
+    const drafts = JSON.parse(raw) as Array<{
+      date: string;
+      start: string;
+      end: string;
+      topic: string;
+    }>;
+    return drafts.map((draft) => {
+      const at = (time: string) => {
+        const date = parseCivilDate(draft.date);
+        const match = time.match(/^(\d{2}):(\d{2})$/);
+        return date && match
+          ? fromZonedParts({ ...date, hour: Number(match[1]), minute: Number(match[2]) }, timeZone)
+          : "date invalide";
+      };
+      return { startsAt: at(draft.start), endsAt: at(draft.end), topic: draft.topic || null };
+    });
+  } catch {
+    return null;
+  }
+}
+
 function eventFields(form: FormData, timeZone: string) {
   const startsAt = zoned(form, "startDate", "startTime", timeZone);
   const endsAt = zoned(form, "endDate", "endTime", timeZone);
   const capacity = text(form, "capacity");
   const paymentMode = text(form, "paymentMode") || "free";
-  const deposit = text(form, "depositPercent");
+  const deposit = text(form, "depositValue");
+  const fixed = text(form, "depositKind") === "fixed";
   return {
     title: text(form, "title"),
     description: text(form, "description"),
@@ -52,11 +94,28 @@ function eventFields(form: FormData, timeZone: string) {
     endsAt: endsAt ?? "date invalide",
     timezone: timeZone,
     locationName: text(form, "locationName") || null,
+    locationAddress: text(form, "locationAddress") || null,
+    // Module Intervenant, et exemplaires proposés par besoin (module Matériel avancé).
+    staffMemberId: text(form, "staffMemberId") || null,
+    ...equipmentUnits(form),
     onlineUrl: text(form, "onlineUrl") || null,
     capacity: capacity === "" ? null : Number(capacity),
     priceCents: paymentMode === "free" ? 0 : parseEuroToCents(text(form, "price")),
     paymentMode,
-    depositPercent: paymentMode === "deposit" && deposit !== "" ? Number(deposit) : null,
+    // Acompte : pourcentage ou montant fixe par place ; vide, le core demande de le remplir.
+    deposit:
+      paymentMode === "deposit" && deposit !== ""
+        ? {
+            ...(fixed ? { amountCents: parseEuroToCents(deposit) } : { percent: Number(deposit) }),
+            balance: text(form, "depositBalance") === "later" ? "later" : "on_site",
+          }
+        : null,
+    // Prix des tarifs et options (champs « prix.<id> »).
+    prices: Object.fromEntries(
+      [...form.keys()]
+        .filter((key) => key.startsWith("prix."))
+        .map((key) => [key.slice(5), parseEuroToCents(text(form, key))]),
+    ),
     paymentLinkUrl:
       paymentMode === "online" || paymentMode === "deposit"
         ? text(form, "paymentLinkUrl") || null
@@ -84,9 +143,16 @@ export async function saveEvent(eventId: string | null, form: FormData): Promise
       targetId = eventId;
     } else {
       const recurring = form.get("recurring") === "on";
+      const sessions = stageSessions(form, timeZone);
       const created = await createEvent(deps, actor, {
         ...(fields as unknown as Omit<CreateEventInput, "eventTypeId">),
         eventTypeId: text(form, "eventTypeId"),
+        durationId: text(form, "durationId") || undefined,
+        ...(sessions && {
+          sessions,
+          singleSession: form.get("singleSession") === "on",
+          sameEquipment: form.get("sameEquipment") === "on",
+        }),
         recurrence: recurring
           ? {
               frequency: text(form, "frequency") as "daily" | "weekly" | "monthly",
@@ -116,6 +182,17 @@ export async function publishEventActionImpl(eventId: string): Promise<FormState
     return toFormState(error);
   }
   return { success: "Événement publié." };
+}
+
+/** « Maintenir quand même » : l'événement ne sera pas annulé faute d'inscrits. */
+export async function keepEventActionImpl(eventId: string): Promise<FormState> {
+  const { actor } = await getWorkspaceContext();
+  try {
+    await keepEventDespiteMinimum(deps, actor, eventId);
+  } catch (error) {
+    return toFormState(error);
+  }
+  return { success: "Événement maintenu, quel que soit le nombre d'inscrits." };
 }
 
 export async function cancelEventActionImpl(eventId: string, reason: string): Promise<FormState> {
@@ -149,15 +226,17 @@ const DURATIONS: Record<string, number | null> = {
 export async function saveEventType(typeId: string | null, form: FormData): Promise<FormState> {
   const { actor } = await getWorkspaceContext();
   const price = text(form, "defaultPrice");
-  const capacity = text(form, "defaultCapacity");
-  const maxSeats = text(form, "maxSeatsPerBooking");
-  const minAdvance = text(form, "minAdvanceHours");
 
+  // Champs et modules arrivent en JSON ; le core les valide (schémas des champs et des modules).
   let fields: unknown;
+  let modules: unknown;
+  let rules: unknown;
   try {
     fields = JSON.parse(text(form, "fields") || "[]");
+    modules = JSON.parse(text(form, "modules") || "{}");
+    rules = JSON.parse(text(form, "rules") || "[]");
   } catch {
-    return { error: "Champs illisibles." };
+    return { error: "Réglages illisibles." };
   }
 
   const input = {
@@ -166,14 +245,9 @@ export async function saveEventType(typeId: string | null, form: FormData): Prom
     bookingNoun: text(form, "bookingNoun") || "reservation",
     defaultDurationMinutes: DURATIONS[text(form, "defaultDuration")] ?? null,
     defaultPriceCents: price === "" ? null : parseEuroToCents(price),
-    defaultCapacity: capacity === "" ? null : Number(capacity),
-    requiresApproval: form.get("requiresApproval") === "on",
     fields,
-    bookingRules: {
-      waitlistEnabled: form.get("waitlistEnabled") === "on",
-      ...(minAdvance !== "" ? { minAdvanceHours: Number(minAdvance) } : {}),
-      ...(maxSeats !== "" ? { maxSeatsPerBooking: Number(maxSeats) } : {}),
-    },
+    modules,
+    rules,
   };
 
   let savedId: string;
@@ -189,6 +263,12 @@ export async function saveEventType(typeId: string | null, form: FormData): Prom
     return toFormState(error);
   }
   throw redirect({ href: `/app/evenements/types?type=${savedId}` });
+}
+
+/** « Tester sur une inscription » (maquette 9.4) : ce qu'on sait d'une inscription, rien n'est exécuté. */
+export async function ruleTestFactsImpl(bookingId: string): Promise<RuleFacts> {
+  const { actor } = await getWorkspaceContext();
+  return ruleTestFacts(deps, actor, bookingId);
 }
 
 export async function archiveEventTypeActionImpl(typeId: string): Promise<FormState> {

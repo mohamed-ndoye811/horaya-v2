@@ -1,10 +1,19 @@
-import { fieldsOfScope } from "@horaya/core";
+import {
+  depositLabel,
+  fieldsOfScope,
+  minimumDecisionAt,
+  ruleJournalLine,
+  ruleMomentLabel,
+  ruleSentence,
+} from "@horaya/core";
+import { useState, useTransition } from "react";
 import { BookingRowActions, CheckInToggle } from "@/components/app/booking-actions";
 import { useImageUpload } from "@/components/app/image-upload";
 import { PageHeader } from "@/components/app/page-header";
 import { CategorySwatch } from "@/components/ui/avatar";
 import { StatusBadge } from "@/components/ui/badge";
-import { ButtonLink } from "@/components/ui/button";
+import { Banner } from "@/components/ui/banner";
+import { ButtonLink, textLinkClasses } from "@/components/ui/button";
 import { MoneyCell, PersonCell } from "@/components/ui/cells";
 import { DataTable } from "@/components/ui/data-table";
 import { fillTone, ProgressBar } from "@/components/ui/progress";
@@ -13,7 +22,7 @@ import { Stat } from "@/components/ui/stat";
 import { bookingStatusBadge, eventStatusBadge } from "@/components/ui/status";
 import { Tabs } from "@/components/ui/tabs";
 import { SeriesPanel } from "@/features/enrollments/series-panel";
-import type { getEvent } from "@/functions/events";
+import { type getEvent, keepEventAction } from "@/functions/events";
 import { cn } from "@/lib/cn";
 import { meshCover } from "@/lib/cover";
 import { answerRows } from "@/lib/fields";
@@ -21,11 +30,66 @@ import {
   formatEventRange,
   formatHour,
   formatMoney,
+  formatOpening,
   formatRelativeDateTime,
+  formatShortDateTime,
   PAYMENT_MODE_LABELS,
 } from "@/lib/format";
+import { Link, useRouter } from "@/lib/navigation";
 import { EventActions } from "./event-actions";
 import { EventItems } from "./event-items";
+
+/**
+ * Seuil de maintien (module Places) pas encore atteint : date de la décision et « Maintenir
+ * quand même », qui retire le seuil de cet événement.
+ */
+function MinimumBanner({
+  eventId,
+  seats,
+  minimum,
+  decideAt,
+  timeZone,
+}: {
+  eventId: string;
+  seats: number;
+  minimum: number;
+  decideAt: Date;
+  timeZone: string;
+}) {
+  const router = useRouter();
+  const [pending, startTransition] = useTransition();
+  const [error, setError] = useState<string | null>(null);
+  return (
+    <Banner
+      tone={error ? "danger" : "warning"}
+      action={
+        <button
+          type="button"
+          disabled={pending}
+          onClick={() =>
+            startTransition(async () => {
+              const result = await keepEventAction(eventId);
+              if (result.error) setError(result.error);
+              else router.refresh();
+            })
+          }
+        >
+          {pending ? "Un instant…" : "Maintenir quand même"}
+        </button>
+      }
+    >
+      {error ?? (
+        <>
+          <strong>
+            {seats} inscrit{seats > 1 ? "s" : ""} sur {minimum}
+          </strong>{" "}
+          nécessaires : sans inscriptions d'ici le {formatOpening(decideAt, timeZone)}, l'événement
+          sera annulé et chaque inscrit prévenu.
+        </>
+      )}
+    </Banner>
+  );
+}
 
 /** Écran 15 : fiche d'un événement côté équipe. */
 export function EventDetailPage({
@@ -35,7 +99,7 @@ export function EventDetailPage({
   data: Awaited<ReturnType<typeof getEvent>>;
   tab: "participants" | "materiel" | "infos" | "serie";
 }) {
-  const { timeZone, now, detail, items, checkIn, candidates, series } = data;
+  const { timeZone, now, detail, items, checkIn, candidates, series, ruleRuns } = data;
   const { event, bookings, waitlisted, bookedAmountCents } = detail;
   const active = bookings.filter(
     (entry) => entry.status === "pending" || entry.status === "confirmed",
@@ -54,6 +118,8 @@ export function EventDetailPage({
     null,
   );
   const clock = new Intl.DateTimeFormat("fr-FR", { hour: "2-digit", minute: "2-digit", timeZone });
+  const minimum = event.modules.places?.minimum;
+  const decideAt = minimumDecisionAt(event.startsAt, event.modules.places);
 
   return (
     <>
@@ -66,8 +132,14 @@ export function EventDetailPage({
             <CategorySwatch color={event.typeColor} size={12} />
             {[
               event.typeName,
+              event.seriesKind === "stage"
+                ? `Séance du stage${event.sessionTopic ? ` : ${event.sessionTopic}` : ""}`
+                : event.fromSlot
+                  ? "Créneau réservé"
+                  : null,
               formatEventRange(event.startsAt, event.endsAt, timeZone),
               event.locationName ?? (event.onlineUrl ? "En ligne" : null),
+              event.staffName ? `avec ${event.staffName}` : null,
             ]
               .filter(Boolean)
               .join(" · ")}
@@ -83,6 +155,15 @@ export function EventDetailPage({
         }
       />
 
+      {minimum && decideAt && event.status === "published" && event.seatsHeld < minimum.seats && (
+        <MinimumBanner
+          eventId={event.id}
+          seats={event.seatsHeld}
+          minimum={minimum.seats}
+          decideAt={decideAt}
+          timeZone={timeZone}
+        />
+      )}
       <div className="reveal-group grid grid-cols-2 gap-3 px-4 xl:grid-cols-[236px_repeat(4,minmax(0,1fr))]">
         <EventCover id={event.id} cover={event.coverImageUrl} color={event.typeColor} />
         <Stat
@@ -175,7 +256,7 @@ export function EventDetailPage({
               ? [
                   {
                     value: "serie",
-                    label: "Série",
+                    label: event.seriesKind === "stage" ? "Stage" : "Série",
                     href: `/app/evenements/${event.id}?onglet=serie`,
                   },
                 ]
@@ -364,7 +445,9 @@ export function EventDetailPage({
           seriesId={event.seriesId}
           eventId={event.id}
           offer={series.offer}
+          rates={event.modules.pricing?.rates ?? []}
           enrollments={series.enrollments}
+          targets={series.targets}
           timeZone={timeZone}
         />
       ) : tab === "materiel" ? (
@@ -383,20 +466,73 @@ export function EventDetailPage({
                 <span className="text-ink-muted">Pas encore de description.</span>
               )}
             </p>
+            {event.rules.length > 0 && (
+              <>
+                <Eyebrow className="pt-4">Règles « si… alors… »</Eyebrow>
+                <ul className="flex flex-col gap-2">
+                  {event.rules.map((rule) => (
+                    <li
+                      key={rule.id}
+                      className="flex items-start gap-3.5 rounded-[14px] bg-surface px-3.5 py-3"
+                    >
+                      <span className="w-[92px] shrink-0 pt-0.5 text-[11px] font-bold uppercase leading-[14px] tracking-[0.06em] text-ink-subtle">
+                        {ruleMomentLabel(rule.trigger)}
+                      </span>
+                      <span className="text-sm leading-[19px] text-ink">
+                        <strong className="font-semibold">{rule.name}</strong> ·{" "}
+                        {ruleSentence(rule, event.fields, event.modules.pricing)}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+                <p className="text-[13px] font-semibold leading-4 text-ink-muted">
+                  Ce que les règles ont fait
+                </p>
+                {ruleRuns.length === 0 ? (
+                  <p className="text-sm text-ink-muted">Aucune règle n'a encore agi.</p>
+                ) : (
+                  <ul className="flex flex-col gap-1.5">
+                    {ruleRuns.map((run) => (
+                      <li key={run.id} className="text-sm leading-5 text-ink">
+                        <span className="text-ink-muted">
+                          {formatShortDateTime(run.createdAt, timeZone)} ·{" "}
+                        </span>
+                        {ruleJournalLine(run.ruleName, run.actions)}
+                        {run.bookingId && (
+                          <>
+                            {" · "}
+                            <Link
+                              href={`/app/reservations/${run.bookingId}`}
+                              className={textLinkClasses}
+                            >
+                              {run.customerName ?? run.bookingReference}
+                            </Link>
+                          </>
+                        )}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </>
+            )}
           </div>
           <dl className="flex flex-col overflow-hidden rounded-3xl bg-surface">
             {[
               ["Type", event.typeName],
               ["Quand", formatEventRange(event.startsAt, event.endsAt, timeZone)],
-              ["Lieu", event.locationName ?? "—"],
+              [
+                "Lieu",
+                [event.locationName, event.locationAddress].filter(Boolean).join(", ") || "—",
+              ],
               ["Lien de visio", event.onlineUrl ?? "—"],
+              ...(event.modules.staff ? [["Intervenant", event.staffName ?? "—"]] : []),
               ["Visibilité", event.visibility === "public" ? "Public" : "Sur invitation"],
               ["Réservation", event.requiresApproval ? "Validation manuelle" : "Automatique"],
               [
                 "Paiement",
                 event.paymentMode === "free"
                   ? "Gratuit"
-                  : `${PAYMENT_MODE_LABELS[event.paymentMode]} · ${formatMoney(event.priceCents)} / pers.${event.depositPercent ? ` · acompte ${event.depositPercent} %` : ""}`,
+                  : `${PAYMENT_MODE_LABELS[event.paymentMode]} · ${formatMoney(event.priceCents)} / pers.${event.paymentMode === "deposit" && event.modules.deposit ? ` · acompte ${depositLabel(event.modules.deposit)}` : ""}${event.modules.pricing && event.modules.pricing.rates.length > 1 ? ` · ${event.modules.pricing.rates.length} tarifs` : ""}`,
               ],
               // « Ce que tu décris », champs internes compris.
               ...answerRows(fieldsOfScope(event.fields, "event"), event.fieldValues, timeZone).map(

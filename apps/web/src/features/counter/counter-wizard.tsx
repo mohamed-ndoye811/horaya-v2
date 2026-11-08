@@ -1,11 +1,17 @@
 import {
+  acceptsGiftCards,
   type CounterBookingInput,
+  type EventModules,
   type EventTypeField,
   fieldsOfScope,
   type PaymentMethod,
+  type PaymentMode,
+  passSessionsFor,
+  type Rule,
 } from "@horaya/core";
 import { type FormEvent, type ReactNode, useEffect, useRef, useState, useTransition } from "react";
 import { FieldInputs } from "@/components/app/field-inputs";
+import { RuleQuestions } from "@/components/app/rule-questions";
 import { Collapse } from "@/components/motion/collapse";
 import { PresenceItem, PresenceList } from "@/components/motion/presence";
 import { Swap } from "@/components/motion/swap";
@@ -35,9 +41,12 @@ import { CATEGORY_COLORS } from "@/lib/colors";
 import { meshCover, seedOf } from "@/lib/cover";
 import { rawFieldValues } from "@/lib/fields";
 import { formatMoney } from "@/lib/format";
+import { BookingOptions, SeatPrice, usePriceChoice } from "../public/price-choice";
 
 export interface CounterEvent {
   id: string;
+  /** Créneau libre d'un type « sur rendez-vous » : l'événement naît à la réservation (lot 37). */
+  slot?: { eventTypeId: string; startsAt: string; durationId: string | null };
   title: string;
   day: "today" | "tomorrow" | "later";
   time: string;
@@ -46,6 +55,9 @@ export interface CounterEvent {
   range: string;
   location: string | null;
   priceCents: number;
+  paymentMode: PaymentMode;
+  /** Tarifs et options, moyens acceptés (lot 35). */
+  modules: EventModules;
   color: string;
   /** « Mar. 16 · 10h » : ligne de la séance. */
   label: string;
@@ -56,8 +68,12 @@ export interface CounterEvent {
   /** Cours à l'année : prix de l'inscription à toute la série, si elle est ouverte. */
   seriesId: string | null;
   enrollmentPriceCents: number | null;
+  /** Inscription au prorata : « 6 séances restantes sur 8 : 180 € au lieu de 240 € ». */
+  enrollmentNote: string | null;
   /** « Ce que tu demandes » : questions une fois et par participant. */
   fields: EventTypeField[];
+  /** Règles réduites aux questions à poser (lot 36). */
+  rules: Rule[];
 }
 
 interface CustomerHit {
@@ -150,10 +166,14 @@ export function CounterWizard({
   const event = events.find((entry) => entry.id === eventId);
   // Inscription à toute la série : une place par séance restante, au prix de la série.
   const enrolling = wholeSeries && event?.enrollmentPriceCents != null;
-  const total = enrolling ? (event?.enrollmentPriceCents ?? 0) : (event?.priceCents ?? 0) * seats;
+  // Tarifs et options : même calcul que le serveur (quoteBooking).
+  const price = usePriceChoice(event ?? { priceCents: 0, paymentMode: "free", modules: {} }, seats);
+  const total = enrolling ? (event?.enrollmentPriceCents ?? 0) : price.quote.amountCents;
+  const passSessions = passSessionsFor(event?.modules.payment_methods, seats);
+  const giftCardsAccepted = acceptsGiftCards(event?.modules.payment_methods);
   const full = event?.remaining !== null && event !== undefined && seats > (event.remaining ?? 0);
-  // Questions du type (pas pour l'inscription à toute la série, qui n'en pose pas).
-  const asking = Boolean(event && !enrolling && event.fields.length > 0);
+  // Questions du type, aussi pour l'inscription à toute la série (une fois, pour une personne).
+  const asking = Boolean(event && (event.fields.length > 0 || event.rules.length > 0));
   const participantFields = fieldsOfScope(event?.fields ?? [], "participant");
   const newName = `${contact.firstName} ${contact.lastName}`.trim();
   const customerName = customer?.name ?? (newName || null);
@@ -184,7 +204,7 @@ export function CounterWizard({
     setItems(null);
     setQuantities({});
     setPickingItems(false);
-    if (eventId) counterItemsAction(eventId).then(setItems);
+    if (eventId && !eventId.startsWith("slot:")) counterItemsAction(eventId).then(setItems);
   }, [eventId]);
 
   // Cartes de séances utilisables par le client pour cette séance.
@@ -192,7 +212,9 @@ export function CounterWizard({
   useEffect(() => {
     setPassId(null);
     setPasses([]);
-    if (customerId && eventId) counterPassesAction(customerId, eventId).then(setPasses);
+    if (customerId && eventId && !eventId.startsWith("slot:")) {
+      counterPassesAction(customerId, eventId).then(setPasses);
+    }
   }, [customerId, eventId]);
 
   function blocking(): string | null {
@@ -220,6 +242,7 @@ export function CounterWizard({
           seriesId: event?.seriesId ?? "",
           ...who,
           paid: total > 0 && paid,
+          ...answersOf(new FormData(formEvent.currentTarget as HTMLFormElement), 1),
         });
         if (result.ok) {
           setDone({
@@ -230,6 +253,7 @@ export function CounterWizard({
             paymentStatus: result.paid ? "paid" : "none",
             amountCents: result.amountCents,
             items: [],
+            equipment: [],
             sessions: result.sessions,
           });
           return;
@@ -241,14 +265,16 @@ export function CounterWizard({
       return;
     }
     const input: CounterBookingInput = {
-      eventId,
+      ...(event?.slot ? { slot: event.slot } : { eventId }),
       seats,
       ...who,
       items: chosenItems.map(([itemId, quantity]) => ({ itemId, quantity })),
       paid: total > 0 && paid && !passId,
       paymentMethod: total > 0 && paid && !passId ? method : null,
       passId: total > 0 ? passId : null,
-      giftCardCode: total > 0 && !passId ? giftCode.trim() || null : null,
+      giftCardCode: total > 0 && !passId && giftCardsAccepted ? giftCode.trim() || null : null,
+      rates: price.selection.rates ? [...price.selection.rates] : [],
+      options: { ...price.selection.options },
       ...answersOf(new FormData(formEvent.currentTarget as HTMLFormElement), seats),
     };
     startTransition(async () => {
@@ -393,10 +419,26 @@ export function CounterWizard({
                 {
                   value: true,
                   label: "Toute la série",
-                  detail: `${formatMoney(event.enrollmentPriceCents)} · une place à chaque séance restante`,
+                  detail: `${formatMoney(event.enrollmentPriceCents)} · ${event.enrollmentNote ?? "une place à chaque séance restante"}`,
                 },
               ]}
             />
+          )}
+          {price.visible && !enrolling && (
+            <div className="flex flex-col gap-3">
+              {Array.from({ length: seats }, (_, index) => (
+                // biome-ignore lint/suspicious/noArrayIndexKey: une place = un participant, dans l'ordre.
+                <div key={index} className="flex flex-col gap-2">
+                  {seats > 1 && (
+                    <p className="text-[13px] font-semibold leading-4 text-ink-muted">
+                      Participant {index + 1}
+                    </p>
+                  )}
+                  <SeatPrice choice={price} seat={index} />
+                </div>
+              ))}
+              <BookingOptions choice={price} />
+            </div>
           )}
         </Section>
 
@@ -522,6 +564,13 @@ export function CounterWizard({
               fields={fieldsOfScope(event.fields, "booking")}
               prefix="a."
               errorPrefix="answers."
+              errors={fieldErrors}
+              enforceRequired={false}
+            />
+            <RuleQuestions
+              rules={event.rules}
+              fields={event.fields}
+              seats={seats}
               errors={fieldErrors}
               enforceRequired={false}
             />
@@ -665,7 +714,7 @@ export function CounterWizard({
                 Régler avec une carte de séances
               </legend>
               {passes.map((entry) => {
-                const enough = entry.balance >= seats;
+                const enough = entry.balance >= passSessions;
                 return (
                   <label
                     key={entry.id}
@@ -697,8 +746,8 @@ export function CounterWizard({
                         passId === entry.id ? "text-on-ink-muted" : "text-ink-subtle",
                       )}
                     >
-                      {entry.balance} séance{entry.balance > 1 ? "s" : ""} · {seats} utilisée
-                      {seats > 1 ? "s" : ""}
+                      {entry.balance} séance{entry.balance > 1 ? "s" : ""} · {passSessions} utilisée
+                      {passSessions > 1 ? "s" : ""}
                     </span>
                   </label>
                 );
@@ -706,7 +755,7 @@ export function CounterWizard({
             </fieldset>
           </Collapse>
           <Collapse open={total > 0 && !passId} className="flex flex-col gap-3">
-            {!enrolling && (
+            {!enrolling && giftCardsAccepted && (
               <Field
                 label="Bon cadeau"
                 error={fieldErrors.giftCardCode}
@@ -822,13 +871,28 @@ export function CounterWizard({
             ) : (
               <SummaryLine
                 label={
-                  event && event.priceCents > 0
+                  event && event.priceCents > 0 && !price.visible
                     ? `${seats} place${seats > 1 ? "s" : ""} × ${formatMoney(event.priceCents)}`
                     : "Places"
                 }
-                value={event ? (total > 0 ? formatMoney(total) : String(seats)) : null}
+                value={
+                  event ? (total > 0 && !price.visible ? formatMoney(total) : String(seats)) : null
+                }
               />
             )}
+            {price.visible &&
+              !enrolling &&
+              price.quote.lines.map((line) => (
+                <SummaryLine
+                  key={`${line.kind}-${line.id}`}
+                  label={
+                    line.kind === "rate"
+                      ? `${line.quantity} × ${line.label}`
+                      : `${line.label}${line.quantity > 1 ? ` × ${line.quantity}` : ""}`
+                  }
+                  value={formatMoney(line.totalCents)}
+                />
+              ))}
             {chosenItems.map(([id, quantity]) => (
               <SummaryLine key={id} label={`${itemName(id)} ×${quantity}`} value="attribué" />
             ))}
@@ -1195,8 +1259,13 @@ function CounterDone({
             </span>
           )}
         </DoneRow>
-        {done.items.length > 0 && (
+        {done.items.length + done.equipment.length > 0 && (
           <DoneRow label="Matériel">
+            {done.equipment.map((label) => (
+              <span key={label} className="text-[15px] font-bold leading-5 text-ink">
+                {label}
+              </span>
+            ))}
             {done.items.map((item) => (
               <span key={item.name} className="text-[15px] font-bold leading-5 text-ink">
                 {item.name} {item.labels.join(", ")}

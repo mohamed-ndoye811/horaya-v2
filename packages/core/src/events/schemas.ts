@@ -1,5 +1,7 @@
 import { z } from "zod";
 import { eventTypeFieldsSchema, rawFieldValuesSchema } from "../fields/schemas";
+import { depositModuleSchema, eventTypeModulesSchema } from "../modules/registry";
+import { eventTypeRulesSchema } from "../rules/model";
 import { paymentLinkSchema } from "../shared/links";
 import { isValidTimeZone } from "../shared/time";
 import { BOOKING_NOUNS } from "./model";
@@ -13,16 +15,6 @@ const optionalText = (max: number) =>
     .max(max)
     .nullish()
     .transform((value) => value || null);
-
-const bookingRulesSchema = z.object({
-  minAdvanceHours: z
-    .int()
-    .min(0)
-    .max(24 * 90)
-    .optional(),
-  maxSeatsPerBooking: z.int().min(1).max(1000).optional(),
-  waitlistEnabled: z.boolean().optional(),
-});
 
 /** Champs d'un type d'événement, sans valeur par défaut (cf. mise à jour partielle). */
 const eventTypeFields = {
@@ -38,28 +30,26 @@ const eventTypeFields = {
     .max(60 * 24 * 14)
     .nullable(),
   defaultPriceCents: z.int().min(0).max(10_000_000).nullable(),
-  defaultCapacity: z.int().min(1).max(100_000).nullable(),
-  requiresApproval: z.boolean(),
+  modules: eventTypeModulesSchema,
   fields: eventTypeFieldsSchema,
+  rules: eventTypeRulesSchema,
   bookingNoun: z.enum(BOOKING_NOUNS),
-  bookingRules: bookingRulesSchema,
 };
 
 export const createEventTypeSchema = z.object({
   ...eventTypeFields,
   defaultDurationMinutes: eventTypeFields.defaultDurationMinutes.optional().default(null),
   defaultPriceCents: eventTypeFields.defaultPriceCents.optional().default(null),
-  defaultCapacity: eventTypeFields.defaultCapacity.optional().default(null),
-  requiresApproval: eventTypeFields.requiresApproval.default(false),
+  modules: eventTypeFields.modules.default({}),
   fields: eventTypeFields.fields.default([]),
+  rules: eventTypeFields.rules.default([]),
   bookingNoun: eventTypeFields.bookingNoun.default("reservation"),
-  bookingRules: bookingRulesSchema.default({}),
 });
 export type CreateEventTypeInput = z.input<typeof createEventTypeSchema>;
 
 export const updateEventTypeSchema = z.object({
   ...z.object(eventTypeFields).partial().shape,
-  /** Nouveaux champs aussi sur les événements à venir sans inscription (sinon : les prochains). */
+  /** Champs, modules et règles aussi sur les événements à venir sans inscription (sinon : les prochains). */
   applyToUpcoming: z.boolean().optional(),
 });
 export type UpdateEventTypeInput = z.input<typeof updateEventTypeSchema>;
@@ -88,36 +78,77 @@ const eventFields = {
     .nullable(),
   priceCents: z.int({ error: "Prix invalide" }).min(0).max(10_000_000, "Prix trop élevé"),
   paymentMode: z.enum(PAYMENT_MODES),
-  depositPercent: z
-    .int({ error: "Pourcentage invalide" })
-    .min(1, "Entre 1 et 99 %")
-    .max(99, "Entre 1 et 99 %")
-    .nullable(),
+  /** Acompte de l'événement (module « Acompte ») ; null : pas d'acompte. */
+  deposit: depositModuleSchema.nullable(),
+  /** Prix des tarifs et options de l'événement, par identifiant (les noms restent ceux du type). */
+  prices: z.record(
+    z.string().max(40),
+    z.int({ error: "Prix invalide" }).min(0).max(10_000_000, "Prix trop élevé"),
+  ),
   requiresApproval: z.boolean(),
   highlights: z.array(z.string().trim().min(1).max(80)).max(6),
   paymentLinkUrl: paymentLinkSchema,
+  /** Module Intervenant : membre de l'équipe qui anime l'événement. */
+  staffMemberId: z.uuid().nullable(),
+  /** Module Matériel avancé : exemplaires proposés sur cet événement, besoin par besoin. */
+  equipmentUnits: z.record(z.string(), z.array(z.uuid()).max(500)),
   /** « Ce que tu décris », validé contre les champs de l'événement par le cas d'usage. */
   fieldValues: rawFieldValuesSchema,
 };
 
-export const createEventSchema = z.object({
-  eventTypeId: z.uuid(),
-  ...eventFields,
-  description: eventFields.description.default(""),
-  visibility: eventFields.visibility.default("public"),
-  capacity: eventFields.capacity.default(null),
-  priceCents: eventFields.priceCents.default(0),
-  paymentMode: eventFields.paymentMode.default("free"),
-  depositPercent: eventFields.depositPercent.default(null),
-  /** Par défaut, celui du type d'événement. */
-  requiresApproval: eventFields.requiresApproval.optional(),
-  highlights: eventFields.highlights.default([]),
-  paymentLinkUrl: eventFields.paymentLinkUrl.default(null),
-  fieldValues: eventFields.fieldValues.default({}),
-  recurrence: recurrenceSchema.optional(),
-});
+/** Une séance d'un stage : ses horaires et son sujet. */
+export const stageSessionSchema = z
+  .object({
+    startsAt: z.coerce.date({ error: "Date ou heure invalide" }),
+    endsAt: z.coerce.date({ error: "Date ou heure invalide" }),
+    topic: optionalText(120),
+  })
+  .refine((session) => session.endsAt > session.startsAt, {
+    message: "La fin doit être après le début",
+    path: ["endsAt"],
+  });
+export type StageSessionInput = z.input<typeof stageSessionSchema>;
+
+export const createEventSchema = z
+  .object({
+    eventTypeId: z.uuid(),
+    ...eventFields,
+    description: eventFields.description.default(""),
+    visibility: eventFields.visibility.default("public"),
+    capacity: eventFields.capacity.default(null),
+    priceCents: eventFields.priceCents.default(0),
+    paymentMode: eventFields.paymentMode.default("free"),
+    /** Absent : celui du type. */
+    deposit: eventFields.deposit.optional(),
+    prices: eventFields.prices.optional(),
+    /** Par défaut, celui du type d'événement. */
+    requiresApproval: eventFields.requiresApproval.optional(),
+    highlights: eventFields.highlights.default([]),
+    paymentLinkUrl: eventFields.paymentLinkUrl.default(null),
+    fieldValues: eventFields.fieldValues.default({}),
+    staffMemberId: eventFields.staffMemberId.default(null),
+    equipmentUnits: eventFields.equipmentUnits.optional(),
+    recurrence: recurrenceSchema.optional(),
+    /** Module « Durée au choix » : la durée de l'événement (fixe sa fin et son prix). */
+    durationId: z.string().max(40).optional(),
+    /**
+     * Module « Plusieurs séances » : les séances du stage (une série, une inscription). Les prix
+     * (`priceCents`, `prices`) sont alors ceux de tout le stage.
+     */
+    sessions: z.array(stageSessionSchema).min(1, "Ajoute une séance").max(30).optional(),
+    /** Stage : inscription possible à une seule séance (absent : réglage du type). */
+    singleSession: z.boolean().optional(),
+    /** Stage : le même matériel à chaque séance (absent : réglage du type). */
+    sameEquipment: z.boolean().optional(),
+  })
+  .refine((input) => !(input.sessions && input.recurrence), {
+    message: "Un stage a ses séances : pas de répétition en plus",
+    path: ["recurrence"],
+  });
 export type CreateEventInput = z.input<typeof createEventSchema>;
 
 /** Mise à jour partielle : la cohérence est revérifiée sur l'événement fusionné. */
-export const updateEventSchema = z.object(eventFields).partial();
+export const updateEventSchema = z
+  .object({ ...eventFields, sessionTopic: optionalText(120) })
+  .partial();
 export type UpdateEventInput = z.input<typeof updateEventSchema>;

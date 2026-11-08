@@ -41,6 +41,8 @@ interface LayoutInput {
   paragraphs: string[];
   /** Récapitulatif en deux colonnes (« Quand », « Où »…), sous les paragraphes. */
   details?: Array<[string, string]>;
+  /** Liens sous le récapitulatif (documents joints : règlement, plan d'accès). */
+  links?: Array<{ label: string; url: string }>;
   action: { label: string; url: string };
   footnote: string;
   /** E-mail envoyé au nom d'un espace : son nom, sa couleur et son logo (adresse absolue) remplacent la marque Horaya. */
@@ -88,6 +90,7 @@ export function renderEmail({
   title,
   paragraphs,
   details = [],
+  links = [],
   action,
   footnote,
   brand,
@@ -112,6 +115,14 @@ export function renderEmail({
         .join("")}</table>
 </td></tr></table>`
     : "";
+  const linkList = links.length
+    ? `<p style="margin:16px 0 0;font-size:15px;line-height:24px;color:${color.text}">${links
+        .map(
+          (link) =>
+            `<a href="${escapeHtml(link.url)}" style="font-weight:600;color:${color.ink};text-decoration:underline">${escapeHtml(link.label)}</a>`,
+        )
+        .join("<br>")}</p>`
+    : "";
   const notch = brand
     ? `${brand.logo ? `<img src="${escapeHtml(brand.logo)}" width="24" height="24" alt="" style="display:inline-block;width:24px;height:24px;border:0;border-radius:7px;vertical-align:middle;margin-right:10px">` : ""}<span style="font-size:14px;line-height:24px;font-weight:600;vertical-align:middle;color:#F7F5F3">${escapeHtml(brand.name)}</span>`
     : `<img src="cid:${LOGOTYPE_CID}" width="88" height="14" alt="Horaya" style="display:block;width:88px;height:14px;border:0">`;
@@ -135,6 +146,7 @@ export function renderEmail({
 <h1 style="margin:0 0 20px;font-family:${FONT};font-weight:500;font-size:32px;line-height:38px;letter-spacing:-0.02em;color:${color.ink}">${escapeHtml(title)}</h1>
 ${body}
 ${recap}
+${linkList}
 <table role="presentation" cellpadding="0" cellspacing="0" style="margin:24px 0 26px"><tr>
 <td style="background:${color.button};border-radius:999px"><a href="${escapeHtml(action.url)}" style="display:inline-block;padding:14px 24px;font-family:${FONT};font-size:15px;line-height:20px;font-weight:600;color:${color.onButton};text-decoration:none;border-radius:999px">${escapeHtml(action.label)} →</a></td>
 </tr></table>
@@ -154,6 +166,7 @@ ${footer}
     "",
     ...paragraphs,
     ...(details.length ? ["", ...details.map(([label, value]) => `${label} : ${value}`)] : []),
+    ...(links.length ? ["", ...links.map((link) => `${link.label} : ${link.url}`)] : []),
     "",
     `${action.label} : ${action.url}`,
     "",

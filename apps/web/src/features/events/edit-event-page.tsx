@@ -5,7 +5,7 @@ import { EventForm } from "./event-form";
 
 /** Modification d'un événement. */
 export function EditEventPage({ data }: { data: Awaited<ReturnType<typeof getEditEvent>> }) {
-  const { timeZone, event, types, initial, fieldValues } = data;
+  const { timeZone, event, types, initial, fieldValues, resources } = data;
   return (
     <>
       <PageHeader
@@ -17,6 +17,7 @@ export function EditEventPage({ data }: { data: Awaited<ReturnType<typeof getEdi
         formId="event-form"
         eventId={event.id}
         types={types}
+        resources={resources}
         timeZone={timeZone}
         initial={initial}
         fieldValues={fieldValues}

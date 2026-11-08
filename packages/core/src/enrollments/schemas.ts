@@ -10,6 +10,8 @@ export const seriesEnrollmentSettingsSchema = z
       .max(10_000_000, "Prix trop élevé")
       .nullable(),
     dropInAllowed: z.boolean(),
+    enrollmentProrata: z.boolean(),
+    makeupAllowed: z.boolean(),
   })
   .superRefine((input, context) => {
     if (input.enrollmentEnabled && input.enrollmentPriceCents === null) {

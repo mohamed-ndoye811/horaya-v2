@@ -4,17 +4,29 @@ import type { Event, EventType } from "../events/model";
 import type { RawFieldValues } from "../fields/model";
 import { validateBookingAnswers } from "../fields/values";
 import { applyGiftCardToBooking, restoreGiftCardForBooking } from "../gift-cards/use-cases";
+import { reserveEquipment } from "../inventory/equipment";
+import type { EquipmentChoice } from "../modules/registry";
+import { optionNeedSeats } from "../modules/resources";
+import {
+  ageIssues,
+  bookingWindow,
+  cancellationPolicyOf,
+  hasAccessTag,
+  windowState,
+} from "../modules/rules";
 import { recreditPassForBooking } from "../passes/use-cases";
 import { paidCents } from "../payments/rules";
+import { checkSubmissionRules, recordRuleRuns, runBookingRules } from "../rules/use-cases";
 import { type Actor, actorRef, assertMemberCan } from "../shared/actor";
 import { ConflictError, ForbiddenError, NotFoundError, ValidationError } from "../shared/errors";
 import { generateToken, hashToken } from "../shared/tokens";
 import type { Deps, Repositories } from "../shared/unit-of-work";
 import { validate } from "../shared/validate";
+import { findSlotHold, lockSlotEvent } from "../slots/use-cases";
 import { decideBookingStatus, SEAT_HOLDING_STATUSES } from "./capacity";
 import { CHECK_IN_OPENS_BEFORE_HOURS, isCheckInOpen } from "./check-in";
 import type { Booking } from "./model";
-import { priceBooking } from "./pricing";
+import { type PriceAdjustment, type PriceSelection, quoteBooking } from "./pricing";
 import { formatBookingReference, referencePeriod } from "./reference";
 import { rescheduleClosedReason, reschedulePricing, rescheduleTargetIssue } from "./reschedule";
 import { type CreateEventBookingInput, createEventBookingSchema } from "./schemas";
@@ -28,26 +40,27 @@ export const SOURCE_BY_ACTOR: Record<Actor["type"], BookingSource> = {
 };
 
 /**
- * Règles propres aux réservations faites par le client lui-même. Un événement « sur
- * invitation » n'est réservable que par un lien calendrier actif qui le contient.
+ * Règles propres aux réservations faites par le client lui-même, selon les modules copiés sur
+ * l'événement (ouverture, places par inscription). Un événement « sur invitation » n'est
+ * réservable que par un lien calendrier actif qui le contient.
  */
-function assertCustomerCanBook(
+export function assertCustomerCanBook(
   event: Event,
-  rules: { minAdvanceHours?: number; maxSeatsPerBooking?: number },
   seats: number,
   now: Date,
   link: CalendarLink | null,
 ): void {
   if (event.visibility === "invite_only" && !(link && calendarLinkAllows(link, event)))
     throw new ForbiddenError("Cet événement est sur invitation");
-  const closesAt = event.startsAt.getTime() - (rules.minAdvanceHours ?? 0) * 3_600_000;
-  if (now.getTime() >= closesAt)
+  const state = windowState(bookingWindow(event.startsAt, event.modules.opening), now);
+  if (state === "upcoming") throw new ConflictError("Les inscriptions ne sont pas encore ouvertes");
+  if (state === "closed")
     throw new ConflictError("Les réservations sont closes pour cet événement");
-  if (rules.maxSeatsPerBooking !== undefined && seats > rules.maxSeatsPerBooking) {
-    throw new ValidationError(
-      `${rules.maxSeatsPerBooking} place${rules.maxSeatsPerBooking > 1 ? "s" : ""} maximum par réservation`,
-      [{ path: "seats", message: `Maximum ${rules.maxSeatsPerBooking}` }],
-    );
+  const max = event.modules.places?.maxPerBooking;
+  if (max !== undefined && seats > max) {
+    throw new ValidationError(`${max} place${max > 1 ? "s" : ""} maximum par réservation`, [
+      { path: "seats", message: `Maximum ${max}` },
+    ]);
   }
 }
 
@@ -72,12 +85,30 @@ export async function createEventBooking(
   const manageTokenHash = await hashToken(manageToken);
 
   const { booking, giftCardCents } = await deps.uow.run(async (repositories) => {
-    const locked = await repositories.events.lockForBooking(actor.organizationId, data.eventId);
-    if (!locked || (actor.type === "customer" && locked.event.status === "draft")) {
-      throw new NotFoundError("Événement", data.eventId);
-    }
-    const { event, eventType } = locked;
     const now = deps.clock.now();
+    // Créneau gardé : revérifié sous le verrou des créneaux, son événement créé au besoin.
+    const hold = data.holdId
+      ? await findSlotHold(repositories, actor.organizationId, data.holdId)
+      : null;
+    const locked = hold
+      ? await lockSlotEvent(
+          repositories,
+          actor,
+          {
+            eventTypeId: hold.eventTypeId,
+            startsAt: hold.startsAt,
+            durationId: hold.durationId,
+            staffMemberId: hold.staffMemberId,
+            seats: data.seats,
+          },
+          now,
+          hold.id,
+        )
+      : await repositories.events.lockForBooking(actor.organizationId, data.eventId as string);
+    if (!locked || (actor.type === "customer" && locked.event.status === "draft")) {
+      throw new NotFoundError("Événement", data.eventId ?? "");
+    }
+    const { event } = locked;
 
     if (event.status !== "published") {
       throw new ConflictError(
@@ -90,7 +121,7 @@ export async function createEventBooking(
       const link = data.calendarLinkSlug
         ? await repositories.calendarLinks.findBySlug(actor.organizationId, data.calendarLinkSlug)
         : null;
-      assertCustomerCanBook(event, eventType.bookingRules, data.seats, now, link);
+      assertCustomerCanBook(event, data.seats, now, link);
       const series = event.seriesId
         ? await repositories.events.findSeries(actor.organizationId, event.seriesId)
         : null;
@@ -109,7 +140,10 @@ export async function createEventBooking(
       participants: data.participants,
       customerMessage: data.customerMessage,
       manageTokenHash,
+      equipment: data.equipment,
+      selection: { rates: data.rates, options: data.options },
     });
+    if (hold) await repositories.slots.deleteHold(actor.organizationId, hold.id);
     // Sur liste d'attente, rien à payer encore : le bon n'est pas touché.
     const giftCardCents =
       data.giftCardCode && created.status !== "waitlisted"
@@ -137,7 +171,7 @@ export interface RawParticipant {
 export async function insertEventBooking(
   repositories: Repositories,
   actor: Actor,
-  { event, eventType }: { event: Event; eventType: EventType },
+  { event }: { event: Event; eventType: EventType },
   now: Date,
   data: {
     customerId: string;
@@ -146,14 +180,25 @@ export async function insertEventBooking(
     participants: RawParticipant[];
     customerMessage: string | null;
     manageTokenHash: string | null;
+    /** Module Matériel avancé : cases cochées et exemplaires choisis par le client. */
+    equipment?: EquipmentChoice[];
+    /** Tarifs et options choisis (lot 35). */
+    selection?: PriceSelection;
     /** Séance d'une inscription à la série : confirmée d'office, payée par l'inscription. */
     enrollmentId?: string;
+    /** Rattrapage d'une absence : confirmé d'office, sans paiement ni question. */
+    makeupForBookingId?: string;
+    /** Séances 2 et suivantes d'une inscription à la série : les règles n'envoient rien de plus. */
+    quietRules?: boolean;
+    /** Stage « même matériel » : le matériel est réservé ensuite pour toutes les séances. */
+    skipEquipment?: boolean;
   },
 ): Promise<Booking> {
   if (event.endsAt <= now) throw new ConflictError("Cet événement est terminé");
-  const enrolled = data.enrollmentId !== undefined;
-  // Séances d'une inscription à la série : pas de questions par séance.
-  const participants = enrolled
+  const makeup = data.makeupForBookingId !== undefined;
+  const enrolled = data.enrollmentId !== undefined || makeup;
+  // Un rattrapage ne pose pas de question : l'inscription a déjà répondu.
+  const participants = makeup
     ? []
     : Array.from(
         { length: data.seats },
@@ -175,12 +220,47 @@ export async function insertEventBooking(
   }
   const answered = validateBookingAnswers(
     event.fields,
-    { answers: enrolled ? {} : (data.answers ?? {}), participants },
+    { answers: makeup ? {} : (data.answers ?? {}), participants },
     // L'équipe saisit ce qu'elle sait : les questions requises le sont pour le client.
-    { now, enforceRequired: actor.type !== "member" },
+    { now, enforceRequired: actor.type !== "member" && !makeup },
   );
-  if (answered.issues.length > 0) {
-    throw new ValidationError("Vérifie les réponses en rouge.", answered.issues);
+  // Le prix choisi, avant les règles : refuse tôt un tarif ou une option inconnus.
+  const chosen = enrolled ? [] : quoteBooking(event, data.seats, data.selection).lines;
+  // Règles « Une inscription est envoyée » (lot 36) : questions en plus, refus, validation, prix.
+  // Un rattrapage n'en relève pas : l'inscription d'origine est déjà passée par elles.
+  const rules = makeup
+    ? null
+    : await checkSubmissionRules(repositories, event, {
+        customerId: data.customerId,
+        answers: answered.answers,
+        participants: answered.participants,
+        lines: chosen,
+        rawAnswers: data.answers ?? {},
+        now,
+        enrollmentId: data.enrollmentId,
+        enforceRequired: actor.type !== "member",
+      });
+  // Conditions d'accès (module) : contrôlées pour le client, l'équipe garde la main.
+  const issues = [
+    ...answered.issues,
+    ...(rules?.issues ?? []),
+    ...(actor.type === "member" ? [] : ageIssues(event.modules.access, answered.participants)),
+  ];
+  if (issues.length > 0) {
+    throw new ValidationError("Vérifie les réponses en rouge.", issues);
+  }
+  // Un refus par règle vaut pour le client ; l'équipe garde la main (comme pour l'accès).
+  if (rules?.outcome.refusal && actor.type !== "member") {
+    throw new ConflictError(rules.outcome.refusal);
+  }
+  const requiredTags = event.modules.access?.tags;
+  if (actor.type === "customer" && requiredTags?.length) {
+    const customer = await repositories.customers.find(actor.organizationId, data.customerId);
+    if (!hasAccessTag(event.modules.access, customer?.tags ?? [])) {
+      throw new ForbiddenError(
+        `Inscription réservée (${requiredTags.join(", ")}) : contacte l'atelier`,
+      );
+    }
   }
 
   const status = decideBookingStatus({
@@ -188,8 +268,11 @@ export async function insertEventBooking(
     seatsHeld: await repositories.bookings.seatsHeld(event.id),
     seatsRequested: data.seats,
     // Une réservation saisie par l'équipe vaut validation ; l'inscription à la série aussi.
-    requiresApproval: !enrolled && actor.type !== "member" && event.requiresApproval,
-    waitlistEnabled: !enrolled && (eventType.bookingRules.waitlistEnabled ?? false),
+    requiresApproval:
+      !enrolled &&
+      actor.type !== "member" &&
+      (event.requiresApproval || Boolean(rules?.outcome.approval)),
+    waitlistEnabled: !enrolled && Boolean(event.modules.waitlist),
   });
 
   const settings = await repositories.settings.get(actor.organizationId);
@@ -205,28 +288,77 @@ export async function insertEventBooking(
       customerId: data.customerId,
       seats: data.seats,
       status,
-      ...(enrolled ? { amountCents: 0, depositCents: null } : priceBooking(event, data.seats)),
+      ...(enrolled
+        ? { amountCents: 0, depositCents: null, priceLines: [] }
+        : priceOf(event, data.seats, data.selection, rules?.outcome.adjustments)),
       currency: event.currency,
       paymentMode: enrolled ? "free" : event.paymentMode,
       enrollmentId: data.enrollmentId ?? null,
+      makeupForBookingId: data.makeupForBookingId ?? null,
       customerMessage: data.customerMessage,
-      answers: answered.answers,
+      answers: { ...answered.answers, ...rules?.answers },
       source: SOURCE_BY_ACTOR[actor.type],
       confirmedAt: status === "confirmed" ? now : null,
       manageTokenHash: data.manageTokenHash,
     },
     answered.participants,
   );
+  // Matériel avancé : réservé avec la place (sauf liste d'attente, rien n'est encore retenu).
+  if (status !== "waitlisted" && !data.skipEquipment) {
+    await reserveEquipment(
+      repositories,
+      actor,
+      event,
+      created.id,
+      data.seats,
+      data.equipment ?? [],
+      // Créneau : l'événement naît de la réservation, l'atelier attribue le matériel.
+      actor.type !== "customer" || enrolled || event.fromSlot,
+      optionNeedSeats(event, data.seats, created.priceLines),
+    );
+  }
   await repositories.activity.record({
     organizationId: actor.organizationId,
     entityType: "booking",
     entityId: created.id,
-    // « enrolled » : pas d'e-mail par séance, l'inscription envoie son propre récapitulatif.
-    action: enrolled ? "booking.enrolled" : "booking.created",
+    // « enrolled » et rattrapage : pas d'e-mail par séance, l'inscription envoie son propre récapitulatif.
+    action: makeup ? "booking.makeup" : enrolled ? "booking.enrolled" : "booking.created",
     ...actorRef(actor),
-    data: { status, seats: data.seats },
+    data: {
+      status,
+      seats: data.seats,
+      ...(makeup && { absentBookingId: data.makeupForBookingId }),
+    },
+  });
+  // Journal des règles : seulement ce qui a vraiment agi (l'équipe n'est ni refusée ni mise
+  // en validation ; une séance d'inscription à la série est confirmée d'office).
+  const skipped = new Set<string>([
+    ...(actor.type === "member" ? ["refuse"] : []),
+    ...(status !== "pending" || enrolled ? ["require_approval"] : []),
+    // Séance payée par l'inscription à la série : pas de prix à changer.
+    ...(enrolled ? ["price"] : []),
+  ]);
+  await recordRuleRuns(repositories, actor, {
+    event,
+    bookingId: created.id,
+    trigger: "booking_submitted",
+    runs: (rules?.outcome.matched ?? []).map((rule) => ({
+      rule,
+      actions: rule.actions.filter((action) => !skipped.has(action.kind)),
+    })),
+    notify: !data.quietRules,
   });
   return created;
+}
+
+function priceOf(
+  event: Event,
+  seats: number,
+  selection: PriceSelection | undefined,
+  adjustments: readonly PriceAdjustment[] = [],
+) {
+  const { lines, ...amounts } = quoteBooking(event, seats, selection, adjustments);
+  return { ...amounts, priceLines: lines };
 }
 
 /**
@@ -298,15 +430,18 @@ export async function refuseBooking(
       ...actorRef(actor),
       data: { reason: reason ?? null },
     });
+    await repositories.inventory.releaseBookingAllocations(actor.organizationId, bookingId);
     await recreditPassForBooking(
       repositories,
       actor,
       booking,
       event?.startsAt ?? null,
       deps.clock.now(),
+      "always",
     );
     await restoreGiftCardForBooking(repositories, booking, "organizer", null, deps.clock.now());
     if (event && SEAT_HOLDING_STATUSES.has(booking.status)) {
+      await runBookingRules(repositories, actor, "seat_released", event, booking, deps.clock.now());
       await promoteWaitlist(repositories, event, actor, deps.clock.now());
     }
     return refused;
@@ -367,6 +502,7 @@ async function cancelLocked(
   event: Event | null,
   now: Date,
   reason: string | null,
+  recredit?: boolean,
 ): Promise<Booking> {
   if (booking.status === "cancelled" || booking.status === "refused") {
     throw new ConflictError("Cette réservation n'est plus active");
@@ -389,6 +525,7 @@ async function cancelLocked(
     booking,
     event?.startsAt ?? booking.rentalStartsAt,
     now,
+    recredit,
   );
   // Location : les exemplaires bloqués redeviennent libres. Événement : le matériel
   // attribué à la réservation (comptoir) retourne au matériel de l'événement.
@@ -408,18 +545,24 @@ async function cancelLocked(
     event?.startsAt ?? booking.rentalStartsAt,
     now,
   );
+  if (event) await runBookingRules(repositories, actor, "booking_cancelled", event, booking, now);
   if (event && SEAT_HOLDING_STATUSES.has(booking.status)) {
+    await runBookingRules(repositories, actor, "seat_released", event, booking, now);
     await promoteWaitlist(repositories, event, actor, now);
   }
   return cancelled;
 }
 
-/** Annulation par l'équipe. */
+/**
+ * Annulation par l'équipe. `recredit` : la séance est-elle rendue sur la carte qui a payé ?
+ * Sans choix, oui dans le délai d'annulation gratuite, non après.
+ */
 export async function cancelBooking(
   deps: Deps,
   actor: Actor,
   bookingId: string,
   reason?: string,
+  recredit?: boolean,
 ): Promise<Booking> {
   assertMemberCan(actor, "booking", "cancel");
 
@@ -432,6 +575,7 @@ export async function cancelBooking(
       event,
       deps.clock.now(),
       reason?.trim() || null,
+      recredit,
     );
   });
 }
@@ -553,6 +697,12 @@ export async function rescheduleBookingAsCustomer(
     const to = locks.get(targetEventId);
     if (!booking || !from) throw new NotFoundError("Réservation", bookingId);
     if (!to) throw new NotFoundError("Événement", targetEventId);
+    // Créneau (lot 37) : on annule et on choisit un autre créneau sur la page du type.
+    if (from.fromSlot || to.event.fromSlot) {
+      throw new ConflictError(
+        "Un créneau ne change pas de date : annule-le et choisis-en un autre",
+      );
+    }
 
     const now = deps.clock.now();
     const settings = await repositories.settings.get(organizationId);
@@ -561,14 +711,14 @@ export async function rescheduleBookingAsCustomer(
         status: booking.status,
         startsAt: from.startsAt,
         now,
-        freeCancellationHours: settings.freeCancellationHours,
+        freeCancellationHours: cancellationPolicyOf(from.modules, settings).freeCancellationHours,
       }) ??
       rescheduleTargetIssue({
         from,
         to: {
           ...to.event,
           seatsHeld: await repositories.bookings.seatsHeld(to.event.id),
-          minAdvanceHours: to.eventType.bookingRules.minAdvanceHours,
+          minAdvanceHours: to.event.modules.opening?.closesHoursBefore,
         },
         seats: booking.seats,
         now,
@@ -590,6 +740,16 @@ export async function rescheduleBookingAsCustomer(
     });
     // Le matériel attribué au comptoir pour l'ancienne date y retourne.
     await repositories.inventory.releaseBookingAllocations(organizationId, booking.id);
+    await reserveEquipment(
+      repositories,
+      actor,
+      to.event,
+      booking.id,
+      booking.seats,
+      [],
+      true,
+      optionNeedSeats(to.event, booking.seats, moved.priceLines),
+    );
     await repositories.activity.record({
       organizationId,
       entityType: "booking",

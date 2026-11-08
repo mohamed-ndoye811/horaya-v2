@@ -19,6 +19,8 @@ const IMAGE_TYPES: Record<string, string> = {
 export const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
 export const FILE_PREFIX = "/fichiers/";
 export type FileFolder = "articles" | "evenements" | "profils" | "logos" | "couvertures";
+/** Documents joints d'un type (module Documents) : PDF seulement. */
+export const MAX_DOCUMENT_BYTES = 10 * 1024 * 1024;
 
 const client =
   env.STORAGE_ENDPOINT &&
@@ -41,6 +43,27 @@ export function imageProblem(file: File): string | null {
   if (!IMAGE_TYPES[file.type]) return "Formats acceptés : JPEG, PNG ou WebP.";
   if (file.size > MAX_IMAGE_BYTES) return "Image trop lourde (5 Mo au plus).";
   return null;
+}
+
+/** Contrôle un document envoyé (PDF) : message d'erreur, ou `null` s'il convient. */
+export function documentProblem(file: File): string | null {
+  if (!client) return "L'envoi de fichiers n'est pas configuré sur ce serveur.";
+  if (file.type !== "application/pdf") return "Format accepté : PDF.";
+  if (file.size > MAX_DOCUMENT_BYTES) return "Document trop lourd (10 Mo au plus).";
+  return null;
+}
+
+/** Range un PDF dans le bucket (`<espace>/documents/…`) et renvoie son adresse dans l'app. */
+export async function storeDocument(file: File, owner: string): Promise<string> {
+  if (!client) throw new Error("Stockage non configuré");
+  const key = `${owner}/documents/${randomUUID()}.pdf`;
+  const response = await client.fetch(objectUrl(key), {
+    method: "PUT",
+    body: await file.arrayBuffer(),
+    headers: { "Content-Type": "application/pdf" },
+  });
+  if (!response.ok) throw new Error(`Stockage : envoi refusé (${response.status})`);
+  return FILE_PREFIX + key;
 }
 
 /** Range l'image dans le bucket et renvoie son adresse dans l'app (`/fichiers/…`). */

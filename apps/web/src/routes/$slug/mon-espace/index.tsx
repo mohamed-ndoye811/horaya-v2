@@ -2,10 +2,12 @@ import { createFileRoute, getRouteApi } from "@tanstack/react-router";
 import { PassBalanceCard } from "@/components/pass-balance-card";
 import { CustomerHomePage } from "@/features/customer-space/home-page";
 import { AbsenceButton, EnrollmentProgress } from "@/features/enrollments/enrollment-progress";
+import { MakeupsCard } from "@/features/enrollments/makeups-card";
 import { MyGiftCards } from "@/features/gift-cards/my-gift-cards";
 import {
   getCustomerHome,
   getMyGiftCards,
+  getMyMakeups,
   reportCustomerAbsenceAction,
 } from "@/functions/customer-space";
 import { getMyPassSummary } from "@/functions/passes";
@@ -15,12 +17,13 @@ const layout = getRouteApi("/$slug");
 /** Maquettes 8.2 et 8.6 : accueil de l'espace client chez un atelier. */
 export const Route = createFileRoute("/$slug/mon-espace/")({
   loader: async ({ params }) => {
-    const [home, { passes }, giftCards] = await Promise.all([
+    const [home, { passes }, giftCards, makeups] = await Promise.all([
       getCustomerHome({ data: params.slug }),
       getMyPassSummary({ data: params.slug }),
       getMyGiftCards({ data: params.slug }),
+      getMyMakeups({ data: params.slug }),
     ]);
-    return { home, passes, giftCards };
+    return { home, passes, giftCards, makeups };
   },
   head: () => ({ meta: [{ title: "Mon espace" }, { name: "robots", content: "noindex" }] }),
   component: CustomerHome,
@@ -28,7 +31,7 @@ export const Route = createFileRoute("/$slug/mon-espace/")({
 
 function CustomerHome() {
   const workspace = layout.useLoaderData();
-  const { home, passes, giftCards } = Route.useLoaderData();
+  const { home, passes, giftCards, makeups } = Route.useLoaderData();
   const next = home.upcoming[0];
   // Collé au prochain rendez-vous s'il est une séance de la série, sinon carte à part à droite.
   const nextSeries = next?.series ?? null;
@@ -49,8 +52,14 @@ function CustomerHome() {
             onAbsent={() => reportCustomerAbsenceAction(workspace.slug, next.id)}
           />
         ),
-        aside: (passes.length > 0 || giftCards.length > 0 || otherSeries) && (
+        aside: (passes.length > 0 || giftCards.length > 0 || makeups.length > 0 || otherSeries) && (
           <>
+            <MakeupsCard
+              slug={workspace.slug}
+              makeups={makeups}
+              now={home.now}
+              timeZone={workspace.timezone}
+            />
             {otherSeries && (
               <EnrollmentProgress
                 progress={otherSeries.progress}

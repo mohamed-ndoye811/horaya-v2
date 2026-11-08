@@ -1,11 +1,13 @@
 import {
   ConflictError,
+  describeItemValues,
+  type EquipmentUnit,
   type InventoryRepository,
   type Item,
   type ItemAllocation,
   type ItemUnit,
 } from "@horaya/core";
-import { and, asc, eq, gt, inArray, isNull, lt, ne, type SQL } from "drizzle-orm";
+import { and, asc, eq, gt, inArray, isNotNull, isNull, lt, ne, type SQL } from "drizzle-orm";
 import type { Executor } from "../client";
 import { item, itemAllocation, itemType, itemUnit } from "../schema";
 
@@ -16,6 +18,51 @@ function translateConflict(error: unknown): never {
   if (code === "23P01") throw new ConflictError("Un exemplaire est déjà pris sur cette période");
   if (code === "23505") throw new ConflictError("Cette référence est déjà utilisée");
   throw error;
+}
+
+/** Exemplaires des articles en service d'une catégorie de matériel (module Matériel avancé). */
+export async function equipmentUnitsOfType(
+  db: Executor,
+  organizationId: string,
+  itemTypeId: string,
+): Promise<{ name: string; units: EquipmentUnit[] } | null> {
+  const [category] = await db
+    .select({ name: itemType.name, fields: itemType.fields })
+    .from(itemType)
+    .where(
+      and(
+        eq(itemType.organizationId, organizationId),
+        eq(itemType.id, itemTypeId),
+        isNull(itemType.archivedAt),
+      ),
+    );
+  if (!category) return null;
+  const rows = await db
+    .select({
+      id: itemUnit.id,
+      label: itemUnit.label,
+      status: itemUnit.status,
+      itemId: item.id,
+      itemName: item.name,
+      fieldValues: item.fieldValues,
+    })
+    .from(itemUnit)
+    .innerJoin(item, eq(item.id, itemUnit.itemId))
+    .where(
+      and(
+        eq(item.organizationId, organizationId),
+        eq(item.itemTypeId, itemTypeId),
+        isNull(item.archivedAt),
+      ),
+    )
+    .orderBy(asc(item.name), asc(itemUnit.createdAt));
+  return {
+    name: category.name,
+    units: rows.map(({ fieldValues, ...unit }) => ({
+      ...unit,
+      details: describeItemValues(category.fields, fieldValues),
+    })),
+  };
 }
 
 export function inventoryRepository(db: Executor): InventoryRepository {
@@ -173,11 +220,11 @@ export function inventoryRepository(db: Executor): InventoryRepository {
       return rows.length;
     },
 
-    async assignAllocations(organizationId, allocationIds, bookingId) {
+    async assignAllocations(organizationId, allocationIds, bookingId, needId) {
       if (allocationIds.length === 0) return;
       await db
         .update(itemAllocation)
-        .set({ bookingId })
+        .set({ bookingId, ...(needId && { needId }) })
         .where(
           and(
             eq(itemAllocation.organizationId, organizationId),
@@ -187,18 +234,23 @@ export function inventoryRepository(db: Executor): InventoryRepository {
     },
 
     async releaseBookingAllocations(organizationId, bookingId) {
+      const mine = and(
+        eq(itemAllocation.organizationId, organizationId),
+        eq(itemAllocation.bookingId, bookingId),
+        eq(itemAllocation.kind, "event"),
+        isNull(itemAllocation.cancelledAt),
+      );
+      // Matériel avancé : l'exemplaire n'était qu'à cette réservation, il redevient libre.
       await db
         .update(itemAllocation)
-        .set({ bookingId: null })
-        .where(
-          and(
-            eq(itemAllocation.organizationId, organizationId),
-            eq(itemAllocation.bookingId, bookingId),
-            eq(itemAllocation.kind, "event"),
-            isNull(itemAllocation.cancelledAt),
-          ),
-        );
+        .set({ cancelledAt: new Date() })
+        .where(and(mine, isNotNull(itemAllocation.needId)));
+      // Comptoir : l'exemplaire retourne au matériel réservé pour l'événement.
+      await db.update(itemAllocation).set({ bookingId: null }).where(mine);
     },
+
+    unitsOfItemType: (organizationId, itemTypeId) =>
+      equipmentUnitsOfType(db, organizationId, itemTypeId),
 
     async moveEventAllocations(organizationId, eventId, period) {
       await db

@@ -19,6 +19,8 @@ export async function createNotifications(
   organizationId: string,
   type: NotificationType,
   content: { title: string; body?: string | null; link?: string | null },
+  /** Intervenant de l'événement : prévenu même sans cette préférence. */
+  alsoMemberId?: string | null,
 ) {
   const byDefault = NOTIFICATION_TYPES.find((entry) => entry.value === type)?.inApp ?? false;
   const rows = await db
@@ -32,7 +34,9 @@ export async function createNotifications(
       ),
     )
     .where(eq(member.organizationId, organizationId));
-  const recipients = rows.filter((row) => row.wants ?? byDefault);
+  const recipients = rows.filter(
+    (row) => (row.wants ?? byDefault) || row.memberId === alsoMemberId,
+  );
   if (recipients.length === 0) return;
   await db.insert(notification).values(
     recipients.map(({ memberId }) => ({
@@ -44,6 +48,24 @@ export async function createNotifications(
       link: content.link ?? null,
     })),
   );
+}
+
+/** Une notification dans l'app pour un seul membre (l'intervenant d'un événement). */
+export async function createMemberNotification(
+  db: Executor,
+  organizationId: string,
+  memberId: string,
+  type: NotificationType,
+  content: { title: string; body?: string | null; link?: string | null },
+) {
+  await db.insert(notification).values({
+    organizationId,
+    memberId,
+    type,
+    title: content.title,
+    body: content.body ?? null,
+    link: content.link ?? null,
+  });
 }
 
 /** Dernières notifications d'un membre, les plus récentes d'abord. */

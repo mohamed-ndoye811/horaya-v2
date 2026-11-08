@@ -1,9 +1,14 @@
 import {
   type ActivityEntry,
   amountDueOnline,
+  askedFields,
   awaitsOnlinePayment,
+  balanceLabel,
   type NotificationType,
   paidCents,
+  priceDetail,
+  priceLinesLabel,
+  type RuleAction,
 } from "@horaya/core";
 import {
   claimAlmostFull,
@@ -11,9 +16,12 @@ import {
   getBookingDetail,
   getEnrollment,
   getPassForEmail,
+  getRuleEventSummary,
+  getStageSessions,
   getWeeklyDigest,
   getWorkspaceSettings,
   listBookingPayments,
+  listConfirmedBookingIds,
   listNotificationRecipients,
   tenantSettingsReader,
 } from "@horaya/db";
@@ -22,6 +30,7 @@ import {
   bookingAwaitingPaymentEmail,
   bookingCancelledEmail,
   bookingConfirmedEmail,
+  bookingFollowUpEmail,
   bookingPaymentReceivedEmail,
   bookingPendingEmail,
   bookingPromotedEmail,
@@ -29,13 +38,19 @@ import {
   bookingRefusedEmail,
   bookingReminderEmail,
   bookingRescheduledEmail,
+  bookingRuleMessageEmail,
+  bookingSoonEmail,
   bookingWaitlistedEmail,
   type EmailContent,
   enrollmentConfirmedEmail,
   passActivatedEmail,
+  stageCancelledEmail,
   teamAlmostFullEmail,
   teamBookingEmail,
+  teamMinimumCancelledEmail,
+  teamMinimumRiskEmail,
   teamReminderEmail,
+  teamRuleEmail,
   weeklyDigestEmail,
 } from "@horaya/mail";
 import { textOn } from "@/lib/colors";
@@ -48,6 +63,7 @@ import {
   formatHour,
   formatMoney,
   formatMonthShort,
+  formatTimeRange,
   formatWeekdayShort,
 } from "@/lib/format";
 import { paymentChannel } from "@/lib/payment-channel";
@@ -102,17 +118,32 @@ async function loadBooking(organizationId: string, bookingId: string) {
           ? payments.some((entry) => entry.method === "gift_card" && entry.kind === "charge")
             ? "réglé avec un bon cadeau"
             : booking.paymentMode === "deposit"
-              ? `acompte de ${formatMoney(booking.depositCents ?? 0)} payé, le reste sur place`
+              ? `acompte de ${formatMoney(booking.depositCents ?? 0)} payé, ${booking.event?.modules?.deposit ? balanceLabel(booking.event.modules.deposit) : "le reste sur place"}`
               : "payé en ligne"
           : onlinePayments
             ? "à payer en ligne"
             : "à régler auprès de l'organisateur";
+  // Tarifs et options choisis (lot 35) : « 1 Plein, 1 Réduit · Cuisson et émaillage × 2 ».
+  const detailLabel = priceDetail(booking.priceLines);
   const amount =
-    booking.amountCents > 0 ? `${formatMoney(booking.amountCents)} · ${paymentNote}` : null;
+    booking.amountCents > 0
+      ? `${formatMoney(booking.amountCents)}${detailLabel ? ` (${detailLabel})` : ""} · ${paymentNote}`
+      : null;
+  // Règles qui ont agi sur l'inscription (lot 36) : documents à apporter, questions en plus.
+  const ruleActions = detail.activity
+    .filter((entry) => entry.action === "booking.rule_applied")
+    .flatMap((entry) => (entry.data?.actions ?? []) as RuleAction[]);
+  const ruleDocuments = ruleActions.flatMap((action) =>
+    action.kind === "remind_document" ? [action] : [],
+  );
+  const bring =
+    [booking.event?.modules.messages?.bring, ...ruleDocuments.map((action) => action.label)]
+      .filter(Boolean)
+      .join(" · ") || null;
   // Récapitulatif des réponses du client : jamais les champs de description (internes compris).
   const answers = answerGroups(
     {
-      fields: booking.event?.fields ?? [],
+      fields: [...(booking.event?.fields ?? []), ...askedFields(booking.event?.rules ?? [])],
       answers: booking.answers,
       participants: detail.participants,
     },
@@ -134,10 +165,21 @@ async function loadBooking(organizationId: string, bookingId: string) {
     title,
     reference: booking.reference,
     when: startsAt && endsAt ? formatEventRange(startsAt, endsAt, settings.timezone) : "",
-    where: booking.event?.locationName ?? null,
+    where:
+      [booking.event?.locationName, booking.event?.locationAddress].filter(Boolean).join(", ") ||
+      null,
+    onlineUrl: booking.event?.onlineUrl ?? null,
+    equipment: detail.equipment,
     seats: booking.seats,
     amount,
     manageUrl: url,
+    // Modules copiés sur l'événement : messages et documents joints (liens absolus).
+    note: booking.event?.modules.messages?.confirmation ?? null,
+    bring,
+    documents: [
+      ...(booking.event?.modules.documents?.files ?? []),
+      ...ruleDocuments.flatMap((action) => (action.file ? [action.file] : [])),
+    ].map((file) => ({ name: file.name, url: absoluteUrl(file.url) })),
   });
   return {
     booking,
@@ -216,9 +258,15 @@ export async function sendEnrollmentEmail(
   const first = enrollment?.sessions[0];
   if (!enrollment || !workspace || !first) return;
   const payment = enrollmentPayment(enrollment, workspace.paymentLinkUrl ?? null);
+  const stage = enrollment.seriesKind === "stage";
+  const rate =
+    stage && enrollment.priceLines.length
+      ? ` (${priceLinesLabel(enrollment.priceLines).replace(/^1 /, "")})`
+      : "";
   await send(
     enrollment.customerEmail,
     enrollmentConfirmedEmail({
+      stage,
       workspace: {
         name: workspace.name,
         color: workspace.brandColor,
@@ -228,14 +276,72 @@ export async function sendEnrollmentEmail(
       firstName: enrollment.customerFirstName,
       title: first.title,
       sessions: enrollment.sessions.map((session) =>
-        formatDateTimeShort(session.startsAt, settings.timezone),
+        stage
+          ? stageSessionLine(session, settings.timezone)
+          : formatDateTimeShort(session.startsAt, settings.timezone),
       ),
       where: first.locationName,
       amount: payment
-        ? `${formatMoney(enrollment.amountCents)} · ${payment.label.toLowerCase()}`
+        ? `${formatMoney(enrollment.amountCents)}${rate} · ${payment.label.toLowerCase()}`
         : null,
       payUrl: payment?.payUrl ?? null,
       manageUrl: manageUrl(workspace.slug, manageToken),
+    }),
+  );
+}
+
+/** « Sam. 14 nov. · 10h – 17h · Centrage » : une séance de stage dans un e-mail. */
+const stageSessionLine = (
+  session: { startsAt: Date; endsAt: Date; sessionTopic: string | null },
+  timeZone: string,
+) =>
+  [
+    `${formatWeekdayShort(session.startsAt, timeZone)} ${formatDayNumber(session.startsAt, timeZone)} ${formatMonthShort(session.startsAt, timeZone).toLowerCase()}`,
+    formatTimeRange(session.startsAt, session.endsAt, timeZone),
+    session.sessionTopic,
+  ]
+    .filter(Boolean)
+    .join(" · ");
+
+/**
+ * Stage annulé (lot 37) : un seul e-mail par inscrit, que l'atelier annule tout le stage ou
+ * que l'élève annule son inscription (avec le remboursement prévu par la règle du type).
+ */
+async function sendStageCancelledEmail(entry: ActivityEntry) {
+  const reason = entry.data?.reason;
+  if (entry.action !== "enrollment.cancelled") return;
+  if (reason !== "stage_cancelled" && reason !== "customer_request") return;
+  const [enrollment, workspace, settings] = await Promise.all([
+    getEnrollment(db, entry.organizationId, { id: entry.entityId }),
+    getWorkspaceSettings(db, entry.organizationId),
+    tenantSettingsReader(db).get(entry.organizationId),
+  ]);
+  if (!enrollment || !workspace || enrollment.seriesKind !== "stage") return;
+  // Séances annulées avec le stage : relues toutes, annulées comprises.
+  const stage = await getStageSessions(db, entry.organizationId, enrollment.seriesId);
+  const sessions = stage.sessions.map((session) => stageSessionLine(session, settings.timezone));
+  const percent = typeof entry.data?.refundPercent === "number" ? entry.data.refundPercent : null;
+  const title = stage.title ?? "Stage";
+  await send(
+    enrollment.customerEmail,
+    stageCancelledEmail({
+      workspace: {
+        name: workspace.name,
+        color: workspace.brandColor,
+        textColor: textOn(workspace.brandColor),
+        logo: workspace.logo ? absoluteUrl(workspace.logo) : null,
+      },
+      firstName: enrollment.customerFirstName,
+      title,
+      sessions,
+      byCustomer: reason === "customer_request",
+      refund:
+        percent === null || enrollment.amountCents === 0
+          ? null
+          : percent === 0
+            ? "rien n'est remboursé, selon la règle d'annulation"
+            : `${percent} % (${formatMoney(Math.round((enrollment.amountCents * percent) / 100))})`,
+      eventsUrl: absoluteUrl(`/${workspace.slug}`),
     }),
   );
 }
@@ -264,17 +370,92 @@ async function notifyEnrollmentCreated(entry: ActivityEntry) {
       status: `inscription à ${enrollment.sessions.length} séances`,
       url: absoluteUrl(link),
     }),
-    { title: "Nouvelle inscription à la série", body: summary, link },
+    {
+      title:
+        enrollment.seriesKind === "stage"
+          ? "Nouvelle inscription au stage"
+          : "Nouvelle inscription à la série",
+      body: summary,
+      link,
+    },
   );
 }
 
-/** Rappel la veille au client : le lien d'origine n'est pas gardé, on mène à son espace client. */
-export async function sendBookingReminder(organizationId: string, bookingId: string) {
+/**
+ * Rappel au client, la veille ou au moment choisi (module Messages) : le lien d'origine n'est
+ * pas gardé, on mène à son espace client.
+ */
+export async function sendBookingReminder(
+  organizationId: string,
+  bookingId: string,
+  custom = false,
+) {
   const loaded = await loadBooking(organizationId, bookingId);
   if (!loaded) return;
+  const template = custom ? bookingSoonEmail : bookingReminderEmail;
+  await send(loaded.booking.customer.email, template(loaded.mail(loaded.linkRequestUrl)));
+}
+
+/** Message après la séance (module Messages) : à chaque inscrit confirmé de l'événement. */
+export async function sendFollowUp(organizationId: string, bookingId: string) {
+  const loaded = await loadBooking(organizationId, bookingId);
+  const message = loaded?.booking.event?.modules.messages?.after;
+  if (!loaded || !message) return;
   await send(
     loaded.booking.customer.email,
-    bookingReminderEmail(loaded.mail(loaded.linkRequestUrl)),
+    bookingFollowUpEmail({ ...loaded.mail(loaded.eventsUrl), message }),
+  );
+}
+
+/** Seuil de maintien : l'équipe est prévenue la veille de J-x, puis de l'annulation. */
+export async function notifyMinimum(
+  kind: "risk" | "cancelled",
+  input: {
+    organizationId: string;
+    id: string;
+    title: string;
+    startsAt: Date;
+    endsAt: Date;
+    timezone: string;
+    seats: number;
+    minimum: number;
+    cancelledBookings?: number;
+  },
+) {
+  const workspace = await getWorkspaceSettings(db, input.organizationId);
+  if (!workspace) return;
+  const when = formatEventRange(input.startsAt, input.endsAt, input.timezone);
+  const link = `/app/evenements/${input.id}`;
+  const base = {
+    workspaceName: workspace.name,
+    title: input.title,
+    when,
+    seats: input.seats,
+    minimum: input.minimum,
+    url: absoluteUrl(link),
+  };
+  if (kind === "risk") {
+    await notifyTeam(
+      input.organizationId,
+      "event_at_risk",
+      teamMinimumRiskEmail({ ...base, decision: "demain" }),
+      {
+        title: `Risque d'annulation : ${input.title}`,
+        body: `${when} · ${input.seats} inscrit${input.seats > 1 ? "s" : ""} sur ${input.minimum} nécessaires, décision demain`,
+        link,
+      },
+    );
+    return;
+  }
+  await notifyTeam(
+    input.organizationId,
+    "event_auto_cancelled",
+    teamMinimumCancelledEmail({ ...base, cancelledBookings: input.cancelledBookings ?? 0 }),
+    {
+      title: `Annulé faute d'inscrits : ${input.title}`,
+      body: `${when} · ${input.seats} inscrit${input.seats > 1 ? "s" : ""} sur ${input.minimum}`,
+      link,
+    },
   );
 }
 
@@ -377,11 +558,13 @@ export async function notifyTeam(
   type: NotificationType,
   content: EmailContent,
   inApp: { title: string; body: string; link: string },
+  /** Intervenant de l'événement : prévenu des inscriptions de ses événements. */
+  staffMemberId?: string | null,
 ) {
-  const recipients = await listNotificationRecipients(db, organizationId, type);
+  const recipients = await listNotificationRecipients(db, organizationId, type, staffMemberId);
   await Promise.all(recipients.map((email) => send(email, content)));
   try {
-    await createNotifications(db, organizationId, type, inApp);
+    await createNotifications(db, organizationId, type, inApp, staffMemberId);
   } catch (error) {
     console.error("Notification non enregistrée", type, error);
   }
@@ -418,10 +601,63 @@ async function sendPassActivatedEmail(organizationId: string, passId: string) {
   );
 }
 
+/**
+ * Règle planifiée qui a agi sur un événement (lot 36) : l'équipe est prévenue, chaque inscrit
+ * confirmé reçoit le message.
+ */
+async function notifyEventRule(entry: ActivityEntry) {
+  const [event, workspace] = await Promise.all([
+    getRuleEventSummary(db, entry.organizationId, entry.entityId),
+    getWorkspaceSettings(db, entry.organizationId),
+  ]);
+  if (!event || !workspace) return;
+  const rule = String(entry.data?.rule ?? "");
+  const when = formatEventRange(event.startsAt, event.endsAt, event.timezone);
+  const link = `/app/evenements/${event.id}`;
+  for (const action of (entry.data?.actions ?? []) as RuleAction[]) {
+    if (action.kind === "notify_team") {
+      await notifyTeam(
+        entry.organizationId,
+        "rule_applied",
+        teamRuleEmail({
+          workspaceName: workspace.name,
+          rule,
+          title: event.title,
+          when,
+          message: action.message,
+          url: absoluteUrl(link),
+        }),
+        { title: `Règle « ${rule} » : ${event.title}`, body: action.message ?? when, link },
+      );
+    }
+    if (action.kind === "message") {
+      for (const id of await listConfirmedBookingIds(db, event.id)) {
+        const loaded = await loadBooking(entry.organizationId, id);
+        if (!loaded) continue;
+        await send(
+          loaded.booking.customer.email,
+          bookingRuleMessageEmail({
+            ...loaded.mail(loaded.linkRequestUrl),
+            subject: action.subject,
+            message: action.body,
+          }),
+        );
+      }
+    }
+  }
+}
+
 /** Branché sur la fin des transactions (createDeps) : chaque changement de statut prévient qui de droit. */
 export async function notifyFromActivity(entries: ActivityEntry[]) {
   for (const entry of entries) {
-    if (entry.entityType === "enrollment") await notifyEnrollmentCreated(entry);
+    if (entry.entityType === "enrollment") {
+      await notifyEnrollmentCreated(entry);
+      await sendStageCancelledEmail(entry);
+    }
+    if (entry.entityType === "event" && entry.action === "event.rule_applied") {
+      await notifyEventRule(entry);
+      continue;
+    }
     if (entry.entityType === "pass" && entry.action === "pass.activated") {
       await sendPassActivatedEmail(entry.organizationId, entry.entityId);
       continue;
@@ -464,6 +700,7 @@ export async function notifyFromActivity(entries: ActivityEntry[]) {
               body: summary,
               link: adminPath,
             },
+            booking.event?.staffMemberId,
           );
         }
         break;
@@ -578,6 +815,40 @@ export async function notifyFromActivity(entries: ActivityEntry[]) {
         }
         break;
       }
+      case "booking.rule_applied": {
+        // Séances 2 et suivantes d'une inscription à la série : déjà prévenu une fois.
+        if (entry.data?.notify === false) break;
+        const rule = String(entry.data?.rule ?? "");
+        for (const action of (entry.data?.actions ?? []) as RuleAction[]) {
+          if (action.kind === "notify_team") {
+            await notifyTeam(
+              entry.organizationId,
+              "rule_applied",
+              teamRuleEmail({
+                workspaceName: workspace.name,
+                rule,
+                title,
+                when: mail(linkRequestUrl).when,
+                customerName,
+                message: action.message,
+                url: adminUrl,
+              }),
+              { title: `Règle « ${rule} »`, body: action.message ?? summary, link: adminPath },
+            );
+          }
+          if (action.kind === "message") {
+            await send(
+              to,
+              bookingRuleMessageEmail({
+                ...mail(linkRequestUrl),
+                subject: action.subject,
+                message: action.body,
+              }),
+            );
+          }
+        }
+        break;
+      }
       case "booking.promoted":
         await send(
           to,
@@ -588,6 +859,8 @@ export async function notifyFromActivity(entries: ActivityEntry[]) {
         );
         break;
       case "booking.cancelled": {
+        // Stage annulé : un seul e-mail par inscription (enrollment.cancelled), pas par séance.
+        if (reason === "stage_cancelled") break;
         const byCustomer = entry.actorType === "customer";
         await send(
           to,
@@ -599,7 +872,11 @@ export async function notifyFromActivity(entries: ActivityEntry[]) {
                 ? null
                 : reason === "payment_expired"
                   ? "paiement en ligne non finalisé dans les 30 minutes"
-                  : reason,
+                  : reason === "minimum_not_reached"
+                    ? "le nombre minimum d'inscrits n'a pas été atteint, l'événement est annulé"
+                    : reason === "event_cancelled"
+                      ? "l'événement est annulé"
+                      : reason,
             eventsUrl,
           }),
         );

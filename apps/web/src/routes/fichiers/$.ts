@@ -18,6 +18,11 @@ export const Route = createFileRoute("/fichiers/$")({
             "Content-Type": stored.headers.get("Content-Type") ?? "application/octet-stream",
             "Cache-Control": "public, max-age=31536000, immutable",
             "X-Content-Type-Options": "nosniff",
+            // Un PDF s'ouvre dans le navigateur, jamais comme une page de l'app.
+            ...(key.endsWith(".pdf") && {
+              "Content-Disposition": "inline",
+              "Content-Security-Policy": "sandbox",
+            }),
           },
         });
       },

@@ -9,6 +9,7 @@ import {
   organization,
   tenantSettings,
 } from "../schema";
+import { freeCancellationHoursSql } from "./cancellation";
 
 /**
  * Lectures de l'espace client (lot 29). Les réservations d'un compte sont celles dont la fiche
@@ -45,6 +46,8 @@ export async function listAccountBookings(
       endsAt: sql<Date>`coalesce(${event.endsAt}, ${booking.rentalEndsAt})`.mapWith(event.endsAt),
       locationName: event.locationName,
       eventPaymentLinkUrl: event.paymentLinkUrl,
+      /** Délai d'annulation gratuite de l'événement (module Annulation), sinon de la structure. */
+      freeCancellationHours: freeCancellationHoursSql,
       workspace: {
         name: organization.name,
         slug: organization.slug,
@@ -107,7 +110,7 @@ export async function listCandidatesForTypes(
       capacity: event.capacity,
       priceCents: event.priceCents,
       paymentMode: event.paymentMode,
-      bookingRules: eventType.bookingRules,
+      modules: event.modules,
       seatsHeld: sql<number>`coalesce((
         select sum(b.seats) from booking b
         where b.event_id = "event"."id" and b.status in ('pending', 'confirmed')
@@ -121,6 +124,8 @@ export async function listCandidatesForTypes(
         inArray(event.eventTypeId, eventTypeIds),
         eq(event.status, "published"),
         eq(event.visibility, "public"),
+        // Créneau réservé : celui d'un autre élève, jamais une autre date proposée.
+        eq(event.fromSlot, false),
         gt(event.startsAt, now),
       ),
     )

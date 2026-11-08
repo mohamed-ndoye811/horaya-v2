@@ -1,4 +1,11 @@
-import { can, externalPaidCents, paidCents, rentalDays } from "@horaya/core";
+import {
+  askedFields,
+  can,
+  externalPaidCents,
+  paidCents,
+  priceDetail,
+  rentalDays,
+} from "@horaya/core";
 import type { ReactNode } from "react";
 import {
   BookingHeaderActions,
@@ -209,11 +216,15 @@ export function BookingDetailPage({ data }: { data: Awaited<ReturnType<typeof ge
         : booking.paymentStatus === "paid" || booking.paymentStatus === "paid_with_pass"
           ? ("success" as const)
           : ("warning" as const);
-  const amountCaption = booking.depositCents
-    ? `Acompte ${formatMoney(booking.depositCents)}`
-    : booking.seats > 1 && booking.amountCents > 0
-      ? `${booking.seats} × ${formatMoney(Math.round(booking.amountCents / booking.seats))} · TTC`
-      : "TTC";
+  // Tarifs et options (lot 35) : le détail, puis l'acompte.
+  const priceLabel = priceDetail(booking.priceLines);
+  const amountCaption = priceLabel
+    ? `${priceLabel}${booking.depositCents ? ` · acompte ${formatMoney(booking.depositCents)}` : ""}`
+    : booking.depositCents
+      ? `Acompte ${formatMoney(booking.depositCents)}`
+      : booking.seats > 1 && booking.amountCents > 0
+        ? `${booking.seats} × ${formatMoney(Math.round(booking.amountCents / booking.seats))} · TTC`
+        : "TTC";
 
   const timeline = [
     ...(isPending
@@ -471,7 +482,13 @@ export function BookingDetailPage({ data }: { data: Awaited<ReturnType<typeof ge
           {Object.keys(booking.answers).length > 0 && (
             <section className={cn(card, "gap-3")}>
               <CardTitle>Réponses</CardTitle>
-              <FieldAnswers fields={booking.event?.fields ?? []} values={booking.answers} />
+              <FieldAnswers
+                fields={[
+                  ...(booking.event?.fields ?? []),
+                  ...askedFields(booking.event?.rules ?? []),
+                ]}
+                values={booking.answers}
+              />
             </section>
           )}
 

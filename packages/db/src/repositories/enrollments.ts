@@ -1,5 +1,5 @@
 import type { Booking, Enrollment, EnrollmentRepository } from "@horaya/core";
-import { and, asc, eq, getTableColumns, isNull } from "drizzle-orm";
+import { and, asc, eq, getTableColumns, inArray, isNull } from "drizzle-orm";
 import type { Executor } from "../client";
 import { booking, seriesEnrollment } from "../schema";
 
@@ -49,6 +49,17 @@ export function enrollmentRepository(db: Executor): EnrollmentRepository {
       return (found as Enrollment | undefined) ?? null;
     },
 
+    async listActive(organizationId, seriesId) {
+      const rows = await select().where(
+        and(
+          inOrganization(organizationId),
+          eq(seriesEnrollment.seriesId, seriesId),
+          isNull(seriesEnrollment.cancelledAt),
+        ),
+      );
+      return rows as Enrollment[];
+    },
+
     async update(organizationId, enrollmentId, patch) {
       const [updated] = await db
         .update(seriesEnrollment)
@@ -66,6 +77,19 @@ export function enrollmentRepository(db: Executor): EnrollmentRepository {
         .where(eq(booking.enrollmentId, enrollmentId))
         .orderBy(asc(booking.createdAt), asc(booking.id));
       return rows as Booking[];
+    },
+
+    async findActiveMakeup(absentBookingId) {
+      const [found] = await db
+        .select(bookingColumns)
+        .from(booking)
+        .where(
+          and(
+            eq(booking.makeupForBookingId, absentBookingId),
+            inArray(booking.status, ["pending", "confirmed"]),
+          ),
+        );
+      return (found as Booking | undefined) ?? null;
     },
   };
 }

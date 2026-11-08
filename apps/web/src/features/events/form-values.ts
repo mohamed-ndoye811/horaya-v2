@@ -1,6 +1,6 @@
-import { addDays, toZonedParts } from "@horaya/core";
+import { addDays, type EventModules, toZonedParts } from "@horaya/core";
 import { centsToInput } from "@/lib/money";
-import type { EventFormValues } from "./event-form";
+import { depositInputs, type EventFormValues, pricingInputs } from "./event-form";
 
 const pad = (value: number) => String(value).padStart(2, "0");
 
@@ -30,15 +30,23 @@ export function emptyEventValues(
     endDate: iso,
     endTime: "16:00",
     locationName: "",
+    locationAddress: "",
+    staffMemberId: "",
+    equipmentUnits: {},
     onlineUrl: "",
     capacity: "",
     price: "",
     paymentMode: "free",
-    depositPercent: "",
+    ...depositInputs(null),
+    prices: {},
     paymentLinkUrl: "",
     requiresApproval: false,
     visibility: "public",
     highlights: "",
+    durationId: "",
+    sessions: [],
+    singleSession: false,
+    sameEquipment: false,
   };
 }
 
@@ -50,11 +58,13 @@ export function eventToValues(
     startsAt: Date;
     endsAt: Date;
     locationName: string | null;
+    locationAddress: string | null;
+    staffMemberId: string | null;
+    modules: EventModules;
     onlineUrl: string | null;
     capacity: number | null;
     priceCents: number;
     paymentMode: string;
-    depositPercent: number | null;
     paymentLinkUrl: string | null;
     requiresApproval: boolean;
     visibility: string;
@@ -73,14 +83,24 @@ export function eventToValues(
     endDate: end.date,
     endTime: end.time,
     locationName: event.locationName ?? "",
+    locationAddress: event.locationAddress ?? "",
+    staffMemberId: event.staffMemberId ?? "",
+    equipmentUnits: Object.fromEntries(
+      (event.modules.equipment?.needs ?? []).map((need) => [need.id, need.unitIds ?? []]),
+    ),
     onlineUrl: event.onlineUrl ?? "",
     capacity: event.capacity === null ? "" : String(event.capacity),
     price: event.priceCents > 0 ? centsToInput(event.priceCents) : "",
     paymentMode: event.paymentMode,
-    depositPercent: event.depositPercent === null ? "" : String(event.depositPercent),
+    ...depositInputs(event.modules.deposit),
+    prices: pricingInputs(event.modules.pricing),
     paymentLinkUrl: event.paymentLinkUrl ?? "",
     requiresApproval: event.requiresApproval,
     visibility: event.visibility,
     highlights: event.highlights.join(", "),
+    durationId: "",
+    sessions: [],
+    singleSession: false,
+    sameEquipment: false,
   };
 }

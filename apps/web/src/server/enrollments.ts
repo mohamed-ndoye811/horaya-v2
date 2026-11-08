@@ -3,7 +3,11 @@
  * (voir functions/enrollments.ts et functions/public.ts).
  */
 import {
+  assignMakeup,
+  cancelAbsenceWithToken,
   cancelEnrollment,
+  cancelStage,
+  cancelStageEnrollmentWithToken,
   type EnrollInSeriesInput,
   enrollInSeries,
   enrollmentProgress,
@@ -12,9 +16,16 @@ import {
   setEnrollmentPaid,
   updateSeriesEnrollment,
 } from "@horaya/core";
-import { getEnrollment, getPublicEvent, getSeriesOffer, listSeriesEnrollments } from "@horaya/db";
+import {
+  getEnrollment,
+  getPublicEvent,
+  getSeriesOffer,
+  listMakeupTargets,
+  listSeriesEnrollments,
+} from "@horaya/db";
 import { notFound, redirect } from "@tanstack/react-router";
 import { enrollmentPayment } from "@/lib/enrollment";
+import { rawFieldValues } from "@/lib/fields";
 import { parseEuroToCents } from "@/lib/money";
 import { sendEnrollmentEmail } from "./booking-emails";
 import { db } from "./db";
@@ -56,6 +67,12 @@ export async function createPublicEnrollment(
       fieldErrors: { terms: "Accepte les conditions pour t'inscrire" },
     };
   }
+  const customer = {
+    firstName: text(form, "firstName"),
+    lastName: text(form, "lastName"),
+    email: text(form, "email"),
+    phone: text(form, "phone") || null,
+  };
   let manageToken: string;
   try {
     const created = await enrollInSeries(
@@ -63,12 +80,12 @@ export async function createPublicEnrollment(
       { type: "customer", organizationId: workspace.id },
       {
         seriesId: event.seriesId,
-        customer: {
-          firstName: text(form, "firstName"),
-          lastName: text(form, "lastName"),
-          email: text(form, "email"),
-          phone: text(form, "phone") || null,
-        },
+        customer,
+        // « Ce que tu demandes » : une fois pour l'inscription, et pour la personne inscrite.
+        answers: rawFieldValues(form, "a."),
+        participants: [{ ...customer, answers: rawFieldValues(form, "p0.") }],
+        // Stage : le tarif choisi (le core revérifie qu'il existe).
+        rateId: text(form, "rateId") || null,
       },
     );
     manageToken = created.manageToken;
@@ -88,11 +105,19 @@ export async function managedEnrollment(
   token: string,
   now: Date,
 ) {
-  const enrollment = await getEnrollment(db, workspace.id, { tokenHash: await hashToken(token) });
+  const enrollment = await getEnrollment(
+    db,
+    workspace.id,
+    { tokenHash: await hashToken(token) },
+    now,
+  );
   if (!enrollment) return null;
   return {
     ...enrollment,
-    progress: enrollmentProgress(enrollment.sessions, now),
+    progress: {
+      ...enrollmentProgress(enrollment.sessions, now),
+      stage: enrollment.seriesKind === "stage",
+    },
     payment: enrollmentPayment(enrollment, workspace.paymentLinkUrl),
   };
 }
@@ -114,6 +139,41 @@ export async function reportAbsence(
   return { success: "C'est noté : ta place profite à quelqu'un d'autre." };
 }
 
+/** Stage : l'élève annule son inscription (toutes les séances), selon la règle du type. */
+export async function cancelStageEnrollment(slug: string, token: string): Promise<FormState> {
+  const workspace = await getWorkspaceBySlug(slug);
+  if (!workspace) return { error: "Espace introuvable." };
+  try {
+    const { refundPercent } = await cancelStageEnrollmentWithToken(deps, workspace.id, token);
+    return {
+      success:
+        refundPercent === 100
+          ? "C'est noté : ton inscription est annulée, et remboursée en entier."
+          : refundPercent > 0
+            ? `C'est noté : ton inscription est annulée, ${refundPercent} % te sont remboursés.`
+            : "C'est noté : ton inscription est annulée. Selon la règle d'annulation, rien n'est remboursé.",
+    };
+  } catch (error) {
+    return toFormState(error);
+  }
+}
+
+/** « Annuler mon absence » : la place est rendue si elle est toujours libre. */
+export async function cancelAbsence(
+  slug: string,
+  token: string,
+  eventId: string,
+): Promise<FormState> {
+  const workspace = await getWorkspaceBySlug(slug);
+  if (!workspace) return { error: "Espace introuvable." };
+  try {
+    await cancelAbsenceWithToken(deps, workspace.id, token, eventId);
+  } catch (error) {
+    return toFormState(error);
+  }
+  return { success: "C'est noté : ta place t'attend." };
+}
+
 /* ---------- Côté équipe ---------- */
 
 /** Onglet « Série » d'une fiche événement : réglage, séances restantes et inscrits. */
@@ -124,7 +184,35 @@ export async function seriesPanel(organizationId: string, seriesId: string) {
     listSeriesEnrollments(db, organizationId, seriesId, now),
   ]);
   if (!offer) throw notFound();
-  return { offer, enrollments };
+  // Séances où chaque séance à rattraper peut l'être (pour « Attribuer »).
+  const targets: Record<string, Awaited<ReturnType<typeof listMakeupTargets>>> = {};
+  for (const row of enrollments) {
+    for (const makeup of row.makeups) {
+      if (makeup.state !== "available" || row.cancelledAt) continue;
+      targets[makeup.absentBookingId] = await listMakeupTargets(db, organizationId, {
+        absentEventId: makeup.absentEventId,
+        seriesId,
+        customerId: row.customerId,
+        now,
+        publicOnly: false,
+      });
+    }
+  }
+  return { offer, enrollments, targets };
+}
+
+/** Attribue à un·e inscrit·e une séance de rattrapage (équipe). */
+export async function assignMakeupImpl(
+  absentBookingId: string,
+  eventId: string,
+): Promise<FormState> {
+  const { actor } = await getWorkspaceContext();
+  try {
+    await assignMakeup(deps, actor, absentBookingId, eventId);
+  } catch (error) {
+    return toFormState(error);
+  }
+  return { success: "Rattrapage attribué." };
 }
 
 export async function saveSeriesEnrollment(seriesId: string, form: FormData): Promise<FormState> {
@@ -136,6 +224,8 @@ export async function saveSeriesEnrollment(seriesId: string, form: FormData): Pr
       enrollmentEnabled: enabled,
       enrollmentPriceCents: price === "" ? null : parseEuroToCents(price),
       dropInAllowed: !enabled || form.get("dropInAllowed") === "on",
+      enrollmentProrata: !enabled || form.get("enrollmentProrata") === "on",
+      makeupAllowed: !enabled || form.get("makeupAllowed") === "on",
     });
   } catch (error) {
     return toFormState(error);
@@ -149,6 +239,19 @@ export async function cancelEnrollmentImpl(enrollmentId: string): Promise<FormSt
     const { releasedSessions } = await cancelEnrollment(deps, actor, enrollmentId);
     return {
       success: `Désinscription faite : ${releasedSessions} séance${releasedSessions > 1 ? "s" : ""} libérée${releasedSessions > 1 ? "s" : ""}.`,
+    };
+  } catch (error) {
+    return toFormState(error);
+  }
+}
+
+/** « Annuler le stage » : toutes ses séances et ses inscriptions, un e-mail par inscrit. */
+export async function cancelStageImpl(seriesId: string): Promise<FormState> {
+  const { actor } = await getWorkspaceContext();
+  try {
+    const { cancelledSessions, cancelledEnrollments } = await cancelStage(deps, actor, seriesId);
+    return {
+      success: `Stage annulé : ${cancelledSessions} séance${cancelledSessions > 1 ? "s" : ""}, ${cancelledEnrollments} inscrit${cancelledEnrollments > 1 ? "s" : ""} prévenu${cancelledEnrollments > 1 ? "s" : ""}.`,
     };
   } catch (error) {
     return toFormState(error);

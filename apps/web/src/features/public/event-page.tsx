@@ -1,4 +1,4 @@
-import { fieldsOfScope } from "@horaya/core";
+import { ageLabel, cancellationPolicyOf, fieldsOfScope } from "@horaya/core";
 import { BottomNotch } from "@/components/app/bottom-notch";
 import { FieldAnswers } from "@/components/app/field-answers";
 import { WordsReveal } from "@/components/motion/words";
@@ -12,7 +12,7 @@ import type { getPublicEventPage } from "@/functions/public";
 import { cn } from "@/lib/cn";
 import { BOOKING_NOUN_LABELS } from "@/lib/fields";
 import { displayFontClass } from "@/lib/fonts";
-import { formatMoney, formatPublicSchedule } from "@/lib/format";
+import { formatMoney, formatOpening, formatPublicSchedule } from "@/lib/format";
 import { Link } from "@/lib/navigation";
 import {
   availability,
@@ -22,6 +22,7 @@ import {
   paymentNote,
 } from "@/lib/public-booking";
 import { withParams } from "@/lib/search-params";
+import { StageCard, sessionDay } from "./stage-card";
 
 /** Maquette 5.2 : page publique d'un événement. */
 export function PublicEventPage({
@@ -44,7 +45,15 @@ export function PublicEventPage({
   const state = bookingState(event, now);
   const schedule = formatPublicSchedule(event.startsAt, event.endsAt, tz);
   const recurrence = describeRecurrence(event.seriesRule);
-  const place = event.locationName ?? (event.onlineUrl ? "En ligne" : "À préciser");
+  // Module Lieu : en ligne (le lien n'est donné qu'après l'inscription), chez le client, à l'atelier.
+  const locationMode = event.modules.location?.mode;
+  const place =
+    locationMode === "online"
+      ? "En ligne"
+      : locationMode === "client"
+        ? "Chez toi"
+        : [event.locationName, event.locationAddress].filter(Boolean).join(", ") ||
+          (event.online ? "En ligne" : "À préciser");
   const bookHref = withParams(`/${workspace.slug}/${event.slug}/reserver`, {
     lien: linkSlug ?? undefined,
   });
@@ -54,15 +63,27 @@ export function PublicEventPage({
     .filter(Boolean);
   const hasProgram = paragraphs.length > 0 || event.highlights.length > 0;
   const notes = [
-    paymentNote(event.paymentMode, channel, event.depositPercent),
+    paymentNote(event.paymentMode, channel, event.modules.deposit),
     event.requiresApproval ? "Sur validation de l'organisateur" : null,
     event.paymentMode !== "free"
-      ? cancellationPolicy(event.startsAt, workspace, tz).split(".")[0]
+      ? cancellationPolicy(
+          event.startsAt,
+          cancellationPolicyOf(event.modules, workspace),
+          tz,
+        ).split(".")[0]
+      : null,
+    // Modules : conditions d'accès et « À apporter ».
+    ageLabel(event.modules.access) ? `Réservé : ${ageLabel(event.modules.access)}` : null,
+    event.modules.messages?.bring ? `À apporter : ${event.modules.messages.bring}` : null,
+    event.staffFirstName ? `Avec ${event.staffFirstName}` : null,
+    locationMode === "online" ? "Le lien de la visio t'est envoyé dans ta confirmation" : null,
+    locationMode === "client"
+      ? "Nous venons chez toi : ton adresse est demandée à l'inscription"
       : null,
   ].filter(Boolean);
   // Cours vendu seulement au trimestre : on affiche le prix de la série.
   const seriesOnly = event.enrollmentEnabled && !event.dropInAllowed && offer !== null;
-  const priceCents = seriesOnly ? (offer?.enrollmentPriceCents ?? 0) : event.priceCents;
+  const priceCents = seriesOnly ? (offer?.quote.priceCents ?? 0) : event.priceCents;
   const price = priceCents > 0 ? formatMoney(priceCents) : "Gratuit";
   const ctaLabel =
     state.kind === "waitlist"
@@ -77,6 +98,31 @@ export function PublicEventPage({
   const dropIn = !event.enrollmentEnabled || event.dropInAllowed;
   const bookable = dropIn && (state.kind === "open" || state.kind === "waitlist");
   const lastSession = offer?.sessions.at(-1);
+  // Stage (lot 37) : la carte 9.7 remplace la colonne de réservation.
+  const stage = event.seriesKind === "stage" && offer ? offer : null;
+  const firstSession = stage?.sessions[0];
+  const seatPicker = (
+    <SeatPicker
+      bookHref={bookHref}
+      priceCents={event.priceCents}
+      note={
+        event.paymentMode !== "free" &&
+        event.modules.pricing &&
+        (event.modules.pricing.rates.length > 1 || (event.modules.pricing.options?.length ?? 0) > 0)
+          ? [
+              ...event.modules.pricing.rates.map(
+                (rate) => `${rate.name} ${formatMoney(rate.priceCents)}`,
+              ),
+              event.modules.pricing.options?.length ? "options à l'étape suivante" : null,
+            ]
+              .filter(Boolean)
+              .join(" · ")
+          : null
+      }
+      maxSeats={"maxSeats" in state ? state.maxSeats : 1}
+      label={ctaLabel}
+    />
+  );
 
   return (
     <div className="flex flex-col gap-3.5 sm:gap-6">
@@ -126,8 +172,18 @@ export function PublicEventPage({
           {/* Mobile : une carte en lignes (maquette 6.5) ; grand écran : trois cartes (5.2). */}
           <dl className="flex flex-col rounded-[20px] bg-surface px-4 py-0.5 sm:grid sm:grid-cols-3 sm:gap-3 sm:bg-transparent sm:p-0">
             {[
-              ["Date", schedule.date],
-              ["Horaires", schedule.schedule],
+              stage && firstSession && lastSession
+                ? [
+                    "Dates",
+                    `${sessionDay(firstSession.startsAt, tz)} → ${sessionDay(lastSession.startsAt, tz)}`,
+                  ]
+                : ["Date", schedule.date],
+              stage
+                ? [
+                    "Séances",
+                    `${stage.totalSessions} séance${stage.totalSessions > 1 ? "s" : ""}, une inscription`,
+                  ]
+                : ["Horaires", schedule.schedule],
               ["Lieu", place],
             ].map(([label, value]) => (
               <div
@@ -193,119 +249,148 @@ export function PublicEventPage({
           )}
         </div>
 
-        <aside
-          id="reserver"
-          className="flex w-full shrink-0 scroll-mt-20 flex-col gap-[18px] rounded-3xl bg-surface p-6 shadow-[0_1px_2px_rgba(0,0,0,0.05),0_20px_50px_rgba(0,0,0,0.08)] lg:sticky lg:top-[62px] lg:w-[400px]"
-        >
-          <p className="flex items-baseline gap-1.5">
-            <span className="text-[36px] font-medium leading-10 tracking-[-0.03em] text-ink">
-              {price}
-            </span>
-            {priceCents > 0 && (
-              <span className="text-[15px] leading-5 text-ink-subtle">
-                {seriesOnly ? "le trimestre" : "/ personne"}
-              </span>
+        {stage ? (
+          <StageCard
+            title={event.title}
+            sessions={stage.sessions}
+            started={stage.totalSessions > stage.sessions.length}
+            full={stage.fullSessions.length > 0}
+            priceCents={stage.enrollmentPriceCents ?? 0}
+            rates={event.modules.pricing?.rates ?? []}
+            prices={stage.enrollmentPrices}
+            href={`/${workspace.slug}/${event.slug}/inscription`}
+            timeZone={tz}
+          >
+            {bookable && (
+              <div className="flex flex-col gap-3 border-t border-bg pt-4">
+                <p className="text-[13px] font-semibold leading-4 text-ink-subtle">
+                  Ou cette séance seulement
+                </p>
+                {seatPicker}
+              </div>
             )}
-          </p>
-          <div className="flex flex-col gap-2">
-            <p className="flex justify-between gap-3 text-[13px] leading-4">
-              <span className="font-semibold text-ink">
-                {event.capacity === null
-                  ? `${event.seatsHeld} inscrit${event.seatsHeld > 1 ? "s" : ""}`
-                  : `${event.seatsHeld} inscrit${event.seatsHeld > 1 ? "s" : ""} sur ${event.capacity}`}
+          </StageCard>
+        ) : (
+          <aside
+            id="reserver"
+            className="flex w-full shrink-0 scroll-mt-20 flex-col gap-[18px] rounded-3xl bg-surface p-6 shadow-[0_1px_2px_rgba(0,0,0,0.05),0_20px_50px_rgba(0,0,0,0.08)] lg:sticky lg:top-[62px] lg:w-[400px]"
+          >
+            <p className="flex items-baseline gap-1.5">
+              <span className="text-[36px] font-medium leading-10 tracking-[-0.03em] text-ink">
+                {price}
               </span>
-              <span
-                className={cn(
-                  "font-bold",
-                  seats.tone === "warning"
-                    ? "text-warning"
-                    : seats.full
-                      ? "text-ink"
-                      : "text-success",
-                )}
-              >
-                {seats.label}
-              </span>
+              {priceCents > 0 && (
+                <span className="text-[15px] leading-5 text-ink-subtle">
+                  {seriesOnly ? "le trimestre" : "/ personne"}
+                </span>
+              )}
             </p>
-            {seats.ratio !== null && (
-              <span aria-hidden="true" className="flex h-1.5 rounded-full bg-line-soft">
+            <div className="flex flex-col gap-2">
+              <p className="flex justify-between gap-3 text-[13px] leading-4">
+                <span className="font-semibold text-ink">
+                  {event.capacity === null
+                    ? `${event.seatsHeld} inscrit${event.seatsHeld > 1 ? "s" : ""}`
+                    : `${event.seatsHeld} inscrit${event.seatsHeld > 1 ? "s" : ""} sur ${event.capacity}`}
+                </span>
                 <span
                   className={cn(
-                    "origin-left animate-grow-x rounded-full",
-                    seats.full ? "bg-ink" : "bg-[var(--brand)]",
+                    "font-bold",
+                    seats.tone === "warning"
+                      ? "text-warning"
+                      : seats.full
+                        ? "text-ink"
+                        : "text-success",
                   )}
-                  style={{ width: `${Math.round(seats.ratio * 100)}%` }}
-                />
-              </span>
-            )}
-          </div>
-          {offer && lastSession && (
-            <div className="flex flex-col gap-3 border-t border-bg pt-4">
-              <div className="flex flex-col gap-1">
-                <p className="text-[15px] font-semibold leading-5 text-ink">
-                  Inscris-toi pour tout le trimestre
-                </p>
-                <p className="text-[13px] leading-[18px] text-ink-muted">
-                  {offer.sessions.length} séance{offer.sessions.length > 1 ? "s" : ""} ·{" "}
-                  {formatMoney(offer.enrollmentPriceCents ?? 0)} · jusqu'au{" "}
-                  {formatPublicSchedule(lastSession.startsAt, lastSession.endsAt, tz).date}
-                </p>
-              </div>
-              {offer.fullSessions.length > 0 ? (
-                <p className="text-[13px] font-semibold leading-[18px] text-ink-muted">
-                  Complet pour le trimestre : il manque une place le{" "}
-                  {offer.fullSessions
-                    .map(
-                      (session) => formatPublicSchedule(session.startsAt, session.endsAt, tz).date,
-                    )
-                    .join(", le ")}
-                  .
-                </p>
-              ) : (
-                <ButtonLink
-                  href={`/${workspace.slug}/${event.slug}/inscription`}
-                  variant={bookable ? "secondary" : "brand"}
-                  arrow
                 >
-                  M'inscrire au trimestre
-                </ButtonLink>
+                  {seats.label}
+                </span>
+              </p>
+              {seats.ratio !== null && (
+                <span aria-hidden="true" className="flex h-1.5 rounded-full bg-line-soft">
+                  <span
+                    className={cn(
+                      "origin-left animate-grow-x rounded-full",
+                      seats.full ? "bg-ink" : "bg-[var(--brand)]",
+                    )}
+                    style={{ width: `${Math.round(seats.ratio * 100)}%` }}
+                  />
+                </span>
               )}
             </div>
-          )}
-          {bookable ? (
-            <>
-              {offer && (
-                <p className="-mb-2 text-[13px] font-semibold leading-4 text-ink-subtle">
-                  Ou à la séance
+            {offer && lastSession && (
+              <div className="flex flex-col gap-3 border-t border-bg pt-4">
+                <div className="flex flex-col gap-1">
+                  <p className="text-[15px] font-semibold leading-5 text-ink">
+                    Inscris-toi pour tout le trimestre
+                  </p>
+                  <p className="text-[13px] leading-[18px] text-ink-muted">
+                    {offer.sessions.length} séance{offer.sessions.length > 1 ? "s" : ""} ·{" "}
+                    {formatMoney(offer.quote.priceCents)} · jusqu'au{" "}
+                    {formatPublicSchedule(lastSession.startsAt, lastSession.endsAt, tz).date}
+                  </p>
+                  {offer.quote.prorated && (
+                    <p className="text-[13px] font-semibold leading-[18px] text-ink">
+                      {offer.quote.remaining} séance{offer.quote.remaining > 1 ? "s" : ""} restante
+                      {offer.quote.remaining > 1 ? "s" : ""} sur {offer.quote.total} :{" "}
+                      {formatMoney(offer.quote.priceCents)} au lieu de{" "}
+                      {formatMoney(offer.quote.fullCents)}
+                    </p>
+                  )}
+                </div>
+                {offer.fullSessions.length > 0 ? (
+                  <p className="text-[13px] font-semibold leading-[18px] text-ink-muted">
+                    Complet pour le trimestre : il manque une place le{" "}
+                    {offer.fullSessions
+                      .map(
+                        (session) =>
+                          formatPublicSchedule(session.startsAt, session.endsAt, tz).date,
+                      )
+                      .join(", le ")}
+                    .
+                  </p>
+                ) : (
+                  <ButtonLink
+                    href={`/${workspace.slug}/${event.slug}/inscription`}
+                    variant={bookable ? "secondary" : "brand"}
+                    arrow
+                  >
+                    M'inscrire au trimestre
+                  </ButtonLink>
+                )}
+              </div>
+            )}
+            {bookable ? (
+              <>
+                {offer && (
+                  <p className="-mb-2 text-[13px] font-semibold leading-4 text-ink-subtle">
+                    Ou à la séance
+                  </p>
+                )}
+                {seatPicker}
+              </>
+            ) : (
+              !offer && (
+                <p className="border-t border-bg pt-4 text-[15px] font-semibold leading-[22px] text-ink-muted">
+                  {!dropIn
+                    ? "Ce cours se réserve pour toute la série : les inscriptions sont closes."
+                    : state.kind === "upcoming"
+                      ? `Inscriptions ouvertes le ${formatOpening(state.opensAt, tz)}.`
+                      : state.kind === "full"
+                        ? "C'est complet : il n'y a plus de place pour cet événement."
+                        : "Les réservations en ligne sont closes pour cet événement."}
                 </p>
-              )}
-              <SeatPicker
-                bookHref={bookHref}
-                priceCents={event.priceCents}
-                maxSeats={state.maxSeats}
-                label={ctaLabel}
-              />
-            </>
-          ) : (
-            !offer && (
-              <p className="border-t border-bg pt-4 text-[15px] font-semibold leading-[22px] text-ink-muted">
-                {!dropIn
-                  ? "Ce cours se réserve pour toute la série : les inscriptions sont closes."
-                  : state.kind === "full"
-                    ? "C'est complet : il n'y a plus de place pour cet événement."
-                    : "Les réservations en ligne sont closes pour cet événement."}
-              </p>
-            )
-          )}
-          <ul className="flex flex-col gap-2 rounded-[14px] bg-field p-3.5 text-[13px] leading-[18px] text-ink/85">
-            {(state.kind === "waitlist"
-              ? ["C'est complet : ta demande passe en liste d'attente."]
-              : notes
-            ).map((note) => (
-              <li key={note}>{note}</li>
-            ))}
-          </ul>
-        </aside>
+              )
+            )}
+            <ul className="flex flex-col gap-2 rounded-[14px] bg-field p-3.5 text-[13px] leading-[18px] text-ink/85">
+              {(state.kind === "waitlist"
+                ? ["C'est complet : ta demande passe en liste d'attente."]
+                : notes
+              ).map((note) => (
+                <li key={note}>{note}</li>
+              ))}
+            </ul>
+          </aside>
+        )}
       </div>
 
       {(bookable || offer) && (
@@ -314,7 +399,9 @@ export function PublicEventPage({
             <span className="text-lg font-semibold leading-[22px] text-on-ink">{price}</span>
             <span className="text-[11px] leading-[14px] text-notch-idle">
               {seriesOnly
-                ? "le trimestre"
+                ? stage
+                  ? "le stage"
+                  : "le trimestre"
                 : state.kind === "waitlist"
                   ? "liste d'attente"
                   : event.priceCents > 0

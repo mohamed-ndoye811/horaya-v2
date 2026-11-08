@@ -81,6 +81,8 @@ import { Route as AppReservationsIndexRouteImport } from './routes/app/reservati
 import { Route as AppReservationsIdRouteImport } from './routes/app/reservations/$id'
 import { Route as AppReservationsExportRouteImport } from './routes/app/reservations/export'
 import { Route as AppReservationsNouvelleRouteImport } from './routes/app/reservations/nouvelle'
+import { Route as SlugCreneauxTypeIndexRouteImport } from './routes/$slug/creneaux/$type/index'
+import { Route as SlugCreneauxTypeReserverRouteImport } from './routes/$slug/creneaux/$type/reserver'
 import { Route as SlugMonEspaceReservationIndexRouteImport } from './routes/$slug/mon-espace/$reservation/index'
 import { Route as SlugMonEspaceReservationAgendaDoticsRouteImport } from './routes/$slug/mon-espace/$reservation/agenda[.]ics'
 import { Route as SlugReservationTokenIndexRouteImport } from './routes/$slug/reservation/$token/index'
@@ -464,6 +466,17 @@ const AppReservationsNouvelleRoute = AppReservationsNouvelleRouteImport.update({
   path: '/reservations/nouvelle',
   getParentRoute: () => AppRoute,
 } as any)
+const SlugCreneauxTypeIndexRoute = SlugCreneauxTypeIndexRouteImport.update({
+  id: '/creneaux/$type/',
+  path: '/creneaux/$type/',
+  getParentRoute: () => SlugRoute,
+} as any)
+const SlugCreneauxTypeReserverRoute =
+  SlugCreneauxTypeReserverRouteImport.update({
+    id: '/creneaux/$type/reserver',
+    path: '/creneaux/$type/reserver',
+    getParentRoute: () => SlugRoute,
+  } as any)
 const SlugMonEspaceReservationIndexRoute =
   SlugMonEspaceReservationIndexRouteImport.update({
     id: '/mon-espace/$reservation/',
@@ -614,6 +627,7 @@ export interface FileRoutesByFullPath {
   '/app/parametres/': typeof AppParametresIndexRoute
   '/app/plateforme/': typeof AppPlateformeIndexRoute
   '/app/reservations/': typeof AppReservationsIndexRoute
+  '/$slug/creneaux/$type/reserver': typeof SlugCreneauxTypeReserverRoute
   '/$slug/mon-espace/$reservation/agenda.ics': typeof SlugMonEspaceReservationAgendaDoticsRoute
   '/$slug/reservation/$token/agenda.ics': typeof SlugReservationTokenAgendaDoticsRoute
   '/app/clients/$id/modifier': typeof AppClientsIdModifierRoute
@@ -622,6 +636,7 @@ export interface FileRoutesByFullPath {
   '/app/materiel/$id/modifier': typeof AppMaterielIdModifierRoute
   '/app/parametres/paiements/stripe': typeof AppParametresPaiementsStripeRoute
   '/app/plateforme/espaces/$id': typeof AppPlateformeEspacesIdRoute
+  '/$slug/creneaux/$type/': typeof SlugCreneauxTypeIndexRoute
   '/$slug/mon-espace/$reservation/': typeof SlugMonEspaceReservationIndexRoute
   '/$slug/reservation/$token/': typeof SlugReservationTokenIndexRoute
   '/app/clients/$id/': typeof AppClientsIdIndexRoute
@@ -699,6 +714,7 @@ export interface FileRoutesByTo {
   '/app/parametres': typeof AppParametresIndexRoute
   '/app/plateforme': typeof AppPlateformeIndexRoute
   '/app/reservations': typeof AppReservationsIndexRoute
+  '/$slug/creneaux/$type/reserver': typeof SlugCreneauxTypeReserverRoute
   '/$slug/mon-espace/$reservation/agenda.ics': typeof SlugMonEspaceReservationAgendaDoticsRoute
   '/$slug/reservation/$token/agenda.ics': typeof SlugReservationTokenAgendaDoticsRoute
   '/app/clients/$id/modifier': typeof AppClientsIdModifierRoute
@@ -707,6 +723,7 @@ export interface FileRoutesByTo {
   '/app/materiel/$id/modifier': typeof AppMaterielIdModifierRoute
   '/app/parametres/paiements/stripe': typeof AppParametresPaiementsStripeRoute
   '/app/plateforme/espaces/$id': typeof AppPlateformeEspacesIdRoute
+  '/$slug/creneaux/$type': typeof SlugCreneauxTypeIndexRoute
   '/$slug/mon-espace/$reservation': typeof SlugMonEspaceReservationIndexRoute
   '/$slug/reservation/$token': typeof SlugReservationTokenIndexRoute
   '/app/clients/$id': typeof AppClientsIdIndexRoute
@@ -788,6 +805,7 @@ export interface FileRoutesById {
   '/app/parametres/': typeof AppParametresIndexRoute
   '/app/plateforme/': typeof AppPlateformeIndexRoute
   '/app/reservations/': typeof AppReservationsIndexRoute
+  '/$slug/creneaux/$type/reserver': typeof SlugCreneauxTypeReserverRoute
   '/$slug/mon-espace/$reservation/agenda.ics': typeof SlugMonEspaceReservationAgendaDoticsRoute
   '/$slug/reservation/$token/agenda.ics': typeof SlugReservationTokenAgendaDoticsRoute
   '/app/clients/$id/modifier': typeof AppClientsIdModifierRoute
@@ -796,6 +814,7 @@ export interface FileRoutesById {
   '/app/materiel/$id/modifier': typeof AppMaterielIdModifierRoute
   '/app/parametres/paiements/stripe': typeof AppParametresPaiementsStripeRoute
   '/app/plateforme/espaces/$id': typeof AppPlateformeEspacesIdRoute
+  '/$slug/creneaux/$type/': typeof SlugCreneauxTypeIndexRoute
   '/$slug/mon-espace/$reservation/': typeof SlugMonEspaceReservationIndexRoute
   '/$slug/reservation/$token/': typeof SlugReservationTokenIndexRoute
   '/app/clients/$id/': typeof AppClientsIdIndexRoute
@@ -878,6 +897,7 @@ export interface FileRouteTypes {
     | '/app/parametres/'
     | '/app/plateforme/'
     | '/app/reservations/'
+    | '/$slug/creneaux/$type/reserver'
     | '/$slug/mon-espace/$reservation/agenda.ics'
     | '/$slug/reservation/$token/agenda.ics'
     | '/app/clients/$id/modifier'
@@ -886,6 +906,7 @@ export interface FileRouteTypes {
     | '/app/materiel/$id/modifier'
     | '/app/parametres/paiements/stripe'
     | '/app/plateforme/espaces/$id'
+    | '/$slug/creneaux/$type/'
     | '/$slug/mon-espace/$reservation/'
     | '/$slug/reservation/$token/'
     | '/app/clients/$id/'
@@ -963,6 +984,7 @@ export interface FileRouteTypes {
     | '/app/parametres'
     | '/app/plateforme'
     | '/app/reservations'
+    | '/$slug/creneaux/$type/reserver'
     | '/$slug/mon-espace/$reservation/agenda.ics'
     | '/$slug/reservation/$token/agenda.ics'
     | '/app/clients/$id/modifier'
@@ -971,6 +993,7 @@ export interface FileRouteTypes {
     | '/app/materiel/$id/modifier'
     | '/app/parametres/paiements/stripe'
     | '/app/plateforme/espaces/$id'
+    | '/$slug/creneaux/$type'
     | '/$slug/mon-espace/$reservation'
     | '/$slug/reservation/$token'
     | '/app/clients/$id'
@@ -1051,6 +1074,7 @@ export interface FileRouteTypes {
     | '/app/parametres/'
     | '/app/plateforme/'
     | '/app/reservations/'
+    | '/$slug/creneaux/$type/reserver'
     | '/$slug/mon-espace/$reservation/agenda.ics'
     | '/$slug/reservation/$token/agenda.ics'
     | '/app/clients/$id/modifier'
@@ -1059,6 +1083,7 @@ export interface FileRouteTypes {
     | '/app/materiel/$id/modifier'
     | '/app/parametres/paiements/stripe'
     | '/app/plateforme/espaces/$id'
+    | '/$slug/creneaux/$type/'
     | '/$slug/mon-espace/$reservation/'
     | '/$slug/reservation/$token/'
     | '/app/clients/$id/'
@@ -1599,6 +1624,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppReservationsNouvelleRouteImport
       parentRoute: typeof AppRoute
     }
+    '/$slug/creneaux/$type/': {
+      id: '/$slug/creneaux/$type/'
+      path: '/creneaux/$type'
+      fullPath: '/$slug/creneaux/$type/'
+      preLoaderRoute: typeof SlugCreneauxTypeIndexRouteImport
+      parentRoute: typeof SlugRoute
+    }
+    '/$slug/creneaux/$type/reserver': {
+      id: '/$slug/creneaux/$type/reserver'
+      path: '/creneaux/$type/reserver'
+      fullPath: '/$slug/creneaux/$type/reserver'
+      preLoaderRoute: typeof SlugCreneauxTypeReserverRouteImport
+      parentRoute: typeof SlugRoute
+    }
     '/$slug/mon-espace/$reservation/': {
       id: '/$slug/mon-espace/$reservation/'
       path: '/mon-espace/$reservation'
@@ -1715,8 +1754,10 @@ interface SlugRouteChildren {
   SlugBonCadeauIndexRoute: typeof SlugBonCadeauIndexRoute
   SlugCartesIndexRoute: typeof SlugCartesIndexRoute
   SlugMonEspaceIndexRoute: typeof SlugMonEspaceIndexRoute
+  SlugCreneauxTypeReserverRoute: typeof SlugCreneauxTypeReserverRoute
   SlugMonEspaceReservationAgendaDoticsRoute: typeof SlugMonEspaceReservationAgendaDoticsRoute
   SlugReservationTokenAgendaDoticsRoute: typeof SlugReservationTokenAgendaDoticsRoute
+  SlugCreneauxTypeIndexRoute: typeof SlugCreneauxTypeIndexRoute
   SlugMonEspaceReservationIndexRoute: typeof SlugMonEspaceReservationIndexRoute
   SlugReservationTokenIndexRoute: typeof SlugReservationTokenIndexRoute
 }
@@ -1736,9 +1777,11 @@ const SlugRouteChildren: SlugRouteChildren = {
   SlugBonCadeauIndexRoute: SlugBonCadeauIndexRoute,
   SlugCartesIndexRoute: SlugCartesIndexRoute,
   SlugMonEspaceIndexRoute: SlugMonEspaceIndexRoute,
+  SlugCreneauxTypeReserverRoute: SlugCreneauxTypeReserverRoute,
   SlugMonEspaceReservationAgendaDoticsRoute:
     SlugMonEspaceReservationAgendaDoticsRoute,
   SlugReservationTokenAgendaDoticsRoute: SlugReservationTokenAgendaDoticsRoute,
+  SlugCreneauxTypeIndexRoute: SlugCreneauxTypeIndexRoute,
   SlugMonEspaceReservationIndexRoute: SlugMonEspaceReservationIndexRoute,
   SlugReservationTokenIndexRoute: SlugReservationTokenIndexRoute,
 }

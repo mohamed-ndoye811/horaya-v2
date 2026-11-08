@@ -4,6 +4,7 @@ import { z } from "zod";
 import { PublicEvents, PublicHero } from "@/components/public/public-events";
 import { ButtonLink } from "@/components/ui/button";
 import { getPublicHome } from "@/functions/public";
+import { formatMoney } from "@/lib/format";
 import { Link } from "@/lib/navigation";
 import { searchText } from "@/lib/search-params";
 
@@ -23,7 +24,7 @@ export const Route = createFileRoute("/$slug/")({
 });
 
 function PublicWorkspacePage() {
-  const { workspace, events, now, hasPassPlans } = Route.useLoaderData();
+  const { workspace, events, now, hasPassPlans, slotTypes } = Route.useLoaderData();
   const sector = TENANT_SECTORS.find(
     (entry) => entry.value === workspace.sector && entry.value !== "other",
   );
@@ -61,6 +62,45 @@ function PublicWorkspacePage() {
           </span>
           <span className="shrink-0 text-sm font-semibold text-[var(--brand-text)]">Offrir →</span>
         </Link>
+      )}
+      {slotTypes.length > 0 && (
+        <section className="flex flex-col gap-3">
+          <h2 className="px-1 text-xl font-medium leading-[26px] text-ink">Sur rendez-vous</h2>
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {slotTypes.map((type) => (
+              <Link
+                key={type.id}
+                href={`/${workspace.slug}/creneaux/${type.id}`}
+                className="flex flex-col gap-2 rounded-3xl bg-surface p-5 transition-colors hover:bg-field"
+              >
+                <span className="flex items-center gap-2 text-[13px] font-semibold leading-4 text-ink-muted">
+                  <span
+                    aria-hidden="true"
+                    className="size-2 rounded-[3px]"
+                    style={{ backgroundColor: type.color }}
+                  />
+                  {type.durations.length ? type.durations.join(" · ") : "Tu choisis ton créneau"}
+                </span>
+                <span className="text-lg font-semibold leading-[22px] text-ink">{type.name}</span>
+                {type.description && (
+                  <span className="line-clamp-2 text-sm leading-5 text-ink-muted">
+                    {type.description}
+                  </span>
+                )}
+                <span className="flex items-baseline justify-between gap-3 pt-1">
+                  <span className="text-[15px] font-semibold text-ink">
+                    {type.fromCents > 0
+                      ? `${type.durations.length > 1 ? "Dès " : ""}${formatMoney(type.fromCents)}`
+                      : "Gratuit"}
+                  </span>
+                  <span className="text-sm font-semibold text-[var(--brand-text)]">
+                    Choisir un créneau →
+                  </span>
+                </span>
+              </Link>
+            ))}
+          </div>
+        </section>
       )}
       <PublicEvents
         events={events}

@@ -6,9 +6,9 @@ import {
   type EventType,
   type EventTypeRepository,
 } from "@horaya/core";
-import { and, asc, eq, gt, ne, notExists, sql } from "drizzle-orm";
+import { and, asc, eq, gt, isNull, ne, notExists, sql } from "drizzle-orm";
 import type { Executor } from "../client";
-import { booking, event, eventSeries, eventType } from "../schema";
+import { booking, event, eventSeries, eventType, member } from "../schema";
 
 /** Nom déjà pris dans l'espace (contrainte unique organization_id + name). */
 function duplicateName(error: unknown): never {
@@ -31,6 +31,21 @@ export function eventTypeRepository(db: Executor): EventTypeRepository {
         .from(eventType)
         .where(and(eq(eventType.organizationId, organizationId), eq(eventType.id, eventTypeId)));
       return (found as EventType | undefined) ?? null;
+    },
+
+    async listWithSlots(organizationId) {
+      const rows = await db
+        .select()
+        .from(eventType)
+        .where(
+          and(
+            eq(eventType.organizationId, organizationId),
+            isNull(eventType.archivedAt),
+            sql`${eventType.modules} ? 'slots'`,
+          ),
+        )
+        .orderBy(asc(eventType.name));
+      return rows as EventType[];
     },
 
     async update(organizationId, eventTypeId, patch) {
@@ -85,7 +100,20 @@ export function eventRepository(db: Executor): EventRepository {
     },
 
     async insert(values) {
-      const [created] = await db.insert(event).values(values).returning();
+      const [created] = await db
+        .insert(event)
+        .values(values)
+        .returning()
+        .catch((error: unknown) => {
+          // Module Créneaux : intervenant ou créneau déjà pris (contraintes d'exclusion).
+          const code =
+            (error as { cause?: { code?: string } }).cause?.code ??
+            (error as { code?: string }).code;
+          if (code === "23P01") {
+            throw new ConflictError("Ce créneau vient d'être pris : choisis-en un autre");
+          }
+          throw error;
+        });
       return created as Event;
     },
 
@@ -128,10 +156,27 @@ export function eventRepository(db: Executor): EventRepository {
       return Boolean(found);
     },
 
-    async applyTypeFields(organizationId, eventTypeId, fields, now) {
+    async memberBelongs(organizationId, memberId) {
+      const [found] = await db
+        .select({ id: member.id })
+        .from(member)
+        .where(and(eq(member.organizationId, organizationId), eq(member.id, memberId)));
+      return Boolean(found);
+    },
+
+    async applyTypeConfig(organizationId, eventTypeId, { priceCents, ...config }, now) {
       const updated = await db
         .update(event)
-        .set({ fields })
+        .set({
+          ...config,
+          // Chaque événement garde son acompte, lié à son mode de paiement.
+          ...(config.modules && {
+            modules: sql`(${JSON.stringify(config.modules)}::jsonb - 'deposit') || jsonb_strip_nulls(jsonb_build_object('deposit', ${event.modules} -> 'deposit'))`,
+          }),
+          ...(priceCents !== undefined && {
+            priceCents: sql`CASE WHEN ${event.paymentMode} = 'free' THEN 0 ELSE ${priceCents}::int END`,
+          }),
+        })
         .where(
           and(
             eq(event.organizationId, organizationId),

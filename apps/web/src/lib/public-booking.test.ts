@@ -30,33 +30,38 @@ describe("bookingState", () => {
   const startsAt = new Date("2026-10-20T08:00:00Z");
   const now = new Date("2026-10-10T08:00:00Z");
   it("limite aux places restantes et au maximum par réservation", () => {
-    expect(bookingState({ startsAt, capacity: 50, seatsHeld: 45, bookingRules: {} }, now)).toEqual({
+    expect(bookingState({ startsAt, capacity: 50, seatsHeld: 45, modules: {} }, now)).toEqual({
       kind: "open",
       maxSeats: 5,
     });
     expect(
       bookingState(
-        { startsAt, capacity: null, seatsHeld: 0, bookingRules: { maxSeatsPerBooking: 4 } },
+        { startsAt, capacity: null, seatsHeld: 0, modules: { places: { maxPerBooking: 4 } } },
         now,
       ),
     ).toEqual({ kind: "open", maxSeats: 4 });
   });
   it("passe en liste d'attente, complet ou clos", () => {
     expect(
-      bookingState(
-        { startsAt, capacity: 5, seatsHeld: 5, bookingRules: { waitlistEnabled: true } },
-        now,
-      ).kind,
+      bookingState({ startsAt, capacity: 5, seatsHeld: 5, modules: { waitlist: {} } }, now).kind,
     ).toBe("waitlist");
-    expect(bookingState({ startsAt, capacity: 5, seatsHeld: 5, bookingRules: {} }, now).kind).toBe(
+    expect(bookingState({ startsAt, capacity: 5, seatsHeld: 5, modules: {} }, now).kind).toBe(
       "full",
     );
     expect(
       bookingState(
-        { startsAt, capacity: 5, seatsHeld: 0, bookingRules: { minAdvanceHours: 24 * 11 } },
+        { startsAt, capacity: 5, seatsHeld: 0, modules: { opening: { closesHoursBefore: 264 } } },
         now,
       ).kind,
     ).toBe("closed");
+  });
+  it("annonce l'ouverture des inscriptions tant qu'elles ne sont pas ouvertes", () => {
+    expect(
+      bookingState(
+        { startsAt, capacity: 5, seatsHeld: 0, modules: { opening: { opensDaysBefore: 7 } } },
+        now,
+      ),
+    ).toEqual({ kind: "upcoming", opensAt: new Date("2026-10-13T08:00:00Z") });
   });
 });
 

@@ -1,12 +1,17 @@
 import { describe, expect, it } from "vitest";
 import {
   type BookingMail,
+  bookingCancelledEmail,
   bookingConfirmedEmail,
+  bookingFollowUpEmail,
   bookingRefusedEmail,
   bookingRescheduledEmail,
+  bookingRuleMessageEmail,
   enrollmentConfirmedEmail,
   passActivatedEmail,
+  stageCancelledEmail,
   teamAlmostFullEmail,
+  teamRuleEmail,
   weeklyDigestEmail,
 } from "./booking-templates";
 import { giftCardEmail, teamGiftCardEmail } from "./gift-card-templates";
@@ -27,6 +32,24 @@ const mail: BookingMail = {
 };
 
 describe("e-mails aux participants", () => {
+  it("ajoute les messages et les documents du type à la confirmation, pas à l'annulation", () => {
+    const withModules = {
+      ...mail,
+      note: "Le code de la porte est 1234.",
+      bring: "Un tablier",
+      documents: [{ name: "Règlement", url: "https://horaya.app/fichiers/org/documents/a.pdf" }],
+    };
+    const confirmed = bookingConfirmedEmail(withModules);
+    expect(confirmed.text).toContain("Le code de la porte est 1234.");
+    expect(confirmed.text).toContain("À apporter : Un tablier");
+    expect(confirmed.text).toContain("Règlement : https://horaya.app/fichiers/org/documents/a.pdf");
+    expect(confirmed.html).toContain('href="https://horaya.app/fichiers/org/documents/a.pdf"');
+    const cancelled = bookingCancelledEmail({ ...withModules, byCustomer: true, eventsUrl: "x" });
+    expect(cancelled.text).not.toContain("Un tablier");
+    expect(cancelled.text).not.toContain("Règlement");
+    expect(bookingFollowUpEmail({ ...withModules, message: "Merci !" }).text).toContain("Merci !");
+  });
+
   it("récapitule les réponses aux questions du type", () => {
     const email = bookingConfirmedEmail({ ...mail, answers: [["Niveau", "Débutant"]] });
     expect(email.text).toContain("Niveau : Débutant");
@@ -153,6 +176,40 @@ describe("e-mail d'inscription à une série", () => {
     expect(email.text).toContain("Séance 2 : mar. 25 nov., 18 h 30");
     expect(email.text).toContain(`Gérer mon inscription : ${mail.manageUrl}`);
   });
+
+  it("stage : la confirmation liste les séances et parle d'annuler le stage", () => {
+    const email = enrollmentConfirmedEmail({
+      workspace: mail.workspace,
+      firstName: "Léa",
+      title: "Stage tour : de la motte au bol",
+      sessions: ["Sam. 14 nov. · 10h – 17h · Centrage", "Sam. 21 nov. · 10h – 17h · Tournassage"],
+      manageUrl: mail.manageUrl,
+      stage: true,
+    });
+    expect(email.text).toContain("Stage : Stage tour : de la motte au bol");
+    expect(email.text).toContain("Séance 2 : Sam. 21 nov. · 10h – 17h · Tournassage");
+    expect(email.text).toContain("annuler ton inscription au stage");
+  });
+
+  it("stage annulé : un seul message, par l'atelier ou par l'élève avec son remboursement", () => {
+    const base = {
+      workspace: mail.workspace,
+      firstName: "Léa",
+      title: "Stage tour",
+      sessions: ["Sam. 14 nov.", "Sam. 21 nov."],
+      eventsUrl: "https://horaya.app/atelier",
+    };
+    const byTeam = stageCancelledEmail({ ...base, byCustomer: false });
+    expect(byTeam.subject).toBe("Stage annulé : Stage tour");
+    expect(byTeam.text).toContain("toutes ses séances sont annulées");
+    const byCustomer = stageCancelledEmail({
+      ...base,
+      byCustomer: true,
+      refund: "50 % remboursés",
+    });
+    expect(byCustomer.subject).toBe("Inscription annulée : Stage tour");
+    expect(byCustomer.text).toContain("Remboursement : 50 % remboursés.");
+  });
 });
 
 describe("e-mail de carte", () => {
@@ -227,5 +284,32 @@ describe("changement de date", () => {
     expect(email.text).toContain("il reste 20 € à régler");
     expect(email.text).toContain("Payer 20 € : https://pay.example/atelier");
     expect(bookingRescheduledEmail(mail).text).not.toContain("plus élevé");
+  });
+});
+
+describe("règles « si… alors… »", () => {
+  it("message au client : l'objet de la règle et son texte", () => {
+    const email = bookingRuleMessageEmail({
+      ...mail,
+      subject: "Dernières infos",
+      message: "Prévois un tablier.",
+    });
+    expect(email.subject).toBe("Dernières infos · Séminaire annuel");
+    expect(email.text).toContain("Prévois un tablier.");
+  });
+
+  it("équipe prévenue : la règle, l'événement et l'inscription", () => {
+    const email = teamRuleEmail({
+      workspaceName: "Terre & Feu",
+      rule: "Dernières places",
+      title: "Cours débutants",
+      when: "Ven. 13 novembre · 10h",
+      customerName: "Julie Martin",
+      message: "Relance les anciens élèves.",
+      url: "https://horaya.app/app/reservations/x",
+    });
+    expect(email.subject).toBe("Règle « Dernières places » : Cours débutants");
+    expect(email.text).toContain("pour l'inscription de Julie Martin");
+    expect(email.text).toContain("Relance les anciens élèves.");
   });
 });

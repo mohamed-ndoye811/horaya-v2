@@ -1,15 +1,19 @@
 import {
   type BookingNoun,
-  type BookingRules,
   type CalendarLink,
   calendarLinkAllows,
+  type EventModules,
   type EventTypeField,
   type EventVisibility,
   type FieldValues,
+  formRules,
   type PaymentMode,
   publicFieldsView,
+  publicModules,
+  type Rule,
+  type SeriesKind,
 } from "@horaya/core";
-import { and, asc, eq, gte, type SQL, sql } from "drizzle-orm";
+import { and, asc, eq, gte, inArray, isNull, type SQL, sql } from "drizzle-orm";
 import type { Executor } from "../client";
 import {
   booking,
@@ -19,10 +23,14 @@ import {
   event,
   eventSeries,
   eventType,
+  member,
   organization,
+  slotHold,
   tenantSettings,
+  user,
 } from "../schema";
 import { calendarLinkCondition } from "./calendar-links";
+import { listBookingEquipment } from "./inventory";
 
 /**
  * Lectures des pages publiques (horaya.app/<espace>) : seulement ce qu'un visiteur peut voir,
@@ -80,25 +88,62 @@ const publicEventColumns = {
   capacity: event.capacity,
   priceCents: event.priceCents,
   paymentMode: event.paymentMode,
-  depositPercent: event.depositPercent,
   requiresApproval: event.requiresApproval,
   highlights: event.highlights,
   paymentLinkUrl: event.paymentLinkUrl,
   coverImageUrl: event.coverImageUrl,
+  staffName: sql<
+    string | null
+  >`(select u.name from member m join "user" u on u.id = m.user_id where m.id = "event"."staff_member_id")`,
   typeId: eventType.id,
   typeName: eventType.name,
   typeColor: eventType.color,
-  bookingRules: eventType.bookingRules,
+  modules: event.modules,
   bookingNoun: eventType.bookingNoun,
   visibility: event.visibility,
   fields: event.fields,
   fieldValues: event.fieldValues,
+  rules: event.rules,
   seatsHeld,
+  /** Stage (lot 37) : la série, son genre, et le sujet de la séance. */
+  seriesId: event.seriesId,
+  seriesKind: sql<SeriesKind | null>`(select s.kind from event_series s where s.id = "event"."series_id")`,
+  sessionTopic: event.sessionTopic,
+  stagePriceCents: sql<
+    number | null
+  >`(select s.enrollment_price_cents from event_series s where s.id = "event"."series_id" and s.kind = 'stage')`,
 };
 
-/** Les champs internes de « Ce que tu décris » ne quittent jamais le serveur. */
-function toPublic<R extends { fields: EventTypeField[]; fieldValues: FieldValues }>(row: R): R {
-  return { ...row, ...publicFieldsView(row.fields, row.fieldValues) };
+/**
+ * Les champs internes de « Ce que tu décris », les documents et messages ne quittent jamais le
+ * serveur ; des règles, seules les questions à poser partent, déjà tranchées pour l'événement.
+ */
+function toPublic<
+  R extends {
+    fields: EventTypeField[];
+    fieldValues: FieldValues;
+    modules: EventModules;
+    onlineUrl: string | null;
+    staffName: string | null;
+    rules: Rule[];
+    capacity: number | null;
+    seatsHeld: number;
+  },
+>(row: R): Omit<R, "onlineUrl" | "staffName"> & { online: boolean; staffFirstName: string | null } {
+  const { onlineUrl, staffName, ...rest } = row;
+  return {
+    ...rest,
+    ...publicFieldsView(row.fields, row.fieldValues),
+    modules: publicModules(row.modules),
+    // Le lien de visio ne quitte pas le serveur avant l'inscription : on ne dit que « en ligne ».
+    online: onlineUrl !== null,
+    staffFirstName: row.modules.staff?.showOnPublicPage ? (staffName?.split(" ")[0] ?? null) : null,
+    rules: formRules(row.rules, row.fields, {
+      fieldValues: row.fieldValues,
+      capacity: row.capacity,
+      seatsHeld: row.seatsHeld,
+    }),
+  };
 }
 
 export interface PublicEventRow {
@@ -110,25 +155,35 @@ export interface PublicEventRow {
   endsAt: Date;
   locationName: string | null;
   locationAddress: string | null;
-  onlineUrl: string | null;
+  /** Lien de visio : jamais envoyé au navigateur, seulement « en ligne ou non ». */
+  online: boolean;
   capacity: number | null;
   priceCents: number;
   paymentMode: PaymentMode;
-  depositPercent: number | null;
   requiresApproval: boolean;
   highlights: string[];
   paymentLinkUrl: string | null;
   coverImageUrl: string | null;
+  /** Module Intervenant, si l'équipe veut afficher son prénom. */
+  staffFirstName: string | null;
   typeId: string;
   typeName: string;
   typeColor: string;
-  bookingRules: BookingRules;
+  /** Modules de l'événement, vus par un visiteur (voir publicModules). */
+  modules: EventModules;
   bookingNoun: BookingNoun;
   visibility: EventVisibility;
   /** Champs de l'événement (sans les champs internes) et valeurs visibles. */
   fields: EventTypeField[];
   fieldValues: FieldValues;
+  /** Règles réduites aux questions du formulaire (voir formRules). */
+  rules: Rule[];
   seatsHeld: number;
+  seriesId: string | null;
+  seriesKind: SeriesKind | null;
+  sessionTopic: string | null;
+  /** Stage : le prix de tout le stage (tarif par défaut). */
+  stagePriceCents: number | null;
 }
 
 const isPublic = (organizationId: string) =>
@@ -136,7 +191,20 @@ const isPublic = (organizationId: string) =>
     eq(event.organizationId, organizationId),
     eq(event.status, "published"),
     eq(event.visibility, "public"),
+    // Créneaux réservés : ils ne sont pas à l'agenda (le type a sa propre page).
+    eq(event.fromSlot, false),
   );
+
+/** Un stage n'apparaît qu'une fois à l'agenda : sa prochaine séance porte toute l'offre. */
+function oneCardPerStage(rows: PublicEventRow[]): PublicEventRow[] {
+  const seen = new Set<string>();
+  return rows.filter((row) => {
+    if (row.seriesKind !== "stage" || !row.seriesId) return true;
+    if (seen.has(row.seriesId)) return false;
+    seen.add(row.seriesId);
+    return true;
+  });
+}
 
 /** Écran 27 : événements à venir de l'espace. */
 export async function listPublicEvents(
@@ -150,7 +218,113 @@ export async function listPublicEvents(
     .innerJoin(eventType, eq(eventType.id, event.eventTypeId))
     .where(and(isPublic(organizationId), gte(event.startsAt, now)))
     .orderBy(asc(event.startsAt));
-  return (rows as PublicEventRow[]).map(toPublic);
+  return oneCardPerStage(rows.map(toPublic));
+}
+
+/** Types « sur rendez-vous » (module Créneaux) de l'espace, pour la page publique. */
+export async function listPublicSlotTypes(db: Executor, organizationId: string) {
+  const rows = await db
+    .select({
+      id: eventType.id,
+      name: eventType.name,
+      color: eventType.color,
+      description: eventType.description,
+      defaultPriceCents: eventType.defaultPriceCents,
+      modules: eventType.modules,
+    })
+    .from(eventType)
+    .where(
+      and(
+        eq(eventType.organizationId, organizationId),
+        isNull(eventType.archivedAt),
+        sql`${eventType.modules} ? 'slots'`,
+      ),
+    )
+    .orderBy(asc(eventType.name));
+  return rows
+    .filter((row) => !row.modules.access?.inviteOnly)
+    .map(({ modules, ...row }) => ({
+      ...row,
+      /** « À partir de » : la durée la moins chère, sinon le prix du type. */
+      fromCents: modules.duration
+        ? Math.min(...modules.duration.options.map((option) => option.priceCents))
+        : (row.defaultPriceCents ?? 0),
+      durations: modules.duration?.options.map((option) => option.label) ?? [],
+    }));
+}
+export type PublicSlotType = Awaited<ReturnType<typeof listPublicSlotTypes>>[number];
+
+/**
+ * Un type « sur rendez-vous », vu par un visiteur : de quoi choisir (durées, intervenants) et
+ * le formulaire (questions, règles), comme un événement public.
+ */
+export async function getPublicSlotType(db: Executor, organizationId: string, typeId: string) {
+  const [row] = await db
+    .select({
+      id: eventType.id,
+      name: eventType.name,
+      color: eventType.color,
+      description: eventType.description,
+      defaultDurationMinutes: eventType.defaultDurationMinutes,
+      defaultPriceCents: eventType.defaultPriceCents,
+      bookingNoun: eventType.bookingNoun,
+      modules: eventType.modules,
+      fields: eventType.fields,
+      rules: eventType.rules,
+    })
+    .from(eventType)
+    .where(
+      and(
+        eq(eventType.organizationId, organizationId),
+        eq(eventType.id, typeId),
+        isNull(eventType.archivedAt),
+      ),
+    );
+  if (!row?.modules.slots || row.modules.access?.inviteOnly) return null;
+  const memberIds = row.modules.slots.memberIds ?? [];
+  const staff = memberIds.length
+    ? await db
+        .select({ id: member.id, name: user.name })
+        .from(member)
+        .innerJoin(user, eq(user.id, member.userId))
+        .where(and(eq(member.organizationId, organizationId), inArray(member.id, memberIds)))
+    : [];
+  return {
+    ...row,
+    ...publicFieldsView(row.fields, {}),
+    rules: formRules(row.rules, row.fields, { fieldValues: {}, capacity: null, seatsHeld: 0 }),
+    /** Le type complet reste au serveur (créneaux, matériel) ; le visiteur voit la version publique. */
+    modules: publicModules(row.modules),
+    slots: row.modules.slots,
+    duration: row.modules.duration ?? null,
+    // Prénoms seulement, dans l'ordre choisi par l'atelier.
+    staff: memberIds.flatMap((id) => {
+      const found = staff.find((entry) => entry.id === id);
+      return found ? [{ id, firstName: found.name.split(" ")[0] ?? found.name }] : [];
+    }),
+  };
+}
+export type PublicSlotTypeDetail = NonNullable<Awaited<ReturnType<typeof getPublicSlotType>>>;
+
+/** Créneau gardé (lot 37), avec le prénom de l'intervenant retenu. */
+export async function getSlotHold(db: Executor, organizationId: string, holdId: string) {
+  const [row] = await db
+    .select({
+      id: slotHold.id,
+      eventTypeId: slotHold.eventTypeId,
+      startsAt: slotHold.startsAt,
+      endsAt: slotHold.endsAt,
+      durationId: slotHold.durationId,
+      staffMemberId: slotHold.staffMemberId,
+      seats: slotHold.seats,
+      expiresAt: slotHold.expiresAt,
+      staffName: user.name,
+    })
+    .from(slotHold)
+    .leftJoin(member, eq(member.id, slotHold.staffMemberId))
+    .leftJoin(user, eq(user.id, member.userId))
+    .where(and(eq(slotHold.organizationId, organizationId), eq(slotHold.id, holdId)));
+  return row ?? null;
 }
 
 /**
@@ -167,7 +341,6 @@ export async function getPublicEvent(
     .select({
       ...publicEventColumns,
       seriesRule: eventSeries.rrule,
-      seriesId: event.seriesId,
       /** Cours à l'année : inscription à toute la série (voir getSeriesOffer). */
       enrollmentEnabled: sql<boolean>`coalesce(${eventSeries.enrollmentEnabled}, false)`,
       dropInAllowed: sql<boolean>`coalesce(${eventSeries.dropInAllowed}, true)`,
@@ -234,6 +407,7 @@ async function findManagedBooking(db: Executor, where: SQL | undefined) {
       seats: booking.seats,
       amountCents: booking.amountCents,
       depositCents: booking.depositCents,
+      priceLines: booking.priceLines,
       paymentMode: booking.paymentMode,
       paymentStatus: booking.paymentStatus,
       currency: booking.currency,
@@ -256,6 +430,8 @@ async function findManagedBooking(db: Executor, where: SQL | undefined) {
       locationAddress: event.locationAddress,
       onlineUrl: event.onlineUrl,
       eventPaymentLinkUrl: event.paymentLinkUrl,
+      /** Modules de l'événement (annulation, messages, documents) : c'est la réservation du client. */
+      eventModules: event.modules,
       typeColor: eventType.color,
       eventId: event.id,
       eventTypeId: event.eventTypeId,
@@ -283,7 +459,9 @@ async function findManagedBooking(db: Executor, where: SQL | undefined) {
     .orderBy(asc(bookingParticipant.createdAt), asc(bookingParticipant.id));
   // Les champs internes de « Ce que tu décris » restent dans l'équipe.
   const { fields: eventFields } = publicFieldsView(row.eventFields ?? [], {});
-  return { ...row, eventFields, participants };
+  // Matériel réservé avec la place (module Matériel avancé).
+  const equipment = await listBookingEquipment(db, row.id);
+  return { ...row, eventFields, participants, equipment };
 }
 export type ManagedBooking = NonNullable<Awaited<ReturnType<typeof findManagedBooking>>>;
 
@@ -321,10 +499,11 @@ export async function listCalendarLinkEvents(
       and(
         eq(event.organizationId, link.organizationId),
         eq(event.status, "published"),
+        eq(event.fromSlot, false),
         gte(event.startsAt, now),
         calendarLinkCondition(link),
       ),
     )
     .orderBy(asc(event.startsAt));
-  return (rows as PublicEventRow[]).map(toPublic);
+  return oneCardPerStage(rows.map(toPublic));
 }

@@ -1,7 +1,13 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { formDataInput } from "@/lib/form-data";
-import { createPublicEnrollment, enrollEventPage, reportAbsence } from "@/server/enrollments";
+import {
+  cancelAbsence,
+  cancelStageEnrollment,
+  createPublicEnrollment,
+  enrollEventPage,
+  reportAbsence,
+} from "@/server/enrollments";
 import type { FormState } from "@/server/form-state";
 import {
   bookEventPage,
@@ -81,6 +87,12 @@ const enrollFn = createServerFn({ method: "POST" })
 const absenceFn = createServerFn({ method: "POST" })
   .validator(withToken.extend({ eventId: z.string().uuid() }))
   .handler(({ data }) => reportAbsence(data.slug, data.token, data.eventId));
+const cancelAbsenceFn = createServerFn({ method: "POST" })
+  .validator(withToken.extend({ eventId: z.string().uuid() }))
+  .handler(({ data }) => cancelAbsence(data.slug, data.token, data.eventId));
+const cancelStageFn = createServerFn({ method: "POST" })
+  .validator(withToken)
+  .handler(({ data }) => cancelStageEnrollment(data.slug, data.token));
 const payFn = createServerFn({ method: "POST" })
   .validator(withToken)
   .handler(({ data }) => payManagedBooking(data.slug, data.token));
@@ -123,6 +135,10 @@ export function createPublicEnrollmentAction(
 export const reportAbsenceAction = (slug: string, token: string, eventId: string) =>
   absenceFn({ data: { slug, token, eventId } });
 
+/** « Annuler mon absence » sur une séance d'une inscription (lien de gestion). */
+export const cancelAbsenceAction = (slug: string, token: string, eventId: string) =>
+  cancelAbsenceFn({ data: { slug, token, eventId } });
+
 /** Reprend un paiement abandonné : redirige (erreur de redirection) vers la page de paiement. */
 export const payManagedBookingAction = (slug: string, token: string) =>
   payFn({ data: { slug, token } });
@@ -130,3 +146,7 @@ export const cancelManagedBookingAction = (slug: string, token: string) =>
   cancelFn({ data: { slug, token } });
 export const resendBookingEmailAction = (slug: string, token: string) =>
   resendFn({ data: { slug, token } });
+
+/** Stage : annuler son inscription (toutes les séances), depuis le lien de gestion. */
+export const cancelStageEnrollmentAction = (slug: string, token: string) =>
+  cancelStageFn({ data: { slug, token } });

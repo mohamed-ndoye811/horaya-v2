@@ -1,3 +1,4 @@
+import { priceDetail } from "@horaya/core";
 import { type ReactNode, useState } from "react";
 import { BookingAnswers } from "@/components/app/field-answers";
 import { StatusBadge, type Tone } from "@/components/ui/badge";
@@ -5,8 +6,13 @@ import { Button, ButtonLink, buttonClasses } from "@/components/ui/button";
 import { Dialog } from "@/components/ui/dialog";
 import { FormAlert } from "@/components/ui/form-alert";
 import { ArrowLeft } from "@/components/ui/icons";
-import { AbsenceButton, EnrollmentProgress } from "@/features/enrollments/enrollment-progress";
 import {
+  AbsenceButton,
+  CancelAbsenceButton,
+  EnrollmentProgress,
+} from "@/features/enrollments/enrollment-progress";
+import {
+  cancelCustomerAbsenceAction,
   cancelCustomerBookingAction,
   type getCustomerBookingPage,
   reportCustomerAbsenceAction,
@@ -126,6 +132,10 @@ export function CustomerBookingPage({
               {[
                 startsAt && endsAt ? formatEventRange(startsAt, endsAt, tz) : null,
                 places,
+                // Tarifs et options choisis (lot 35), avec le total.
+                priceDetail(booking.priceLines)
+                  ? `${priceDetail(booking.priceLines)} · ${formatMoney(booking.amountCents)}`
+                  : null,
                 where || null,
                 `réservé le ${booked}`,
               ]
@@ -167,6 +177,54 @@ export function CustomerBookingPage({
             </div>
           )}
 
+          {(booking.eventModules?.messages?.bring ||
+            booking.equipment.length > 0 ||
+            booking.onlineUrl ||
+            (booking.eventModules?.documents?.files.length ?? 0) > 0) && (
+            <div className="flex flex-col gap-3.5 border-t border-line pt-7">
+              <h2 className="text-lg font-semibold leading-6 text-ink">À savoir</h2>
+              {booking.onlineUrl && (
+                <p className="text-[15px] leading-[22px] text-ink">
+                  <span className="font-semibold">Lien de la visio :</span>{" "}
+                  <a
+                    href={booking.onlineUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="underline underline-offset-2 hover:text-link"
+                  >
+                    {booking.onlineUrl}
+                  </a>
+                </p>
+              )}
+              {booking.equipment.length > 0 && (
+                <p className="text-[15px] leading-[22px] text-ink">
+                  <span className="font-semibold">Ton matériel :</span>{" "}
+                  {booking.equipment.join(", ")}
+                </p>
+              )}
+              {booking.eventModules?.messages?.bring && (
+                <p className="text-[15px] leading-[22px] text-ink">
+                  <span className="font-semibold">À apporter :</span>{" "}
+                  {booking.eventModules.messages.bring}
+                </p>
+              )}
+              <ul className="flex flex-col gap-2">
+                {booking.eventModules?.documents?.files.map((file) => (
+                  <li key={file.url}>
+                    <a
+                      href={file.url}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-[15px] font-semibold leading-5 text-ink underline underline-offset-2 hover:text-link"
+                    >
+                      {file.name}
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
           {(Object.keys(booking.answers).length > 0 ||
             booking.participants.some((entry) => Object.keys(entry.answers).length > 0)) && (
             <div className="flex flex-col gap-3.5 border-t border-line pt-7">
@@ -185,16 +243,24 @@ export function CustomerBookingPage({
               enrollment={enrollment}
               timezone={tz}
               absence={
-                active &&
                 booking.eventId &&
                 startsAt &&
-                startsAt > now && (
-                  <AbsenceButton
+                startsAt > now &&
+                (booking.absentAt ? (
+                  <CancelAbsenceButton
                     session={{ eventId: booking.eventId, title, startsAt }}
                     timeZone={tz}
-                    onAbsent={() => reportCustomerAbsenceAction(slug, booking.id)}
+                    onCancel={() => cancelCustomerAbsenceAction(slug, booking.id)}
                   />
-                )
+                ) : (
+                  active && (
+                    <AbsenceButton
+                      session={{ eventId: booking.eventId, title, startsAt }}
+                      timeZone={tz}
+                      onAbsent={() => reportCustomerAbsenceAction(slug, booking.id)}
+                    />
+                  )
+                ))
               }
             />
           )}
