@@ -456,7 +456,14 @@ dialog[open]::backdrop {
 /* Nom de la page posé pendant la transition seulement : hors transition, il créerait un
    contexte d'empilement qui ferait passer les coins fixés (fil d'Ariane, actions) sous le fondu. */
 @media (min-width: 1024px) {
-  :root:active-view-transition-type(page) [data-page-transition] {
+  /*
+   * Dans l'app, on nomme la zone qui défile, pas la page : elle a la même boîte sur toutes
+   * les pages, et sa capture montre ce qui était à l'écran. Nommer la page calait l'ancienne
+   * capture sur la boîte de la nouvelle : tout sautait du défilement en cours et de l'écart de
+   * marges entre deux pages (Événements → Calendrier). Sans zone (pages publiques) : la page.
+   */
+  :root:active-view-transition-type(page) [data-scroll-zone],
+  :root:active-view-transition-type(page) [data-page-transition]:not([data-scroll-zone] *) {
     view-transition-name: page;
     /*
      * Nommée, la page devient une couche à part : sans ce z-index, les coins fixés qu'elle
