@@ -27,6 +27,8 @@ export function bookingBadge(booking: {
   if (booking.enrollmentId) return { label: "Inscrit·e au trimestre", tone: "info" };
   if (booking.payable) return { label: "À payer", tone: "warning" };
   if (booking.paymentStatus === "paid") return { label: "Payée", tone: "success" };
+  if (booking.paymentStatus === "paid_with_pass")
+    return { label: "Payée avec ta carte", tone: "success" };
   return { label: "Confirmée", tone: "success" };
 }
 

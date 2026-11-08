@@ -152,6 +152,7 @@ export function BookingForm({
   recap,
   payment,
   prefill,
+  pass = null,
   action,
   enrollment = false,
 }: {
@@ -176,6 +177,8 @@ export function BookingForm({
   } | null;
   /** Espace client connecté : son profil remplit le participant 1. */
   prefill: { firstName: string; lastName: string; email: string; phone: string } | null;
+  /** Lot 31 : client connecté avec une carte de séances utilisable pour ces places. */
+  pass?: { id: string; name: string; balance: number } | null;
   /** Autre envoi que la réservation à la séance (inscription à toute la série). */
   action?: (previous: FormState, form: FormData) => Promise<FormState>;
   /** Inscription à la série : une seule personne, sans entreprise ni message. */
@@ -194,6 +197,16 @@ export function BookingForm({
         label={`J'accepte les conditions ${enrollment ? "d'inscription" : "de réservation et la politique d'annulation"} de ${workspaceName}.`}
       />
       {errors.terms && <FieldError>{errors.terms}</FieldError>}
+    </div>
+  );
+  const passChoice = pass && (
+    <div className="rounded-[18px] bg-field px-[18px] py-4">
+      <Checkbox
+        name="passId"
+        value={pass.id}
+        defaultChecked
+        label={`Payer avec ma carte « ${pass.name} » : ${seats} séance${seats > 1 ? "s" : ""} sur les ${pass.balance} qui restent, rien d'autre à régler`}
+      />
     </div>
   );
 
@@ -330,10 +343,14 @@ export function BookingForm({
                   : `Juste après ta ${enrollment ? "inscription" : "réservation"}, tu règles ${payment.deposit ? `l'acompte de ${payment.due}` : payment.due} via le lien de paiement de ${payment.organization}.${payment.deposit ? ` Le reste (${payment.rest}) sur place.` : ""} ${payment.organization} confirme ensuite la réception.`}
               </p>
             </div>
+            {passChoice}
             {terms}
           </FormSection>
         ) : (
-          <div className="rounded-3xl bg-surface p-5 sm:p-6">{terms}</div>
+          <div className="flex flex-col gap-4 rounded-3xl bg-surface p-5 sm:p-6">
+            {passChoice}
+            {terms}
+          </div>
         )}
 
         <div className="flex flex-col gap-3 rounded-[28px] bg-ink p-2.5 sm:flex-row sm:items-center sm:justify-between sm:rounded-full sm:pl-6">

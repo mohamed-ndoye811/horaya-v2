@@ -22,6 +22,8 @@ import {
   listBookingPayments,
   listCalendarLinkEvents,
   listPublicEvents,
+  listPublicPassPlans,
+  listUsablePasses,
   type ManagedBooking,
   type PublicWorkspace,
 } from "@horaya/db";
@@ -34,6 +36,7 @@ import { db } from "./db";
 import { managedEnrollment } from "./enrollments";
 import { type FormState, toFormState } from "./form-state";
 import { absoluteUrl } from "./mailer";
+import { currentCustomerIdentity, payWithMyPassImpl } from "./passes";
 import { paymentDeps } from "./payments";
 import { getCalendarLink, getWorkspaceBySlug, workspacePaymentChannel } from "./public";
 import { clientIp, rateLimited } from "./rate-limit";
@@ -61,7 +64,11 @@ export async function publicLayout(slug: string) {
 export async function publicHome(slug: string) {
   const workspace = await publicWorkspace(slug);
   const now = new Date();
-  return { workspace, events: await listPublicEvents(db, workspace.id, now), now };
+  const [events, passPlans] = await Promise.all([
+    listPublicEvents(db, workspace.id, now),
+    listPublicPassPlans(db, workspace.id),
+  ]);
+  return { workspace, events, now, hasPassPlans: passPlans.length > 0 };
 }
 
 /** Lien calendrier : les événements choisis par l'équipe, « sur invitation » compris. */
@@ -117,7 +124,7 @@ export async function bookEventPage(
   places: string | undefined,
 ) {
   const data = await publicEventPage(slug, eventSlug, lien);
-  if (!data.event) return { ...data, seats: 1, prefill: null };
+  if (!data.event) return { ...data, seats: 1, prefill: null, pass: null };
   const state = bookingState(data.event, data.now);
   const dropInClosed = data.event.enrollmentEnabled && !data.event.dropInAllowed;
   if (state.kind === "full" || state.kind === "closed" || dropInClosed) {
@@ -127,7 +134,25 @@ export async function bookEventPage(
   }
   const requested = Number(places ?? 1);
   const seats = Number.isInteger(requested) ? Math.min(Math.max(requested, 1), state.maxSeats) : 1;
-  return { ...data, seats, prefill: await customerPrefill() };
+  // Lot 31 : client connecté avec une carte acceptée ici et assez de séances pour ses places.
+  const identity =
+    data.event.priceCents > 0 ? await currentCustomerIdentity(data.workspace.id) : null;
+  const passes = identity
+    ? await listUsablePasses(
+        db,
+        data.workspace.id,
+        identity.customerId,
+        data.event.typeId,
+        data.now,
+      )
+    : [];
+  const pass = passes.find((entry) => entry.balance >= seats);
+  return {
+    ...data,
+    seats,
+    prefill: await customerPrefill(),
+    pass: pass ? { id: pass.id, name: pass.name, balance: pass.balance } : null,
+  };
 }
 
 /** Espace client connecté : son profil préremplit le participant 1 (réservation, inscription). */
@@ -277,6 +302,11 @@ export async function createPublicBooking(
       },
     );
     manageToken = created.manageToken;
+    // « Payer avec ma carte » coché (client connecté) : réglée avant l'e-mail de confirmation.
+    // Si la carte ne passe plus (solde, liste d'attente…), la réservation reste à payer.
+    const passId = text(form, "passId");
+    const paidWithPass =
+      passId !== "" && !(await payWithMyPassImpl(slug, created.booking.id, passId)).error;
     await sendBookingCreatedEmail(workspace.id, created.booking.id, manageToken);
     next = `/${slug}/reservation/${manageToken}?nouvelle=1`;
     // Paiement intégré (tout ou l'acompte) : direction la page de paiement sécurisée.
@@ -284,6 +314,7 @@ export async function createPublicBooking(
     if (
       workspacePaymentChannel(workspace, event.paymentMode, event.paymentLinkUrl)?.kind ===
         "stripe" &&
+      !paidWithPass &&
       awaitsOnlinePayment(created.booking)
     ) {
       next = await checkoutUrl(

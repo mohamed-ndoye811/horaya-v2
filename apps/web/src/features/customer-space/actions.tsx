@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useTransition } from "react";
 import { Button, buttonClasses } from "@/components/ui/button";
 import { Dialog } from "@/components/ui/dialog";
 import { inputClasses } from "@/components/ui/field";
@@ -8,7 +8,9 @@ import {
   payCustomerBookingAction,
   signOutCustomerAction,
 } from "@/functions/customer-space";
+import { payWithMyPassAction } from "@/functions/passes";
 import { formatMoney } from "@/lib/format";
+import { useRouter } from "@/lib/navigation";
 import { useFormAction } from "@/lib/use-form-action";
 import type { FormState } from "@/server/form-state";
 import { PayButton } from "../public/manage-actions";
@@ -43,6 +45,43 @@ export function PayAction({
   }
   return (
     <PayButton pay={() => payCustomerBookingAction(slug, bookingId)} label={label} size={size} />
+  );
+}
+
+/** Lot 31 : « Payer avec ma carte » (le serveur lit l'identité du client dans sa session). */
+export function PayWithPassAction({
+  slug,
+  bookingId,
+  pass,
+  size = "sm",
+}: {
+  slug: string;
+  bookingId: string;
+  pass: { id: string; name: string; balance: number };
+  size?: "sm" | "lg";
+}) {
+  const router = useRouter();
+  const [pending, startTransition] = useTransition();
+  const [error, setError] = useState<string | null>(null);
+  return (
+    <>
+      <Button
+        variant="secondary"
+        size={size}
+        pending={pending}
+        title={`${pass.name} · ${pass.balance} séance${pass.balance > 1 ? "s" : ""} restante${pass.balance > 1 ? "s" : ""}`}
+        onClick={() =>
+          startTransition(async () => {
+            const result = await payWithMyPassAction(slug, bookingId, pass.id);
+            if (result.error) setError(result.error);
+            else router.refresh();
+          })
+        }
+      >
+        Payer avec ma carte
+      </Button>
+      {error && <FormAlert>{error}</FormAlert>}
+    </>
   );
 }
 

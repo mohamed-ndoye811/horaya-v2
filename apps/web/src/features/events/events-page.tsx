@@ -147,6 +147,9 @@ export function EventsPage({
               >
                 Types
               </ButtonLink>
+              <ButtonLink href="/app/cartes" variant="secondary" title="Cartes de séances">
+                Cartes
+              </ButtonLink>
             </div>
             <div className="hidden lg:flex">{newEventButton}</div>
           </>

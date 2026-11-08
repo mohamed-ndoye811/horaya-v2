@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { requireFeature } from "../billing/use-cases";
 import { type AssignedItem, assignEventItems } from "../inventory/use-cases";
+import { payBookingWithPassIn } from "../passes/use-cases";
 import { recordManualPaymentIn } from "../payments/use-cases";
 import { type Actor, assertMemberCan } from "../shared/actor";
 import { ConflictError, NotFoundError } from "../shared/errors";
@@ -65,9 +66,18 @@ export const counterBookingSchema = z
     /** Payé sur place au moment de la saisie (sinon : à payer, lien envoyé par e-mail). */
     paid: z.boolean().default(false),
     paymentMethod: z.enum(PAYMENT_METHODS).nullish(),
+    /** Payé avec une séance par place d'une carte du client. */
+    passId: z.uuid().nullish(),
   })
   .superRefine((input, context) => {
     refineCounterCustomer(input, context);
+    if (input.passId && (input.paid || !input.customerId)) {
+      context.addIssue({
+        code: "custom",
+        path: ["passId"],
+        message: "La carte s'utilise avec un client existant, sans autre paiement",
+      });
+    }
     const ids = input.items.map((item) => item.itemId);
     if (new Set(ids).size !== ids.length) {
       context.addIssue({ code: "custom", path: ["items"], message: "Article en double" });
@@ -142,7 +152,7 @@ export async function createCounterBooking(
       customerMessage: null,
       manageTokenHash,
     });
-    if (booking.status !== "confirmed" && (data.items.length > 0 || data.paid)) {
+    if (booking.status !== "confirmed" && (data.items.length > 0 || data.paid || data.passId)) {
       throw new ConflictError(
         "La séance est complète : la réservation irait en liste d'attente, sans matériel ni paiement",
       );
@@ -159,6 +169,9 @@ export async function createCounterBooking(
         booking.amountCents,
         data.paymentMethod ?? null,
       );
+    }
+    if (data.passId) {
+      await payBookingWithPassIn(repositories, actor, booking, data.passId, now);
     }
     const fresh = await repositories.bookings.find(actor.organizationId, booking.id);
     return { booking: fresh ?? booking, manageToken, items };

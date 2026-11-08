@@ -25,11 +25,13 @@ import {
 import {
   type AccountBooking,
   findCustomerAccountByCalendarToken,
+  findCustomerIdByEmail,
   getAccountBooking,
   getEnrollment,
   listAccountBookings,
   listCandidatesForTypes,
   listRescheduleCandidates,
+  listUsablePasses,
 } from "@horaya/db";
 import { customerLoginEmail } from "@horaya/mail";
 import { notFound, redirect } from "@tanstack/react-router";
@@ -318,10 +320,25 @@ export async function customerBookingPage(slug: string, bookingId: string) {
             remaining: to.capacity === null ? null : to.capacity - to.seatsHeld,
           }))
       : [];
+  // Lot 31 : « Payer avec ma carte » si la réservation reste à régler et qu'une carte du client
+  // accepte ce type d'événement avec assez de séances.
+  const customerId =
+    booking.kind === "event" &&
+    booking.amountCents > 0 &&
+    ["pending", "confirmed"].includes(booking.status) &&
+    ["none", "failed"].includes(booking.paymentStatus)
+      ? await findCustomerIdByEmail(db, workspace.id, account.email)
+      : null;
+  const pass = customerId
+    ? (await listUsablePasses(db, workspace.id, customerId, booking.eventTypeId ?? null, now)).find(
+        (entry) => entry.balance >= booking.seats,
+      )
+    : undefined;
   return {
     booking,
     now,
     ...money,
+    pass: pass ? { id: pass.id, name: pass.name, balance: pass.balance } : null,
     enrollment: booking.enrollmentId
       ? await enrollmentOf(workspace, booking.enrollmentId, now)
       : null,

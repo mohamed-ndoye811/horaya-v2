@@ -15,12 +15,15 @@ import {
   createEventBooking,
   createEventType,
   createItem,
+  createPassPlan,
   createRentalBooking,
   enrollInSeries,
   fromZonedParts,
+  payBookingWithPass,
   publishEvent,
   reportAbsenceAsCustomer,
   scheduleMaintenance,
+  sellPass,
   setEventItemQuantity,
   systemClock,
   toZonedParts,
@@ -47,6 +50,9 @@ import {
   member,
   notificationPreference,
   organization,
+  pass,
+  passMovement,
+  passPlan,
   payment,
   planGrant,
   referenceCounter,
@@ -98,6 +104,9 @@ if (reset) {
     await tx.delete(member).where(and(eq(member.organizationId, org.id), ne(member.role, "owner")));
     for (const table of [
       notificationPreference,
+      passMovement,
+      pass,
+      passPlan,
       itemAllocation,
       itemUnit,
       item,
@@ -784,6 +793,55 @@ await db.insert(invitation).values({
         .orderBy(asc(event.startsAt));
       const absent = upcoming[2];
       if (absent) await reportAbsenceAsCustomer(deps, org.id, absent.id, email);
+    }
+  }
+}
+
+// Cartes de séances (lot 31) : « Carte 10 séances » (180 jours, ateliers), carte active d'Antoine
+// avec 3 séances utilisées sur 3 ateliers à venir (journal : achat +10, puis trois utilisations).
+{
+  const plan = await createPassPlan(deps, actor, {
+    name: "Carte 10 séances",
+    sessions: 10,
+    priceCents: 30000,
+    validityDays: 180,
+    eventTypeIds: [types.atelier?.id ?? ""],
+  });
+  const [antoine] = await db
+    .select({ id: customer.id })
+    .from(customer)
+    .where(and(eq(customer.organizationId, org.id), eq(customer.email, "antoine.leroy@mail.com")));
+  if (antoine) {
+    const card = await sellPass(deps, actor, {
+      customerId: antoine.id,
+      planId: plan.id,
+      paid: true,
+      paymentMethod: "card",
+    });
+    for (const [title, days] of [
+      ["Atelier cadrage", 3],
+      ["Atelier lumière", 10],
+      ["Atelier montage", 17],
+    ] as const) {
+      const [created] = await createEvent(deps, actor, {
+        eventTypeId: types.atelier?.id ?? "",
+        title,
+        startsAt: at(days, 18),
+        endsAt: at(days, 21),
+        timezone: TZ,
+        locationName: "Studio Démo, Puget-Ville",
+        capacity: 10,
+        priceCents: 3500,
+        paymentMode: "on_site",
+      });
+      if (!created) continue;
+      await publishEvent(deps, actor, created.id);
+      const { booking: placed } = await createEventBooking(deps, actor, {
+        eventId: created.id,
+        seats: 1,
+        customer: { firstName: "Antoine", lastName: "Leroy", email: "antoine.leroy@mail.com" },
+      });
+      await payBookingWithPass(deps, actor, { bookingId: placed.id, passId: card.id });
     }
   }
 }

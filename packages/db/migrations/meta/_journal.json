@@ -134,6 +134,13 @@
       "when": 1794093861129,
       "tag": "0018_cours_a_l_annee",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1794094182683,
+      "tag": "0019_cartes_de_seances",
+      "breakpoints": true
     }
   ]
 }

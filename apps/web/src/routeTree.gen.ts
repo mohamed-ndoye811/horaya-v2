@@ -25,6 +25,7 @@ import { Route as ApiErreursRouteImport } from './routes/api/erreurs'
 import { Route as ApiHealthRouteImport } from './routes/api/health'
 import { Route as AppIndexRouteImport } from './routes/app/index'
 import { Route as AppCalendrierRouteImport } from './routes/app/calendrier'
+import { Route as AppCartesRouteImport } from './routes/app/cartes'
 import { Route as AppDesignSystemRouteImport } from './routes/app/design-system'
 import { Route as AppPlusRouteImport } from './routes/app/plus'
 import { Route as FichiersSplatRouteImport } from './routes/fichiers/$'
@@ -39,6 +40,8 @@ import { Route as SlugEventIndexRouteImport } from './routes/$slug/$event/index'
 import { Route as SlugEventInscriptionRouteImport } from './routes/$slug/$event/inscription'
 import { Route as SlugEventReserverRouteImport } from './routes/$slug/$event/reserver'
 import { Route as SlugCalendrierLienRouteImport } from './routes/$slug/calendrier/$lien'
+import { Route as SlugCartesIndexRouteImport } from './routes/$slug/cartes/index'
+import { Route as SlugCartesMerciRouteImport } from './routes/$slug/cartes/merci'
 import { Route as SlugMonEspaceIndexRouteImport } from './routes/$slug/mon-espace/index'
 import { Route as SlugMonEspaceConnexionRouteImport } from './routes/$slug/mon-espace/connexion'
 import { Route as SlugMonEspaceProfilRouteImport } from './routes/$slug/mon-espace/profil'
@@ -168,6 +171,11 @@ const AppCalendrierRoute = AppCalendrierRouteImport.update({
   path: '/calendrier',
   getParentRoute: () => AppRoute,
 } as any)
+const AppCartesRoute = AppCartesRouteImport.update({
+  id: '/cartes',
+  path: '/cartes',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppDesignSystemRoute = AppDesignSystemRouteImport.update({
   id: '/design-system',
   path: '/design-system',
@@ -236,6 +244,16 @@ const SlugEventReserverRoute = SlugEventReserverRouteImport.update({
 const SlugCalendrierLienRoute = SlugCalendrierLienRouteImport.update({
   id: '/calendrier/$lien',
   path: '/calendrier/$lien',
+  getParentRoute: () => SlugRoute,
+} as any)
+const SlugCartesIndexRoute = SlugCartesIndexRouteImport.update({
+  id: '/cartes/',
+  path: '/cartes/',
+  getParentRoute: () => SlugRoute,
+} as any)
+const SlugCartesMerciRoute = SlugCartesMerciRouteImport.update({
+  id: '/cartes/merci',
+  path: '/cartes/merci',
   getParentRoute: () => SlugRoute,
 } as any)
 const SlugMonEspaceIndexRoute = SlugMonEspaceIndexRouteImport.update({
@@ -501,6 +519,7 @@ export interface FileRoutesByFullPath {
   '/api/erreurs': typeof ApiErreursRoute
   '/api/health': typeof ApiHealthRoute
   '/app/calendrier': typeof AppCalendrierRoute
+  '/app/cartes': typeof AppCartesRoute
   '/app/design-system': typeof AppDesignSystemRoute
   '/app/plus': typeof AppPlusRoute
   '/fichiers/$': typeof FichiersSplatRoute
@@ -516,6 +535,7 @@ export interface FileRoutesByFullPath {
   '/$slug/$event/inscription': typeof SlugEventInscriptionRoute
   '/$slug/$event/reserver': typeof SlugEventReserverRoute
   '/$slug/calendrier/$lien': typeof SlugCalendrierLienRoute
+  '/$slug/cartes/merci': typeof SlugCartesMerciRoute
   '/$slug/mon-espace/connexion': typeof SlugMonEspaceConnexionRoute
   '/$slug/mon-espace/profil': typeof SlugMonEspaceProfilRoute
   '/inscription/espace': typeof authInscriptionEspaceRoute
@@ -542,6 +562,7 @@ export interface FileRoutesByFullPath {
   '/app/reservations/export': typeof AppReservationsExportRoute
   '/app/reservations/nouvelle': typeof AppReservationsNouvelleRoute
   '/$slug/$event/': typeof SlugEventIndexRoute
+  '/$slug/cartes/': typeof SlugCartesIndexRoute
   '/$slug/mon-espace/': typeof SlugMonEspaceIndexRoute
   '/inscription/': typeof authInscriptionIndexRoute
   '/app/clients/': typeof AppClientsIndexRoute
@@ -577,6 +598,7 @@ export interface FileRoutesByTo {
   '/api/erreurs': typeof ApiErreursRoute
   '/api/health': typeof ApiHealthRoute
   '/app/calendrier': typeof AppCalendrierRoute
+  '/app/cartes': typeof AppCartesRoute
   '/app/design-system': typeof AppDesignSystemRoute
   '/app/plus': typeof AppPlusRoute
   '/fichiers/$': typeof FichiersSplatRoute
@@ -592,6 +614,7 @@ export interface FileRoutesByTo {
   '/$slug/$event/inscription': typeof SlugEventInscriptionRoute
   '/$slug/$event/reserver': typeof SlugEventReserverRoute
   '/$slug/calendrier/$lien': typeof SlugCalendrierLienRoute
+  '/$slug/cartes/merci': typeof SlugCartesMerciRoute
   '/$slug/mon-espace/connexion': typeof SlugMonEspaceConnexionRoute
   '/$slug/mon-espace/profil': typeof SlugMonEspaceProfilRoute
   '/inscription/espace': typeof authInscriptionEspaceRoute
@@ -618,6 +641,7 @@ export interface FileRoutesByTo {
   '/app/reservations/export': typeof AppReservationsExportRoute
   '/app/reservations/nouvelle': typeof AppReservationsNouvelleRoute
   '/$slug/$event': typeof SlugEventIndexRoute
+  '/$slug/cartes': typeof SlugCartesIndexRoute
   '/$slug/mon-espace': typeof SlugMonEspaceIndexRoute
   '/inscription': typeof authInscriptionIndexRoute
   '/app/clients': typeof AppClientsIndexRoute
@@ -657,6 +681,7 @@ export interface FileRoutesById {
   '/api/erreurs': typeof ApiErreursRoute
   '/api/health': typeof ApiHealthRoute
   '/app/calendrier': typeof AppCalendrierRoute
+  '/app/cartes': typeof AppCartesRoute
   '/app/design-system': typeof AppDesignSystemRoute
   '/app/plus': typeof AppPlusRoute
   '/fichiers/$': typeof FichiersSplatRoute
@@ -672,6 +697,7 @@ export interface FileRoutesById {
   '/$slug/$event/inscription': typeof SlugEventInscriptionRoute
   '/$slug/$event/reserver': typeof SlugEventReserverRoute
   '/$slug/calendrier/$lien': typeof SlugCalendrierLienRoute
+  '/$slug/cartes/merci': typeof SlugCartesMerciRoute
   '/$slug/mon-espace/connexion': typeof SlugMonEspaceConnexionRoute
   '/$slug/mon-espace/profil': typeof SlugMonEspaceProfilRoute
   '/(auth)/inscription/espace': typeof authInscriptionEspaceRoute
@@ -698,6 +724,7 @@ export interface FileRoutesById {
   '/app/reservations/export': typeof AppReservationsExportRoute
   '/app/reservations/nouvelle': typeof AppReservationsNouvelleRoute
   '/$slug/$event/': typeof SlugEventIndexRoute
+  '/$slug/cartes/': typeof SlugCartesIndexRoute
   '/$slug/mon-espace/': typeof SlugMonEspaceIndexRoute
   '/(auth)/inscription/': typeof authInscriptionIndexRoute
   '/app/clients/': typeof AppClientsIndexRoute
@@ -738,6 +765,7 @@ export interface FileRouteTypes {
     | '/api/erreurs'
     | '/api/health'
     | '/app/calendrier'
+    | '/app/cartes'
     | '/app/design-system'
     | '/app/plus'
     | '/fichiers/$'
@@ -753,6 +781,7 @@ export interface FileRouteTypes {
     | '/$slug/$event/inscription'
     | '/$slug/$event/reserver'
     | '/$slug/calendrier/$lien'
+    | '/$slug/cartes/merci'
     | '/$slug/mon-espace/connexion'
     | '/$slug/mon-espace/profil'
     | '/inscription/espace'
@@ -779,6 +808,7 @@ export interface FileRouteTypes {
     | '/app/reservations/export'
     | '/app/reservations/nouvelle'
     | '/$slug/$event/'
+    | '/$slug/cartes/'
     | '/$slug/mon-espace/'
     | '/inscription/'
     | '/app/clients/'
@@ -814,6 +844,7 @@ export interface FileRouteTypes {
     | '/api/erreurs'
     | '/api/health'
     | '/app/calendrier'
+    | '/app/cartes'
     | '/app/design-system'
     | '/app/plus'
     | '/fichiers/$'
@@ -829,6 +860,7 @@ export interface FileRouteTypes {
     | '/$slug/$event/inscription'
     | '/$slug/$event/reserver'
     | '/$slug/calendrier/$lien'
+    | '/$slug/cartes/merci'
     | '/$slug/mon-espace/connexion'
     | '/$slug/mon-espace/profil'
     | '/inscription/espace'
@@ -855,6 +887,7 @@ export interface FileRouteTypes {
     | '/app/reservations/export'
     | '/app/reservations/nouvelle'
     | '/$slug/$event'
+    | '/$slug/cartes'
     | '/$slug/mon-espace'
     | '/inscription'
     | '/app/clients'
@@ -893,6 +926,7 @@ export interface FileRouteTypes {
     | '/api/erreurs'
     | '/api/health'
     | '/app/calendrier'
+    | '/app/cartes'
     | '/app/design-system'
     | '/app/plus'
     | '/fichiers/$'
@@ -908,6 +942,7 @@ export interface FileRouteTypes {
     | '/$slug/$event/inscription'
     | '/$slug/$event/reserver'
     | '/$slug/calendrier/$lien'
+    | '/$slug/cartes/merci'
     | '/$slug/mon-espace/connexion'
     | '/$slug/mon-espace/profil'
     | '/(auth)/inscription/espace'
@@ -934,6 +969,7 @@ export interface FileRouteTypes {
     | '/app/reservations/export'
     | '/app/reservations/nouvelle'
     | '/$slug/$event/'
+    | '/$slug/cartes/'
     | '/$slug/mon-espace/'
     | '/(auth)/inscription/'
     | '/app/clients/'
@@ -1098,6 +1134,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppCalendrierRouteImport
       parentRoute: typeof AppRoute
     }
+    '/app/cartes': {
+      id: '/app/cartes'
+      path: '/cartes'
+      fullPath: '/app/cartes'
+      preLoaderRoute: typeof AppCartesRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/app/design-system': {
       id: '/app/design-system'
       path: '/design-system'
@@ -1194,6 +1237,20 @@ declare module '@tanstack/react-router' {
       path: '/calendrier/$lien'
       fullPath: '/$slug/calendrier/$lien'
       preLoaderRoute: typeof SlugCalendrierLienRouteImport
+      parentRoute: typeof SlugRoute
+    }
+    '/$slug/cartes/': {
+      id: '/$slug/cartes/'
+      path: '/cartes'
+      fullPath: '/$slug/cartes/'
+      preLoaderRoute: typeof SlugCartesIndexRouteImport
+      parentRoute: typeof SlugRoute
+    }
+    '/$slug/cartes/merci': {
+      id: '/$slug/cartes/merci'
+      path: '/cartes/merci'
+      fullPath: '/$slug/cartes/merci'
+      preLoaderRoute: typeof SlugCartesMerciRouteImport
       parentRoute: typeof SlugRoute
     }
     '/$slug/mon-espace/': {
@@ -1535,9 +1592,11 @@ interface SlugRouteChildren {
   SlugEventInscriptionRoute: typeof SlugEventInscriptionRoute
   SlugEventReserverRoute: typeof SlugEventReserverRoute
   SlugCalendrierLienRoute: typeof SlugCalendrierLienRoute
+  SlugCartesMerciRoute: typeof SlugCartesMerciRoute
   SlugMonEspaceConnexionRoute: typeof SlugMonEspaceConnexionRoute
   SlugMonEspaceProfilRoute: typeof SlugMonEspaceProfilRoute
   SlugEventIndexRoute: typeof SlugEventIndexRoute
+  SlugCartesIndexRoute: typeof SlugCartesIndexRoute
   SlugMonEspaceIndexRoute: typeof SlugMonEspaceIndexRoute
   SlugMonEspaceReservationAgendaDoticsRoute: typeof SlugMonEspaceReservationAgendaDoticsRoute
   SlugReservationTokenAgendaDoticsRoute: typeof SlugReservationTokenAgendaDoticsRoute
@@ -1552,9 +1611,11 @@ const SlugRouteChildren: SlugRouteChildren = {
   SlugEventInscriptionRoute: SlugEventInscriptionRoute,
   SlugEventReserverRoute: SlugEventReserverRoute,
   SlugCalendrierLienRoute: SlugCalendrierLienRoute,
+  SlugCartesMerciRoute: SlugCartesMerciRoute,
   SlugMonEspaceConnexionRoute: SlugMonEspaceConnexionRoute,
   SlugMonEspaceProfilRoute: SlugMonEspaceProfilRoute,
   SlugEventIndexRoute: SlugEventIndexRoute,
+  SlugCartesIndexRoute: SlugCartesIndexRoute,
   SlugMonEspaceIndexRoute: SlugMonEspaceIndexRoute,
   SlugMonEspaceReservationAgendaDoticsRoute:
     SlugMonEspaceReservationAgendaDoticsRoute,
@@ -1567,6 +1628,7 @@ const SlugRouteWithChildren = SlugRoute._addFileChildren(SlugRouteChildren)
 
 interface AppRouteChildren {
   AppCalendrierRoute: typeof AppCalendrierRoute
+  AppCartesRoute: typeof AppCartesRoute
   AppDesignSystemRoute: typeof AppDesignSystemRoute
   AppPlusRoute: typeof AppPlusRoute
   AppIndexRoute: typeof AppIndexRoute
@@ -1607,6 +1669,7 @@ interface AppRouteChildren {
 
 const AppRouteChildren: AppRouteChildren = {
   AppCalendrierRoute: AppCalendrierRoute,
+  AppCartesRoute: AppCartesRoute,
   AppDesignSystemRoute: AppDesignSystemRoute,
   AppPlusRoute: AppPlusRoute,
   AppIndexRoute: AppIndexRoute,

@@ -3,7 +3,9 @@ import {
   getCustomerDetail,
   getCustomerStats,
   listCustomerBookings,
+  listCustomerPasses,
   listCustomers,
+  listPassPlans,
 } from "@horaya/db";
 import { notFound } from "@tanstack/react-router";
 import { createServerFn } from "@tanstack/react-start";
@@ -43,12 +45,21 @@ export const getCustomer = createServerFn({ method: "GET" })
   .validator(z.string().uuid())
   .handler(async ({ data: id }) => {
     const { workspace, timeZone } = await getWorkspaceContext();
-    const [detail, bookings] = await Promise.all([
+    const [detail, bookings, passes, plans] = await Promise.all([
       getCustomerDetail(db, workspace.id, id, new Date()),
       listCustomerBookings(db, workspace.id, id),
+      listCustomerPasses(db, workspace.id, id),
+      listPassPlans(db, workspace.id),
     ]);
     if (!detail) throw notFound();
-    return { timeZone, customer: detail.customer, notes: detail.notes, bookings };
+    return {
+      timeZone,
+      customer: detail.customer,
+      notes: detail.notes,
+      bookings,
+      passes,
+      sellablePlans: plans.filter((plan) => !plan.archivedAt),
+    };
   });
 
 /** Valeurs du formulaire de modification (client anonymisé : introuvable). */

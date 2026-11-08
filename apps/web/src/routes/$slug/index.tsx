@@ -2,6 +2,7 @@ import { TENANT_SECTORS } from "@horaya/core";
 import { createFileRoute } from "@tanstack/react-router";
 import { z } from "zod";
 import { PublicEvents, PublicHero } from "@/components/public/public-events";
+import { ButtonLink } from "@/components/ui/button";
 import { getPublicHome } from "@/functions/public";
 import { searchText } from "@/lib/search-params";
 
@@ -21,7 +22,7 @@ export const Route = createFileRoute("/$slug/")({
 });
 
 function PublicWorkspacePage() {
-  const { workspace, events, now } = Route.useLoaderData();
+  const { workspace, events, now, hasPassPlans } = Route.useLoaderData();
   const sector = TENANT_SECTORS.find(
     (entry) => entry.value === workspace.sector && entry.value !== "other",
   );
@@ -34,6 +35,16 @@ function PublicWorkspacePage() {
         font={workspace.displayFont}
         cover={workspace.coverImageUrl}
       />
+      {hasPassPlans && (
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-3xl bg-surface px-6 py-4">
+          <p className="text-[15px] font-medium text-ink">
+            Tu viens régulièrement ? Une carte de séances revient moins cher à la séance.
+          </p>
+          <ButtonLink href={`/${workspace.slug}/cartes`} variant="brand" arrow>
+            Acheter une carte
+          </ButtonLink>
+        </div>
+      )}
       <PublicEvents
         events={events}
         workspaceSlug={workspace.slug}

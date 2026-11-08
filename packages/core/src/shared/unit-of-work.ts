@@ -11,6 +11,7 @@ import type { CustomerAccountRepository } from "../customer-accounts/ports";
 import type { EnrollmentRepository } from "../enrollments/ports";
 import type { EventRepository, EventTypeRepository } from "../events/ports";
 import type { InventoryRepository } from "../inventory/ports";
+import type { PassRepository } from "../passes/ports";
 import type { PaymentRepository } from "../payments/ports";
 import type { NotificationPreferenceRepository } from "../tenants/ports";
 import type { TenantSettingsStore } from "../tenants/settings";
@@ -33,6 +34,7 @@ export interface Repositories {
   billing: BillingRepository;
   customerAccounts: CustomerAccountRepository;
   enrollments: EnrollmentRepository;
+  passes: PassRepository;
 }
 
 /** Exécute un travail dans une transaction : tout est validé, ou rien. */

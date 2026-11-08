@@ -17,6 +17,8 @@ export const BOOKING_PAYMENT_STATUSES = [
   "partially_refunded",
   "refunded",
   "failed",
+  /** Réglée avec des séances d'une carte (aucun argent encaissé sur la réservation). */
+  "paid_with_pass",
 ] as const;
 export type BookingPaymentStatus = (typeof BOOKING_PAYMENT_STATUSES)[number];
 

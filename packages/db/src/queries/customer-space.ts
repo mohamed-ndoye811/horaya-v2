@@ -128,6 +128,27 @@ export async function listCandidatesForTypes(
     .limit(2000);
 }
 
+/**
+ * Fiche client d'un espace qui porte l'e-mail du compte connecté (une seule par e-mail et par
+ * espace), ou null : c'est l'identité du client pour ses cartes de séances (lot 31).
+ */
+export async function findCustomerIdByEmail(
+  db: Executor,
+  organizationId: string,
+  email: string,
+): Promise<string | null> {
+  const [row] = await db
+    .select({ id: customer.id })
+    .from(customer)
+    .where(
+      and(
+        eq(customer.organizationId, organizationId),
+        sql`lower(${customer.email}) = ${email.toLowerCase()}`,
+      ),
+    );
+  return row?.id ?? null;
+}
+
 /** Agenda personnel d'un client : le compte de ce jeton, ou null. */
 export async function findCustomerAccountByCalendarToken(db: Executor, token: string) {
   const [row] = await db

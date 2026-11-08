@@ -14,6 +14,7 @@ import { dashedClasses, inkCardClasses } from "@/components/ui/section";
 import { SegmentedControl } from "@/components/ui/segmented";
 import { Stepper } from "@/components/ui/stepper";
 import { createCounterEnrollmentAction } from "@/functions/enrollments";
+import { counterPassesAction } from "@/functions/passes";
 import {
   type CounterResult,
   counterItemsAction,
@@ -109,6 +110,10 @@ export function CounterWizard({
   const [quantities, setQuantities] = useState<Record<string, number>>({});
   const [pickingItems, setPickingItems] = useState(false);
   const [paid, setPaid] = useState(true);
+  const [passes, setPasses] = useState<
+    Array<{ id: string; name: string; balance: number; expiresAt: string }>
+  >([]);
+  const [passId, setPassId] = useState<string | null>(null);
   const [method, setMethod] = useState<PaymentMethod>("card");
   const [error, setError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
@@ -152,6 +157,14 @@ export function CounterWizard({
     setPickingItems(false);
     if (eventId) counterItemsAction(eventId).then(setItems);
   }, [eventId]);
+
+  // Cartes de séances utilisables par le client pour cette séance.
+  const customerId = customer?.id;
+  useEffect(() => {
+    setPassId(null);
+    setPasses([]);
+    if (customerId && eventId) counterPassesAction(customerId, eventId).then(setPasses);
+  }, [customerId, eventId]);
 
   function blocking(): string | null {
     if (!event) return "Choisis une séance.";
@@ -203,8 +216,9 @@ export function CounterWizard({
       seats,
       ...who,
       items: chosenItems.map(([itemId, quantity]) => ({ itemId, quantity })),
-      paid: total > 0 && paid,
-      paymentMethod: total > 0 && paid ? method : null,
+      paid: total > 0 && paid && !passId,
+      paymentMethod: total > 0 && paid && !passId ? method : null,
+      passId: total > 0 ? passId : null,
     };
     startTransition(async () => {
       const result = await createCounterBookingAction(input);
@@ -251,11 +265,13 @@ export function CounterWizard({
       ? event
         ? "Gratuit"
         : null
-      : paid
-        ? enrolling
-          ? "Payé sur place"
-          : `Payé · ${METHODS.find((entry) => entry.value === method)?.label.toLowerCase()}`
-        : "Lien envoyé par e-mail";
+      : passId
+        ? "Payé avec la carte"
+        : paid
+          ? enrolling
+            ? "Payé sur place"
+            : `Payé · ${METHODS.find((entry) => entry.value === method)?.label.toLowerCase()}`
+          : "Lien envoyé par e-mail";
 
   return (
     <form
@@ -553,7 +569,53 @@ export function CounterWizard({
               })}
             </div>
           )}
-          {total > 0 && (
+          {total > 0 && passes.length > 0 && (
+            <fieldset className="flex flex-col gap-2">
+              <legend className="mb-1 text-[13px] font-semibold text-ink">
+                Régler avec une carte de séances
+              </legend>
+              {passes.map((entry) => {
+                const enough = entry.balance >= seats;
+                return (
+                  <label
+                    key={entry.id}
+                    className={cn(
+                      "flex items-center justify-between gap-3 rounded-[14px] px-3 py-2.5",
+                      "has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-ink",
+                      passId === entry.id ? "bg-ink" : "border border-line hover:bg-field",
+                      !enough && "cursor-not-allowed opacity-50 hover:bg-transparent",
+                    )}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={passId === entry.id}
+                      disabled={!enough}
+                      onChange={() => setPassId(passId === entry.id ? null : entry.id)}
+                      className="sr-only"
+                    />
+                    <span
+                      className={cn(
+                        "text-[13px] font-semibold leading-4",
+                        passId === entry.id ? "text-on-ink" : "text-ink",
+                      )}
+                    >
+                      {entry.name}
+                    </span>
+                    <span
+                      className={cn(
+                        "text-[11px] leading-[14px]",
+                        passId === entry.id ? "text-on-ink-muted" : "text-ink-subtle",
+                      )}
+                    >
+                      {entry.balance} séance{entry.balance > 1 ? "s" : ""} · {seats} utilisée
+                      {seats > 1 ? "s" : ""}
+                    </span>
+                  </label>
+                );
+              })}
+            </fieldset>
+          )}
+          {total > 0 && !passId && (
             <>
               <OptionCards
                 legend="Paiement"
@@ -659,7 +721,11 @@ export function CounterWizard({
               <SummaryLine key={id} label={`${itemName(id)} ×${quantity}`} value="attribué" />
             ))}
             <SummaryLine label="Client" value={customerName} />
-            <SummaryLine label="Paiement" value={paymentLabel} accent={total > 0 && !paid} />
+            <SummaryLine
+              label="Paiement"
+              value={paymentLabel}
+              accent={total > 0 && !paid && !passId}
+            />
           </dl>
         </div>
         <div className="flex flex-col gap-3.5">
@@ -963,12 +1029,15 @@ function CounterDone({
   method: PaymentMethod | null;
   onRestart: () => void;
 }) {
+  const withPass = done.paymentStatus === "paid_with_pass";
   const paidLabel =
     done.amountCents === 0
       ? "Gratuit"
-      : done.paymentStatus === "paid"
-        ? `Payé · ${METHODS.find((entry) => entry.value === method)?.label.toLowerCase() ?? "noté"}`
-        : "À payer";
+      : withPass
+        ? "Payée avec la carte"
+        : done.paymentStatus === "paid"
+          ? `Payé · ${METHODS.find((entry) => entry.value === method)?.label.toLowerCase() ?? "noté"}`
+          : "À payer";
   return (
     <div className="flex max-w-[640px] flex-col gap-6 px-4 pt-2 pb-10">
       <div className="flex flex-col gap-3">
@@ -1031,7 +1100,11 @@ function CounterDone({
               </span>
             )}
             <StatusBadge
-              tone={done.paymentStatus === "paid" || done.amountCents === 0 ? "success" : "warning"}
+              tone={
+                done.paymentStatus === "paid" || withPass || done.amountCents === 0
+                  ? "success"
+                  : "warning"
+              }
             >
               {paidLabel}
             </StatusBadge>

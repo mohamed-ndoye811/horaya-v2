@@ -4,6 +4,7 @@ import { PageHeader } from "@/components/app/page-header";
 import { CalendarLegend } from "@/components/calendar/legend";
 import { MonthCalendar } from "@/components/calendar/month-calendar";
 import { TimeGridCalendar } from "@/components/calendar/time-grid";
+import { PassBalanceCard } from "@/components/pass-balance-card";
 import { Avatar, CategorySwatch } from "@/components/ui/avatar";
 import { CountBadge, StatusBadge } from "@/components/ui/badge";
 import { Banner } from "@/components/ui/banner";
@@ -414,6 +415,23 @@ export function DesignSystemPage() {
             }
           />
         </StatGrid>
+      </Demo>
+
+      <Demo
+        title="Carte de séances"
+        note="Bloc de l'accueil de l'espace client : séances restantes, jauge, date de fin."
+      >
+        <PassBalanceCard
+          className="max-w-[560px]"
+          timeZone={TZ}
+          pass={{
+            id: "demo",
+            name: "Ma carte de séances",
+            remaining: 7,
+            total: 10,
+            expiresAt: "2027-06-30T12:00:00Z",
+          }}
+        />
       </Demo>
 
       <section id="reservations" className="border-b border-line-soft">
