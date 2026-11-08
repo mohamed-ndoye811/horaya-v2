@@ -937,6 +937,8 @@ export function CounterWizard({
       {/* Mobile : total et enregistrement toujours à portée, en bas de l'écran (pas d'onglets ici). */}
       <div className="lg:hidden">
         <ActionBar
+          // Sur mobile, le récapitulatif noir donne déjà le total.
+          messageOnMobile={false}
           message={
             <>
               Total <strong>{total > 0 ? formatMoney(total) : event ? "Gratuit" : "—"}</strong>

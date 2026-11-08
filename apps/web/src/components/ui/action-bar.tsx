@@ -10,10 +10,13 @@ import { cn } from "@/lib/cn";
  */
 export function ActionBar({
   message,
+  messageOnMobile = true,
   aboveTabs = false,
   children,
 }: {
   message?: ReactNode;
+  /** `false` : phrase seulement sur grand écran (sur mobile, l'écran la montre déjà ailleurs). */
+  messageOnMobile?: boolean;
   /** Sur mobile, au-dessus de la barre d'onglets (paramètres) plutôt que tout en bas. */
   aboveTabs?: boolean;
   children: ReactNode;
@@ -21,7 +24,7 @@ export function ActionBar({
   const strong = "[&_strong]:font-semibold";
   return (
     <>
-      {message && (
+      {message && messageOnMobile && (
         <p
           className={cn(
             "text-[13px] leading-[18px] text-ink-muted lg:hidden [&_strong]:text-ink",
