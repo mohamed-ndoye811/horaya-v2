@@ -1,4 +1,4 @@
-import type { BookingRules } from "@horaya/core";
+import { bookingWindow, type EventModules, windowState } from "@horaya/core";
 
 export type AvailabilityTone = "success" | "warning" | "info";
 
@@ -34,21 +34,22 @@ export type BookingState =
   | { kind: "open"; maxSeats: number }
   | { kind: "waitlist"; maxSeats: number }
   | { kind: "full" }
+  | { kind: "upcoming"; opensAt: Date }
   | { kind: "closed" };
 
-/** Peut-on réserver en ligne, et combien de places au plus ? */
+/** Peut-on réserver en ligne, et combien de places au plus ? (modules de l'événement) */
 export function bookingState(
-  event: { startsAt: Date; capacity: number | null; seatsHeld: number; bookingRules: BookingRules },
+  event: { startsAt: Date; capacity: number | null; seatsHeld: number; modules: EventModules },
   now: Date,
 ): BookingState {
-  const closesAt = event.startsAt.getTime() - (event.bookingRules.minAdvanceHours ?? 0) * 3_600_000;
-  if (now.getTime() >= closesAt) return { kind: "closed" };
-  const perBooking = event.bookingRules.maxSeatsPerBooking ?? 20;
+  const window = bookingWindow(event.startsAt, event.modules.opening);
+  const timing = windowState(window, now);
+  if (timing === "closed") return { kind: "closed" };
+  if (timing === "upcoming" && window.opensAt) return { kind: "upcoming", opensAt: window.opensAt };
+  const perBooking = event.modules.places?.maxPerBooking ?? 20;
   const { remaining } = availability(event.capacity, event.seatsHeld);
   if (remaining === 0) {
-    return event.bookingRules.waitlistEnabled
-      ? { kind: "waitlist", maxSeats: perBooking }
-      : { kind: "full" };
+    return event.modules.waitlist ? { kind: "waitlist", maxSeats: perBooking } : { kind: "full" };
   }
   return {
     kind: "open",

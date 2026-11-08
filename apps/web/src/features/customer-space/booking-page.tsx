@@ -172,6 +172,33 @@ export function CustomerBookingPage({
             </div>
           )}
 
+          {(booking.eventModules?.messages?.bring ||
+            (booking.eventModules?.documents?.files.length ?? 0) > 0) && (
+            <div className="flex flex-col gap-3.5 border-t border-line pt-7">
+              <h2 className="text-lg font-semibold leading-6 text-ink">À savoir</h2>
+              {booking.eventModules?.messages?.bring && (
+                <p className="text-[15px] leading-[22px] text-ink">
+                  <span className="font-semibold">À apporter :</span>{" "}
+                  {booking.eventModules.messages.bring}
+                </p>
+              )}
+              <ul className="flex flex-col gap-2">
+                {booking.eventModules?.documents?.files.map((file) => (
+                  <li key={file.url}>
+                    <a
+                      href={file.url}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-[15px] font-semibold leading-5 text-ink underline underline-offset-2 hover:text-link"
+                    >
+                      {file.name}
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
           {(Object.keys(booking.answers).length > 0 ||
             booking.participants.some((entry) => Object.keys(entry.answers).length > 0)) && (
             <div className="flex flex-col gap-3.5 border-t border-line pt-7">

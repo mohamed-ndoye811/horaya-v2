@@ -265,6 +265,26 @@ export function ManagedBookingPage({
           )}
           {where && <Fact label="Où">{where}</Fact>}
           <Fact label="Participants">{participants}</Fact>
+          {booking.eventModules?.messages?.bring && (
+            <Fact label="À apporter">{booking.eventModules.messages.bring}</Fact>
+          )}
+          {(booking.eventModules?.documents?.files.length ?? 0) > 0 && (
+            <Fact label="Documents">
+              <span className="flex flex-col gap-1">
+                {booking.eventModules?.documents?.files.map((file) => (
+                  <a
+                    key={file.url}
+                    href={file.url}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="underline underline-offset-2 hover:text-link"
+                  >
+                    {file.name}
+                  </a>
+                ))}
+              </span>
+            </Fact>
+          )}
           {(Object.keys(booking.answers ?? {}).length > 0 ||
             booking.participants.some((entry) => Object.keys(entry.answers).length > 0)) && (
             <Fact label="Tes réponses">

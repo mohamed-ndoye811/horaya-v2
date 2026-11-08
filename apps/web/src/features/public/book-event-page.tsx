@@ -1,3 +1,4 @@
+import { cancellationPolicyOf } from "@horaya/core";
 import { eventCover } from "@/components/public/public-events";
 import { NotFoundScreen } from "@/components/public/public-not-found";
 import { ArrowLeft } from "@/components/ui/icons";
@@ -38,7 +39,11 @@ export function BookEventPage({
   const policy =
     event.paymentMode === "free"
       ? null
-      : cancellationPolicy(event.startsAt, workspace, workspace.timezone);
+      : cancellationPolicy(
+          event.startsAt,
+          cancellationPolicyOf(event.modules, workspace),
+          workspace.timezone,
+        );
   const depositCents =
     event.paymentMode === "deposit" && event.depositPercent !== null
       ? Math.round((total * event.depositPercent) / 100)

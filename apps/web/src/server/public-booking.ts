@@ -7,6 +7,7 @@ import {
   amountDueOnline,
   awaitsOnlinePayment,
   cancelBookingWithToken,
+  cancellationPolicyOf,
   createEventBooking,
   enrollmentQuote,
   getCurrentPlan,
@@ -138,7 +139,12 @@ export async function bookEventPage(
   if (!data.event) return { ...data, seats: 1, prefill: null, pass: null };
   const state = bookingState(data.event, data.now);
   const dropInClosed = data.event.enrollmentEnabled && !data.event.dropInAllowed;
-  if (state.kind === "full" || state.kind === "closed" || dropInClosed) {
+  if (
+    state.kind === "full" ||
+    state.kind === "closed" ||
+    state.kind === "upcoming" ||
+    dropInClosed
+  ) {
     throw redirect({
       href: withParams(`/${slug}/${eventSlug}`, { lien: data.linkSlug ?? undefined }),
     });
@@ -230,7 +236,7 @@ export async function bookingMoney(workspace: PublicWorkspace, booking: ManagedB
             cancelledBy: "customer",
             startsAt: booking.eventStartsAt ?? booking.rentalStartsAt,
             now,
-            policy: workspace,
+            policy: cancellationPolicyOf(booking.eventModules ?? {}, workspace),
           })
         : null,
   };

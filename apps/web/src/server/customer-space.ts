@@ -10,6 +10,7 @@ import {
   type CustomerAccount,
   cancelAbsenceAsCustomer,
   cancelBookingAsCustomer,
+  cancellationPolicyOf,
   customerAccountForSession,
   deleteCustomerAccount,
   enrollmentProgress,
@@ -114,7 +115,7 @@ function toCard(row: AccountBooking, now: Date, candidates: Candidates) {
         status: row.status,
         startsAt: row.startsAt,
         now,
-        freeCancellationHours: row.workspace.freeCancellationHours,
+        freeCancellationHours: row.freeCancellationHours,
       }) === null &&
       (candidates.get(row.eventTypeId) ?? []).some(
         (to) =>
@@ -125,7 +126,7 @@ function toCard(row: AccountBooking, now: Date, candidates: Candidates) {
               priceCents: row.eventPriceCents ?? 0,
               paymentMode: row.eventPaymentMode as NonNullable<typeof row.eventPaymentMode>,
             },
-            to: { ...to, minAdvanceHours: to.bookingRules.minAdvanceHours },
+            to: { ...to, minAdvanceHours: to.modules.opening?.closesHoursBefore },
             seats: row.seats,
             now,
           }) === null,
@@ -351,6 +352,8 @@ export async function customerBookingPage(slug: string, bookingId: string) {
   const now = new Date();
   const money = await bookingMoney(workspace, booking, now);
   const startsAt = booking.eventStartsAt;
+  // Règle d'annulation de l'événement (module Annulation), sinon de la structure.
+  const policy = cancellationPolicyOf(booking.eventModules ?? {}, workspace);
   const closed = booking.enrollmentId
     ? "Séance de ton inscription au trimestre : signale plutôt ton absence"
     : booking.eventId && booking.eventTypeId && startsAt
@@ -358,7 +361,7 @@ export async function customerBookingPage(slug: string, bookingId: string) {
           status: booking.status,
           startsAt,
           now,
-          freeCancellationHours: workspace.freeCancellationHours,
+          freeCancellationHours: policy.freeCancellationHours,
         })
       : "Pas de changement de date pour une location";
   const from =
@@ -382,7 +385,7 @@ export async function customerBookingPage(slug: string, bookingId: string) {
         )
           .map((candidate) => ({
             ...candidate,
-            minAdvanceHours: candidate.bookingRules.minAdvanceHours,
+            minAdvanceHours: candidate.modules.opening?.closesHoursBefore,
           }))
           .filter((to) => rescheduleTargetIssue({ from, to, seats: booking.seats, now }) === null)
           .slice(0, 6)
@@ -430,7 +433,7 @@ export async function customerBookingPage(slug: string, bookingId: string) {
       : null,
     reschedule: {
       closed,
-      deadline: startsAt ? rescheduleDeadline(startsAt, workspace.freeCancellationHours) : null,
+      deadline: startsAt ? rescheduleDeadline(startsAt, policy.freeCancellationHours) : null,
       options,
     },
   };
