@@ -23,6 +23,7 @@ export function ActionBar({
       {message && <div aria-hidden="true" className="h-6 lg:hidden" />}
       <div
         data-bottom-bar
+        data-action-bar={aboveTabs ? undefined : ""}
         className={cn(
           "fixed inset-x-3 z-30 flex animate-rise flex-col gap-1.5 rounded-[24px] bg-ink p-1.5 shadow-[0_12px_32px_rgba(0,0,0,0.22)]",
           "lg:sticky lg:inset-x-auto lg:bottom-4 lg:flex-row lg:items-center lg:gap-4 lg:rounded-full lg:py-2.5 lg:pr-2.5 lg:pl-6 lg:shadow-none",

@@ -335,6 +335,14 @@ input[type="password"] {
   }
 }
 
+/*
+ * Mobile : un écran avec sa barre d'actions en bas (formulaire, éditeur de type en paramètre
+ * d'URL) masque la capsule du menu, qui passerait par-dessus ses boutons.
+ */
+:root:has([data-action-bar]) [data-tab-capsule] {
+  display: none;
+}
+
 /* Liens soulignés : au survol, le trait s'écarte un peu du texte. */
 a.underline {
   transition:

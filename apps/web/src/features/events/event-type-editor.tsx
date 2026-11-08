@@ -699,6 +699,8 @@ export function EventTypeEditor({
               <ButtonLink
                 href={`/app/evenements/types?type=nouveau&depuis=${initial.id}`}
                 variant="inverse-outline"
+                // Sur téléphone, trois boutons ne tiennent pas dans la barre : Supprimer et Enregistrer seulement.
+                className="max-sm:hidden"
               >
                 Dupliquer le type
               </ButtonLink>
