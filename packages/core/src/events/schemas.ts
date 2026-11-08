@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { eventTypeFieldsSchema, rawFieldValuesSchema } from "../fields/schemas";
+import { eventTypeModulesSchema } from "../modules/registry";
 import { paymentLinkSchema } from "../shared/links";
 import { isValidTimeZone } from "../shared/time";
 import { BOOKING_NOUNS } from "./model";
@@ -13,16 +14,6 @@ const optionalText = (max: number) =>
     .max(max)
     .nullish()
     .transform((value) => value || null);
-
-const bookingRulesSchema = z.object({
-  minAdvanceHours: z
-    .int()
-    .min(0)
-    .max(24 * 90)
-    .optional(),
-  maxSeatsPerBooking: z.int().min(1).max(1000).optional(),
-  waitlistEnabled: z.boolean().optional(),
-});
 
 /** Champs d'un type d'événement, sans valeur par défaut (cf. mise à jour partielle). */
 const eventTypeFields = {
@@ -38,28 +29,24 @@ const eventTypeFields = {
     .max(60 * 24 * 14)
     .nullable(),
   defaultPriceCents: z.int().min(0).max(10_000_000).nullable(),
-  defaultCapacity: z.int().min(1).max(100_000).nullable(),
-  requiresApproval: z.boolean(),
+  modules: eventTypeModulesSchema,
   fields: eventTypeFieldsSchema,
   bookingNoun: z.enum(BOOKING_NOUNS),
-  bookingRules: bookingRulesSchema,
 };
 
 export const createEventTypeSchema = z.object({
   ...eventTypeFields,
   defaultDurationMinutes: eventTypeFields.defaultDurationMinutes.optional().default(null),
   defaultPriceCents: eventTypeFields.defaultPriceCents.optional().default(null),
-  defaultCapacity: eventTypeFields.defaultCapacity.optional().default(null),
-  requiresApproval: eventTypeFields.requiresApproval.default(false),
+  modules: eventTypeFields.modules.default({}),
   fields: eventTypeFields.fields.default([]),
   bookingNoun: eventTypeFields.bookingNoun.default("reservation"),
-  bookingRules: bookingRulesSchema.default({}),
 });
 export type CreateEventTypeInput = z.input<typeof createEventTypeSchema>;
 
 export const updateEventTypeSchema = z.object({
   ...z.object(eventTypeFields).partial().shape,
-  /** Nouveaux champs aussi sur les événements à venir sans inscription (sinon : les prochains). */
+  /** Champs et modules aussi sur les événements à venir sans inscription (sinon : les prochains). */
   applyToUpcoming: z.boolean().optional(),
 });
 export type UpdateEventTypeInput = z.input<typeof updateEventTypeSchema>;

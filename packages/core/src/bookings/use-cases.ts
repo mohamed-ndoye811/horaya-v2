@@ -4,6 +4,13 @@ import type { Event, EventType } from "../events/model";
 import type { RawFieldValues } from "../fields/model";
 import { validateBookingAnswers } from "../fields/values";
 import { applyGiftCardToBooking, restoreGiftCardForBooking } from "../gift-cards/use-cases";
+import {
+  ageIssues,
+  bookingWindow,
+  cancellationPolicyOf,
+  hasAccessTag,
+  windowState,
+} from "../modules/rules";
 import { recreditPassForBooking } from "../passes/use-cases";
 import { paidCents } from "../payments/rules";
 import { type Actor, actorRef, assertMemberCan } from "../shared/actor";
@@ -28,26 +35,27 @@ export const SOURCE_BY_ACTOR: Record<Actor["type"], BookingSource> = {
 };
 
 /**
- * Règles propres aux réservations faites par le client lui-même. Un événement « sur
- * invitation » n'est réservable que par un lien calendrier actif qui le contient.
+ * Règles propres aux réservations faites par le client lui-même, selon les modules copiés sur
+ * l'événement (ouverture, places par inscription). Un événement « sur invitation » n'est
+ * réservable que par un lien calendrier actif qui le contient.
  */
 export function assertCustomerCanBook(
   event: Event,
-  rules: { minAdvanceHours?: number; maxSeatsPerBooking?: number },
   seats: number,
   now: Date,
   link: CalendarLink | null,
 ): void {
   if (event.visibility === "invite_only" && !(link && calendarLinkAllows(link, event)))
     throw new ForbiddenError("Cet événement est sur invitation");
-  const closesAt = event.startsAt.getTime() - (rules.minAdvanceHours ?? 0) * 3_600_000;
-  if (now.getTime() >= closesAt)
+  const state = windowState(bookingWindow(event.startsAt, event.modules.opening), now);
+  if (state === "upcoming") throw new ConflictError("Les inscriptions ne sont pas encore ouvertes");
+  if (state === "closed")
     throw new ConflictError("Les réservations sont closes pour cet événement");
-  if (rules.maxSeatsPerBooking !== undefined && seats > rules.maxSeatsPerBooking) {
-    throw new ValidationError(
-      `${rules.maxSeatsPerBooking} place${rules.maxSeatsPerBooking > 1 ? "s" : ""} maximum par réservation`,
-      [{ path: "seats", message: `Maximum ${rules.maxSeatsPerBooking}` }],
-    );
+  const max = event.modules.places?.maxPerBooking;
+  if (max !== undefined && seats > max) {
+    throw new ValidationError(`${max} place${max > 1 ? "s" : ""} maximum par réservation`, [
+      { path: "seats", message: `Maximum ${max}` },
+    ]);
   }
 }
 
@@ -76,7 +84,7 @@ export async function createEventBooking(
     if (!locked || (actor.type === "customer" && locked.event.status === "draft")) {
       throw new NotFoundError("Événement", data.eventId);
     }
-    const { event, eventType } = locked;
+    const { event } = locked;
     const now = deps.clock.now();
 
     if (event.status !== "published") {
@@ -90,7 +98,7 @@ export async function createEventBooking(
       const link = data.calendarLinkSlug
         ? await repositories.calendarLinks.findBySlug(actor.organizationId, data.calendarLinkSlug)
         : null;
-      assertCustomerCanBook(event, eventType.bookingRules, data.seats, now, link);
+      assertCustomerCanBook(event, data.seats, now, link);
       const series = event.seriesId
         ? await repositories.events.findSeries(actor.organizationId, event.seriesId)
         : null;
@@ -137,7 +145,7 @@ export interface RawParticipant {
 export async function insertEventBooking(
   repositories: Repositories,
   actor: Actor,
-  { event, eventType }: { event: Event; eventType: EventType },
+  { event }: { event: Event; eventType: EventType },
   now: Date,
   data: {
     customerId: string;
@@ -182,8 +190,22 @@ export async function insertEventBooking(
     // L'équipe saisit ce qu'elle sait : les questions requises le sont pour le client.
     { now, enforceRequired: actor.type !== "member" && !makeup },
   );
-  if (answered.issues.length > 0) {
-    throw new ValidationError("Vérifie les réponses en rouge.", answered.issues);
+  // Conditions d'accès (module) : contrôlées pour le client, l'équipe garde la main.
+  const issues = [
+    ...answered.issues,
+    ...(actor.type === "member" ? [] : ageIssues(event.modules.access, answered.participants)),
+  ];
+  if (issues.length > 0) {
+    throw new ValidationError("Vérifie les réponses en rouge.", issues);
+  }
+  const requiredTags = event.modules.access?.tags;
+  if (actor.type === "customer" && requiredTags?.length) {
+    const customer = await repositories.customers.find(actor.organizationId, data.customerId);
+    if (!hasAccessTag(event.modules.access, customer?.tags ?? [])) {
+      throw new ForbiddenError(
+        `Inscription réservée (${requiredTags.join(", ")}) : contacte l'atelier`,
+      );
+    }
   }
 
   const status = decideBookingStatus({
@@ -192,7 +214,7 @@ export async function insertEventBooking(
     seatsRequested: data.seats,
     // Une réservation saisie par l'équipe vaut validation ; l'inscription à la série aussi.
     requiresApproval: !enrolled && actor.type !== "member" && event.requiresApproval,
-    waitlistEnabled: !enrolled && (eventType.bookingRules.waitlistEnabled ?? false),
+    waitlistEnabled: !enrolled && Boolean(event.modules.waitlist),
   });
 
   const settings = await repositories.settings.get(actor.organizationId);
@@ -577,14 +599,14 @@ export async function rescheduleBookingAsCustomer(
         status: booking.status,
         startsAt: from.startsAt,
         now,
-        freeCancellationHours: settings.freeCancellationHours,
+        freeCancellationHours: cancellationPolicyOf(from.modules, settings).freeCancellationHours,
       }) ??
       rescheduleTargetIssue({
         from,
         to: {
           ...to.event,
           seatsHeld: await repositories.bookings.seatsHeld(to.event.id),
-          minAdvanceHours: to.eventType.bookingRules.minAdvanceHours,
+          minAdvanceHours: to.event.modules.opening?.closesHoursBefore,
         },
         seats: booking.seats,
         now,

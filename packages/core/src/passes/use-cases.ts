@@ -1,5 +1,6 @@
 import type { Booking, CustomerContact } from "../bookings/model";
 import { customerContactSchema } from "../bookings/schemas";
+import { cancellationPolicyOf } from "../modules/rules";
 import { paidCents } from "../payments/rules";
 import { type Actor, actorRef, assertMemberCan } from "../shared/actor";
 import { ConflictError, ForbiddenError, NotFoundError } from "../shared/errors";
@@ -376,7 +377,14 @@ export async function recreditPassForBooking(
   if (booking.paymentStatus !== "paid_with_pass") return false;
   const used = await repositories.passes.findMovementForBooking(booking.id, "use");
   if (!used) return false;
-  const { freeCancellationHours } = await repositories.settings.get(booking.organizationId);
+  // Délai d'annulation gratuite de l'événement (module Annulation), sinon de la structure.
+  const event = booking.eventId
+    ? await repositories.events.find(booking.organizationId, booking.eventId)
+    : null;
+  const { freeCancellationHours } = cancellationPolicyOf(
+    event?.modules ?? {},
+    await repositories.settings.get(booking.organizationId),
+  );
   const cause: RecreditCause =
     actor.type === "customer"
       ? "customer"
