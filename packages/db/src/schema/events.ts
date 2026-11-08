@@ -52,6 +52,10 @@ export const eventSeries = pgTable("event_series", {
   enrollmentPriceCents: cents(),
   /** La réservation à la séance reste ouverte au public. */
   dropInAllowed: boolean().notNull().default(true),
+  /** Inscription en cours de route au prorata des séances restantes. */
+  enrollmentProrata: boolean().notNull().default(true),
+  /** Une absence signalée à temps donne une séance à rattraper. */
+  makeupAllowed: boolean().notNull().default(true),
   createdAt: createdAt(),
 });
 

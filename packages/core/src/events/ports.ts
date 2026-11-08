@@ -33,7 +33,14 @@ export interface EventRepository {
     organizationId: string,
     seriesId: string,
     patch: Partial<
-      Pick<EventSeries, "enrollmentEnabled" | "enrollmentPriceCents" | "dropInAllowed">
+      Pick<
+        EventSeries,
+        | "enrollmentEnabled"
+        | "enrollmentPriceCents"
+        | "dropInAllowed"
+        | "enrollmentProrata"
+        | "makeupAllowed"
+      >
     >,
   ): Promise<EventSeries>;
   /** Occurrences d'une série, la plus proche d'abord (tous statuts). */

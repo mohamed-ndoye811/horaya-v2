@@ -6,7 +6,13 @@ import { ConflictError, ForbiddenError, NotFoundError } from "../shared/errors";
 import type { Deps, Repositories } from "../shared/unit-of-work";
 import { validate } from "../shared/validate";
 import type { Pass, PassPlan } from "./model";
-import { isRecreditDue, passAcceptsEventType, passExpiry } from "./rules";
+import {
+  isRecreditDue,
+  passAcceptsEventType,
+  passExpiry,
+  passValidForSession,
+  type RecreditCause,
+} from "./rules";
 import {
   type AdjustPassInput,
   adjustPassSchema,
@@ -259,6 +265,9 @@ export async function payBookingWithPassIn(
   if (!pass || pass.customerId !== booking.customerId) throw new NotFoundError("Carte", passId);
   if (pass.status !== "active") throw new ConflictError("Cette carte n'est pas active");
   if (!pass.expiresAt || pass.expiresAt <= now) throw new ConflictError("Cette carte a expiré");
+  if (!passValidForSession(pass, event.startsAt)) {
+    throw new ConflictError("Cette carte n'est plus valable à la date de cette séance");
+  }
   if (!passAcceptsEventType(pass, event.eventTypeId)) {
     throw new ConflictError("Cette carte ne s'utilise pas pour ce type d'événement");
   }
@@ -353,6 +362,8 @@ export function payBookingWithPassAsCustomer(
 /**
  * Annulation (ou refus) d'une réservation payée avec une carte : rend les séances si dû
  * (voir isRecreditDue), une seule fois. À appeler sous le verrou de l'événement.
+ * `decision` : `"always"` (événement annulé, demande refusée) ou le choix de l'équipe pour une
+ * seule réservation (sans choix : dans le délai d'annulation gratuite).
  */
 export async function recreditPassForBooking(
   repositories: Repositories,
@@ -360,16 +371,20 @@ export async function recreditPassForBooking(
   booking: Booking,
   startsAt: Date | null,
   now: Date,
+  decision?: "always" | boolean,
 ): Promise<boolean> {
   if (booking.paymentStatus !== "paid_with_pass") return false;
   const used = await repositories.passes.findMovementForBooking(booking.id, "use");
   if (!used) return false;
   const { freeCancellationHours } = await repositories.settings.get(booking.organizationId);
-  if (
-    !isRecreditDue({ byCustomer: actor.type === "customer", startsAt, now, freeCancellationHours })
-  ) {
-    return false;
-  }
+  const cause: RecreditCause =
+    actor.type === "customer"
+      ? "customer"
+      : actor.type === "system" || decision === "always"
+        ? "always"
+        : "team";
+  const teamChoice = typeof decision === "boolean" ? decision : undefined;
+  if (!isRecreditDue({ cause, teamChoice, startsAt, now, freeCancellationHours })) return false;
   await repositories.passes.lock(booking.organizationId, used.passId);
   if (await repositories.passes.findMovementForBooking(booking.id, "recredit")) return false;
   await repositories.passes.insertMovement({

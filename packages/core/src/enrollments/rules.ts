@@ -1,3 +1,4 @@
+import { isWithinFreeCancellation } from "../bookings/cancellation";
 import type { Event } from "../events/model";
 import { ConflictError } from "../shared/errors";
 
@@ -81,4 +82,58 @@ export function enrollmentProgress<T extends ProgressSession>(sessions: readonly
       state: (index < done ? "done" : index === done ? "current" : "upcoming") as SessionState,
     })),
   };
+}
+
+/**
+ * Prix d'une inscription en cours de route : prix de la série × séances restantes ÷ séances
+ * totales, arrondi à l'euro. Au prorata seulement si la série le prévoit et qu'il manque des
+ * séances ; jamais au-dessus du prix de la série.
+ */
+export function enrollmentQuote(input: {
+  fullCents: number;
+  remaining: number;
+  total: number;
+  prorata: boolean;
+}) {
+  const { fullCents, remaining, total } = input;
+  const prorated = input.prorata && total > 0 && remaining < total;
+  const priceCents = prorated
+    ? Math.min(fullCents, Math.round((fullCents * remaining) / total / 100) * 100)
+    : fullCents;
+  return { priceCents, fullCents, remaining, total, prorated };
+}
+
+/** Une absence donne une séance à rattraper : réglage ouvert, et signalée dans le délai d'annulation gratuite. */
+export function isMakeupEarned(input: {
+  makeupAllowed: boolean;
+  startsAt: Date;
+  now: Date;
+  freeCancellationHours: number;
+}): boolean {
+  return input.makeupAllowed && isWithinFreeCancellation(input);
+}
+
+/**
+ * Pourquoi cette séance ne peut pas servir de rattrapage, ou null : une autre séance du même
+ * type d'événement, publiée, pas commencée, et qui commence avant la fin de la série.
+ * (Les places se vérifient sous le verrou de la séance.)
+ */
+export function makeupTargetIssue(input: {
+  absent: { id: string; eventTypeId: string };
+  target: Pick<Event, "id" | "eventTypeId" | "status" | "startsAt">;
+  /** Fin de la dernière séance de la série. */
+  seriesEndsAt: Date;
+  now: Date;
+}): string | null {
+  const { absent, target } = input;
+  if (target.id === absent.id) return "C'est la séance que tu as manquée";
+  if (target.eventTypeId !== absent.eventTypeId) {
+    return "Un rattrapage se prend sur le même type de cours";
+  }
+  if (target.status !== "published") return "Cette séance n'est pas ouverte";
+  if (target.startsAt <= input.now) return "Cette séance a déjà commencé";
+  if (target.startsAt >= input.seriesEndsAt) {
+    return "Un rattrapage se prend avant la fin du trimestre";
+  }
+  return null;
 }

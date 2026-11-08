@@ -17,12 +17,15 @@ export type NewBooking = Omit<
   | "rentalEndsAt"
   | "enrollmentId"
   | "absentAt"
+  | "makeupEligible"
+  | "makeupForBookingId"
 > & {
   /** null : réservation d'une inscription, gérée par le lien de l'inscription. */
   manageTokenHash: string | null;
   rentalStartsAt?: Date | null;
   rentalEndsAt?: Date | null;
   enrollmentId?: string | null;
+  makeupForBookingId?: string | null;
 };
 
 export interface BookingStatusChange {
@@ -31,6 +34,7 @@ export interface BookingStatusChange {
   cancelledAt?: Date | null;
   refusalReason?: string | null;
   absentAt?: Date | null;
+  makeupEligible?: boolean;
 }
 
 export interface BookingRepository {

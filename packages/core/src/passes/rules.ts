@@ -1,3 +1,4 @@
+import { isWithinFreeCancellation } from "../bookings/cancellation";
 import type { Pass, PassMovement } from "./model";
 
 /** Le solde est la somme du journal : jamais un compteur modifié à la main. */
@@ -26,16 +27,30 @@ export function passAcceptsEventType(pass: Pick<Pass, "eventTypeIds">, eventType
 }
 
 /**
- * La séance est rendue à l'annulation : toujours quand c'est l'organisateur (ou le système)
- * qui annule, et pour le client seulement dans le délai d'annulation gratuite de l'espace.
+ * Une carte ne règle une séance que si celle-ci a lieu avant la fin de sa validité : c'est la
+ * date de la séance qui compte, pas celle du débit.
  */
+export function passValidForSession(pass: Pick<Pass, "expiresAt">, sessionStartsAt: Date): boolean {
+  return pass.expiresAt !== null && sessionStartsAt < pass.expiresAt;
+}
+
+/**
+ * Qui annule, et donc si la séance est rendue :
+ * - `customer` : seulement dans le délai d'annulation gratuite de l'espace ;
+ * - `always` : toujours (l'atelier annule l'événement entier, refuse une demande, ou le système annule) ;
+ * - `team` : l'équipe annule une seule réservation, elle décide (`teamChoice`) ; sans choix,
+ *   la séance est rendue dans le délai d'annulation gratuite, pas après.
+ */
+export type RecreditCause = "customer" | "always" | "team";
+
 export function isRecreditDue(input: {
-  byCustomer: boolean;
+  cause: RecreditCause;
+  teamChoice?: boolean | undefined;
   startsAt: Date | null;
   now: Date;
   freeCancellationHours: number;
 }): boolean {
-  if (!input.byCustomer || !input.startsAt) return true;
-  if (input.freeCancellationHours <= 0) return false;
-  return input.now.getTime() <= input.startsAt.getTime() - input.freeCancellationHours * 3_600_000;
+  if (input.cause === "always" || !input.startsAt) return true;
+  if (input.cause === "team" && input.teamChoice !== undefined) return input.teamChoice;
+  return isWithinFreeCancellation({ ...input, startsAt: input.startsAt });
 }

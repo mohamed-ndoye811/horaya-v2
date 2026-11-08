@@ -27,7 +27,8 @@ export function EnrollPage({
       />
     );
   }
-  const price = offer.enrollmentPriceCents ?? 0;
+  const { quote } = offer;
+  const price = quote.priceCents;
   const count = `${offer.sessions.length} séance${offer.sessions.length > 1 ? "s" : ""}`;
   const place = event.locationName ?? (event.onlineUrl ? "En ligne" : null);
   // Paiement par le lien externe de l'atelier (le paiement intégré ne couvre pas les inscriptions).
@@ -58,7 +59,7 @@ export function EnrollPage({
         eventSlug={eventSlug}
         linkSlug={null}
         seats={1}
-        fields={[]}
+        fields={event.fields}
         workspaceName={workspace.name}
         submitLabel="Confirmer mon inscription"
         enrollment
@@ -99,6 +100,13 @@ export function EnrollPage({
                   </li>
                 ))}
               </ol>
+              {quote.prorated && (
+                <p className="rounded-[14px] bg-field p-3.5 text-sm font-semibold leading-[18px] text-ink">
+                  {quote.remaining} séance{quote.remaining > 1 ? "s" : ""} restante
+                  {quote.remaining > 1 ? "s" : ""} sur {quote.total} : {formatMoney(price)} au lieu
+                  de {formatMoney(quote.fullCents)}
+                </p>
+              )}
               <p className="flex items-baseline justify-between gap-4 border-t border-bg pt-3.5">
                 <span className="text-[15px] font-bold leading-5 text-ink">Total TTC</span>
                 <span className="text-xl font-semibold leading-6 text-ink">

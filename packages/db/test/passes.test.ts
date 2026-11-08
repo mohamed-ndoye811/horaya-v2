@@ -3,6 +3,7 @@ import {
   adjustPass,
   cancelBooking,
   cancelBookingWithToken,
+  cancelEvent,
   createCounterBooking,
   createEvent,
   createEventType,
@@ -273,15 +274,75 @@ describe("annulation et recrédit", () => {
     expect(await balanceOf(customerId, pass.id)).toBe(4);
   });
 
-  it("l'organisateur qui annule recrédite, même tard", async () => {
+  it("une réservation annulée par l'équipe : recrédit par défaut dans le délai, pas après", async () => {
     await policy(24);
     const event = await session();
     const { pass, customerId } = await activePass(5);
-    const { booking: created } = await counter(event.id, customerId, pass.id);
+    const early = await counter(event.id, customerId, pass.id);
+    await cancelBooking(deps, owner, early.booking.id);
+    expect(await balanceOf(customerId, pass.id)).toBe(5);
+
+    const late = await counter(event.id, customerId, pass.id);
+    clock.set(new Date("2026-11-10T08:00:00Z")); // 1 h avant
+    await cancelBooking(deps, owner, late.booking.id);
+    expect(await balanceOf(customerId, pass.id)).toBe(4);
+  });
+
+  it("l'équipe tranche : case cochée tard, décochée dans le délai", async () => {
+    await policy(24);
+    const event = await session();
+    const { pass, customerId } = await activePass(5);
+    const early = await counter(event.id, customerId, pass.id);
+    await cancelBooking(deps, owner, early.booking.id, undefined, false);
+    expect(await balanceOf(customerId, pass.id)).toBe(4);
+
+    const late = await counter(event.id, customerId, pass.id);
+    clock.set(new Date("2026-11-10T08:00:00Z"));
+    await cancelBooking(deps, owner, late.booking.id, undefined, true);
+    expect(await balanceOf(customerId, pass.id)).toBe(4);
+  });
+
+  it("l'atelier qui annule l'événement entier recrédite toujours, même tard et sans délai gratuit", async () => {
+    await policy(0);
+    const event = await session();
+    const { pass, customerId } = await activePass(5);
+    await counter(event.id, customerId, pass.id, 2);
     clock.set(new Date("2026-11-10T08:00:00Z"));
 
-    await cancelBooking(deps, owner, created.id);
+    await cancelEvent(deps, owner, event.id);
     expect(await balanceOf(customerId, pass.id)).toBe(5);
+  });
+});
+
+describe("validité à la date de la séance", () => {
+  // Carte activée le 2026-10-01, 90 jours : valable jusqu'au 2026-12-30.
+  it("refuse une séance après la fin de validité, même si la carte est encore valable aujourd'hui", async () => {
+    const before = await session(10, typeId, "2026-12");
+    const after = await session(10, typeId, "2027-01");
+    const { pass, customerId } = await activePass(5);
+
+    await expect(counter(after.id, customerId, pass.id)).rejects.toThrow(
+      /plus valable à la date de cette séance/,
+    );
+    expect(await balanceOf(customerId, pass.id)).toBe(5);
+    await counter(before.id, customerId, pass.id);
+    expect(await balanceOf(customerId, pass.id)).toBe(4);
+  });
+
+  it("ne propose la carte que pour les séances avant sa fin de validité", async () => {
+    const { customerId } = await activePass(5);
+    const list = (startsAt?: string) =>
+      listUsablePasses(
+        db,
+        organizationId,
+        customerId,
+        typeId,
+        clock.now(),
+        startsAt ? new Date(startsAt) : undefined,
+      );
+    expect(await list("2026-12-10T09:00:00Z")).toHaveLength(1);
+    expect(await list("2027-01-10T09:00:00Z")).toHaveLength(0);
+    expect(await list()).toHaveLength(1);
   });
 });
 

@@ -3,6 +3,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { formDataInput } from "@/lib/form-data";
 import {
+  assignMakeupImpl,
   cancelEnrollmentImpl,
   createCounterEnrollmentImpl,
   saveSeriesEnrollment,
@@ -27,6 +28,9 @@ const cancelFn = createServerFn({ method: "POST" })
 const paidFn = createServerFn({ method: "POST" })
   .validator(z.object({ enrollmentId: id, paid: z.boolean() }))
   .handler(({ data }) => setEnrollmentPaidImpl(data.enrollmentId, data.paid));
+const makeupFn = createServerFn({ method: "POST" })
+  .validator(z.object({ absentBookingId: id, eventId: id }))
+  .handler(({ data }) => assignMakeupImpl(data.absentBookingId, data.eventId));
 const counterFn = createServerFn({ method: "POST" })
   // Le cas d'usage du core valide l'entrée (Zod) ; ici, simple passage.
   .validator((input: EnrollInSeriesInput) => input)
@@ -41,3 +45,5 @@ export const setEnrollmentPaidAction = (enrollmentId: string, paid: boolean) =>
   paidFn({ data: { enrollmentId, paid } });
 export const createCounterEnrollmentAction = (input: EnrollInSeriesInput) =>
   counterFn({ data: input });
+export const assignMakeupAction = (absentBookingId: string, eventId: string) =>
+  makeupFn({ data: { absentBookingId, eventId } });

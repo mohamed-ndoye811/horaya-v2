@@ -1,16 +1,18 @@
 "use client";
 
 import type { BookingStatus } from "@horaya/core";
-import { useOptimistic, useState, useTransition } from "react";
+import { useEffect, useOptimistic, useState, useTransition } from "react";
+import { Collapse } from "@/components/motion/collapse";
 import { Button, IconButton } from "@/components/ui/button";
 import { ChoiceChips } from "@/components/ui/chip";
 import { Dialog } from "@/components/ui/dialog";
-import { AffixInput, Field, textareaClasses } from "@/components/ui/field";
+import { AffixInput, Checkbox, Field, textareaClasses } from "@/components/ui/field";
 import { FormAlert } from "@/components/ui/form-alert";
 import { Check, CloseIcon } from "@/components/ui/icons";
 import { ActionMenu } from "@/components/ui/menu";
 import {
   cancelBookingAction,
+  cancelRecreditInfoAction,
   checkInAction,
   confirmBookingAction,
   markPaidAction,
@@ -74,6 +76,7 @@ function ReasonDialog({
   pending,
   error,
   onConfirm,
+  recreditFor,
 }: {
   open: boolean;
   onClose: () => void;
@@ -83,10 +86,29 @@ function ReasonDialog({
   confirmLabel: string;
   pending: boolean;
   error?: string;
-  onConfirm: (reason: string) => void;
+  onConfirm: (reason: string, recredit?: boolean) => void;
+  /** Annulation d'une réservation : la case « Recréditer la séance » si elle est payée avec une carte. */
+  recreditFor?: string;
 }) {
   const [choice, setChoice] = useState<string | null>(reasons[0] ?? null);
   const [details, setDetails] = useState("");
+  const [recreditInfo, setRecreditInfo] = useState<{
+    passName: string | null;
+    defaultChecked: boolean;
+  } | null>(null);
+  const [recredit, setRecredit] = useState(false);
+  useEffect(() => {
+    if (!recreditFor) return;
+    let current = true;
+    cancelRecreditInfoAction(recreditFor).then((info) => {
+      if (!current) return;
+      setRecreditInfo(info);
+      setRecredit(info?.defaultChecked ?? false);
+    });
+    return () => {
+      current = false;
+    };
+  }, [recreditFor]);
   const reason = [choice === "Autre" ? null : choice, details.trim() || null]
     .filter(Boolean)
     .join(" — ");
@@ -105,7 +127,7 @@ function ReasonDialog({
             variant="danger"
             pending={pending}
             disabled={choice === "Autre" && !details.trim()}
-            onClick={() => onConfirm(reason)}
+            onClick={() => onConfirm(reason, recreditInfo ? recredit : undefined)}
           >
             {confirmLabel}
           </Button>
@@ -128,6 +150,21 @@ function ReasonDialog({
           placeholder={choice === "Autre" ? "Indique le motif…" : "Ajouter un mot (facultatif)…"}
           className={textareaClasses()}
         />
+        <Collapse open={recreditInfo !== null}>
+          <div className="flex flex-col gap-1.5 rounded-[18px] bg-field px-[18px] py-4">
+            <Checkbox
+              checked={recredit}
+              onChange={(event) => setRecredit(event.target.checked)}
+              label="Recréditer la séance sur la carte"
+            />
+            <p className="pl-[30px] text-[13px] leading-[18px] text-ink-muted">
+              {recreditInfo?.passName ? `Carte « ${recreditInfo.passName} ». ` : ""}
+              {recreditInfo?.defaultChecked
+                ? "Dans le délai d'annulation gratuite : cochée d'office."
+                : "Hors du délai d'annulation gratuite : décochée d'office."}
+            </p>
+          </div>
+        </Collapse>
         {error && <FormAlert>{error}</FormAlert>}
       </div>
     </Dialog>
@@ -248,9 +285,10 @@ export function BookingRowActions({
           confirmLabel="Annuler la réservation"
           pending={pending}
           error={message?.tone === "danger" ? message.text : undefined}
-          onConfirm={(reason) =>
+          recreditFor={bookingId}
+          onConfirm={(reason, recredit) =>
             run(
-              () => cancelBookingAction(bookingId, reason),
+              () => cancelBookingAction(bookingId, reason, recredit),
               () => setDialog(null),
             )
           }
@@ -412,9 +450,10 @@ export function BookingHeaderActions({
           confirmLabel="Annuler la réservation"
           pending={pending}
           error={message?.tone === "danger" ? message.text : undefined}
-          onConfirm={(reason) =>
+          recreditFor={bookingId}
+          onConfirm={(reason, recredit) =>
             run(
-              () => cancelBookingAction(bookingId, reason),
+              () => cancelBookingAction(bookingId, reason, recredit),
               () => setDialog(null),
             )
           }

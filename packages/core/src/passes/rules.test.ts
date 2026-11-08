@@ -1,5 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { isRecreditDue, passAcceptsEventType, passBalance, passExpiry, passState } from "./rules";
+import {
+  isRecreditDue,
+  passAcceptsEventType,
+  passBalance,
+  passExpiry,
+  passState,
+  passValidForSession,
+} from "./rules";
 
 const now = new Date("2026-11-10T10:00:00Z");
 
@@ -33,21 +40,43 @@ describe("types acceptés", () => {
   });
 });
 
+describe("validité à la date de la séance", () => {
+  const pass = { expiresAt: new Date("2026-12-31T23:00:00Z") };
+  it("accepte une séance avant la fin de validité, pas après", () => {
+    expect(passValidForSession(pass, new Date("2026-12-30T18:00:00Z"))).toBe(true);
+    expect(passValidForSession(pass, new Date("2027-01-05T18:00:00Z"))).toBe(false);
+    expect(passValidForSession(pass, pass.expiresAt)).toBe(false);
+  });
+  it("une carte sans date de fin (pas encore payée) ne règle rien", () => {
+    expect(passValidForSession({ expiresAt: null }, now)).toBe(false);
+  });
+});
+
 describe("recrédit à l'annulation", () => {
   const startsAt = new Date("2026-11-11T10:00:00Z");
   it("le client est recrédité dans le délai, pas après", () => {
-    const base = { byCustomer: true, startsAt, freeCancellationHours: 24 };
+    const base = { cause: "customer" as const, startsAt, freeCancellationHours: 24 };
     expect(isRecreditDue({ ...base, now })).toBe(true);
     expect(isRecreditDue({ ...base, now: new Date("2026-11-10T10:00:01Z") })).toBe(false);
   });
   it("sans délai gratuit, le client n'est pas recrédité", () => {
-    expect(isRecreditDue({ byCustomer: true, startsAt, now, freeCancellationHours: 0 })).toBe(
+    expect(isRecreditDue({ cause: "customer", startsAt, now, freeCancellationHours: 0 })).toBe(
       false,
     );
   });
-  it("l'organisateur recrédite toujours", () => {
+  it("l'atelier qui annule l'événement entier recrédite toujours", () => {
     expect(
-      isRecreditDue({ byCustomer: false, startsAt, now: startsAt, freeCancellationHours: 0 }),
+      isRecreditDue({ cause: "always", startsAt, now: startsAt, freeCancellationHours: 0 }),
     ).toBe(true);
+  });
+  it("une réservation annulée par l'équipe : dans le délai, recrédit par défaut", () => {
+    const base = { cause: "team" as const, startsAt, freeCancellationHours: 24 };
+    expect(isRecreditDue({ ...base, now })).toBe(true);
+    expect(isRecreditDue({ ...base, now: new Date("2026-11-10T10:00:01Z") })).toBe(false);
+  });
+  it("l'équipe tranche : case cochée ou décochée l'emporte sur le délai", () => {
+    const base = { cause: "team" as const, startsAt, freeCancellationHours: 24 };
+    expect(isRecreditDue({ ...base, now, teamChoice: false })).toBe(false);
+    expect(isRecreditDue({ ...base, now: startsAt, teamChoice: true })).toBe(true);
   });
 });

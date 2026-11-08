@@ -6,7 +6,9 @@
 import {
   amountDueOnline,
   awaitsOnlinePayment,
+  bookMakeupAsCustomer,
   type CustomerAccount,
+  cancelAbsenceAsCustomer,
   cancelBookingAsCustomer,
   customerAccountForSession,
   deleteCustomerAccount,
@@ -30,6 +32,8 @@ import {
   getEnrollment,
   listAccountBookings,
   listCandidatesForTypes,
+  listCustomerEnrollmentIds,
+  listMakeupTargets,
   listRescheduleCandidates,
   listUsablePasses,
 } from "@horaya/db";
@@ -304,6 +308,40 @@ export async function customerGiftCards(slug: string) {
   return giftCardsForCustomer(workspace.id, account.email);
 }
 
+/**
+ * Séances à rattraper du client connecté (ses inscriptions en cours) : disponibles, avec les
+ * séances où il peut les rattraper, ou déjà rattrapées. Le prochain état de chaque absence
+ * (annulable tant que la séance n'a pas commencé) vient de `absentStartsAt`.
+ */
+export async function customerMakeups(slug: string) {
+  const workspace = await publicWorkspace(slug);
+  const account = await requireAccount(slug);
+  const now = new Date();
+  const customerId = await findCustomerIdByEmail(db, workspace.id, account.email);
+  if (!customerId) return [];
+  const result = [];
+  for (const id of await listCustomerEnrollmentIds(db, workspace.id, customerId)) {
+    const enrollment = await getEnrollment(db, workspace.id, { id }, now);
+    if (!enrollment?.makeupAllowed) continue;
+    for (const makeup of enrollment.makeups) {
+      result.push({
+        ...makeup,
+        targets:
+          makeup.state === "available"
+            ? await listMakeupTargets(db, workspace.id, {
+                absentEventId: makeup.absentEventId,
+                seriesId: enrollment.seriesId,
+                customerId,
+                now,
+                publicOnly: true,
+              })
+            : [],
+      });
+    }
+  }
+  return result;
+}
+
 /** Maquette 8.3 : une réservation, son paiement, l'agenda, changer de date, annuler. */
 export async function customerBookingPage(slug: string, bookingId: string) {
   const workspace = await publicWorkspace(slug);
@@ -371,9 +409,16 @@ export async function customerBookingPage(slug: string, bookingId: string) {
       ? await findCustomerIdByEmail(db, workspace.id, account.email)
       : null;
   const pass = customerId
-    ? (await listUsablePasses(db, workspace.id, customerId, booking.eventTypeId ?? null, now)).find(
-        (entry) => entry.balance >= booking.seats,
-      )
+    ? (
+        await listUsablePasses(
+          db,
+          workspace.id,
+          customerId,
+          booking.eventTypeId ?? null,
+          now,
+          startsAt ?? undefined,
+        )
+      ).find((entry) => entry.balance >= booking.seats)
     : undefined;
   return {
     booking,
@@ -480,6 +525,34 @@ export async function reportCustomerAbsence(slug: string, bookingId: string): Pr
     return toFormState(error);
   }
   return { success: "C'est noté : ta place profite à quelqu'un d'autre." };
+}
+
+/** « Annuler mon absence » depuis l'espace client : la place est rendue si elle est libre. */
+export async function cancelCustomerAbsence(slug: string, bookingId: string): Promise<FormState> {
+  const workspace = await publicWorkspace(slug);
+  const account = await requireAccount(slug);
+  try {
+    await cancelAbsenceAsCustomer(deps, workspace.id, bookingId, account.email);
+  } catch (error) {
+    return toFormState(error);
+  }
+  return { success: "C'est noté : ta place t'attend." };
+}
+
+/** Réserve une séance à rattraper sur une autre séance du même type. */
+export async function bookCustomerMakeup(
+  slug: string,
+  absentBookingId: string,
+  eventId: string,
+): Promise<FormState> {
+  const workspace = await publicWorkspace(slug);
+  const account = await requireAccount(slug);
+  try {
+    await bookMakeupAsCustomer(deps, workspace.id, absentBookingId, account.email, eventId);
+  } catch (error) {
+    return toFormState(error);
+  }
+  return { success: "Rattrapage réservé : ta place est confirmée." };
 }
 
 export async function saveCustomerProfile(slug: string | null, form: FormData): Promise<FormState> {

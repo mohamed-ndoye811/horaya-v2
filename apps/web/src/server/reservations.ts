@@ -4,13 +4,14 @@ import {
   cancelBooking,
   confirmBooking,
   createCounterBooking,
+  isWithinFreeCancellation,
   recordManualPayment,
   recordManualRefund,
   refundBooking,
   refuseBooking,
   setBookingCheckIn,
 } from "@horaya/core";
-import { listCounterItems, listCustomers } from "@horaya/db";
+import { getCancelRecreditInfo, listCounterItems, listCustomers } from "@horaya/db";
 import { parseEuroToCents } from "@/lib/money";
 import { sendBookingCreatedEmail } from "./booking-emails";
 import { db } from "./db";
@@ -44,9 +45,30 @@ export async function refuseBookingActionImpl(
 export async function cancelBookingActionImpl(
   bookingId: string,
   reason: string,
+  recredit?: boolean,
 ): Promise<FormState> {
   const { actor } = await getWorkspaceContext();
-  return run(() => cancelBooking(deps, actor, bookingId, reason), "Réservation annulée.");
+  return run(() => cancelBooking(deps, actor, bookingId, reason, recredit), "Réservation annulée.");
+}
+
+/**
+ * Case « Recréditer la séance sur la carte » de l'annulation : proposée seulement si la
+ * réservation est payée avec une carte, cochée dans le délai d'annulation gratuite.
+ */
+export async function cancelRecreditInfoImpl(bookingId: string) {
+  const { workspace } = await getWorkspaceContext();
+  const info = await getCancelRecreditInfo(db, workspace.id, bookingId);
+  if (!info?.paidWithPass) return null;
+  return {
+    passName: info.passName,
+    defaultChecked:
+      info.startsAt === null ||
+      isWithinFreeCancellation({
+        startsAt: info.startsAt,
+        now: new Date(),
+        freeCancellationHours: info.freeCancellationHours,
+      }),
+  };
 }
 
 /** Check-in du jour J : coche ou décoche l'arrivée d'un participant. */

@@ -132,8 +132,15 @@ export async function payBookingWithPassImpl(
 /** Comptoir : cartes utilisables par le client pour le type de la séance choisie. */
 export async function counterPassesImpl(customerId: string, eventId: string) {
   const { workspace } = await getWorkspaceContext();
-  const eventType = await getEventTypeById(db, workspace.id, eventId);
-  const passes = await listUsablePasses(db, workspace.id, customerId, eventType, new Date());
+  const target = await getEventTypeById(db, workspace.id, eventId);
+  const passes = await listUsablePasses(
+    db,
+    workspace.id,
+    customerId,
+    target?.eventTypeId ?? null,
+    new Date(),
+    target?.startsAt,
+  );
   return passes.map((entry) => ({
     id: entry.id,
     name: entry.name,

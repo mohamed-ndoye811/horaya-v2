@@ -8,6 +8,7 @@ import {
   awaitsOnlinePayment,
   cancelBookingWithToken,
   createEventBooking,
+  enrollmentQuote,
   getCurrentPlan,
   hasFeature,
   hashToken,
@@ -111,7 +112,16 @@ export async function publicEventPage(slug: string, eventSlug: string, lien: str
       offer.enrollmentPriceCents !== null &&
       offer.sessions.length > 0 &&
       offer.sessions.every((session) => session.visibility === "public")
-        ? offer
+        ? {
+            ...offer,
+            // Prix à payer aujourd'hui : au prorata des séances restantes si la série le prévoit.
+            quote: enrollmentQuote({
+              fullCents: offer.enrollmentPriceCents,
+              remaining: offer.sessions.length,
+              total: offer.totalSessions,
+              prorata: offer.enrollmentProrata,
+            }),
+          }
         : null,
     now,
   };
@@ -145,6 +155,7 @@ export async function bookEventPage(
         identity.customerId,
         data.event.typeId,
         data.now,
+        data.event.startsAt,
       )
     : [];
   const pass = passes.find((entry) => entry.balance >= seats);

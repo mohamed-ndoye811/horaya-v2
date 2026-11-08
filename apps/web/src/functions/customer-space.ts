@@ -3,12 +3,15 @@ import { z } from "zod";
 import { formDataInput } from "@/lib/form-data";
 import {
   allCustomerBookings,
+  bookCustomerMakeup,
+  cancelCustomerAbsence,
   cancelCustomerBooking,
   currentCustomerAccount,
   customerBookingPage,
   customerGiftCards,
   customerHome,
   customerLoginPage,
+  customerMakeups,
   customerProfilePage,
   deleteCustomerSpace,
   payCustomerBooking,
@@ -41,6 +44,11 @@ export const getCustomerHome = createServerFn({ method: "GET" })
 export const getMyGiftCards = createServerFn({ method: "GET" })
   .validator(slug)
   .handler(({ data }) => customerGiftCards(data));
+
+/** Séances à rattraper du client connecté, avec les séances où les rattraper. */
+export const getMyMakeups = createServerFn({ method: "GET" })
+  .validator(slug)
+  .handler(({ data }) => customerMakeups(data));
 
 export const getCustomerBookingPage = createServerFn({ method: "GET" })
   .validator(ofBooking)
@@ -82,6 +90,12 @@ const rescheduleFn = createServerFn({ method: "POST" })
 const absenceFn = createServerFn({ method: "POST" })
   .validator(ofBooking)
   .handler(({ data }) => reportCustomerAbsence(data.slug, data.booking));
+const cancelAbsenceFn = createServerFn({ method: "POST" })
+  .validator(ofBooking)
+  .handler(({ data }) => cancelCustomerAbsence(data.slug, data.booking));
+const makeupFn = createServerFn({ method: "POST" })
+  .validator(ofBooking.extend({ event: z.uuid() }))
+  .handler(({ data }) => bookCustomerMakeup(data.slug, data.booking, data.event));
 const profileFn = createServerFn({ method: "POST" })
   .validator(formDataInput)
   .handler(({ data }) => saveCustomerProfile(String(data.get("_slug") ?? "") || null, data));
@@ -112,6 +126,14 @@ export const rescheduleCustomerBookingAction = (slug: string, booking: string, e
 /** Lot 30 : « Je serai absent·e » sur une séance de son inscription. */
 export const reportCustomerAbsenceAction = (slug: string, booking: string) =>
   absenceFn({ data: { slug, booking } });
+
+/** « Annuler mon absence » : la place est rendue si elle est toujours libre. */
+export const cancelCustomerAbsenceAction = (slug: string, booking: string) =>
+  cancelAbsenceFn({ data: { slug, booking } });
+
+/** Réserve la séance à rattraper (`booking` : l'absence) sur la séance `event`. */
+export const bookCustomerMakeupAction = (slug: string, booking: string, event: string) =>
+  makeupFn({ data: { slug, booking, event } });
 
 /** Maquette 8.4 : le profil. */
 export function saveCustomerProfileAction(

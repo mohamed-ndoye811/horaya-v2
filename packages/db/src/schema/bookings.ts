@@ -1,6 +1,8 @@
 import type { FieldValues } from "@horaya/core";
 import { sql } from "drizzle-orm";
 import {
+  type AnyPgColumn,
+  boolean,
   check,
   index,
   integer,
@@ -102,6 +104,10 @@ export const booking = pgTable(
     checkedInAt: timestamp({ withTimezone: true }),
     /** Absence signalée sur une séance d'une inscription (la place a été libérée). */
     absentAt: timestamp({ withTimezone: true }),
+    /** Absence signalée à temps : donne une séance à rattraper. */
+    makeupEligible: boolean().notNull().default(false),
+    /** Rattrapage : l'absence que cette séance remplace. */
+    makeupForBookingId: uuid().references((): AnyPgColumn => booking.id, { onDelete: "restrict" }),
     /** Rappel de la veille envoyé au client (une seule fois). */
     reminderSentAt: timestamp({ withTimezone: true }),
     createdAt: createdAt(),
@@ -113,6 +119,10 @@ export const booking = pgTable(
     index().on(t.eventId, t.status),
     index().on(t.customerId),
     index().on(t.enrollmentId),
+    // Une absence ne se rattrape qu'une fois (un rattrapage annulé libère l'absence).
+    uniqueIndex("booking_makeup_active_idx")
+      .on(t.makeupForBookingId)
+      .where(sql`${t.makeupForBookingId} IS NOT NULL AND ${t.status} IN ('pending', 'confirmed')`),
     check("booking_seats_positive", sql`${t.seats} > 0`),
     check("booking_amount_positive", sql`${t.amountCents} >= 0`),
     check(

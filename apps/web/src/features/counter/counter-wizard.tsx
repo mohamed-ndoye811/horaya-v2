@@ -56,6 +56,8 @@ export interface CounterEvent {
   /** Cours à l'année : prix de l'inscription à toute la série, si elle est ouverte. */
   seriesId: string | null;
   enrollmentPriceCents: number | null;
+  /** Inscription au prorata : « 6 séances restantes sur 8 : 180 € au lieu de 240 € ». */
+  enrollmentNote: string | null;
   /** « Ce que tu demandes » : questions une fois et par participant. */
   fields: EventTypeField[];
 }
@@ -152,8 +154,8 @@ export function CounterWizard({
   const enrolling = wholeSeries && event?.enrollmentPriceCents != null;
   const total = enrolling ? (event?.enrollmentPriceCents ?? 0) : (event?.priceCents ?? 0) * seats;
   const full = event?.remaining !== null && event !== undefined && seats > (event.remaining ?? 0);
-  // Questions du type (pas pour l'inscription à toute la série, qui n'en pose pas).
-  const asking = Boolean(event && !enrolling && event.fields.length > 0);
+  // Questions du type, aussi pour l'inscription à toute la série (une fois, pour une personne).
+  const asking = Boolean(event && event.fields.length > 0);
   const participantFields = fieldsOfScope(event?.fields ?? [], "participant");
   const newName = `${contact.firstName} ${contact.lastName}`.trim();
   const customerName = customer?.name ?? (newName || null);
@@ -220,6 +222,7 @@ export function CounterWizard({
           seriesId: event?.seriesId ?? "",
           ...who,
           paid: total > 0 && paid,
+          ...answersOf(new FormData(formEvent.currentTarget as HTMLFormElement), 1),
         });
         if (result.ok) {
           setDone({
@@ -393,7 +396,7 @@ export function CounterWizard({
                 {
                   value: true,
                   label: "Toute la série",
-                  detail: `${formatMoney(event.enrollmentPriceCents)} · une place à chaque séance restante`,
+                  detail: `${formatMoney(event.enrollmentPriceCents)} · ${event.enrollmentNote ?? "une place à chaque séance restante"}`,
                 },
               ]}
             />
