@@ -120,8 +120,47 @@ export function PublicEvents({
   ];
   const type = types.find((entry) => entry.id === param(query.type));
   const sort = param(query.tri) === "prix" ? "prix" : "date";
+  // Filtres publics : champs à choix de « Ce que tu décris » marqués filtre (« Niveau »).
+  const filters = [
+    ...new Map(
+      events.flatMap((entry) =>
+        entry.fields
+          .filter((field) => field.scope === "event" && field.publicFilter)
+          .map((field) => [field.key, { key: field.key, label: field.label }] as const),
+      ),
+    ).values(),
+  ].map((filter) => ({
+    ...filter,
+    options: [
+      ...new Set(
+        events.flatMap((entry) => {
+          const value = entry.fieldValues[filter.key];
+          return Array.isArray(value) ? value : typeof value === "string" ? [value] : [];
+        }),
+      ),
+    ],
+  }));
+  // ?filtre=niveau:Débutant,technique:Tour
+  const selected = new Map(
+    (param(query.filtre) ?? "")
+      .split(",")
+      .map((pair) => pair.split(":") as [string, string?])
+      .filter((pair): pair is [string, string] => Boolean(pair[1])),
+  );
+  const matches = (entry: PublicEventRow) =>
+    [...selected].every(([key, wanted]) => {
+      const value = entry.fieldValues[key];
+      return Array.isArray(value) ? value.includes(wanted) : value === wanted;
+    });
+  const filterParam = (key: string, value: string | undefined) => {
+    const next = new Map(selected);
+    if (value === undefined) next.delete(key);
+    else next.set(key, value);
+    return [...next].map(([name, wanted]) => `${name}:${wanted}`).join(",") || undefined;
+  };
   const shown = events
     .filter((entry) => !type || entry.typeId === type.id)
+    .filter(matches)
     .sort(
       (a, b) =>
         (sort === "prix" ? a.priceCents - b.priceCents : 0) ||
@@ -137,6 +176,7 @@ export function PublicEvents({
     withParams(basePath, {
       type: type?.id,
       tri: sort === "date" ? undefined : sort,
+      filtre: filterParam("", undefined),
       ...overrides,
     });
   const eventHref = (entry: PublicEventRow) =>
@@ -219,6 +259,37 @@ export function PublicEvents({
           </Link>
         </div>
       </div>
+
+      {filters.map((filter) => (
+        <nav
+          key={filter.key}
+          aria-label={`Filtrer par ${filter.label.toLowerCase()}`}
+          className="-mx-1 flex min-w-0 items-center gap-1.5 overflow-x-auto px-1 py-1"
+        >
+          <span className="shrink-0 pr-1 text-[13px] font-semibold text-ink-subtle">
+            {filter.label}
+          </span>
+          {[undefined, ...filter.options].map((option) => {
+            const active = selected.get(filter.key) === option;
+            return (
+              <Link
+                key={option ?? "tout"}
+                href={href({ filtre: filterParam(filter.key, option) })}
+                aria-current={active ? "page" : undefined}
+                className={chip(active)}
+              >
+                {option ?? "Tous"}
+              </Link>
+            );
+          })}
+        </nav>
+      ))}
+
+      {shown.length === 0 && (
+        <p className={cn(cardShellClasses, "p-6 text-base text-ink-muted")}>
+          Aucun événement ne correspond à ces filtres.
+        </p>
+      )}
 
       {cards.length > 0 && (
         <section className="flex flex-col gap-3">

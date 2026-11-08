@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { BookingAnswers } from "@/components/app/field-answers";
 import { stagger, WordsReveal } from "@/components/motion/words";
 import { NotFoundScreen } from "@/components/public/public-not-found";
 import { StatusBadge, type Tone } from "@/components/ui/badge";
@@ -61,10 +62,14 @@ export function ManagedBookingPage({
   const where =
     [booking.locationName, booking.locationAddress].filter(Boolean).join(", ") ||
     (booking.onlineUrl ? "En ligne" : null);
-  const named = booking.participants.length
-    ? booking.participants.map((entry) => `${entry.firstName} ${entry.lastName}`).join(", ")
+  // Une ligne par place (lot 33) : seuls les participants nommés comptent.
+  const names = booking.participants
+    .map((entry) => `${entry.firstName} ${entry.lastName}`.trim())
+    .filter(Boolean);
+  const named = names.length
+    ? names.join(", ")
     : `${booking.customerFirstName} ${booking.customerLastName}`;
-  const missing = booking.seats - Math.max(booking.participants.length, 1);
+  const missing = booking.seats - Math.max(names.length, 1);
   const participants =
     missing > 0 ? `${named} · ${missing} participant${missing > 1 ? "s" : ""} à compléter` : named;
   const manageHref = `/${slug}/reservation/${token}`;
@@ -259,6 +264,17 @@ export function ManagedBookingPage({
           )}
           {where && <Fact label="Où">{where}</Fact>}
           <Fact label="Participants">{participants}</Fact>
+          {(Object.keys(booking.answers ?? {}).length > 0 ||
+            booking.participants.some((entry) => Object.keys(entry.answers).length > 0)) && (
+            <Fact label="Tes réponses">
+              <BookingAnswers
+                fields={booking.eventFields}
+                answers={booking.answers ?? {}}
+                participants={booking.participants}
+                timeZone={tz}
+              />
+            </Fact>
+          )}
           <Fact label="Paiement">
             <span className="flex flex-wrap items-center gap-2.5">
               {booking.amountCents > 0 ? formatMoney(booking.amountCents) : "Gratuit"}

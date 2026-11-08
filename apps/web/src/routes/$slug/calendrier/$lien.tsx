@@ -7,7 +7,7 @@ import { searchText } from "@/lib/search-params";
 
 /** Lien calendrier : les événements choisis par l'équipe, « sur invitation » compris. */
 export const Route = createFileRoute("/$slug/calendrier/$lien")({
-  validateSearch: z.object({ type: searchText, tri: searchText }),
+  validateSearch: z.object({ type: searchText, tri: searchText, filtre: searchText }),
   loader: ({ params }) => getCalendarLinkPage({ data: params }),
   head: ({ loaderData }) => ({
     meta: [

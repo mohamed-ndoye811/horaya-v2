@@ -1,4 +1,5 @@
 import { type ReactNode, useState } from "react";
+import { BookingAnswers } from "@/components/app/field-answers";
 import { StatusBadge, type Tone } from "@/components/ui/badge";
 import { Button, ButtonLink, buttonClasses } from "@/components/ui/button";
 import { Dialog } from "@/components/ui/dialog";
@@ -163,6 +164,19 @@ export function CustomerBookingPage({
                   })}
                 />
               )}
+            </div>
+          )}
+
+          {(Object.keys(booking.answers).length > 0 ||
+            booking.participants.some((entry) => Object.keys(entry.answers).length > 0)) && (
+            <div className="flex flex-col gap-3.5 border-t border-line pt-7">
+              <h2 className="text-lg font-semibold leading-6 text-ink">Tes réponses</h2>
+              <BookingAnswers
+                fields={booking.eventFields}
+                answers={booking.answers}
+                participants={booking.participants}
+                timeZone={tz}
+              />
             </div>
           )}
 
