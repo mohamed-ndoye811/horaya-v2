@@ -1,4 +1,4 @@
-import { can, isCheckInOpen } from "@horaya/core";
+import { can, EVENT_TYPE_TEMPLATES, type EventTypeField, isCheckInOpen } from "@horaya/core";
 import {
   countEventsByTab,
   getEventDetail,
@@ -12,6 +12,7 @@ import {
 import { notFound, redirect } from "@tanstack/react-router";
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
+import type { EventTypeEditorValues } from "@/features/events/event-type-editor";
 import { emptyEventValues, eventToValues } from "@/features/events/form-values";
 import { parseCivilDate } from "@/lib/dates";
 import { formDataInput } from "@/lib/form-data";
@@ -74,6 +75,7 @@ const typeOption = (type: {
   id: string;
   name: string;
   color: string;
+  fields: EventTypeField[];
   defaultDurationMinutes: number | null;
   defaultPriceCents: number | null;
   defaultCapacity: number | null;
@@ -82,6 +84,7 @@ const typeOption = (type: {
   id: type.id,
   name: type.name,
   color: type.color,
+  fields: type.fields,
   defaultDurationMinutes: type.defaultDurationMinutes,
   defaultPriceCents: type.defaultPriceCents,
   defaultCapacity: type.defaultCapacity,
@@ -151,36 +154,83 @@ export const getEditEvent = createServerFn({ method: "GET" })
     if (!detail) throw notFound();
     if (detail.event.status === "cancelled") throw redirect({ href: `/app/evenements/${id}` });
     const { event } = detail;
-    // Le type actuel reste proposé même s'il a été archivé depuis.
-    const options = types.some((type) => type.id === event.typeId)
-      ? types.map(typeOption)
-      : [
-          ...types.map(typeOption),
-          {
-            id: event.typeId,
-            name: event.typeName,
-            color: event.typeColor,
-            defaultDurationMinutes: null,
-            defaultPriceCents: null,
-            defaultCapacity: null,
-            requiresApproval: false,
-          },
-        ];
+    // Le type actuel reste proposé même s'il a été archivé depuis, avec la version de ses
+    // champs copiée sur l'événement.
+    const current = {
+      id: event.typeId,
+      name: event.typeName,
+      color: event.typeColor,
+      fields: event.fields,
+      defaultDurationMinutes: null,
+      defaultPriceCents: null,
+      defaultCapacity: null,
+      requiresApproval: false,
+    };
+    const options = [
+      ...types.filter((type) => type.id !== event.typeId).map(typeOption),
+      typeOption(current),
+    ];
     return {
       timeZone,
       event: { id: event.id, title: event.title, status: event.status },
       types: options,
       initial: eventToValues(event, timeZone),
+      fieldValues: event.fieldValues,
     };
   });
 
-export const eventTypesSearch = z.object({ type: searchText });
-
-/** Écran 16 : types d'événements. */
-export const getEventTypes = createServerFn({ method: "GET" }).handler(async () => {
-  const { workspace } = await getWorkspaceContext();
-  return { types: await listEventTypes(db, workspace.id) };
+/** `type` : un type à modifier, ou « nouveau » (avec `modele` ou `depuis` : l'éditeur, sinon le choix). */
+export const eventTypesSearch = z.object({
+  type: searchText,
+  modele: searchText,
+  depuis: searchText,
 });
+
+/** Écran 16 : types d'événements ; maquettes 9.1 (éditeur) et 9.3 (nouveau type). */
+export const getEventTypes = createServerFn({ method: "GET" })
+  .validator(eventTypesSearch)
+  .handler(async ({ data }) => {
+    const { workspace } = await getWorkspaceContext();
+    const types = await listEventTypes(db, workspace.id);
+    const existing = types.find((type) => type.id === data.type);
+    const source = types.find((type) => type.id === data.depuis);
+    const template = EVENT_TYPE_TEMPLATES.find((entry) => entry.id === data.modele);
+    const blank = {
+      eventCount: 0,
+      upcomingUnbooked: 0,
+      bookingNoun: "reservation" as const,
+      fields: [],
+    };
+    // Nouveau type : copie d'un type, ou modèle du core (nom libre si déjà pris).
+    const base = existing ?? source ?? template;
+    const editor: EventTypeEditorValues | null =
+      !base || (data.type !== "nouveau" && !existing)
+        ? null
+        : {
+            ...blank,
+            ...base,
+            id: existing?.id ?? null,
+            name: existing
+              ? existing.name
+              : source
+                ? `${source.name} (copie)`
+                : types.some((type) => type.name === template?.name)
+                  ? ""
+                  : (template?.name ?? ""),
+            eventCount: existing?.eventCount ?? 0,
+            upcomingUnbooked: existing?.upcomingUnbooked ?? 0,
+            origin: existing
+              ? null
+              : source
+                ? `Copie de « ${source.name} »`
+                : `Créé depuis le modèle « ${template?.name} »`,
+          };
+    return {
+      workspaceName: workspace.name,
+      types: types.map((type) => ({ ...type })),
+      editor,
+    };
+  });
 
 /** Liens calendrier : liens, ce qu'ils montrent, et les choix possibles. */
 export const getCalendarLinks = createServerFn({ method: "GET" }).handler(async () => {

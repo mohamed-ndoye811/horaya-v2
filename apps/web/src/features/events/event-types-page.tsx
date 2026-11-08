@@ -7,8 +7,8 @@ import { cardShellClasses } from "@/components/ui/section";
 import type { getEventTypes } from "@/functions/events";
 import { cn } from "@/lib/cn";
 import { formatMoney } from "@/lib/format";
-import { Link } from "@/lib/navigation";
-import { EventTypeForm, type EventTypeFormValues, TYPE_COLORS } from "./event-type-form";
+import { Link, useRouter } from "@/lib/navigation";
+import { TemplateDialog } from "./template-dialog";
 
 function formatDuration(minutes: number | null): string {
   if (!minutes) return "—";
@@ -21,47 +21,32 @@ function formatDuration(minutes: number | null): string {
 
 function summary(type: {
   requiresApproval: boolean;
-  customFields: unknown[];
+  fields: Array<{ scope: string }>;
   bookingRules: { waitlistEnabled?: boolean };
 }): string {
+  const described = type.fields.filter((field) => field.scope === "event").length;
+  const asked = type.fields.length - described;
   return [
     type.requiresApproval ? "Validation manuelle" : "Réservation automatique",
     type.bookingRules.waitlistEnabled ? "Liste d'attente" : null,
-    type.customFields.length > 0
-      ? `${type.customFields.length} champ${type.customFields.length > 1 ? "s" : ""} personnalisé${type.customFields.length > 1 ? "s" : ""}`
-      : null,
+    described > 0 ? `${described} info${described > 1 ? "s" : ""}` : null,
+    asked > 0 ? `${asked} question${asked > 1 ? "s" : ""}` : null,
   ]
     .filter(Boolean)
     .join(" · ");
 }
 
-/** Écran 16 : types d'événements, avec le panneau d'édition à droite. */
+/** Écran 16 : types d'événements (chaque type s'ouvre dans l'éditeur, maquette 9.1). */
 export function EventTypesPage({
   data,
-  selected,
+  choosing,
 }: {
   data: Awaited<ReturnType<typeof getEventTypes>>;
-  selected: string | undefined;
+  /** « Nouveau type » : choix d'un modèle (maquette 9.3). */
+  choosing: boolean;
 }) {
   const { types } = data;
-  const editing = types.find((type) => type.id === selected);
-
-  const panelValues: EventTypeFormValues | null = editing
-    ? { ...editing }
-    : selected === "nouveau"
-      ? {
-          id: null,
-          name: "",
-          color: TYPE_COLORS[types.length % TYPE_COLORS.length] ?? "#528D74",
-          defaultDurationMinutes: null,
-          defaultPriceCents: null,
-          defaultCapacity: null,
-          requiresApproval: false,
-          customFields: [],
-          bookingRules: {},
-          eventCount: 0,
-        }
-      : null;
+  const router = useRouter();
 
   return (
     <div className="flex flex-1 flex-col">
@@ -83,9 +68,8 @@ export function EventTypesPage({
         }
       />
       <div className="flex flex-1 flex-col gap-4 px-4 pb-4 lg:flex-row lg:items-start">
-        {/* Sur mobile (M10), le formulaire d'un type remplace la liste. */}
-        <div className={cn("min-w-0 flex-1", panelValues && "hidden lg:block")}>
-          {types.length === 0 && !panelValues ? (
+        <div className="min-w-0 flex-1">
+          {types.length === 0 ? (
             <EmptyState
               title="Aucun type pour l'instant."
               description="Commence par les formats que tu proposes le plus : séminaire, atelier, réunion… Chacun a sa couleur dans le calendrier."
@@ -97,23 +81,15 @@ export function EventTypesPage({
             />
           ) : (
             <>
-              {/* Panneau ouvert : la liste reste en cartes jusqu'à xl (le tableau n'y tient pas). */}
               <ul
                 aria-label="Types d'événements"
-                className={cn(
-                  "flex flex-col overflow-hidden rounded-3xl bg-surface",
-                  panelValues ? "xl:hidden" : "lg:hidden",
-                )}
+                className="flex flex-col overflow-hidden rounded-3xl bg-surface lg:hidden"
               >
                 {types.map((type) => (
                   <li key={type.id} className="border-b border-line-soft">
                     <Link
                       href={`/app/evenements/types?type=${type.id}`}
-                      aria-current={type.id === selected ? "page" : undefined}
-                      className={cn(
-                        "flex items-center gap-3.5 px-4 py-4 text-ink hover:bg-band",
-                        type.id === selected && "bg-band",
-                      )}
+                      className="flex items-center gap-3.5 px-4 py-4 text-ink hover:bg-band"
                     >
                       <span
                         className="size-2.5 shrink-0 rounded-[3px]"
@@ -141,7 +117,7 @@ export function EventTypesPage({
                   </li>
                 ))}
               </ul>
-              <div className={cn("hidden", panelValues ? "xl:block" : "lg:block")}>
+              <div className="hidden lg:block">
                 <div className={cn(cardShellClasses, "overflow-hidden")}>
                   <table className="w-full min-w-[640px] table-fixed border-collapse">
                     <colgroup>
@@ -168,14 +144,10 @@ export function EventTypesPage({
                     </thead>
                     <tbody>
                       {types.map((type) => {
-                        const active = type.id === selected;
                         return (
                           <tr
                             key={type.id}
-                            className={cn(
-                              "relative h-[60px] border-t border-line-faint hover:bg-band",
-                              active && "bg-band shadow-[inset_3px_0_0_var(--color-ink)]",
-                            )}
+                            className="relative h-[60px] border-t border-line-faint hover:bg-band"
                           >
                             <td className="px-3 pl-5">
                               <div className="flex items-center gap-3">
@@ -218,20 +190,11 @@ export function EventTypesPage({
             </>
           )}
         </div>
-        {panelValues && (
-          <aside
-            className={cn(
-              cardShellClasses,
-              "overflow-hidden lg:sticky lg:top-4 lg:w-[460px] lg:shrink-0",
-            )}
-          >
-            <EventTypeForm key={panelValues.id ?? "nouveau"} initial={panelValues} />
-          </aside>
-        )}
       </div>
-      {!panelValues && types.length > 0 && (
-        <FabLink href="/app/evenements/types?type=nouveau">Nouveau</FabLink>
+      {choosing && (
+        <TemplateDialog types={types} onClose={() => router.push("/app/evenements/types")} />
       )}
+      {types.length > 0 && <FabLink href="/app/evenements/types?type=nouveau">Nouveau</FabLink>}
     </div>
   );
 }

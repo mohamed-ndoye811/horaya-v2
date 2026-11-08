@@ -66,19 +66,25 @@ export function SectionHeading({
 export function FormSection({
   number,
   title,
+  description,
   children,
 }: {
   number: number;
   title: string;
+  /** Précision grise après le titre (« Rempli sur chaque événement »). */
+  description?: string;
   children: ReactNode;
 }) {
   return (
     <section className="flex flex-col gap-5 rounded-3xl bg-surface p-5 sm:p-6">
-      <h2 className="flex items-center gap-2.5">
+      <h2 className="flex flex-wrap items-center gap-x-2.5 gap-y-1">
         <span className="flex size-[26px] shrink-0 items-center justify-center rounded-full bg-ink text-xs font-bold leading-[14px] text-on-ink">
           {number}
         </span>
         <span className="text-lg font-semibold leading-[22px] text-ink">{title}</span>
+        {description && (
+          <span className="text-sm font-normal leading-[18px] text-ink-subtle">{description}</span>
+        )}
       </h2>
       {children}
     </section>

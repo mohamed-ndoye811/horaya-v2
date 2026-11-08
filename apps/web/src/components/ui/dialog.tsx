@@ -23,7 +23,8 @@ export function Dialog({
   description?: ReactNode;
   children?: ReactNode;
   footer?: ReactNode;
-  size?: "md" | "lg";
+  /** `xl` : choix en grille (modèles d'un nouveau type). */
+  size?: "md" | "lg" | "xl";
 }) {
   const ref = useRef<HTMLDialogElement>(null);
   const titleId = useId();
@@ -48,7 +49,7 @@ export function Dialog({
       className={cn(
         "m-auto w-[calc(100%-32px)] rounded-[28px] bg-surface p-0 text-left text-ink shadow-[0_24px_80px_rgba(0,0,0,0.22)] backdrop:bg-ink/35",
         "max-sm:mb-0 max-sm:w-full max-sm:max-w-none max-sm:rounded-b-none max-sm:pb-[env(safe-area-inset-bottom)]",
-        size === "md" ? "max-w-[520px]" : "max-w-[720px]",
+        size === "md" ? "max-w-[520px]" : size === "lg" ? "max-w-[720px]" : "max-w-[960px]",
       )}
     >
       <div className="flex flex-col">

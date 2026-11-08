@@ -1,3 +1,4 @@
+import { fieldsOfScope } from "@horaya/core";
 import { BookingRowActions, CheckInToggle } from "@/components/app/booking-actions";
 import { useImageUpload } from "@/components/app/image-upload";
 import { PageHeader } from "@/components/app/page-header";
@@ -15,6 +16,7 @@ import { SeriesPanel } from "@/features/enrollments/series-panel";
 import type { getEvent } from "@/functions/events";
 import { cn } from "@/lib/cn";
 import { meshCover } from "@/lib/cover";
+import { answerRows } from "@/lib/fields";
 import {
   formatEventRange,
   formatHour,
@@ -396,6 +398,13 @@ export function EventDetailPage({
                   ? "Gratuit"
                   : `${PAYMENT_MODE_LABELS[event.paymentMode]} · ${formatMoney(event.priceCents)} / pers.${event.depositPercent ? ` · acompte ${event.depositPercent} %` : ""}`,
               ],
+              // « Ce que tu décris », champs internes compris.
+              ...answerRows(fieldsOfScope(event.fields, "event"), event.fieldValues, timeZone).map(
+                (row) => [
+                  row.label,
+                  `${row.value}${event.fields.some((field) => field.key === row.key && field.visibility === "internal") ? " · interne" : ""}`,
+                ],
+              ),
             ].map(([label, value]) => (
               <div
                 key={label}
