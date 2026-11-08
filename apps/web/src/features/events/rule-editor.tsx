@@ -260,7 +260,7 @@ function actionFor(kind: RuleAction["kind"]): RuleAction {
 }
 
 /** Petite pilule de saisie du constructeur (36 px, fond gris, contour clair). */
-const pillInput = cn(inputClasses("xs"), "w-auto min-w-0");
+const pillInput = inputClasses("xs", "none", "fit");
 
 function ValueInput({
   field,

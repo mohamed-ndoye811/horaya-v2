@@ -6,7 +6,7 @@ import { useInvalidMessage } from "@/lib/use-invalid-message";
 
 // DA v4 : champ gris clair arrondi, qui blanchit et prend un contour noir au focus.
 const inputBase =
-  "w-full min-w-0 rounded-xl border border-line-soft bg-field font-medium text-ink outline-none " +
+  "min-w-0 rounded-xl border border-line-soft bg-field font-medium text-ink outline-none " +
   "placeholder:text-ink-subtle transition-[border-color,background-color,box-shadow] " +
   "focus:border-ink focus:bg-surface " +
   "aria-invalid:border-danger aria-invalid:focus:shadow-[0_0_0_0.5px_var(--color-danger)] " +
@@ -34,11 +34,13 @@ const trailingPadding = {
 
 export type InputSize = keyof typeof sizes;
 
+/** `width` : « fit » laisse la largeur au parent (champ court dans une ligne de contrôles). */
 export function inputClasses(
   size: InputSize = "md",
   trailing: keyof typeof trailingPadding = "none",
+  width: "full" | "fit" = "full",
 ) {
-  return cn(inputBase, sizes[size], trailingPadding[trailing][size]);
+  return cn(inputBase, width === "full" && "w-full", sizes[size], trailingPadding[trailing][size]);
 }
 
 interface FieldProps {
@@ -124,7 +126,7 @@ export function Field({
 
 /** Zone de texte multiligne (description). */
 export function textareaClasses() {
-  return cn(inputBase, "min-h-32 resize-y px-3.5 py-3 text-base leading-[23px]");
+  return cn(inputBase, "w-full min-h-32 resize-y px-3.5 py-3 text-base leading-[23px]");
 }
 
 interface AffixInputProps extends Omit<ComponentProps<"input">, "size" | "className" | "prefix"> {
