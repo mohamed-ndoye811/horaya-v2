@@ -434,6 +434,10 @@ dialog[open]::backdrop {
 ::view-transition-new(root) {
   animation: none;
 }
+/* WebKit anime aussi largeur et hauteur du groupe racine (même taille avant et après) : inutile, et hors carte graphique. */
+::view-transition-group(root) {
+  animation: none;
+}
 ::view-transition-group(notch),
 ::view-transition-group(notch-fade),
 ::view-transition-group(tab-bar),
@@ -527,11 +531,11 @@ dialog[open]::backdrop {
     translate: 0 -6px;
   }
 }
+/* Pas de flou : sur une capture plein écran, WebKit (Safari, Yab) le calcule image par image. */
 @keyframes page-in {
   from {
     opacity: 0;
     translate: 0 10px;
-    filter: blur(2px);
   }
 }
 /*
