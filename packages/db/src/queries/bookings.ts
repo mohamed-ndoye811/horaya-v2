@@ -1,4 +1,11 @@
-import type { BookingPaymentStatus, BookingSource, BookingStatus, PaymentMode } from "@horaya/core";
+import type {
+  BookingPaymentStatus,
+  BookingSource,
+  BookingStatus,
+  EventTypeField,
+  FieldValues,
+  PaymentMode,
+} from "@horaya/core";
 import {
   and,
   asc,
@@ -135,6 +142,44 @@ export async function listBookings(
     .orderBy(sql`(${booking.status} = 'pending') desc`, desc(booking.createdAt))
     .limit(options.limit ?? 300);
   return rows as BookingRow[];
+}
+
+/** Réponses aux questions du type pour l'export : par réservation, avec les champs de l'événement. */
+export async function listBookingAnswers(db: Executor, organizationId: string, ids: string[]) {
+  if (ids.length === 0) return new Map<string, BookingAnswers>();
+  const [rows, participants] = await Promise.all([
+    db
+      .select({ id: booking.id, answers: booking.answers, fields: event.fields })
+      .from(booking)
+      .leftJoin(event, eq(event.id, booking.eventId))
+      .where(and(eq(booking.organizationId, organizationId), inArray(booking.id, ids))),
+    db
+      .select({
+        bookingId: bookingParticipant.bookingId,
+        firstName: bookingParticipant.firstName,
+        lastName: bookingParticipant.lastName,
+        answers: bookingParticipant.answers,
+      })
+      .from(bookingParticipant)
+      .where(inArray(bookingParticipant.bookingId, ids))
+      .orderBy(asc(bookingParticipant.createdAt), asc(bookingParticipant.id)),
+  ]);
+  return new Map(
+    rows.map((row) => [
+      row.id,
+      {
+        fields: row.fields ?? [],
+        answers: row.answers,
+        participants: participants.filter((participant) => participant.bookingId === row.id),
+      },
+    ]),
+  );
+}
+
+export interface BookingAnswers {
+  fields: EventTypeField[];
+  answers: FieldValues;
+  participants: Array<{ firstName: string; lastName: string; answers: FieldValues }>;
 }
 
 export async function countBookingsByTab(

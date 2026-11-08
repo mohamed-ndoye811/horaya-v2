@@ -27,6 +27,12 @@ const mail: BookingMail = {
 };
 
 describe("e-mails aux participants", () => {
+  it("récapitule les réponses aux questions du type", () => {
+    const email = bookingConfirmedEmail({ ...mail, answers: [["Niveau", "Débutant"]] });
+    expect(email.text).toContain("Niveau : Débutant");
+    expect(bookingConfirmedEmail(mail).text).not.toContain("Niveau");
+  });
+
   it("porte la marque de l'espace, le récapitulatif et le lien de gestion", () => {
     const email = bookingConfirmedEmail(mail);
     expect(email.subject).toBe("C'est réservé : Séminaire annuel");

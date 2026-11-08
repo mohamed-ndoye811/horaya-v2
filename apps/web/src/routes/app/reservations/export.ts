@@ -1,7 +1,8 @@
-import { type BookingTab, listBookings } from "@horaya/db";
+import { type BookingTab, listBookingAnswers, listBookings } from "@horaya/db";
 import { createFileRoute } from "@tanstack/react-router";
 import { BOOKING_STATUS_BADGE } from "@/components/ui/status";
 import { toCsv } from "@/lib/csv";
+import { answerColumns } from "@/lib/fields";
 import { formatDateTimeShort, PAYMENT_MODE_LABELS } from "@/lib/format";
 import { db } from "@/server/db";
 import { getWorkspaceContext } from "@/server/workspace";
@@ -25,6 +26,15 @@ export const Route = createFileRoute("/app/reservations/export")({
           eventId: url.searchParams.get("evenement") ?? undefined,
           limit: 10_000,
         });
+        const asked = await listBookingAnswers(
+          db,
+          workspace.id,
+          rows.map((row) => row.id),
+        );
+        const columns = answerColumns(
+          rows.map((row) => asked.get(row.id) ?? { fields: [], answers: {}, participants: [] }),
+          timeZone,
+        );
         const csv = toCsv(
           [
             "Référence",
@@ -37,8 +47,9 @@ export const Route = createFileRoute("/app/reservations/export")({
             "Paiement",
             "Statut",
             "Réservée le",
+            ...columns.headers,
           ],
-          rows.map((row) => [
+          rows.map((row, index) => [
             row.reference,
             row.customerName,
             row.customerEmail,
@@ -49,6 +60,7 @@ export const Route = createFileRoute("/app/reservations/export")({
             PAYMENT_MODE_LABELS[row.paymentMode] ?? row.paymentMode,
             BOOKING_STATUS_BADGE[row.status].label,
             formatDateTimeShort(row.createdAt, timeZone),
+            ...columns.cells(index),
           ]),
         );
         const date = new Date().toISOString().slice(0, 10);

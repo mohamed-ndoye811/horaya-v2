@@ -14,6 +14,8 @@ export interface BookingMail {
   amount?: string | null;
   /** Lien « Gérer ma réservation », ou connexion à l'espace client quand le jeton n'est pas gardé. */
   manageUrl: string;
+  /** Réponses aux questions du type (« Niveau », « Léa · Allergies »), déjà mises en forme. */
+  answers?: Array<[string, string]>;
 }
 
 const places = (seats: number) => `${seats} place${seats > 1 ? "s" : ""}`;
@@ -26,6 +28,7 @@ function details(mail: BookingMail): Array<[string, string]> {
     ["Places", String(mail.seats)],
     ...(mail.amount ? [["Montant", mail.amount] as [string, string]] : []),
     ["Réservation", mail.reference],
+    ...(mail.answers ?? []),
   ];
 }
 
@@ -264,6 +267,8 @@ export function teamBookingEmail(input: {
   seats: number;
   status: string;
   url: string;
+  /** Réponses du client aux questions du type, déjà mises en forme. */
+  answers?: Array<[string, string]>;
 }): EmailContent {
   const texts = {
     created: {
@@ -288,6 +293,7 @@ export function teamBookingEmail(input: {
       preheader: `${input.customerName} · ${places(input.seats)} · ${input.title}`,
       title: texts.title,
       paragraphs: [texts.text],
+      details: input.answers ?? [],
       action: { label: "Voir la réservation", url: input.url },
       footnote: `Tu reçois cet e-mail en tant que membre de ${input.workspaceName}. Règle tes notifications dans Paramètres › Paiements & notifications.`,
     }),

@@ -39,6 +39,7 @@ import {
   weeklyDigestEmail,
 } from "@horaya/mail";
 import { textOn } from "@/lib/colors";
+import { answerGroups } from "@/lib/fields";
 import { enrollmentPayment } from "@/lib/enrollment";
 import {
   formatDateTimeShort,
@@ -108,6 +109,20 @@ async function loadBooking(organizationId: string, bookingId: string) {
             : "à régler auprès de l'organisateur";
   const amount =
     booking.amountCents > 0 ? `${formatMoney(booking.amountCents)} · ${paymentNote}` : null;
+  // Récapitulatif des réponses du client : jamais les champs de description (internes compris).
+  const answers = answerGroups(
+    {
+      fields: booking.event?.fields ?? [],
+      answers: booking.answers,
+      participants: detail.participants,
+    },
+    settings.timezone,
+  ).flatMap((group) =>
+    group.rows.map((row): [string, string] => [
+      group.title ? `${group.title} · ${row.label}` : row.label,
+      row.value,
+    ]),
+  );
   const mail = (url: string): BookingMail => ({
     workspace: {
       name: workspace.name,
@@ -130,6 +145,7 @@ async function loadBooking(organizationId: string, bookingId: string) {
     workspace,
     title,
     mail,
+    answers,
     onlinePayments,
     channel,
     eventsUrl: absoluteUrl(`/${workspace.slug}`),
@@ -160,7 +176,10 @@ export async function sendBookingCreatedEmail(
 ) {
   const loaded = await loadBooking(organizationId, bookingId);
   if (!loaded || !["pending", "confirmed", "waitlisted"].includes(loaded.booking.status)) return;
-  const mail = loaded.mail(manageUrl(loaded.workspace.slug, manageToken));
+  const mail = {
+    ...loaded.mail(manageUrl(loaded.workspace.slug, manageToken)),
+    answers: loaded.answers,
+  };
   if (loaded.channel && awaitsOnlinePayment(loaded.booking, loaded.paid)) {
     await send(
       loaded.booking.customer.email,
@@ -433,6 +452,7 @@ export async function notifyFromActivity(entries: ActivityEntry[]) {
               seats: booking.seats,
               status: STATUS_LABELS[booking.status] ?? booking.status,
               url: adminUrl,
+              answers: loaded.answers,
             }),
             {
               title:
@@ -498,7 +518,10 @@ export async function notifyFromActivity(entries: ActivityEntry[]) {
             }),
           );
         } else {
-          await send(to, bookingConfirmedEmail(mail(linkRequestUrl)));
+          await send(
+            to,
+            bookingConfirmedEmail({ ...mail(linkRequestUrl), answers: loaded.answers }),
+          );
         }
         break;
       case "booking.refused":
