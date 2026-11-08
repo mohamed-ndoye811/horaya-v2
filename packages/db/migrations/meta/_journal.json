@@ -141,6 +141,13 @@
       "when": 1794094182683,
       "tag": "0019_cartes_de_seances",
       "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "7",
+      "when": 1794094541975,
+      "tag": "0020_bons_cadeaux",
+      "breakpoints": true
     }
   ]
 }

@@ -4,6 +4,7 @@ import { z } from "zod";
 import { PublicEvents, PublicHero } from "@/components/public/public-events";
 import { ButtonLink } from "@/components/ui/button";
 import { getPublicHome } from "@/functions/public";
+import { Link } from "@/lib/navigation";
 import { searchText } from "@/lib/search-params";
 
 /** Maquette 5.1 : page publique d'un espace, ses événements à venir. */
@@ -44,6 +45,22 @@ function PublicWorkspacePage() {
             Acheter une carte
           </ButtonLink>
         </div>
+      )}
+      {workspace.giftCardsEnabled && (
+        <Link
+          href={`/${workspace.slug}/bon-cadeau`}
+          className="flex items-center justify-between gap-4 rounded-3xl bg-surface px-6 py-5 transition-colors hover:bg-field"
+        >
+          <span className="flex flex-col gap-0.5">
+            <span className="text-lg font-semibold leading-[22px] text-ink">
+              Offrir un bon cadeau
+            </span>
+            <span className="text-sm leading-5 text-ink-muted">
+              Un atelier à partager avec quelqu'un que tu aimes.
+            </span>
+          </span>
+          <span className="shrink-0 text-sm font-semibold text-[var(--brand-text)]">Offrir →</span>
+        </Link>
       )}
       <PublicEvents
         events={events}

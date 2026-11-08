@@ -1,6 +1,7 @@
 import type { CalendarLink } from "../calendar-links/model";
 import { calendarLinkAllows } from "../calendar-links/rules";
 import type { Event, EventType } from "../events/model";
+import { applyGiftCardToBooking, restoreGiftCardForBooking } from "../gift-cards/use-cases";
 import { recreditPassForBooking } from "../passes/use-cases";
 import { type Actor, actorRef, assertMemberCan } from "../shared/actor";
 import { ConflictError, ForbiddenError, NotFoundError, ValidationError } from "../shared/errors";
@@ -60,13 +61,13 @@ export async function createEventBooking(
   deps: Deps,
   actor: Actor,
   input: CreateEventBookingInput,
-): Promise<{ booking: Booking; manageToken: string }> {
+): Promise<{ booking: Booking; manageToken: string; giftCardCents: number }> {
   if (actor.type === "member") assertMemberCan(actor, "booking", "create");
   const data = validate(createEventBookingSchema, input);
   const manageToken = generateToken();
   const manageTokenHash = await hashToken(manageToken);
 
-  const booking = await deps.uow.run(async (repositories) => {
+  const { booking, giftCardCents } = await deps.uow.run(async (repositories) => {
     const locked = await repositories.events.lockForBooking(actor.organizationId, data.eventId);
     if (!locked || (actor.type === "customer" && locked.event.status === "draft")) {
       throw new NotFoundError("Événement", data.eventId);
@@ -97,16 +98,22 @@ export async function createEventBooking(
       actor.organizationId,
       data.customer,
     );
-    return insertEventBooking(repositories, actor, locked, now, {
+    const created = await insertEventBooking(repositories, actor, locked, now, {
       customerId: customer.id,
       seats: data.seats,
       participants: data.participants,
       customerMessage: data.customerMessage,
       manageTokenHash,
     });
+    // Sur liste d'attente, rien à payer encore : le bon n'est pas touché.
+    const giftCardCents =
+      data.giftCardCode && created.status !== "waitlisted"
+        ? await applyGiftCardToBooking(repositories, actor, created, data.giftCardCode, now)
+        : 0;
+    return { booking: created, giftCardCents };
   });
 
-  return { booking, manageToken };
+  return { booking, manageToken, giftCardCents };
 }
 
 /**
@@ -252,6 +259,7 @@ export async function refuseBooking(
       event?.startsAt ?? null,
       deps.clock.now(),
     );
+    await restoreGiftCardForBooking(repositories, booking, "organizer", null, deps.clock.now());
     if (event && SEAT_HOLDING_STATUSES.has(booking.status)) {
       await promoteWaitlist(repositories, event, actor, deps.clock.now());
     }
@@ -347,6 +355,13 @@ async function cancelLocked(
   } else {
     await repositories.inventory.releaseBookingAllocations(booking.organizationId, booking.id);
   }
+  await restoreGiftCardForBooking(
+    repositories,
+    booking,
+    actor.type === "customer" ? "customer" : "organizer",
+    event?.startsAt ?? booking.rentalStartsAt,
+    now,
+  );
   if (event && SEAT_HOLDING_STATUSES.has(booking.status)) {
     await promoteWaitlist(repositories, event, actor, now);
   }

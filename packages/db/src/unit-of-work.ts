@@ -13,6 +13,7 @@ import { calendarLinkRepository } from "./repositories/calendar-links";
 import { customerAccountRepository } from "./repositories/customer-accounts";
 import { enrollmentRepository } from "./repositories/enrollments";
 import { eventRepository, eventTypeRepository } from "./repositories/events";
+import { giftCardRepository } from "./repositories/gift-cards";
 import { inventoryRepository } from "./repositories/inventory";
 import { passRepository } from "./repositories/passes";
 import { paymentRepository } from "./repositories/payments";
@@ -42,6 +43,7 @@ export function repositoriesFor(db: Executor): Repositories {
     customerAccounts: customerAccountRepository(db),
     enrollments: enrollmentRepository(db),
     passes: passRepository(db),
+    giftCards: giftCardRepository(db),
   };
 }
 

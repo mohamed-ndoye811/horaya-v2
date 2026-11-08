@@ -19,10 +19,12 @@ function PublicLayout() {
   return (
     <div
       style={brandStyle(workspace.brandColor)}
-      className="flex min-h-dvh flex-col bg-bg lg:h-dvh lg:bg-ink lg:p-1.5"
+      className="flex min-h-dvh flex-col bg-bg lg:h-dvh lg:bg-ink lg:p-1.5 print:h-auto print:bg-white print:p-0"
     >
-      <PublicNotch workspace={workspace} contact={contactHref(workspace)} />
-      <ScrollZone className="flex flex-1 flex-col scrollbar-none lg:min-h-0 lg:overflow-y-auto lg:rounded-[10px] lg:bg-bg">
+      <div className="print:hidden">
+        <PublicNotch workspace={workspace} contact={contactHref(workspace)} />
+      </div>
+      <ScrollZone className="flex flex-1 flex-col scrollbar-none lg:min-h-0 lg:overflow-y-auto lg:rounded-[10px] lg:bg-bg print:overflow-visible">
         <div className="mx-auto flex w-full max-w-[1440px] flex-1 flex-col px-4 pt-4 pb-6 lg:pt-[62px]">
           <RouteTransition>
             <Outlet />

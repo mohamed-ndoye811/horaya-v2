@@ -9,6 +9,7 @@ import {
   teamAlmostFullEmail,
   weeklyDigestEmail,
 } from "./booking-templates";
+import { giftCardEmail } from "./gift-card-templates";
 import { mixColors } from "./layout";
 import { inlineImages } from "./mailer";
 import { notchFlankPng } from "./notch";
@@ -161,5 +162,35 @@ describe("e-mail de carte", () => {
     expect(email.subject).toBe("Ta carte est active : Carte 10 séances");
     expect(email.text).toContain("Séances : 10");
     expect(email.text).toContain("Valable jusqu'au : 30 juin 2027");
+  });
+});
+
+describe("e-mail du bon cadeau", () => {
+  const gift = {
+    workspace: mail.workspace,
+    firstName: "Léa",
+    audience: "recipient" as const,
+    purchaserName: "Camille Roux",
+    recipientName: "Léa Fontaine",
+    code: "TERRE-8K2F",
+    amount: "50,00 €",
+    expiresOn: "8 novembre 2027",
+    message: "Joyeux anniversaire",
+    cardUrl: "https://horaya.app/cabinet-vidal/bon-cadeau/jeton",
+    bookUrl: "https://horaya.app/cabinet-vidal",
+  };
+
+  it("au bénéficiaire : le code, le montant, l'échéance et le message de l'acheteur", () => {
+    const email = giftCardEmail(gift);
+    expect(email.subject).toBe("Camille Roux t'offre un bon cadeau Cabinet Vidal");
+    expect(email.text).toContain("Code : TERRE-8K2F");
+    expect(email.text).toContain("Joyeux anniversaire");
+    expect(email.text).toContain(gift.cardUrl);
+  });
+
+  it("à l'acheteur : confirmation du paiement", () => {
+    expect(giftCardEmail({ ...gift, audience: "purchaser", firstName: "Camille" }).subject).toBe(
+      "Ton bon cadeau Cabinet Vidal pour Léa Fontaine",
+    );
   });
 });

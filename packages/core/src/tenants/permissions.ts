@@ -10,6 +10,7 @@ export const PERMISSION_STATEMENTS = {
   booking: ["create", "update", "cancel", "refund"],
   customer: ["create", "update", "delete", "export"],
   inventory: ["create", "update", "delete"],
+  giftCard: ["create", "update", "cancel"],
   settings: ["update"],
   billing: ["manage"],
 } as const;
@@ -25,6 +26,7 @@ const BUSINESS_ALL = {
   booking: PERMISSION_STATEMENTS.booking,
   customer: PERMISSION_STATEMENTS.customer,
   inventory: PERMISSION_STATEMENTS.inventory,
+  giftCard: PERMISSION_STATEMENTS.giftCard,
 } as const;
 
 export const ROLE_PERMISSIONS = {
@@ -38,6 +40,7 @@ export const ROLE_PERMISSIONS = {
     booking: ["create", "update", "cancel"],
     customer: ["create", "update"],
     inventory: ["create", "update"],
+    giftCard: ["create", "update", "cancel"],
   },
   /** Consultation seule. */
   viewer: {},

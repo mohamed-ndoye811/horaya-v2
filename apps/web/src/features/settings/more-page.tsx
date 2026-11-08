@@ -44,6 +44,7 @@ export function MorePage({ data }: { data: Awaited<ReturnType<typeof getMoreMenu
       <Group title="Gérer">
         <Row href="/app/materiel">Matériel</Row>
         <Row href="/app/clients">Clients</Row>
+        <Row href="/app/bons-cadeaux">Bons cadeaux</Row>
         <Row href="/app/evenements/types">Types d'événements</Row>
         <Row href="/app/evenements/liens">Liens calendrier</Row>
         <Row href="/app/cartes">Cartes de séances</Row>
@@ -66,6 +67,7 @@ export function MorePage({ data }: { data: Awaited<ReturnType<typeof getMoreMenu
           Membres &amp; rôles
         </Row>
         <Row href="/app/parametres/paiements">Paiements</Row>
+        <Row href="/app/parametres/bons-cadeaux">Bons cadeaux</Row>
         <Row href="/app/parametres/abonnement">Abonnement</Row>
         <Row href="/app/parametres/notifications">Notifications</Row>
         <Row

@@ -1,4 +1,3 @@
-import { PAYMENT_METHODS } from "@horaya/core";
 import { useState } from "react";
 import { StatusBadge, type Tone } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -217,9 +216,9 @@ function SellForm({ customerId, plans }: { customerId: string; plans: Data["sell
       {paid && (
         <Select name="paymentMethod" aria-label="Moyen de paiement" variant="compact">
           <option value="">Moyen : non précisé</option>
-          {PAYMENT_METHODS.map((entry) => (
-            <option key={entry} value={entry}>
-              {METHOD_LABELS[entry]}
+          {Object.entries(METHOD_LABELS).map(([value, label]) => (
+            <option key={value} value={value}>
+              {label}
             </option>
           ))}
         </Select>

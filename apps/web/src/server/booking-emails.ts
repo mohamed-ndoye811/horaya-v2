@@ -3,6 +3,7 @@ import {
   amountDueOnline,
   awaitsOnlinePayment,
   type NotificationType,
+  paidCents,
 } from "@horaya/core";
 import {
   claimAlmostFull,
@@ -12,6 +13,7 @@ import {
   getPassForEmail,
   getWeeklyDigest,
   getWorkspaceSettings,
+  listBookingPayments,
   listNotificationRecipients,
   tenantSettingsReader,
 } from "@horaya/db";
@@ -68,13 +70,16 @@ export const manageUrl = (slug: string, token: string) =>
   absoluteUrl(`/${slug}/reservation/${token}`);
 
 async function loadBooking(organizationId: string, bookingId: string) {
-  const [detail, workspace, settings] = await Promise.all([
+  const [detail, workspace, settings, payments] = await Promise.all([
     getBookingDetail(db, organizationId, bookingId),
     getWorkspaceSettings(db, organizationId),
     tenantSettingsReader(db).get(organizationId),
+    listBookingPayments(db, bookingId),
   ]);
   if (!detail || !workspace) return null;
   const { booking } = detail;
+  // Déjà réglé (bon cadeau, paiement noté) : le lien de paiement ne réclame que le reste.
+  const paid = paidCents(payments);
   const startsAt = booking.event?.startsAt ?? booking.rentalStartsAt;
   const endsAt = booking.event?.endsAt ?? booking.rentalEndsAt;
   const title =
@@ -93,9 +98,11 @@ async function loadBooking(organizationId: string, bookingId: string) {
       : booking.paymentStatus === "paid_with_pass"
         ? "payée avec ta carte"
         : booking.paymentStatus === "paid"
-          ? booking.paymentMode === "deposit"
-            ? `acompte de ${formatMoney(booking.depositCents ?? 0)} payé, le reste sur place`
-            : "payé en ligne"
+          ? payments.some((entry) => entry.method === "gift_card" && entry.kind === "charge")
+            ? "réglé avec un bon cadeau"
+            : booking.paymentMode === "deposit"
+              ? `acompte de ${formatMoney(booking.depositCents ?? 0)} payé, le reste sur place`
+              : "payé en ligne"
           : onlinePayments
             ? "à payer en ligne"
             : "à régler auprès de l'organisateur";
@@ -119,6 +126,7 @@ async function loadBooking(organizationId: string, bookingId: string) {
   });
   return {
     booking,
+    paid,
     workspace,
     title,
     mail,
@@ -153,12 +161,12 @@ export async function sendBookingCreatedEmail(
   const loaded = await loadBooking(organizationId, bookingId);
   if (!loaded || !["pending", "confirmed", "waitlisted"].includes(loaded.booking.status)) return;
   const mail = loaded.mail(manageUrl(loaded.workspace.slug, manageToken));
-  if (loaded.channel && awaitsOnlinePayment(loaded.booking)) {
+  if (loaded.channel && awaitsOnlinePayment(loaded.booking, loaded.paid)) {
     await send(
       loaded.booking.customer.email,
       bookingAwaitingPaymentEmail({
         ...mail,
-        due: formatMoney(amountDueOnline(loaded.booking)),
+        due: formatMoney(amountDueOnline(loaded.booking, loaded.paid)),
         ...(loaded.channel.kind === "stripe"
           ? { reason: "checkout" as const, payUrl: mail.manageUrl, minutes: 30 }
           : { reason: "link" as const, payUrl: loaded.channel.url }),
@@ -478,12 +486,12 @@ export async function notifyFromActivity(entries: ActivityEntry[]) {
         break;
       case "booking.confirmed":
         // Validée, mais le paiement en ligne reste à faire : on l'annonce plutôt qu'un « C'est réservé ».
-        if (loaded.channel && awaitsOnlinePayment(booking)) {
+        if (loaded.channel && awaitsOnlinePayment(booking, loaded.paid)) {
           await send(
             to,
             bookingAwaitingPaymentEmail({
               ...mail(linkRequestUrl),
-              due: formatMoney(amountDueOnline(booking)),
+              due: formatMoney(amountDueOnline(booking, loaded.paid)),
               ...(loaded.channel.kind === "stripe"
                 ? { reason: "validated" as const, payUrl: linkRequestUrl }
                 : { reason: "link" as const, payUrl: loaded.channel.url }),

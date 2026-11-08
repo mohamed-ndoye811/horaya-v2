@@ -6,6 +6,7 @@ const SECTIONS: Record<string, { list: string; item: string }> = {
   reservations: { list: "Réservations", item: "Réservation" },
   materiel: { list: "Matériel", item: "Article" },
   clients: { list: "Clients", item: "Client" },
+  "bons-cadeaux": { list: "Bons cadeaux", item: "Bon cadeau" },
 };
 
 /** Écrans de formulaire : la barre d'onglets laisse la place à leurs boutons. */
@@ -23,7 +24,7 @@ export function backLink(pathname: string): { href: string; label: string } | nu
   const names = SECTIONS[section];
   if (!names) return null;
   if (!id) {
-    return section === "materiel" || section === "clients"
+    return section === "materiel" || section === "clients" || section === "bons-cadeaux"
       ? { href: "/app/plus", label: "Plus" }
       : null;
   }

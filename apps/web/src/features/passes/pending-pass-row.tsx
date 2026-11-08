@@ -1,11 +1,12 @@
-import { PAYMENT_METHODS } from "@horaya/core";
+import type { PaymentMethod } from "@horaya/core";
 import { useRouter } from "@tanstack/react-router";
 import { useState, useTransition } from "react";
 import { Button } from "@/components/ui/button";
 import { Select } from "@/components/ui/select";
 import { cancelPendingPassAction, markPassPaidAction } from "@/functions/passes";
 
-export const METHOD_LABELS: Record<(typeof PAYMENT_METHODS)[number], string> = {
+/** Moyens notés à la main pour une carte (le bon cadeau n'en fait pas partie). */
+export const METHOD_LABELS: Record<Exclude<PaymentMethod, "gift_card">, string> = {
   cash: "Espèces",
   card: "Carte bancaire",
   check: "Chèque",
@@ -34,9 +35,9 @@ export function PassPaymentActions({ passId }: { passId: string }) {
           className="w-40"
         >
           <option value="">Moyen : non précisé</option>
-          {PAYMENT_METHODS.map((entry) => (
-            <option key={entry} value={entry}>
-              {METHOD_LABELS[entry]}
+          {Object.entries(METHOD_LABELS).map(([value, label]) => (
+            <option key={value} value={value}>
+              {label}
             </option>
           ))}
         </Select>

@@ -6,6 +6,7 @@ import {
   cancelCustomerBooking,
   currentCustomerAccount,
   customerBookingPage,
+  customerGiftCards,
   customerHome,
   customerLoginPage,
   customerProfilePage,
@@ -41,6 +42,11 @@ export const getCustomerHome = createServerFn({ method: "GET" })
 export const getCustomerTerm = createServerFn({ method: "GET" })
   .validator(slug)
   .handler(({ data }) => customerTerm(data));
+
+/** Lot 32 : bons cadeaux utilisables du client connecté (son e-mail vient de la session). */
+export const getMyGiftCards = createServerFn({ method: "GET" })
+  .validator(slug)
+  .handler(({ data }) => customerGiftCards(data));
 
 export const getCustomerBookingPage = createServerFn({ method: "GET" })
   .validator(ofBooking)

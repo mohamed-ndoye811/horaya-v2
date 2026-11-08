@@ -6,6 +6,7 @@ import { FormAlert } from "@/components/ui/form-alert";
 import { FormSection } from "@/components/ui/section";
 import { Select } from "@/components/ui/select";
 import { createPublicBookingAction } from "@/functions/public";
+import { cn } from "@/lib/cn";
 import { useFormAction } from "@/lib/use-form-action";
 import type { FormState } from "@/server/form-state";
 
@@ -316,8 +317,33 @@ export function BookingForm({
           )}
         </FormSection>
 
+        <FormSection number={2} title="Bon cadeau">
+          <Field
+            label="J'ai un bon cadeau"
+            error={errors.giftCardCode}
+            hint={
+              <p className="text-[13px] font-medium text-ink-muted">
+                Facultatif. Le montant est déduit du prix, le reste du solde est conservé.
+              </p>
+            }
+          >
+            {(field) => (
+              <input
+                {...field}
+                name="giftCardCode"
+                maxLength={40}
+                autoComplete="off"
+                autoCapitalize="characters"
+                spellCheck={false}
+                placeholder="TERRE-8K2F"
+                className={cn(inputClasses(), "font-mono uppercase placeholder:normal-case")}
+              />
+            )}
+          </Field>
+        </FormSection>
+
         {payment ? (
-          <FormSection number={2} title="Paiement">
+          <FormSection number={3} title="Paiement">
             <div className="flex items-start gap-3.5 rounded-[18px] bg-field px-[18px] py-4">
               <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-[var(--brand)] text-[var(--on-brand)]">
                 <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">

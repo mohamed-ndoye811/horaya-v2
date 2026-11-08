@@ -7,6 +7,7 @@ export * from "./customer-accounts";
 export * from "./customers";
 export * from "./enums";
 export * from "./events";
+export * from "./gift-cards";
 export * from "./inventory";
 export * from "./passes";
 export * from "./tenants";

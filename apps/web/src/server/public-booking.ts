@@ -209,8 +209,8 @@ export async function bookingMoney(workspace: PublicWorkspace, booking: ManagedB
     refunded: payments
       .filter((entry) => entry.kind === "refund" && entry.status === "succeeded")
       .reduce((total, entry) => total + entry.amountCents, 0),
-    awaitsPayment: channel !== null && awaitsOnlinePayment(booking),
-    due: amountDueOnline(booking),
+    awaitsPayment: channel !== null && awaitsOnlinePayment(booking, paid),
+    due: amountDueOnline(booking, paid),
     refund:
       paid > 0
         ? refundForCancellation({
@@ -281,6 +281,12 @@ export async function createPublicBooking(
   if (form.get("terms") !== "on") fieldErrors.terms = "Accepte les conditions pour réserver";
   if (Object.keys(fieldErrors).length > 0)
     return { error: "Vérifie les champs en rouge.", fieldErrors };
+  // Anti-force brute : chaque saisie de code compte, qu'il soit bon ou non.
+  const giftCardCode = text(form, "giftCardCode");
+  if (giftCardCode) {
+    const tooMany = await rateLimited(`giftcode:ip:${await clientIp()}`, 10, 900);
+    if (tooMany) return { error: tooMany, fieldErrors: { giftCardCode: tooMany } };
+  }
 
   let manageToken: string;
   let next: string;
@@ -299,12 +305,14 @@ export async function createPublicBooking(
         customerMessage: text(form, "customerMessage") || null,
         // Le core revérifie que le lien est actif et contient l'événement.
         calendarLinkSlug: link?.slug ?? null,
+        giftCardCode: giftCardCode || null,
       },
     );
     manageToken = created.manageToken;
     // « Payer avec ma carte » coché (client connecté) : réglée avant l'e-mail de confirmation.
     // Si la carte ne passe plus (solde, liste d'attente…), la réservation reste à payer.
-    const passId = text(form, "passId");
+    // Un bon cadeau déjà déduit l'emporte : la carte réglerait le prix entier une seconde fois.
+    const passId = giftCardCode ? "" : text(form, "passId");
     const paidWithPass =
       passId !== "" && !(await payWithMyPassImpl(slug, created.booking.id, passId)).error;
     await sendBookingCreatedEmail(workspace.id, created.booking.id, manageToken);
@@ -315,7 +323,7 @@ export async function createPublicBooking(
       workspacePaymentChannel(workspace, event.paymentMode, event.paymentLinkUrl)?.kind ===
         "stripe" &&
       !paidWithPass &&
-      awaitsOnlinePayment(created.booking)
+      awaitsOnlinePayment(created.booking, created.giftCardCents)
     ) {
       next = await checkoutUrl(
         `/${slug}/reservation/${manageToken}?nouvelle=1`,

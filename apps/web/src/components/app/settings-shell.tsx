@@ -10,6 +10,7 @@ export type SettingsSection =
   | "organisation"
   | "membres"
   | "paiements"
+  | "bons-cadeaux"
   | "abonnement"
   | "notifications"
   | "integrations";
@@ -19,6 +20,7 @@ const SECTIONS: Array<{ value: SettingsSection; label: string; href: string }> =
   { value: "organisation", label: "Organisation & marque", href: "/app/parametres/organisation" },
   { value: "membres", label: "Membres & rôles", href: "/app/parametres/membres" },
   { value: "paiements", label: "Paiements", href: "/app/parametres/paiements" },
+  { value: "bons-cadeaux", label: "Bons cadeaux", href: "/app/parametres/bons-cadeaux" },
   { value: "abonnement", label: "Abonnement", href: "/app/parametres/abonnement" },
   { value: "notifications", label: "Notifications", href: "/app/parametres/notifications" },
   { value: "integrations", label: "Intégrations", href: "/app/parametres/integrations" },

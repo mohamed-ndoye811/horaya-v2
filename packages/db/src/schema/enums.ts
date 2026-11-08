@@ -11,6 +11,9 @@ import {
   CALENDAR_LINK_FILTERS,
   EVENT_STATUSES,
   EVENT_VISIBILITIES,
+  GIFT_CARD_MOVEMENT_KINDS,
+  GIFT_CARD_SOURCES,
+  GIFT_CARD_STATUSES,
   ITEM_UNIT_STATUSES,
   PASS_MOVEMENT_KINDS,
   PASS_STATUSES,
@@ -47,3 +50,6 @@ export const planGrantKind = pgEnum("plan_grant_kind", PLAN_GRANT_KINDS);
 export const subscriptionStatus = pgEnum("subscription_status", SUBSCRIPTION_STATUSES);
 export const passStatus = pgEnum("pass_status", PASS_STATUSES);
 export const passMovementKind = pgEnum("pass_movement_kind", PASS_MOVEMENT_KINDS);
+export const giftCardStatus = pgEnum("gift_card_status", GIFT_CARD_STATUSES);
+export const giftCardMovementKind = pgEnum("gift_card_movement_kind", GIFT_CARD_MOVEMENT_KINDS);
+export const giftCardSource = pgEnum("gift_card_source", GIFT_CARD_SOURCES);

@@ -1,4 +1,4 @@
-import { can, paidCents, rentalDays } from "@horaya/core";
+import { can, externalPaidCents, paidCents, rentalDays } from "@horaya/core";
 import type { ReactNode } from "react";
 import {
   BookingHeaderActions,
@@ -141,11 +141,17 @@ export function BookingDetailPage({ data }: { data: Awaited<ReturnType<typeof ge
     assignedItems,
   } = detail;
   const paid = paidCents(payments);
-  const canRefund = actor.type === "member" && can(actor.role, "booking", "refund") && paid > 0;
+  // Un bon cadeau n'est pas de l'argent encaissé : son montant retourne au bon, pas au client.
+  const refundable = externalPaidCents(payments);
+  const canRefund =
+    actor.type === "member" && can(actor.role, "booking", "refund") && refundable > 0;
   // Remboursement en ligne seulement si l'argent est passé par Stripe ; sinon on le note.
   const refundsOnline = payments.some(
     (entry) =>
-      entry.kind !== "refund" && entry.status === "succeeded" && entry.provider !== "manual",
+      entry.kind !== "refund" &&
+      entry.status === "succeeded" &&
+      entry.provider !== "manual" &&
+      entry.provider !== "gift_card",
   );
   const active =
     booking.status === "pending" ||
@@ -492,18 +498,18 @@ export function BookingDetailPage({ data }: { data: Awaited<ReturnType<typeof ge
                 <div className="flex flex-wrap gap-2">
                   {canRefund &&
                     (refundsOnline ? (
-                      <RefundButton bookingId={booking.id} maxCents={paid} />
+                      <RefundButton bookingId={booking.id} maxCents={refundable} />
                     ) : (
-                      <ManualRefundButton bookingId={booking.id} maxCents={paid} />
+                      <ManualRefundButton bookingId={booking.id} maxCents={refundable} />
                     ))}
                   {canMarkPaid && (
                     <MarkPaidButton bookingId={booking.id} defaultCents={markPaidDefault} />
                   )}
                 </div>
               </div>
-              {booking.status === "cancelled" && paid > 0 && !refundsOnline && (
+              {booking.status === "cancelled" && refundable > 0 && !refundsOnline && (
                 <FormAlert tone="warning">
-                  Ce client avait payé {formatMoney(paid)} hors Horaya : rembourse-le selon ta
+                  Ce client avait payé {formatMoney(refundable)} hors Horaya : rembourse-le selon ta
                   politique d'annulation, puis note le remboursement.
                 </FormAlert>
               )}
@@ -533,9 +539,11 @@ export function BookingDetailPage({ data }: { data: Awaited<ReturnType<typeof ge
                           {formatRelativeDateTime(entry.createdAt, timeZone, now)} ·{" "}
                           {entry.provider === "manual"
                             ? "noté par l'équipe"
-                            : entry.provider === "test"
-                              ? "paiement de test"
-                              : "Stripe"}
+                            : entry.provider === "gift_card"
+                              ? "bon cadeau"
+                              : entry.provider === "test"
+                                ? "paiement de test"
+                                : "Stripe"}
                         </span>
                       </span>
                       <span className="flex items-center gap-3">

@@ -37,6 +37,8 @@ export const createEventBookingSchema = z
     customerMessage: optionalText(1000),
     /** Lien calendrier par lequel le client est arrivé (vaut invitation). */
     calendarLinkSlug: optionalText(120),
+    /** Bon cadeau à déduire du prix. */
+    giftCardCode: optionalText(40),
   })
   .refine((input) => input.participants.length <= input.seats, {
     message: "Plus de participants que de places",

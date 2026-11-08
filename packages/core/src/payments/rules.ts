@@ -4,10 +4,16 @@ import type { PaymentRecord } from "./model";
 /** Ce que le client paie en ligne en réservant : tout (paiement en ligne) ou l'acompte. */
 export function amountDueOnline(
   booking: Pick<Booking, "paymentMode" | "amountCents" | "depositCents">,
+  /** Déjà réglé (bon cadeau, paiement noté) : retiré de ce qui reste à payer. */
+  alreadyPaidCents = 0,
 ): number {
-  if (booking.paymentMode === "online") return booking.amountCents;
-  if (booking.paymentMode === "deposit") return booking.depositCents ?? booking.amountCents;
-  return 0;
+  const due =
+    booking.paymentMode === "online"
+      ? booking.amountCents
+      : booking.paymentMode === "deposit"
+        ? (booking.depositCents ?? booking.amountCents)
+        : 0;
+  return Math.max(0, due - alreadyPaidCents);
 }
 
 /** Montant encaissé, remboursements déduits. */
@@ -23,16 +29,24 @@ export function paidCents(
     );
 }
 
+/** Montant encaissé chez le prestataire ou noté à la main : les bons cadeaux n'y sont pas. */
+export function externalPaidCents(
+  payments: ReadonlyArray<Pick<PaymentRecord, "kind" | "status" | "amountCents" | "method">>,
+): number {
+  return paidCents(payments.filter((payment) => payment.method !== "gift_card"));
+}
+
 /** Une réservation confirmée qui attend encore son paiement en ligne. */
 export function awaitsOnlinePayment(
   booking: Pick<
     Booking,
     "status" | "paymentMode" | "paymentStatus" | "amountCents" | "depositCents"
   >,
+  alreadyPaidCents = 0,
 ): boolean {
   return (
     booking.status === "confirmed" &&
-    amountDueOnline(booking) > 0 &&
+    amountDueOnline(booking, alreadyPaidCents) > 0 &&
     (booking.paymentStatus === "none" || booking.paymentStatus === "failed")
   );
 }

@@ -11,6 +11,7 @@ export async function listBookingPayments(db: Executor, bookingId: string) {
       status: payment.status,
       amountCents: payment.amountCents,
       provider: payment.provider,
+      method: payment.method,
       createdAt: payment.createdAt,
     })
     .from(payment)
