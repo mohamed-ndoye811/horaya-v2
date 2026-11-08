@@ -47,7 +47,7 @@ import { EnrollmentNextSession } from "@/features/enrollments/enrollment-progres
 import { formatDateTimeShort } from "@/lib/format";
 import { toast } from "@/lib/toast";
 import { BOOKINGS, CALENDAR_EVENTS, CATEGORIES, NOW, TODAY, UPCOMING } from "./demo-data";
-import { FormDemo, InteractionDemo } from "./interactive-demos";
+import { FormDemo, InteractionDemo, MotionDemo } from "./interactive-demos";
 
 const TZ = "Europe/Paris";
 
@@ -645,6 +645,13 @@ export function DesignSystemPage() {
 
       <Demo title="Refus, modale & menu">
         <InteractionDemo />
+      </Demo>
+
+      <Demo
+        title="Mouvement"
+        note="Une seule courbe, 120 à 200 ms pour les retours, 500 ms pour les arrivées. Rien ne bouge en mouvement réduit."
+      >
+        <MotionDemo />
       </Demo>
 
       <section id="form" className="border-b border-line-soft">

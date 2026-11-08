@@ -321,6 +321,20 @@ input[type="password"] {
   animation: draw 600ms var(--ease-out-soft) 200ms backwards;
 }
 
+/*
+ * Carte ou ligne cliquable : léger enfoncement à l'appui (120 ms, scale seul, le défilement
+ * n'est pas gêné : l'effet ne suit que :active). À la place de `transition-colors`, pas avec.
+ */
+@utility press {
+  transition-property: color, background-color, border-color, box-shadow, scale;
+  transition-duration: var(--dur-2);
+  transition-timing-function: var(--ease-out-soft);
+  &:active {
+    scale: 0.985;
+    transition-duration: var(--dur-1);
+  }
+}
+
 /* Liens soulignés : au survol, le trait s'écarte un peu du texte. */
 a.underline {
   transition:

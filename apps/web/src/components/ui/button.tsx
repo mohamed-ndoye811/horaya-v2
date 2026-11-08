@@ -30,7 +30,7 @@ export type ButtonSize = "xs" | "sm" | "md" | "lg" | "xl";
 // Pilules de la DA v4. Appui : léger enfoncement (120 ms) ; survol : la flèche avance de 3 px.
 const base =
   "group inline-flex shrink-0 items-center justify-center gap-2 whitespace-nowrap rounded-full " +
-  "transition-[color,background-color,border-color,scale,filter] active:scale-[0.97] active:duration-[120ms] " +
+  "transition-[color,background-color,border-color,scale,filter] active:scale-[0.97] active:duration-[120ms] aria-busy:animate-pulse " +
   "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink";
 
 const arrowClasses = "transition-transform group-hover:translate-x-[3px]";

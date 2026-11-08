@@ -29,7 +29,7 @@ export function ChoiceCards({
             key={option.value}
             htmlFor={inputId}
             className={cn(
-              "group flex flex-1 basis-0 flex-col gap-0.5 rounded-2xl border border-line bg-surface px-3.5 py-3 transition-colors hover:bg-field",
+              "group flex flex-1 basis-0 flex-col gap-0.5 rounded-2xl border border-line bg-surface px-3.5 py-3 press hover:bg-field",
               "has-checked:border-ink has-checked:bg-ink has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-ink",
             )}
           >
