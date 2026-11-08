@@ -1,5 +1,6 @@
 import { EVENT_TYPE_TEMPLATES, type EventTypeTemplate } from "@horaya/core";
 import { useState } from "react";
+import { Swap } from "@/components/motion/swap";
 import { ButtonLink, textLinkClasses } from "@/components/ui/button";
 import { Dialog } from "@/components/ui/dialog";
 import { Select } from "@/components/ui/select";
@@ -40,42 +41,46 @@ export function TemplateDialog({
       description="Pars d'un modèle : ses réglages et ses champs sont déjà prêts. Tu pourras tout changer ensuite."
       footer={
         <div className="flex w-full flex-wrap items-center justify-between gap-3 border-t border-line-soft pt-3">
-          {duplicating ? (
-            <div className="flex flex-wrap items-center gap-2">
-              <Select
-                variant="compact"
-                aria-label="Type à dupliquer"
-                value={source}
-                onChange={(event) => setSource(event.target.value)}
-              >
-                {types.map((type) => (
-                  <option key={type.id} value={type.id}>
-                    {type.name}
-                  </option>
-                ))}
-              </Select>
+          <Swap value={String(duplicating)} className="contents">
+            {duplicating ? (
+              <div className="flex flex-wrap items-center gap-2">
+                <Select
+                  variant="compact"
+                  aria-label="Type à dupliquer"
+                  value={source}
+                  onChange={(event) => setSource(event.target.value)}
+                >
+                  {types.map((type) => (
+                    <option key={type.id} value={type.id}>
+                      {type.name}
+                    </option>
+                  ))}
+                </Select>
+                <button
+                  type="button"
+                  onClick={() => setDuplicating(false)}
+                  className={cn(textLinkClasses, "text-sm")}
+                >
+                  Plutôt un modèle
+                </button>
+              </div>
+            ) : types.length > 0 ? (
               <button
                 type="button"
-                onClick={() => setDuplicating(false)}
+                onClick={() => setDuplicating(true)}
                 className={cn(textLinkClasses, "text-sm")}
               >
-                Plutôt un modèle
+                Dupliquer un type existant
               </button>
-            </div>
-          ) : types.length > 0 ? (
-            <button
-              type="button"
-              onClick={() => setDuplicating(true)}
-              className={cn(textLinkClasses, "text-sm")}
-            >
-              Dupliquer un type existant
-            </button>
-          ) : (
-            <span />
-          )}
+            ) : (
+              <span />
+            )}
+          </Swap>
           <div className="flex items-center gap-3">
             <span className="text-sm text-ink-muted">
-              {duplicating ? "Copie du type choisi" : template && `« ${template.name} » choisi`}
+              <Swap value={duplicating ? "copie" : chosen}>
+                {duplicating ? "Copie du type choisi" : template && `« ${template.name} » choisi`}
+              </Swap>
             </span>
             <ButtonLink
               href={
@@ -95,7 +100,7 @@ export function TemplateDialog({
         role="radiogroup"
         aria-label="Modèles"
         className={cn(
-          "grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4",
+          "reveal-group grid grid-cols-1 gap-3 transition-opacity sm:grid-cols-2 lg:grid-cols-4",
           duplicating && "pointer-events-none opacity-40",
         )}
       >
@@ -105,7 +110,7 @@ export function TemplateDialog({
             <label
               key={entry.id}
               className={cn(
-                "flex flex-col gap-2.5 rounded-[18px] p-4 hover:bg-field",
+                "press flex flex-col gap-2.5 rounded-[18px] p-4 hover:bg-field",
                 "has-checked:border-ink has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-ink",
                 empty
                   ? "border-[1.5px] border-dashed border-line-strong has-checked:border-solid"
