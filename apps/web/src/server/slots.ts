@@ -21,6 +21,8 @@ import { customerPrefill, publicWorkspace } from "./public-booking";
 import { clientIp, rateLimited } from "./rate-limit";
 import { deps } from "./services";
 
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 /** Créneaux libres de la semaine, jour par jour (calcul du core, sous une transaction de lecture). */
 async function weekSlots(
   organizationId: string,
@@ -49,7 +51,7 @@ export async function slotPage(
   search: { duree?: string; semaine?: string },
 ) {
   const workspace = await publicWorkspace(slug);
-  const type = await getPublicSlotType(db, workspace.id, typeId);
+  const type = UUID.test(typeId) ? await getPublicSlotType(db, workspace.id, typeId) : null;
   if (!type) throw notFound();
   const tz = workspace.timezone;
   const thisWeek = mondayOf(todayIn(tz));
@@ -100,6 +102,7 @@ export async function holdPublicSlot(
   typeId: string,
   choice: { startsAt: string; durationId: string | null; staffMemberId: string | null },
 ): Promise<FormState> {
+  if (!UUID.test(typeId)) throw notFound();
   const workspace = await publicWorkspace(slug);
   const blocked = await rateLimited(`slot:ip:${await clientIp()}`, 30, 3600);
   if (blocked) return { error: blocked };
@@ -125,7 +128,7 @@ export async function holdPublicSlot(
 /** Le formulaire du créneau gardé ; plus de créneau : retour au choix. */
 export async function slotBookPage(slug: string, typeId: string, holdId: string | undefined) {
   const workspace = await publicWorkspace(slug);
-  const type = await getPublicSlotType(db, workspace.id, typeId);
+  const type = UUID.test(typeId) ? await getPublicSlotType(db, workspace.id, typeId) : null;
   if (!type) throw notFound();
   const hold = holdId?.match(/^[0-9a-f-]{36}$/)
     ? await getSlotHold(db, workspace.id, holdId)

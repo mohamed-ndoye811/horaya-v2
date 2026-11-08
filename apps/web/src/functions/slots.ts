@@ -8,7 +8,8 @@ import { holdPublicSlot, slotBookPage, slotPage } from "@/server/slots";
 
 /** Créneaux (lot 37) : pages publiques d'un type « sur rendez-vous » et leurs actions. */
 const slug = z.string().max(80);
-const typeId = z.string().uuid();
+/** Pas de `.uuid()` ici : une adresse invalide doit donner « introuvable », pas une erreur 500. */
+const typeId = z.string().max(64);
 
 export const slotSearch = z.object({ duree: searchText, semaine: searchText });
 
