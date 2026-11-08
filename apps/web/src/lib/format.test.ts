@@ -5,13 +5,13 @@ import {
   formatHour,
   formatMoney,
   formatMonthShort,
-  plural,
   formatPublicSchedule,
   formatRelativeDateTime,
   formatRelativeDay,
   formatTimeRange,
   formatWeekdayShort,
   initials,
+  plural,
 } from "./format";
 
 const june17 = new Date("2026-06-17T09:00:00Z"); // 11h à Paris

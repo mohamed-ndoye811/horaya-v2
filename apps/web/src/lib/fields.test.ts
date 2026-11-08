@@ -1,6 +1,6 @@
 import type { EventTypeField } from "@horaya/core";
 import { describe, expect, it } from "vitest";
-import { answerColumns, answerGroups } from "./fields";
+import { type AnswersOfBooking, answerColumns, answerGroups } from "./fields";
 
 const fields: EventTypeField[] = [
   {
@@ -27,7 +27,7 @@ const fields: EventTypeField[] = [
     visibility: "internal",
   },
 ];
-const booking = {
+const booking: AnswersOfBooking = {
   fields,
   answers: { niveau: "Débutant", interne: "secret", ancien: "x" },
   participants: [

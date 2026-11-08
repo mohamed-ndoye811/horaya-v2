@@ -135,19 +135,19 @@ export function answerGroups(
   { fields, answers, participants }: AnswersOfBooking,
   timeZone?: string,
 ): Array<{ title: string | null; rows: Array<{ label: string; value: string }> }> {
-  const rowsOf = (scope: "booking" | "participant", values: FieldValues) =>
-    answerRows(
-      fields.filter((field) => field.scope === scope),
-      values,
-      timeZone,
-    ).filter((row) => row.label !== row.key);
+  const rowsOf = (scope: "booking" | "participant", values: FieldValues) => {
+    const scoped = fields.filter((field) => field.scope === scope);
+    return answerRows(scoped, values, timeZone).filter((row) =>
+      scoped.some((field) => field.key === row.key),
+    );
+  };
   const groups = [{ title: null as string | null, rows: rowsOf("booking", answers) }];
-  participants.forEach((participant, index) =>
+  for (const [index, participant] of participants.entries()) {
     groups.push({
       title: participantName(participant, index),
       rows: rowsOf("participant", participant.answers),
-    }),
-  );
+    });
+  }
   return groups.filter((group) => group.rows.length > 0);
 }
 

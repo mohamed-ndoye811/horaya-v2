@@ -9,7 +9,7 @@ import {
   teamAlmostFullEmail,
   weeklyDigestEmail,
 } from "./booking-templates";
-import { giftCardEmail } from "./gift-card-templates";
+import { giftCardEmail, teamGiftCardEmail } from "./gift-card-templates";
 import { mixColors } from "./layout";
 import { inlineImages } from "./mailer";
 import { notchFlankPng } from "./notch";
@@ -198,5 +198,21 @@ describe("e-mail du bon cadeau", () => {
     expect(giftCardEmail({ ...gift, audience: "purchaser", firstName: "Camille" }).subject).toBe(
       "Ton bon cadeau Cabinet Vidal pour Léa Fontaine",
     );
+  });
+});
+
+describe("e-mail à l'équipe : bon cadeau acheté", () => {
+  it("annonce l'acheteur, le montant et le code", () => {
+    const email = teamGiftCardEmail({
+      workspaceName: "Terre & Feu",
+      purchaserName: "Camille Roy",
+      recipientName: "Léa",
+      amount: "50 €",
+      code: "TERRE-8K2F7M3P",
+      status: "en attente de paiement",
+      url: "https://horaya.app/app/bons-cadeaux/x",
+    });
+    expect(email.subject).toBe("Bon cadeau acheté : Camille Roy · 50 €");
+    expect(email.text).toContain("Code : TERRE-8K2F7M3P");
   });
 });

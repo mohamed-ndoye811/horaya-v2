@@ -99,7 +99,7 @@ describe("achat et activation", () => {
   it("un achat public attend le paiement : code lisible, solde nul, pas utilisable", async () => {
     const card = await purchase(customerActor(organizationId));
     expect(card).toMatchObject({ status: "pending", initialCents: 5000, source: "public_page" });
-    expect(card.code).toMatch(/^CABIN-[A-Z2-9]{4}$/);
+    expect(card.code).toMatch(/^CABIN-[A-Z2-9]{8}$/);
     expect(await balanceOf(card.id)).toBe(0);
   });
 

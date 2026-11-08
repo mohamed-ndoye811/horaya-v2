@@ -6,6 +6,7 @@ import { type ToastTone, toast } from "@/lib/toast";
 const TONES: Record<string, ToastTone> = {
   booking_created: "success",
   payment_received: "success",
+  gift_card_purchased: "success",
   booking_cancelled: "warning",
 };
 

@@ -39,8 +39,8 @@ import {
   weeklyDigestEmail,
 } from "@horaya/mail";
 import { textOn } from "@/lib/colors";
-import { answerGroups } from "@/lib/fields";
 import { enrollmentPayment } from "@/lib/enrollment";
+import { answerGroups } from "@/lib/fields";
 import {
   formatDateTimeShort,
   formatDayNumber,
@@ -372,7 +372,7 @@ export async function sendWeeklyDigest(organizationId: string, now = new Date())
 }
 
 /** Prévient l'équipe par e-mail et dans l'app (cloche du notch), selon les préférences de chacun. */
-async function notifyTeam(
+export async function notifyTeam(
   organizationId: string,
   type: NotificationType,
   content: EmailContent,

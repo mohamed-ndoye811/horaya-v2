@@ -606,7 +606,7 @@ export function EventForm({
             <p className="text-[13px] text-ink-muted">
               {[
                 values.locationName || (values.onlineUrl ? "En ligne" : null),
-                values.capacity ? plural(values.capacity, "place") : "Places illimitées",
+                values.capacity ? plural(Number(values.capacity), "place") : "Places illimitées",
                 values.paymentMode === "free"
                   ? "Gratuit"
                   : priceCents > 0
