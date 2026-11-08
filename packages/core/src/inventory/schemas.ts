@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { itemFieldsSchema, rawFieldValuesSchema } from "../fields/schemas";
 
 const optionalText = (max: number) =>
   z
@@ -36,6 +37,10 @@ const itemFields = {
     .transform((value) => value || null),
   purchasePriceCents: money("Prix d'achat"),
   rentable: z.boolean(),
+  /** Nouveaux champs de la catégorie (partagés par ses articles), quand on les modifie. */
+  typeFields: itemFieldsSchema.optional(),
+  /** Valeurs de l'article, validées contre les champs de sa catégorie (absentes : inchangées). */
+  fieldValues: rawFieldValuesSchema.optional(),
 };
 
 export const createItemSchema = z.object({

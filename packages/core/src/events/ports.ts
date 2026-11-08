@@ -1,3 +1,4 @@
+import type { EventTypeField } from "../fields/model";
 import type { Event, EventSeries, EventType } from "./model";
 
 export type NewEventType = Omit<EventType, "id" | "archivedAt">;
@@ -6,7 +7,10 @@ export type NewEvent = Omit<
   "id" | "createdAt" | "updatedAt" | "publishedAt" | "cancelledAt" | "status" | "coverImageUrl"
 >;
 export type EventPatch = Partial<
-  Omit<Event, "id" | "organizationId" | "eventTypeId" | "seriesId" | "createdAt" | "updatedAt">
+  Omit<
+    Event,
+    "id" | "organizationId" | "eventTypeId" | "seriesId" | "fields" | "createdAt" | "updatedAt"
+  >
 >;
 
 export type EventTypePatch = Partial<Omit<EventType, "id" | "organizationId">>;
@@ -46,4 +50,14 @@ export interface EventRepository {
   ): Promise<{ event: Event; eventType: EventType } | null>;
   update(organizationId: string, eventId: string, patch: EventPatch): Promise<Event>;
   slugExists(organizationId: string, slug: string): Promise<boolean>;
+  /**
+   * « Appliquer aussi aux événements à venir » : remplace les champs des événements du type
+   * qui n'ont pas commencé, ne sont pas annulés et n'ont aucune réservation. Renvoie leur nombre.
+   */
+  applyTypeFields(
+    organizationId: string,
+    eventTypeId: string,
+    fields: EventTypeField[],
+    now: Date,
+  ): Promise<number>;
 }

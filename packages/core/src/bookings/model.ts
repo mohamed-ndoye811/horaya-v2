@@ -1,4 +1,5 @@
 import type { PaymentMode } from "../events/types";
+import type { FieldValues } from "../fields/model";
 import type { BookingKind, BookingPaymentStatus, BookingSource, BookingStatus } from "./types";
 
 export interface Booking {
@@ -18,6 +19,8 @@ export interface Booking {
   paymentStatus: BookingPaymentStatus;
   depositCents: number | null;
   customerMessage: string | null;
+  /** Réponses aux questions « une fois par inscription ». */
+  answers: FieldValues;
   refusalReason: string | null;
   source: BookingSource;
   /** Location de matériel seule : période louée. */
@@ -33,11 +36,13 @@ export interface Booking {
   updatedAt: Date;
 }
 
+/** Une ligne par place ; le nom peut rester vide (« Participant 2 »). */
 export interface ParticipantInput {
   firstName: string;
   lastName: string;
   email: string | null;
-  customAnswers: Record<string, string | boolean>;
+  /** Réponses aux questions « pour chaque participant ». */
+  answers: FieldValues;
 }
 
 export interface CustomerContact {

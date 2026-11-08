@@ -3,6 +3,8 @@ import { requireFeature } from "../billing/use-cases";
 import type { CustomerContact } from "../bookings/model";
 import { formatBookingReference, referencePeriod } from "../bookings/reference";
 import { customerContactSchema } from "../bookings/schemas";
+import type { FieldDefinition, FieldValues, RawFieldValues } from "../fields/model";
+import { validateFieldValues } from "../fields/values";
 import { type Actor, actorRef, assertMemberCan } from "../shared/actor";
 import { ConflictError, NotFoundError, ValidationError } from "../shared/errors";
 import { generateToken, hashToken } from "../shared/tokens";
@@ -47,11 +49,37 @@ async function generateReference(repositories: Repositories, organizationId: str
 
 type ValidItem = ReturnType<typeof createItemSchema.parse>;
 
+/**
+ * Champs de la catégorie (remplacés si `typeFields`) et valeurs de l'article validées
+ * contre eux. `rawValues` absent : rien à valider, les valeurs restent telles quelles.
+ */
+async function itemFieldValues(
+  repositories: Repositories,
+  organizationId: string,
+  itemTypeId: string | null,
+  typeFields: FieldDefinition[] | undefined,
+  rawValues: RawFieldValues | undefined,
+  now: Date,
+): Promise<FieldValues | undefined> {
+  if (itemTypeId && typeFields) {
+    await repositories.inventory.setItemTypeFields(organizationId, itemTypeId, typeFields);
+  }
+  if (rawValues === undefined) return undefined;
+  const fields = itemTypeId
+    ? (typeFields ?? (await repositories.inventory.itemTypeFields(organizationId, itemTypeId)))
+    : [];
+  return validateFieldValues(fields, rawValues, { now }, "fieldValues");
+}
+
+const upsertType = (repositories: Repositories, organizationId: string, name: string | null) =>
+  name ? repositories.inventory.upsertItemType(organizationId, name) : Promise.resolve(null);
+
 /** Crée l'article et ses exemplaires #1…#n dans la transaction en cours. */
 async function insertItemWithUnits(
   repositories: Repositories,
   actor: Actor,
-  { quantity, typeName, ...data }: ValidItem,
+  { quantity, typeName, typeFields, fieldValues: rawValues, ...data }: ValidItem,
+  now: Date,
 ): Promise<Item> {
   const reference =
     data.reference || (await generateReference(repositories, actor.organizationId, data.name));
@@ -61,13 +89,21 @@ async function insertItemWithUnits(
   ) {
     throw new ConflictError(`La référence ${reference} est déjà utilisée`);
   }
+  const itemTypeId = await upsertType(repositories, actor.organizationId, typeName);
+  const fieldValues = await itemFieldValues(
+    repositories,
+    actor.organizationId,
+    itemTypeId,
+    typeFields,
+    rawValues,
+    now,
+  );
   const item = await repositories.inventory.insertItem({
     ...data,
     reference,
     organizationId: actor.organizationId,
-    itemTypeId: typeName
-      ? await repositories.inventory.upsertItemType(actor.organizationId, typeName)
-      : null,
+    itemTypeId,
+    fieldValues: fieldValues ?? {},
   });
   await repositories.inventory.insertUnits(
     actor.organizationId,
@@ -91,7 +127,7 @@ export async function createItem(deps: Deps, actor: Actor, input: CreateItemInpu
   const data = validate(createItemSchema, input);
   return deps.uow.run(async (repositories) => {
     await requireFeature(repositories, actor.organizationId, "inventory", deps.clock.now());
-    return insertItemWithUnits(repositories, actor, data);
+    return insertItemWithUnits(repositories, actor, data, deps.clock.now());
   });
 }
 
@@ -132,7 +168,7 @@ export async function importItems(deps: Deps, actor: Actor, csv: string): Promis
     const items: Item[] = [];
     for (const { line, data } of valid) {
       try {
-        items.push(await insertItemWithUnits(repositories, actor, data));
+        items.push(await insertItemWithUnits(repositories, actor, data, deps.clock.now()));
       } catch (error) {
         if (error instanceof ConflictError)
           throw new ConflictError(`Ligne ${line} : ${error.message}`);
@@ -150,10 +186,15 @@ export async function updateItem(
   input: UpdateItemInput,
 ): Promise<Item> {
   assertMemberCan(actor, "inventory", "update");
-  const { typeName, ...patch } = validate(updateItemSchema, input);
+  const {
+    typeName,
+    typeFields,
+    fieldValues: rawValues,
+    ...patch
+  } = validate(updateItemSchema, input);
 
   return deps.uow.run(async (repositories) => {
-    await lockItemOrThrow(repositories, actor.organizationId, itemId);
+    const { item } = await lockItemOrThrow(repositories, actor.organizationId, itemId);
     if (patch.reference !== undefined) {
       if (!patch.reference)
         throw new ValidationError("Référence requise", [
@@ -165,15 +206,22 @@ export async function updateItem(
         throw new ConflictError(`La référence ${patch.reference} est déjà utilisée`);
       }
     }
+    const itemTypeId =
+      typeName === undefined
+        ? item.itemTypeId
+        : await upsertType(repositories, actor.organizationId, typeName);
+    const fieldValues = await itemFieldValues(
+      repositories,
+      actor.organizationId,
+      itemTypeId,
+      typeFields,
+      rawValues,
+      deps.clock.now(),
+    );
     const updated = await repositories.inventory.updateItem(actor.organizationId, itemId, {
       ...patch,
-      ...(typeName !== undefined
-        ? {
-            itemTypeId: typeName
-              ? await repositories.inventory.upsertItemType(actor.organizationId, typeName)
-              : null,
-          }
-        : {}),
+      ...(typeName !== undefined ? { itemTypeId } : {}),
+      ...(fieldValues ? { fieldValues } : {}),
     });
     await repositories.activity.record({
       organizationId: actor.organizationId,
@@ -616,6 +664,7 @@ export async function createRentalBooking(
         currency: settings.currency,
         paymentMode: amountCents > 0 ? "on_site" : "free",
         customerMessage: data.customerMessage,
+        answers: {},
         source: "admin",
         confirmedAt: now,
         manageTokenHash,

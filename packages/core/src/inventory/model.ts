@@ -1,3 +1,4 @@
+import type { FieldValues } from "../fields/model";
 import type { AllocationKind, ItemUnitStatus } from "./types";
 
 export interface Item {
@@ -14,6 +15,8 @@ export interface Item {
   purchasePriceCents: number | null;
   photoUrl: string | null;
   rentable: boolean;
+  /** Valeurs des champs de sa catégorie (`item_type.fields`). */
+  fieldValues: FieldValues;
   archivedAt: Date | null;
 }
 

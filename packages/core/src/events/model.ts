@@ -1,13 +1,12 @@
+import type { EventTypeField, FieldValues } from "../fields/model";
 import type { EventStatus, EventVisibility, PaymentMode } from "./types";
 
-/** Champ personnalisé demandé à la réservation (ex. régime alimentaire). */
-export interface CustomFieldDefinition {
-  key: string;
-  label: string;
-  type: "text" | "select" | "checkbox";
-  required: boolean;
-  options?: string[];
-}
+/**
+ * Nom des réservations d'un type, sur la page publique et le bouton du formulaire :
+ * « 3 inscriptions », « Je m'inscris ».
+ */
+export const BOOKING_NOUNS = ["reservation", "inscription", "location", "demande"] as const;
+export type BookingNoun = (typeof BOOKING_NOUNS)[number];
 
 export interface BookingRules {
   /** Délai minimum avant le début pour réserver en ligne, en heures. */
@@ -28,7 +27,9 @@ export interface EventType {
   defaultPriceCents: number | null;
   defaultCapacity: number | null;
   requiresApproval: boolean;
-  customFields: CustomFieldDefinition[];
+  /** « Ce que tu décris » et « Ce que tu demandes ». */
+  fields: EventTypeField[];
+  bookingNoun: BookingNoun;
   bookingRules: BookingRules;
   archivedAt: Date | null;
 }
@@ -78,6 +79,13 @@ export interface Event {
   /** Lien de paiement externe propre à l'événement (sinon celui de l'espace). */
   paymentLinkUrl: string | null;
   coverImageUrl: string | null;
+  /**
+   * Champs du type copiés à la création : l'événement garde sa version même si le type
+   * change ensuite (sauf « Appliquer aussi aux événements à venir », sans inscription).
+   */
+  fields: EventTypeField[];
+  /** Valeurs de « Ce que tu décris ». */
+  fieldValues: FieldValues;
   publishedAt: Date | null;
   cancelledAt: Date | null;
   createdAt: Date;

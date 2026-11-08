@@ -1,3 +1,4 @@
+import type { FieldDefinition } from "../fields/model";
 import type { Period } from "./availability";
 import type { Item, ItemAllocation, ItemUnit, NewAllocation } from "./model";
 import type { ItemUnitStatus } from "./types";
@@ -27,6 +28,13 @@ export interface InventoryRepository {
     exceptItemId?: string,
   ): Promise<boolean>;
   upsertItemType(organizationId: string, name: string): Promise<string>;
+  /** Champs d'une catégorie de matériel. */
+  itemTypeFields(organizationId: string, itemTypeId: string): Promise<FieldDefinition[]>;
+  setItemTypeFields(
+    organizationId: string,
+    itemTypeId: string,
+    fields: FieldDefinition[],
+  ): Promise<void>;
   insertItem(item: NewItem): Promise<Item>;
   updateItem(organizationId: string, itemId: string, patch: ItemPatch): Promise<Item>;
   insertUnits(organizationId: string, itemId: string, labels: string[]): Promise<ItemUnit[]>;

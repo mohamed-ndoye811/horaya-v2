@@ -1,6 +1,8 @@
 import type { CalendarLink } from "../calendar-links/model";
 import { calendarLinkAllows } from "../calendar-links/rules";
 import type { Event, EventType } from "../events/model";
+import type { RawFieldValues } from "../fields/model";
+import { validateBookingAnswers } from "../fields/values";
 import { applyGiftCardToBooking, restoreGiftCardForBooking } from "../gift-cards/use-cases";
 import { recreditPassForBooking } from "../passes/use-cases";
 import { type Actor, actorRef, assertMemberCan } from "../shared/actor";
@@ -10,7 +12,7 @@ import type { Deps, Repositories } from "../shared/unit-of-work";
 import { validate } from "../shared/validate";
 import { decideBookingStatus, SEAT_HOLDING_STATUSES } from "./capacity";
 import { CHECK_IN_OPENS_BEFORE_HOURS, isCheckInOpen } from "./check-in";
-import type { Booking, ParticipantInput } from "./model";
+import type { Booking } from "./model";
 import { priceBooking } from "./pricing";
 import { formatBookingReference, referencePeriod } from "./reference";
 import { rescheduleClosedReason, rescheduleTargetIssue } from "./reschedule";
@@ -101,6 +103,7 @@ export async function createEventBooking(
     const created = await insertEventBooking(repositories, actor, locked, now, {
       customerId: customer.id,
       seats: data.seats,
+      answers: data.answers,
       participants: data.participants,
       customerMessage: data.customerMessage,
       manageTokenHash,
@@ -116,8 +119,17 @@ export async function createEventBooking(
   return { booking, manageToken, giftCardCents };
 }
 
+/** Participant tel qu'il arrive d'un formulaire (réponses encore brutes). */
+export interface RawParticipant {
+  firstName: string;
+  lastName: string;
+  email: string | null;
+  answers: RawFieldValues;
+}
+
 /**
- * Écriture d'une réservation d'événement, sous le verrou de l'événement : décision
+ * Écriture d'une réservation d'événement, sous le verrou de l'événement : réponses validées
+ * contre les champs de l'événement (une ligne de participant par place), décision
  * (confirmée, en attente, liste d'attente), référence, insertion et journal.
  */
 export async function insertEventBooking(
@@ -128,7 +140,8 @@ export async function insertEventBooking(
   data: {
     customerId: string;
     seats: number;
-    participants: ParticipantInput[];
+    answers?: RawFieldValues;
+    participants: RawParticipant[];
     customerMessage: string | null;
     manageTokenHash: string | null;
     /** Séance d'une inscription à la série : confirmée d'office, payée par l'inscription. */
@@ -137,6 +150,36 @@ export async function insertEventBooking(
 ): Promise<Booking> {
   if (event.endsAt <= now) throw new ConflictError("Cet événement est terminé");
   const enrolled = data.enrollmentId !== undefined;
+  // Séances d'une inscription à la série : pas de questions par séance.
+  const participants = enrolled
+    ? []
+    : Array.from(
+        { length: data.seats },
+        (_, index) =>
+          data.participants[index] ?? { firstName: "", lastName: "", email: null, answers: {} },
+      );
+  // La première place, sans nom, est celle du client (comptoir, saisie de l'équipe).
+  const first = participants[0];
+  if (first && !first.firstName && !first.lastName) {
+    const customer = await repositories.customers.find(actor.organizationId, data.customerId);
+    if (customer) {
+      participants[0] = {
+        ...first,
+        firstName: customer.firstName,
+        lastName: customer.lastName,
+        email: customer.email,
+      };
+    }
+  }
+  const answered = validateBookingAnswers(
+    event.fields,
+    { answers: enrolled ? {} : (data.answers ?? {}), participants },
+    // L'équipe saisit ce qu'elle sait : les questions requises le sont pour le client.
+    { now, enforceRequired: actor.type !== "member" },
+  );
+  if (answered.issues.length > 0) {
+    throw new ValidationError("Vérifie les réponses en rouge.", answered.issues);
+  }
 
   const status = decideBookingStatus({
     capacity: event.capacity,
@@ -165,11 +208,12 @@ export async function insertEventBooking(
       paymentMode: enrolled ? "free" : event.paymentMode,
       enrollmentId: data.enrollmentId ?? null,
       customerMessage: data.customerMessage,
+      answers: answered.answers,
       source: SOURCE_BY_ACTOR[actor.type],
       confirmedAt: status === "confirmed" ? now : null,
       manageTokenHash: data.manageTokenHash,
     },
-    data.participants,
+    answered.participants,
   );
   await repositories.activity.record({
     organizationId: actor.organizationId,
