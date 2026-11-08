@@ -263,7 +263,6 @@ export async function getEventDetail(db: Executor, organizationId: string, event
       highlights: event.highlights,
       paymentLinkUrl: event.paymentLinkUrl,
       requiresApproval: event.requiresApproval,
-      depositPercent: event.depositPercent,
       publishedAt: event.publishedAt,
       fields: event.fields,
       fieldValues: event.fieldValues,
@@ -304,7 +303,6 @@ export async function getEventDetail(db: Executor, organizationId: string, event
       highlights: string[];
       paymentLinkUrl: string | null;
       requiresApproval: boolean;
-      depositPercent: number | null;
       publishedAt: Date | null;
       fields: EventTypeField[];
       fieldValues: FieldValues;

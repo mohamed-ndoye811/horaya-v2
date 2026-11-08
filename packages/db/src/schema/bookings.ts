@@ -1,4 +1,4 @@
-import type { FieldValues } from "@horaya/core";
+import type { FieldValues, PriceLine } from "@horaya/core";
 import { sql } from "drizzle-orm";
 import {
   type AnyPgColumn,
@@ -91,6 +91,8 @@ export const booking = pgTable(
     paymentMode: paymentMode().notNull().default("free"),
     paymentStatus: bookingPaymentStatus().notNull().default("none"),
     depositCents: cents(),
+    /** Détail du prix au moment de la réservation (lot 35) ; vide pour les plus anciennes. */
+    priceLines: jsonb().$type<PriceLine[]>().notNull().default([]),
     customerMessage: text(),
     /** Réponses aux questions « une fois par inscription ». */
     answers: jsonb().$type<FieldValues>().notNull().default({}),

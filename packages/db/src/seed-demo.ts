@@ -337,6 +337,26 @@ const types = Object.fromEntries(
           },
           location: { mode: "venue" as const },
           staff: { memberIds: [owner.id], showOnPublicPage: true },
+          // Lot 35 : deux tarifs et une option par participant.
+          pricing: {
+            rates: [
+              { id: "plein", name: "Plein", priceCents: 4500 },
+              {
+                id: "reduit",
+                name: "Réduit",
+                priceCents: 3500,
+                description: "étudiant, demandeur d'emploi",
+              },
+            ],
+            options: [
+              {
+                id: "cuisson",
+                name: "Cuisson et émaillage",
+                priceCents: 800,
+                per: "participant" as const,
+              },
+            ],
+          },
           messages: {
             bring: "Une tenue qui ne craint rien et les cheveux attachés",
             reminder: { kind: "eve" as const, hour: 18 },
@@ -443,6 +463,9 @@ type Plan = {
   depositPercent?: number;
   /** Module Intervenant : le propriétaire de l'espace anime l'événement. */
   staff?: boolean;
+  /** Tarif de chaque place et options des réservations de démonstration (lot 35). */
+  rates?: string[];
+  options?: Record<string, number>;
   publish?: boolean;
   /** Réunions internes : publiées pour l'équipe, absentes de la page publique. */
   internal?: boolean;
@@ -493,6 +516,9 @@ const plans: Plan[] = [
       "Deux heures au tour pour reprendre centrage, tournage de cylindres et tournassage. Les pièces sont cuites et émaillées par l'atelier.",
     staff: true,
     fieldValues: { niveau: "Confirmé", terre: "Grès chamotté", pieces: 2 },
+    // Léa au plein tarif, Noé au réduit, la cuisson pour les deux.
+    rates: ["plein", "reduit"],
+    options: { cuisson: 2 },
     answers: {
       answers: { deja_tourne: true, depuis_quand: "1 à 3 ans", reglement: "on" },
       participants: [
@@ -681,7 +707,7 @@ for (const plan of plans) {
     capacity: plan.capacity === undefined ? 20 : plan.capacity,
     priceCents: plan.priceCents ?? 0,
     paymentMode: plan.paymentMode ?? "free",
-    depositPercent: plan.depositPercent ?? null,
+    ...(plan.depositPercent && { deposit: { percent: plan.depositPercent } }),
     description: plan.description ?? "",
     highlights: plan.highlights ?? [],
     visibility: plan.internal ? "invite_only" : "public",
@@ -704,6 +730,7 @@ for (const plan of plans) {
     const bookingActor: Actor =
       state === "pending" ? { type: "customer", organizationId: org.id } : actor;
     try {
+      const named = plan.answers?.participants[0]?.firstName === firstName;
       const { booking } = await createEventBooking(deps, bookingActor, {
         eventId: created.id,
         seats,
@@ -711,10 +738,8 @@ for (const plan of plans) {
         customerMessage: message ?? null,
         answers: plan.answers?.answers ?? {},
         // Les participants nommés sont ceux de la première réservation (celle de Léa).
-        participants:
-          plan.answers?.participants[0]?.firstName === firstName
-            ? plan.answers.participants.slice(0, seats)
-            : [],
+        participants: named ? (plan.answers?.participants ?? []).slice(0, seats) : [],
+        ...(named && { rates: plan.rates?.slice(0, seats), options: plan.options }),
       });
       if (state === "cancel") await cancelBooking(deps, actor, booking.id, "Empêchement");
       bookingCount++;

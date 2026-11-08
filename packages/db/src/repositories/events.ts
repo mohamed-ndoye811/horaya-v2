@@ -136,10 +136,19 @@ export function eventRepository(db: Executor): EventRepository {
       return Boolean(found);
     },
 
-    async applyTypeConfig(organizationId, eventTypeId, config, now) {
+    async applyTypeConfig(organizationId, eventTypeId, { priceCents, ...config }, now) {
       const updated = await db
         .update(event)
-        .set(config)
+        .set({
+          ...config,
+          // Chaque événement garde son acompte, lié à son mode de paiement.
+          ...(config.modules && {
+            modules: sql`(${JSON.stringify(config.modules)}::jsonb - 'deposit') || jsonb_strip_nulls(jsonb_build_object('deposit', ${event.modules} -> 'deposit'))`,
+          }),
+          ...(priceCents !== undefined && {
+            priceCents: sql`CASE WHEN ${event.paymentMode} = 'free' THEN 0 ELSE ${priceCents}::int END`,
+          }),
+        })
         .where(
           and(
             eq(event.organizationId, organizationId),
