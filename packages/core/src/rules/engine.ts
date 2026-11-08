@@ -1,4 +1,7 @@
+import type { PriceAdjustment } from "../bookings/pricing";
 import type { EventTypeField, FieldDefinition, FieldValue, FieldValues } from "../fields/model";
+import type { EventModules } from "../modules/registry";
+import { moneyLabel } from "../modules/rules";
 import { ValidationError } from "../shared/errors";
 import {
   BOOKING_TRIGGERS,
@@ -26,7 +29,12 @@ export interface RuleFacts {
     /** Exemplaires de matériel de l'événement pas encore attribués. */
     equipmentLeft: number;
   };
-  booking?: { answers: FieldValues; participants: ReadonlyArray<{ answers: FieldValues }> };
+  booking?: {
+    answers: FieldValues;
+    participants: ReadonlyArray<{ answers: FieldValues }>;
+    /** Détail du prix avant les règles (tarif de chaque place, options prises) ; absent : inconnu. */
+    lines?: ReadonlyArray<{ kind: string; id: string; quantity: number }>;
+  };
   customer?: { isNew: boolean; tags: readonly string[]; hasActivePass: boolean };
 }
 
@@ -42,9 +50,13 @@ const TEXT_TYPES = new Set(["short_text", "long_text", "url", "multi_choice"]);
 export function ruleIssues(
   rules: readonly Rule[],
   fields: readonly EventTypeField[],
+  /** Modules du type : les tarifs et options visés doivent exister (sans module, le tarif « plein »). */
+  modules?: EventModules,
 ): Array<{ path: string; message: string }> {
   const issues: Array<{ path: string; message: string }> = [];
   const asked = new Set(fields.map((field) => field.key));
+  const rateIds = modules?.pricing?.rates.map((rate) => rate.id) ?? ["plein"];
+  const optionIds = (modules?.pricing?.options ?? []).map((option) => option.id);
   rules.forEach((rule, ruleIndex) => {
     const at = (path: string, message: string) =>
       issues.push({ path: `rules.${ruleIndex}.${path}`, message: `« ${rule.name} » : ${message}` });
@@ -53,6 +65,16 @@ export function ruleIssues(
         const path = `conditions.${groupIndex}.${index}`;
         if (needsBooking(condition, fields) && !BOOKING_TRIGGERS.has(rule.trigger.kind)) {
           at(path, "les réponses d'inscription ne sont connues qu'au moment d'une inscription");
+        }
+        if (
+          modules &&
+          condition.kind === "pricing" &&
+          !(condition.target === "rate" ? rateIds : optionIds).includes(condition.id)
+        ) {
+          at(
+            path,
+            condition.target === "rate" ? "ce tarif n'existe plus" : "cette option n'existe plus",
+          );
         }
         if (condition.kind !== "field") return;
         const field = fields.find((entry) => entry.key === condition.fieldKey);
@@ -83,6 +105,10 @@ export function ruleIssues(
       });
     });
     rule.actions.forEach((action, index) => {
+      if (modules && action.kind === "price" && action.apply === "rate") {
+        if (!rateIds.includes(action.rateId ?? ""))
+          at(`actions.${index}`, "ce tarif n'existe plus");
+      }
       if (action.kind !== "ask") return;
       if (asked.has(action.field.key)) {
         at(`actions.${index}`, `la clé « ${action.field.key} » est déjà une question`);
@@ -93,8 +119,12 @@ export function ruleIssues(
   return issues;
 }
 
-export function assertRulesFit(rules: readonly Rule[], fields: readonly EventTypeField[]): void {
-  const issues = ruleIssues(rules, fields);
+export function assertRulesFit(
+  rules: readonly Rule[],
+  fields: readonly EventTypeField[],
+  modules: EventModules,
+): void {
+  const issues = ruleIssues(rules, fields, modules);
   if (issues.length > 0) {
     throw new ValidationError(issues[0]?.message ?? "Règle invalide", issues);
   }
@@ -189,6 +219,13 @@ export function conditionHolds(
       return facts.event
         ? compareCount(facts.event.equipmentLeft, condition.operator, condition.value)
         : undefined;
+    case "pricing": {
+      const lines = facts.booking?.lines;
+      if (!lines) return undefined;
+      return lines.some(
+        (line) => line.kind === condition.target && line.id === condition.id && line.quantity > 0,
+      );
+    }
     case "customer": {
       const customer = facts.customer;
       if (!customer) return undefined;
@@ -240,6 +277,30 @@ export interface SubmissionOutcome {
   refusal: string | null;
   /** Une règle met l'inscription en attente de validation. */
   approval: boolean;
+  /** Tarifs et réductions des règles, dans leur ordre, pour `quoteBooking`. */
+  adjustments: PriceAdjustment[];
+}
+
+/** Les actions « Appliquer un tarif ou une réduction » des règles, prêtes pour `quoteBooking`. */
+export function priceAdjustments(rules: readonly Rule[]): PriceAdjustment[] {
+  return rules.flatMap((rule) =>
+    rule.actions.flatMap((action): PriceAdjustment[] => {
+      if (action.kind !== "price") return [];
+      const base = { id: rule.id, label: rule.name };
+      if (action.apply === "rate") {
+        return action.rateId ? [{ ...base, kind: "rate", rateId: action.rateId }] : [];
+      }
+      // Le détail du prix dit d'où vient la réduction : « Nouveaux clients (−10 %) ».
+      if (action.apply === "percent") {
+        const label = `${rule.name} (−${action.percent} %)`;
+        return action.percent ? [{ ...base, label, kind: "percent", percent: action.percent }] : [];
+      }
+      const label = `${rule.name} (−${moneyLabel(action.amountCents ?? 0)})`;
+      return action.amountCents
+        ? [{ ...base, label, kind: "amount", amountCents: action.amountCents }]
+        : [];
+    }),
+  );
 }
 
 /** Ce que les règles « Une inscription est envoyée » font d'une inscription. */
@@ -259,13 +320,14 @@ export function submissionOutcome(
     asked: askedFields(matched),
     refusal: refusal?.kind === "refuse" ? refusal.message : null,
     approval: actions.some((action) => action.kind === "require_approval"),
+    adjustments: priceAdjustments(matched),
   };
 }
 
 /**
  * Règles envoyées au formulaire d'inscription : seulement les questions, et des conditions
  * réduites à ce que le formulaire connaît. Ce qui tient à l'événement est tranché ici (rien
- * d'interne ne part chez le visiteur) ; le client et le matériel sont tenus pour vrais (la
+ * d'interne ne part chez le visiteur) ; le client, le matériel et le tarif sont tenus pour vrais (la
  * question s'affiche au cas où, le serveur ne l'exige que si la règle s'applique vraiment).
  */
 export function formRules(
@@ -281,7 +343,13 @@ export function formRules(
       const kept: RuleCondition[] = [];
       let possible = true;
       for (const condition of group) {
-        if (condition.kind === "customer" || condition.kind === "equipment") continue;
+        if (
+          condition.kind === "customer" ||
+          condition.kind === "equipment" ||
+          condition.kind === "pricing"
+        ) {
+          continue;
+        }
         const known = conditionHolds(condition, fields, { event: { ...event, equipmentLeft: 0 } });
         if (known === false) possible = false;
         if (known === undefined) kept.push(condition);

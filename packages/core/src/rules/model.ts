@@ -58,6 +58,8 @@ export const COUNT_OPERATORS = ["less_than", "greater_than", "equals"] as const;
 export type CountOperator = (typeof COUNT_OPERATORS)[number];
 
 const count = z.int({ error: "Nombre invalide" }).min(0).max(100_000);
+/** Identifiant d'un tarif ou d'une option (module « Tarifs et options »). */
+const priceId = z.string().regex(/^[a-z0-9-]{1,40}$/, "Choisis un tarif ou une option");
 
 export const ruleConditionSchema = z.discriminatedUnion("kind", [
   /** Un champ du type : description de l'événement, réponse d'inscription ou d'un participant. */
@@ -81,8 +83,8 @@ export const ruleConditionSchema = z.discriminatedUnion("kind", [
   }),
   /** Exemplaires de matériel de l'événement pas encore attribués à une inscription. */
   z.object({ kind: z.literal("equipment"), operator: z.enum(COUNT_OPERATORS), value: count }),
-  // shortcut: « le tarif choisi, une option » attend les tarifs du lot 35 ; ajouter ici une
-  // condition `{ kind: "pricing", optionId }` et son cas dans engine.ts quand ils existeront.
+  /** Un tarif choisi pour au moins une place, ou une option prise (module « Tarifs et options »). */
+  z.object({ kind: z.literal("pricing"), target: z.enum(["rate", "option"]), id: priceId }),
 ]);
 export type RuleCondition = z.output<typeof ruleConditionSchema>;
 
@@ -124,7 +126,25 @@ export const ruleActionSchema = z.discriminatedUnion("kind", [
   }),
   /** Annule la séance par le parcours habituel (e-mails aux inscrits, cartes recréditées). */
   z.object({ kind: z.literal("cancel_event") }),
-  // shortcut: « appliquer un tarif ou une réduction » attend le lot 35 (tarifs et options).
+  /**
+   * Prix (calculé par `quoteBooking`) : toutes les places passent à un tarif, ou une réduction
+   * en pourcentage ou en montant s'applique au total.
+   */
+  z.object({
+    kind: z.literal("price"),
+    apply: z.enum(["rate", "percent", "amount"]),
+    rateId: priceId.optional(),
+    percent: z
+      .int({ error: "Pourcentage invalide" })
+      .min(1, "Entre 1 et 100 %")
+      .max(100)
+      .optional(),
+    amountCents: z
+      .int({ error: "Montant invalide" })
+      .min(1, "Indique un montant")
+      .max(10_000_000)
+      .optional(),
+  }),
 ]);
 export type RuleAction = z.output<typeof ruleActionSchema>;
 export type RuleActionKind = RuleAction["kind"];
@@ -138,6 +158,7 @@ export const ACTIONS_BY_TRIGGER: Record<RuleTriggerKind, readonly RuleActionKind
     "require_approval",
     "notify_team",
     "message",
+    "price",
   ],
   before_start: ["notify_team", "message", "cancel_event"],
   after_end: ["notify_team", "message"],
@@ -147,7 +168,7 @@ export const ACTIONS_BY_TRIGGER: Record<RuleTriggerKind, readonly RuleActionKind
 
 /** Conditions qui demandent une inscription précise (réponses, client). */
 export function needsBooking(condition: RuleCondition, fields: readonly EventTypeField[]): boolean {
-  if (condition.kind === "customer") return true;
+  if (condition.kind === "customer" || condition.kind === "pricing") return true;
   if (condition.kind !== "field") return false;
   const field = fields.find((entry) => entry.key === condition.fieldKey);
   return field !== undefined && field.scope !== "event";
@@ -171,6 +192,15 @@ export const ruleSchema = z
       if (!allowed.includes(action.kind)) {
         issue(["actions", index], "Cette action ne va pas avec ce moment");
       }
+      if (action.kind === "price") {
+        const missing =
+          action.apply === "rate"
+            ? !action.rateId && "Choisis le tarif"
+            : action.apply === "percent"
+              ? action.percent === undefined && "Indique le pourcentage"
+              : action.amountCents === undefined && "Indique le montant";
+        if (missing) issue(["actions", index], missing);
+      }
       if (action.kind === "ask") {
         const choices = action.field.type === "choice" || action.field.type === "multi_choice";
         if (choices && !action.field.options?.length) {
@@ -186,6 +216,7 @@ export const ruleSchema = z
       ["refuse", "un refus"],
       ["require_approval", "une mise en validation"],
       ["cancel_event", "une annulation"],
+      ["price", "un changement de prix"],
     ] as const) {
       if (rule.actions.filter((action) => action.kind === kind).length > 1) {
         issue(["actions"], `Une seule fois ${label} par règle`);
@@ -204,6 +235,9 @@ export const ruleSchema = z
         }
         if (condition.kind === "customer" && !BOOKING_TRIGGERS.has(rule.trigger.kind)) {
           issue(path, "Le client n'est connu qu'au moment d'une inscription");
+        }
+        if (condition.kind === "pricing" && !BOOKING_TRIGGERS.has(rule.trigger.kind)) {
+          issue(path, "Le tarif n'est connu qu'au moment d'une inscription");
         }
       });
     });
@@ -243,20 +277,18 @@ export interface RuleCatalogEntry<K extends string> {
   soon?: string;
 }
 
-export const RULE_CONDITION_CATALOG: ReadonlyArray<
-  RuleCatalogEntry<RuleCondition["kind"] | "pricing">
-> = [
+export const RULE_CONDITION_CATALOG: ReadonlyArray<RuleCatalogEntry<RuleCondition["kind"]>> = [
   { kind: "field", label: "N'importe quel champ du type" },
-  { kind: "pricing", label: "Le tarif choisi, une option", soon: "lot 35" },
+  { kind: "pricing", label: "Le tarif choisi, une option" },
   { kind: "seats", label: "Le nombre d'inscrits" },
   { kind: "customer", label: "Le client : nouveau, étiquette, carte" },
   { kind: "equipment", label: "Le matériel restant" },
 ];
 
-export const RULE_ACTION_CATALOG: ReadonlyArray<RuleCatalogEntry<RuleActionKind | "price">> = [
+export const RULE_ACTION_CATALOG: ReadonlyArray<RuleCatalogEntry<RuleActionKind>> = [
   { kind: "ask", label: "Demander un champ ou une acceptation" },
   { kind: "remind_document", label: "Rappeler d'apporter un document" },
-  { kind: "price", label: "Appliquer un tarif ou une réduction", soon: "lot 35" },
+  { kind: "price", label: "Appliquer un tarif ou une réduction" },
   { kind: "refuse", label: "Refuser avec un message" },
   { kind: "require_approval", label: "Mettre en attente de validation" },
   { kind: "notify_team", label: "Prévenir l'équipe" },

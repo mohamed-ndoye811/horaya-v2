@@ -25,7 +25,7 @@ import { validate } from "../shared/validate";
 import { decideBookingStatus, SEAT_HOLDING_STATUSES } from "./capacity";
 import { CHECK_IN_OPENS_BEFORE_HOURS, isCheckInOpen } from "./check-in";
 import type { Booking } from "./model";
-import { type PriceSelection, quoteBooking } from "./pricing";
+import { type PriceAdjustment, type PriceSelection, quoteBooking } from "./pricing";
 import { formatBookingReference, referencePeriod } from "./reference";
 import { rescheduleClosedReason, reschedulePricing, rescheduleTargetIssue } from "./reschedule";
 import { type CreateEventBookingInput, createEventBookingSchema } from "./schemas";
@@ -202,7 +202,9 @@ export async function insertEventBooking(
     // L'équipe saisit ce qu'elle sait : les questions requises le sont pour le client.
     { now, enforceRequired: actor.type !== "member" && !makeup },
   );
-  // Règles « Une inscription est envoyée » (lot 36) : questions en plus, refus, validation.
+  // Le prix choisi, avant les règles : refuse tôt un tarif ou une option inconnus.
+  const chosen = enrolled ? [] : quoteBooking(event, data.seats, data.selection).lines;
+  // Règles « Une inscription est envoyée » (lot 36) : questions en plus, refus, validation, prix.
   // Un rattrapage n'en relève pas : l'inscription d'origine est déjà passée par elles.
   const rules = makeup
     ? null
@@ -210,6 +212,7 @@ export async function insertEventBooking(
         customerId: data.customerId,
         answers: answered.answers,
         participants: answered.participants,
+        lines: chosen,
         rawAnswers: data.answers ?? {},
         now,
         enrollmentId: data.enrollmentId,
@@ -265,7 +268,7 @@ export async function insertEventBooking(
       status,
       ...(enrolled
         ? { amountCents: 0, depositCents: null, priceLines: [] }
-        : priceOf(event, data.seats, data.selection)),
+        : priceOf(event, data.seats, data.selection, rules?.outcome.adjustments)),
       currency: event.currency,
       paymentMode: enrolled ? "free" : event.paymentMode,
       enrollmentId: data.enrollmentId ?? null,
@@ -309,6 +312,8 @@ export async function insertEventBooking(
   const skipped = new Set<string>([
     ...(actor.type === "member" ? ["refuse"] : []),
     ...(status !== "pending" || enrolled ? ["require_approval"] : []),
+    // Séance payée par l'inscription à la série : pas de prix à changer.
+    ...(enrolled ? ["price"] : []),
   ]);
   await recordRuleRuns(repositories, actor, {
     event,
@@ -323,8 +328,13 @@ export async function insertEventBooking(
   return created;
 }
 
-function priceOf(event: Event, seats: number, selection: PriceSelection | undefined) {
-  const { lines, ...amounts } = quoteBooking(event, seats, selection);
+function priceOf(
+  event: Event,
+  seats: number,
+  selection: PriceSelection | undefined,
+  adjustments: readonly PriceAdjustment[] = [],
+) {
+  const { lines, ...amounts } = quoteBooking(event, seats, selection, adjustments);
   return { ...amounts, priceLines: lines };
 }
 

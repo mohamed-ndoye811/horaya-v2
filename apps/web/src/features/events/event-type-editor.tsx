@@ -645,6 +645,7 @@ export function EventTypeEditor({
                 fields: fields as EventTypeField[],
                 documents: modules.documents?.files ?? [],
                 testBookings: initial.testBookings ?? [],
+                pricing: modules.pricing,
               }}
               error={Object.entries(errors).find(([path]) => path.startsWith("rules"))?.[1]}
             />

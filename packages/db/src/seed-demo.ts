@@ -431,7 +431,7 @@ const types = Object.fromEntries(
             help: "12 ans minimum",
           },
         ],
-        // Lot 36 : deux règles « si… alors… ».
+        // Lot 36 : trois règles « si… alors… ».
         rules: [
           {
             id: "autorisation-mineurs",
@@ -488,6 +488,19 @@ const types = Object.fromEntries(
                 message: "Il reste des places au cours débutants : relance les anciens élèves.",
               },
             ],
+          },
+          // Tarifs dans les règles : la cuisson offerte à moitié prix aux nouveaux élèves.
+          {
+            id: "bienvenue-cuisson",
+            name: "Bienvenue",
+            trigger: { kind: "booking_submitted" as const },
+            conditions: [
+              [
+                { kind: "customer" as const, is: "new" as const },
+                { kind: "pricing" as const, target: "option" as const, id: "cuisson" },
+              ],
+            ],
+            actions: [{ kind: "price" as const, apply: "amount" as const, amountCents: 400 }],
           },
         ],
       },

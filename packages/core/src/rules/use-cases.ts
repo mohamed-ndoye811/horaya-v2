@@ -88,6 +88,8 @@ export async function checkSubmissionRules(
     customerId: string;
     answers: FieldValues;
     participants: ReadonlyArray<{ answers: FieldValues }>;
+    /** Détail du prix choisi, avant les règles (conditions « le tarif choisi, une option »). */
+    lines: ReadonlyArray<{ kind: string; id: string; quantity: number }>;
     rawAnswers: RawFieldValues;
     now: Date;
     enrollmentId?: string;
@@ -98,13 +100,13 @@ export async function checkSubmissionRules(
   answers: FieldValues;
   issues: Array<{ path: string; message: string }>;
 }> {
-  const empty = { matched: [], asked: [], refusal: null, approval: false };
+  const empty = { matched: [], asked: [], refusal: null, approval: false, adjustments: [] };
   if (rulesFor(event.rules, "booking_submitted").length === 0) {
     return { outcome: empty, answers: {}, issues: [] };
   }
   const facts: RuleFacts = {
     event: await eventFacts(repositories, event),
-    booking: { answers: input.answers, participants: input.participants },
+    booking: { answers: input.answers, participants: input.participants, lines: input.lines },
     customer: await repositories.rules.customerFacts(event.organizationId, input.customerId, {
       now: input.now,
       exceptEnrollmentId: input.enrollmentId,
@@ -136,6 +138,7 @@ async function bookingFacts(
       participants: (await repositories.rules.participantAnswers(booking.id)).map((answers) => ({
         answers,
       })),
+      lines: booking.priceLines,
     },
     customer: await repositories.rules.customerFacts(event.organizationId, booking.customerId, {
       now,

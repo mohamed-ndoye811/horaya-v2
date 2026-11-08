@@ -16,14 +16,26 @@ import { ValidationError } from "../shared/errors";
 
 /** Une ligne du détail, enregistrée sur la réservation : l'historique ne bouge plus si le type change. */
 export interface PriceLine {
-  kind: "rate" | "option";
-  /** Identifiant du tarif ou de l'option dans le module « Tarifs et options ». */
+  /** `discount` : réduction d'une règle (lot 36), montant négatif. */
+  kind: "rate" | "option" | "discount";
+  /** Identifiant du tarif ou de l'option dans le module « Tarifs et options » (la règle pour une réduction). */
   id: string;
   label: string;
   unitCents: number;
   quantity: number;
   totalCents: number;
+  /** Réduction en pourcentage : rejouée telle quelle au changement de date. */
+  percent?: number;
 }
+
+/**
+ * Ajustement décidé par une règle (lot 36) : toutes les places passent à un tarif, ou une
+ * réduction s'applique au total (en %, puis en montant, dans l'ordre des règles).
+ */
+export type PriceAdjustment =
+  | { kind: "rate"; id: string; label: string; rateId: string }
+  | { kind: "percent"; id: string; label: string; percent: number }
+  | { kind: "amount"; id: string; label: string; amountCents: number };
 
 /** Ce que le client choisit : un tarif par place (dans l'ordre des participants), des options. */
 export interface PriceSelection {
@@ -76,12 +88,20 @@ export function quoteBooking(
   event: Priced,
   seats: number,
   selection: PriceSelection = {},
+  adjustments: readonly PriceAdjustment[] = [],
 ): { lines: PriceLine[]; amountCents: number; depositCents: number | null } {
   if (event.paymentMode === "free") return { lines: [], amountCents: 0, depositCents: null };
   const pricing = event.modules.pricing;
   const rates = ratesOf(event);
   const fallback = pricing ? defaultRate(pricing) : (rates[0] as Rate);
-  const chosen = selection.rates ?? [];
+  // Passage à un tarif par une règle : le dernier qui existe sur l'événement l'emporte.
+  const forced = adjustments.findLast(
+    (entry) => entry.kind === "rate" && rates.some((rate) => rate.id === entry.rateId),
+  );
+  const chosen =
+    forced?.kind === "rate"
+      ? Array.from({ length: seats }, () => forced.rateId)
+      : (selection.rates ?? []);
   if (chosen.length > seats) {
     throw new ValidationError("Plus de tarifs que de places", [
       { path: "rates", message: "Plus de tarifs que de places" },
@@ -141,11 +161,33 @@ export function quoteBooking(
     }
   }
 
-  const amountCents = lines.reduce((total, line) => total + line.totalCents, 0);
+  // Réductions des règles : sur ce qui reste à payer, jamais en dessous de zéro.
+  const subtotal = lines.reduce((total, line) => total + line.totalCents, 0);
+  let remaining = subtotal;
+  for (const adjustment of adjustments) {
+    if (adjustment.kind === "rate") continue;
+    const off =
+      adjustment.kind === "percent"
+        ? Math.round((remaining * adjustment.percent) / 100)
+        : Math.min(adjustment.amountCents, remaining);
+    if (off <= 0) continue;
+    remaining -= off;
+    lines.push({
+      kind: "discount",
+      id: adjustment.id,
+      label: adjustment.label,
+      unitCents: -off,
+      quantity: 1,
+      totalCents: -off,
+      ...(adjustment.kind === "percent" && { percent: adjustment.percent }),
+    });
+  }
+
+  const amountCents = remaining;
   const deposit = event.paymentMode === "deposit" ? event.modules.deposit : undefined;
   return {
     // Sans module ni prix, rien à détailler (événement gratuit hors mode « gratuit »).
-    lines: !pricing && amountCents === 0 ? [] : lines,
+    lines: !pricing && subtotal === 0 ? [] : lines,
     amountCents,
     depositCents: deposit ? depositFor(deposit, amountCents, seats) : null,
   };
@@ -161,6 +203,17 @@ export function selectionFromLines(lines: readonly PriceLine[]): PriceSelection 
       lines.filter((line) => line.kind === "option").map((line) => [line.id, line.quantity]),
     ),
   };
+}
+
+/** Les réductions d'une réservation, relues dans son détail (changement de date). */
+export function adjustmentsFromLines(lines: readonly PriceLine[]): PriceAdjustment[] {
+  return lines.flatMap((line): PriceAdjustment[] =>
+    line.kind !== "discount"
+      ? []
+      : line.percent !== undefined
+        ? [{ kind: "percent", id: line.id, label: line.label, percent: line.percent }]
+        : [{ kind: "amount", id: line.id, label: line.label, amountCents: -line.unitCents }],
+  );
 }
 
 /**
@@ -194,6 +247,7 @@ export function priceLinesLabel(lines: readonly PriceLine[]): string {
   return [
     rates.map((line) => `${line.quantity} ${line.label}`).join(", "),
     ...options.map((line) => (line.quantity > 1 ? `${line.label} × ${line.quantity}` : line.label)),
+    ...lines.filter((line) => line.kind === "discount").map((line) => line.label),
   ]
     .filter(Boolean)
     .join(" · ");

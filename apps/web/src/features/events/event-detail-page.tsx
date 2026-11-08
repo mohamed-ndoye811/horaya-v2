@@ -474,7 +474,7 @@ export function EventDetailPage({
                       </span>
                       <span className="text-sm leading-[19px] text-ink">
                         <strong className="font-semibold">{rule.name}</strong> ·{" "}
-                        {ruleSentence(rule, event.fields)}
+                        {ruleSentence(rule, event.fields, event.modules.pricing)}
                       </span>
                     </li>
                   ))}

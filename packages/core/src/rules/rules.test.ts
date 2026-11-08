@@ -1,4 +1,6 @@
 import { describe, expect, it } from "vitest";
+import { quoteBooking } from "../bookings/pricing";
+import { reschedulePricing } from "../bookings/reschedule";
 import type { Event } from "../events/model";
 import type { EventTypeField } from "../fields/model";
 import type { Repositories } from "../shared/unit-of-work";
@@ -261,6 +263,7 @@ describe("inscription envoyée : chaque action", () => {
       asked: [],
       refusal: null,
       approval: false,
+      adjustments: [],
     });
   });
 
@@ -573,5 +576,141 @@ describe("trace : jamais deux fois la même règle", () => {
         },
       },
     ]);
+  });
+});
+
+describe("tarifs dans les règles (lot 35)", () => {
+  const pricing = {
+    rates: [
+      { id: "plein", name: "Plein", priceCents: 4000 },
+      { id: "reduit", name: "Réduit", priceCents: 3000 },
+    ],
+    options: [{ id: "cuisson", name: "Cuisson", priceCents: 800, per: "participant" as const }],
+  };
+  const event = { priceCents: 4000, paymentMode: "online" as const, modules: { pricing } };
+  const priced = (actions: Rule["actions"], conditions: Rule["conditions"] = []): Rule => ({
+    id: "prix",
+    name: "Nouveaux clients",
+    trigger: { kind: "booking_submitted" },
+    conditions,
+    actions,
+  });
+  const withLines = (lines: ReturnType<typeof quoteBooking>["lines"]) =>
+    facts({ booking: { answers: {}, participants: [], lines } });
+
+  it("condition : le tarif choisi pour une place, une option prise ; inconnue sans détail", () => {
+    const { lines } = quoteBooking(event, 2, {
+      rates: ["plein", "reduit"],
+      options: { cuisson: 1 },
+    });
+    const holds = (condition: RuleCondition) => conditionHolds(condition, FIELDS, withLines(lines));
+    expect(holds({ kind: "pricing", target: "rate", id: "reduit" })).toBe(true);
+    expect(holds({ kind: "pricing", target: "option", id: "cuisson" })).toBe(true);
+    expect(holds({ kind: "pricing", target: "rate", id: "enfant" })).toBe(false);
+    expect(
+      conditionHolds({ kind: "pricing", target: "rate", id: "reduit" }, FIELDS, { event: EVENT }),
+    ).toBeUndefined();
+  });
+
+  it("action : passage à un tarif, puis réductions en %, puis en montant, par quoteBooking", () => {
+    const outcome = submissionOutcome(
+      [
+        priced([{ kind: "price", apply: "rate", rateId: "reduit" }]),
+        { ...priced([{ kind: "price", apply: "percent", percent: 10 }]), id: "dix" },
+        { ...priced([{ kind: "price", apply: "amount", amountCents: 500 }]), id: "cinq" },
+      ],
+      FIELDS,
+      withLines([]),
+    );
+    expect(outcome.adjustments.map((entry) => entry.kind)).toEqual(["rate", "percent", "amount"]);
+    const quote = quoteBooking(event, 2, { rates: ["plein", "plein"] }, outcome.adjustments);
+    // 2 × Réduit = 60 € ; −10 % = 54 € ; −5 € = 49 €.
+    expect(quote.lines.map((line) => [line.kind, line.id, line.totalCents])).toEqual([
+      ["rate", "reduit", 6000],
+      ["discount", "dix", -600],
+      ["discount", "cinq", -500],
+    ]);
+    expect(quote.amountCents).toBe(4900);
+    // Jamais en dessous de zéro ; un tarif inconnu de l'événement est ignoré.
+    const free = quoteBooking(event, 1, {}, [
+      { kind: "rate", id: "x", label: "x", rateId: "vip" },
+      { kind: "amount", id: "y", label: "y", amountCents: 99_999 },
+    ]);
+    expect(free.amountCents).toBe(0);
+    expect(free.lines[0]).toMatchObject({ kind: "rate", id: "plein" });
+  });
+
+  it("l'acompte se calcule sur le prix réduit ; la réduction suit le changement de date", () => {
+    const deposit = {
+      ...event,
+      paymentMode: "deposit" as const,
+      modules: { pricing, deposit: { percent: 50 } },
+    };
+    const quote = quoteBooking(deposit, 1, {}, [
+      { kind: "percent", id: "dix", label: "Moins 10 %", percent: 10 },
+    ]);
+    expect(quote).toMatchObject({ amountCents: 3600, depositCents: 1800 });
+    const moved = reschedulePricing({
+      booking: {
+        seats: 1,
+        amountCents: quote.amountCents,
+        depositCents: quote.depositCents,
+        paymentMode: "deposit",
+        paymentStatus: "none",
+        priceLines: quote.lines,
+      },
+      to: {
+        ...deposit,
+        priceCents: 5000,
+        modules: {
+          ...deposit.modules,
+          pricing: { rates: [{ id: "plein", name: "Plein", priceCents: 5000 }] },
+        },
+      } as never,
+      paidCents: 0,
+    });
+    expect(moved.amountCents).toBe(4500);
+  });
+
+  it("validation : paramètres requis, inscription seulement, tarifs et options existants", () => {
+    const parse = (rule: Rule) => ruleSchema.safeParse(rule).error?.issues[0]?.message ?? null;
+    expect(parse(priced([{ kind: "price", apply: "percent" }]))).toBe("Indique le pourcentage");
+    expect(parse(priced([{ kind: "price", apply: "rate" }]))).toBe("Choisis le tarif");
+    expect(
+      parse({
+        ...priced([{ kind: "price", apply: "percent", percent: 10 }]),
+        trigger: { kind: "after_end" },
+      }),
+    ).toBe("Cette action ne va pas avec ce moment");
+    const modules = { pricing };
+    const issues = (rule: Rule) =>
+      ruleIssues([rule], FIELDS, modules).map((entry) => entry.message);
+    expect(
+      issues(
+        priced(
+          [{ kind: "price", apply: "rate", rateId: "vip" }],
+          [[{ kind: "pricing", target: "option", id: "dejeuner" }]],
+        ),
+      ),
+    ).toEqual([
+      "« Nouveaux clients » : cette option n'existe plus",
+      "« Nouveaux clients » : ce tarif n'existe plus",
+    ]);
+    // Le formulaire public ne reçoit pas la condition de tarif : la question s'affiche au cas où.
+    const ask = priced(MINORS.actions, [[{ kind: "pricing", target: "rate", id: "reduit" }]]);
+    expect(formRules([ask], FIELDS, EVENT)[0]?.conditions).toEqual([]);
+  });
+
+  it("phrase en clair et journal", () => {
+    const rule = priced(
+      [{ kind: "price", apply: "percent", percent: 10 }],
+      [[{ kind: "pricing", target: "option", id: "cuisson" }]],
+    );
+    expect(ruleSentence(rule, FIELDS, pricing)).toBe(
+      "À chaque inscription, si l'option « Cuisson » est prise, appliquer une réduction de 10 %.",
+    );
+    expect(
+      ruleJournalLine("Fidélité", [{ kind: "price", apply: "amount", amountCents: 500 }]),
+    ).toBe("Règle « Fidélité » : réduction de 5 €");
   });
 });

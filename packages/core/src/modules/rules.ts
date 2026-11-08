@@ -227,7 +227,8 @@ export function legacyModules(legacy: LegacyTypeSettings): EventModules {
 
 /* ---------- Résumés (lignes repliées de l'éditeur) ---------- */
 
-const money = (cents: number) =>
+/** « 45 € », « 12,50 € ». */
+export const moneyLabel = (cents: number) =>
   new Intl.NumberFormat("fr-FR", {
     style: "currency",
     currency: "EUR",
@@ -249,7 +250,7 @@ export function closingLabel(hoursBefore: number | undefined): string {
 export function depositLabel(deposit: DepositModule): string {
   return deposit.percent !== undefined
     ? `${deposit.percent} %`
-    : `${money(deposit.amountCents ?? 0)} par place`;
+    : `${moneyLabel(deposit.amountCents ?? 0)} par place`;
 }
 
 /** « le reste sur place », « le reste à régler plus tard ». */
@@ -324,7 +325,7 @@ export function moduleSummary(
       const series = modules.series ?? {};
       return join([
         series.priceCents !== undefined
-          ? `Prix de la série ${money(series.priceCents)}`
+          ? `Prix de la série ${moneyLabel(series.priceCents)}`
           : "Prix de la série : séances × prix",
         series.dropInAllowed === false
           ? "pas de séance à l'unité"
@@ -355,9 +356,11 @@ export function moduleSummary(
       return join([
         ...pricing.rates.map(
           (rate) =>
-            `${rate.name} ${money(rate.priceCents)}${rate.description ? ` (${rate.description})` : ""}`,
+            `${rate.name} ${moneyLabel(rate.priceCents)}${rate.description ? ` (${rate.description})` : ""}`,
         ),
-        ...(pricing.options ?? []).map((option) => `${option.name} + ${money(option.priceCents)}`),
+        ...(pricing.options ?? []).map(
+          (option) => `${option.name} + ${moneyLabel(option.priceCents)}`,
+        ),
       ]);
     }
     case "deposit": {

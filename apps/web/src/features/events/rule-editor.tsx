@@ -10,6 +10,7 @@ import {
   type FieldOperator,
   type FieldType,
   listJoin,
+  type PricingModule,
   parseFieldValues,
   RULE_ACTION_CATALOG,
   RULE_CONDITION_CATALOG,
@@ -38,6 +39,7 @@ import { Select } from "@/components/ui/select";
 import { getRuleTestFacts } from "@/functions/events";
 import { cn } from "@/lib/cn";
 import { FIELD_TYPE_LABELS, rawFieldValues } from "@/lib/fields";
+import { centsToInput, parseEuroToCents } from "@/lib/money";
 import { keyFor } from "./field-list-editor";
 
 /** Règle en cours d'édition : `null` fermé, `"new"` une nouvelle, sinon son rang. */
@@ -51,13 +53,15 @@ export interface RuleEditorContext {
   documents: Array<{ name: string; url: string }>;
   /** Dernières inscriptions aux événements du type. */
   testBookings: Array<{ id: string; label: string }>;
+  /** Module « Tarifs et options » du type (conditions et actions de prix). */
+  pricing: PricingModule | undefined;
 }
 
 const labelClasses = "text-xs font-bold uppercase leading-4 tracking-[0.06em] text-ink-subtle";
 
 /** « Si … , alors … » (liste de la section 5). */
-function ListSentence({ rule, fields }: { rule: Rule; fields: EventTypeField[] }) {
-  const { condition, actions } = describeRule(rule, fields);
+function ListSentence({ rule, context }: { rule: Rule; context: RuleEditorContext }) {
+  const { condition, actions } = describeRule(rule, context.fields, context.pricing);
   return condition ? (
     <>
       <strong>Si</strong> {condition}, <strong>alors</strong> {actions}
@@ -110,7 +114,7 @@ export function RuleList({
                   {rule.name}
                 </span>
                 <span className="text-sm leading-[19px] text-ink">
-                  <ListSentence rule={rule} fields={context.fields} />
+                  <ListSentence rule={rule} context={context} />
                 </span>
               </span>
               <ChevronRight className="shrink-0 text-ink-subtle" />
@@ -209,7 +213,9 @@ const subjectOf = (condition: RuleCondition) =>
       ? `seats:${condition.measure}`
       : condition.kind === "customer"
         ? `customer:${condition.is}`
-        : "equipment";
+        : condition.kind === "pricing"
+          ? `pricing:${condition.target}:${condition.id}`
+          : "equipment";
 
 function conditionFor(subject: string, fields: EventTypeField[]): RuleCondition {
   const [kind, detail = ""] = subject.split(":");
@@ -229,6 +235,10 @@ function conditionFor(subject: string, fields: EventTypeField[]): RuleCondition 
     const is = detail as "new" | "tagged" | "pass_holder";
     return is === "tagged" ? { kind: "customer", is, tag: "" } : { kind: "customer", is };
   }
+  if (kind === "pricing") {
+    const [, target, id = ""] = subject.split(":");
+    return { kind: "pricing", target: target === "option" ? "option" : "rate", id };
+  }
   return { kind: "equipment", operator: "less_than", value: 1 };
 }
 
@@ -242,6 +252,8 @@ function actionFor(kind: RuleAction["kind"]): RuleAction {
       return { kind, message: "" };
     case "message":
       return { kind, subject: "", body: "" };
+    case "price":
+      return { kind, apply: "percent", percent: 10 };
     default:
       return { kind } as RuleAction;
   }
@@ -338,6 +350,7 @@ function ConditionRow({
   onRemove,
   fields,
   bookingKnown,
+  pricing,
 }: {
   condition: RuleCondition;
   onChange: (next: RuleCondition) => void;
@@ -345,6 +358,7 @@ function ConditionRow({
   fields: EventTypeField[];
   /** Le déclencheur porte sur une inscription : réponses et client sont connus. */
   bookingKnown: boolean;
+  pricing: PricingModule | undefined;
 }) {
   const field =
     condition.kind === "field"
@@ -385,9 +399,20 @@ function ConditionRow({
             <option value="customer:pass_holder">Le client a une carte de séances active</option>
           </optgroup>
         )}
-        <option value="pricing" disabled>
-          Le tarif choisi, une option (bientôt)
-        </option>
+        {bookingKnown && (
+          <optgroup label="Tarif et options">
+            {(pricing?.rates ?? [{ id: "plein", name: "Plein" }]).map((rate) => (
+              <option key={rate.id} value={`pricing:rate:${rate.id}`}>
+                Le tarif « {rate.name} » est choisi
+              </option>
+            ))}
+            {(pricing?.options ?? []).map((option) => (
+              <option key={option.id} value={`pricing:option:${option.id}`}>
+                L'option « {option.name} » est prise
+              </option>
+            ))}
+          </optgroup>
+        )}
         {condition.kind === "field" && !field && (
           <option value={subjectOf(condition)}>Champ retiré : {condition.fieldKey}</option>
         )}
@@ -469,12 +494,14 @@ function ActionRow({
   onChange,
   onRemove,
   documents,
+  pricing,
 }: {
   action: RuleAction;
   trigger: RuleTrigger;
   onChange: (next: RuleAction) => void;
   onRemove: () => void;
   documents: RuleEditorContext["documents"];
+  pricing: PricingModule | undefined;
 }) {
   const allowed = ACTIONS_BY_TRIGGER[trigger.kind];
   const toBooking = BOOKING_TRIGGERS.has(trigger.kind);
@@ -489,15 +516,10 @@ function ActionRow({
           className="min-w-56"
         >
           {RULE_ACTION_CATALOG.map((entry) => (
-            <option
-              key={entry.kind}
-              value={entry.kind}
-              disabled={Boolean(entry.soon) || !allowed.includes(entry.kind as RuleAction["kind"])}
-            >
+            <option key={entry.kind} value={entry.kind} disabled={!allowed.includes(entry.kind)}>
               {entry.kind === "message" && !toBooking
                 ? "Envoyer un message aux inscrits"
                 : entry.label}
-              {entry.soon ? " (bientôt)" : ""}
             </option>
           ))}
         </Select>
@@ -595,6 +617,9 @@ function ActionRow({
             className={cn(pillInput, "min-w-64 flex-1")}
           />
         )}
+        {action.kind === "price" && (
+          <PriceActionInputs action={action} onChange={onChange} pricing={pricing} />
+        )}
         {action.kind === "message" && (
           <input
             aria-label="Objet"
@@ -640,6 +665,95 @@ function ActionRow({
         />
       )}
     </div>
+  );
+}
+
+/** « Appliquer un tarif ou une réduction » : passage à un tarif, ou réduction en % ou en €. */
+function PriceActionInputs({
+  action,
+  onChange,
+  pricing,
+}: {
+  action: Extract<RuleAction, { kind: "price" }>;
+  onChange: (next: RuleAction) => void;
+  pricing: PricingModule | undefined;
+}) {
+  const rates = pricing?.rates ?? [{ id: "plein", name: "Plein" }];
+  return (
+    <>
+      <Select
+        variant="compact"
+        aria-label="Changement de prix"
+        value={action.apply}
+        onChange={(event) => {
+          const apply = event.target.value as typeof action.apply;
+          onChange(
+            apply === "rate"
+              ? { kind: "price", apply, rateId: rates[0]?.id ?? "plein" }
+              : apply === "percent"
+                ? { kind: "price", apply, percent: 10 }
+                : { kind: "price", apply, amountCents: 500 },
+          );
+        }}
+        className="min-w-44"
+      >
+        <option value="percent">Réduction en %</option>
+        <option value="amount">Réduction en €</option>
+        <option value="rate">Passer au tarif…</option>
+      </Select>
+      {action.apply === "rate" ? (
+        <Select
+          variant="compact"
+          aria-label="Tarif"
+          value={action.rateId ?? ""}
+          onChange={(event) => onChange({ ...action, rateId: event.target.value })}
+          className="min-w-36"
+        >
+          {rates.map((rate) => (
+            <option key={rate.id} value={rate.id}>
+              {rate.name}
+            </option>
+          ))}
+        </Select>
+      ) : (
+        <ReductionInput key={action.apply} action={action} onChange={onChange} />
+      )}
+      {action.apply !== "rate" && (
+        <span className="text-sm font-semibold text-ink">
+          {action.apply === "percent" ? "%" : "€"}
+        </span>
+      )}
+    </>
+  );
+}
+
+/** Montant ou pourcentage : le texte reste tel que saisi (« 12, »), la règle reçoit l'entier. */
+function ReductionInput({
+  action,
+  onChange,
+}: {
+  action: Extract<RuleAction, { kind: "price" }>;
+  onChange: (next: RuleAction) => void;
+}) {
+  const percent = action.apply === "percent";
+  const [text, setText] = useState(() =>
+    percent ? String(action.percent ?? "") : centsToInput(action.amountCents ?? 0),
+  );
+  return (
+    <input
+      aria-label={percent ? "Pourcentage" : "Montant en euros"}
+      inputMode="decimal"
+      value={text}
+      onChange={(event) => {
+        setText(event.target.value);
+        const parsed = percent
+          ? Math.trunc(Number(event.target.value))
+          : parseEuroToCents(event.target.value);
+        const value = Number.isFinite(parsed) && parsed > 0 ? parsed : undefined;
+        onChange(percent ? { ...action, percent: value } : { ...action, amountCents: value });
+      }}
+      className={cn(pillInput, "w-[72px]")}
+    />
   );
 }
 
@@ -860,7 +974,7 @@ function RuleTest({ rule, context }: { rule: Rule; context: RuleEditorContext })
                         {label.text}
                       </span>
                       {groupIndex > 0 && index === 0 ? "ou si " : index > 0 ? "et " : ""}
-                      {describeCondition(condition, fields)}
+                      {describeCondition(condition, fields, context.pricing)}
                     </li>
                   );
                 }),
@@ -918,7 +1032,7 @@ function RuleDialog({
   const [testing, setTesting] = useState(false);
   const { fields } = context;
   const bookingKnown = BOOKING_TRIGGERS.has(draft.trigger.kind);
-  const description = describeRule(draft, fields);
+  const description = describeRule(draft, fields, context.pricing);
   const set = (patch: Partial<Rule>) => {
     setDraft((current) => ({ ...current, ...patch }));
     setError(null);
@@ -958,7 +1072,7 @@ function RuleDialog({
       setError(parsed.error.issues[0]?.message ?? "Règle incomplète");
       return;
     }
-    const issue = ruleIssues([parsed.data], fields)[0];
+    const issue = ruleIssues([parsed.data], fields, { pricing: context.pricing })[0];
     if (issue) {
       setError(issue.message.replace(/^« [^»]* » : /, ""));
       return;
@@ -1038,6 +1152,7 @@ function RuleDialog({
                       condition={condition}
                       fields={fields}
                       bookingKnown={bookingKnown}
+                      pricing={context.pricing}
                       onChange={(next) => setCondition(groupIndex, index, next)}
                       onRemove={() => setCondition(groupIndex, index, null)}
                     />
@@ -1082,6 +1197,7 @@ function RuleDialog({
                 action={action}
                 trigger={draft.trigger}
                 documents={context.documents}
+                pricing={context.pricing}
                 onChange={(next) =>
                   set({ actions: draft.actions.map((entry, i) => (i === index ? next : entry)) })
                 }

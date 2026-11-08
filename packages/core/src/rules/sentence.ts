@@ -1,4 +1,6 @@
 import type { EventTypeField } from "../fields/model";
+import type { PricingModule } from "../modules/registry";
+import { moneyLabel } from "../modules/rules";
 import {
   BOOKING_TRIGGERS,
   type Rule,
@@ -71,10 +73,17 @@ function valueText(
 
 const places = (count: number) => `${count} place${count > 1 ? "s" : ""}`;
 
+/** Tarifs et options du type, pour les nommer ; sans module, le tarif « Plein ». */
+type Prices = PricingModule | undefined;
+
+const rateName = (pricing: Prices, id: string | undefined) =>
+  pricing?.rates.find((rate) => rate.id === id)?.name ?? (id === "plein" ? "Plein" : (id ?? ""));
+
 /** Une condition en clair : « un participant a moins de 16 ans », « il reste des places ». */
 export function describeCondition(
   condition: RuleCondition,
   fields: readonly EventTypeField[],
+  pricing?: Prices,
 ): string {
   switch (condition.kind) {
     case "field": {
@@ -122,6 +131,10 @@ export function describeCondition(
       if (condition.is === "new") return "le client est nouveau";
       if (condition.is === "pass_holder") return "le client a une carte de séances active";
       return `le client porte l'étiquette « ${condition.tag ?? ""} »`;
+    case "pricing":
+      return condition.target === "rate"
+        ? `le tarif « ${rateName(pricing, condition.id)} » est choisi`
+        : `l'option « ${pricing?.options?.find((option) => option.id === condition.id)?.name ?? condition.id} » est prise`;
     case "equipment": {
       const units = `${condition.value} exemplaire${condition.value > 1 ? "s" : ""} de matériel`;
       if (condition.operator === "less_than") return `il reste moins de ${units}`;
@@ -141,15 +154,16 @@ const and = (parts: string[]) =>
 export function describeConditions(
   conditions: Rule["conditions"],
   fields: readonly EventTypeField[],
+  pricing?: Prices,
 ): string | null {
   if (conditions.length === 0) return null;
   return conditions
-    .map((group) => and(group.map((condition) => describeCondition(condition, fields))))
+    .map((group) => and(group.map((condition) => describeCondition(condition, fields, pricing))))
     .join(", ou si ");
 }
 
 /** Une action à l'infinitif : « demander d'accepter « … » », « prévenir l'équipe ». */
-export function describeAction(action: RuleAction, trigger: RuleTrigger): string {
+export function describeAction(action: RuleAction, trigger: RuleTrigger, pricing?: Prices): string {
   switch (action.kind) {
     case "ask":
       return action.field.type === "acceptance"
@@ -167,8 +181,16 @@ export function describeAction(action: RuleAction, trigger: RuleTrigger): string
       return `envoyer « ${action.subject} » ${BOOKING_TRIGGERS.has(trigger.kind) ? "au client" : "aux inscrits"}`;
     case "cancel_event":
       return "annuler la séance";
+    case "price":
+      return action.apply === "rate"
+        ? `passer toutes les places au tarif « ${rateName(pricing, action.rateId)} »`
+        : `appliquer une réduction de ${priceOff(action)}`;
   }
 }
+
+/** « 10 % », « 5 € ». */
+const priceOff = (action: Extract<RuleAction, { kind: "price" }>) =>
+  action.apply === "percent" ? `${action.percent ?? 0} %` : moneyLabel(action.amountCents ?? 0);
 
 export interface RuleDescription {
   /** « À chaque inscription ». */
@@ -182,11 +204,12 @@ export interface RuleDescription {
 export function describeRule(
   rule: Pick<Rule, "trigger" | "conditions" | "actions">,
   fields: readonly EventTypeField[],
+  pricing?: Prices,
 ): RuleDescription {
   return {
     when: ruleWhen(rule.trigger),
-    condition: describeConditions(rule.conditions, fields),
-    actions: listJoin(rule.actions.map((action) => describeAction(action, rule.trigger))),
+    condition: describeConditions(rule.conditions, fields, pricing),
+    actions: listJoin(rule.actions.map((action) => describeAction(action, rule.trigger, pricing))),
   };
 }
 
@@ -194,8 +217,9 @@ export function describeRule(
 export function ruleSentence(
   rule: Pick<Rule, "trigger" | "conditions" | "actions">,
   fields: readonly EventTypeField[],
+  pricing?: Prices,
 ): string {
-  const { when, condition, actions } = describeRule(rule, fields);
+  const { when, condition, actions } = describeRule(rule, fields, pricing);
   return `${when}, ${condition ? `si ${condition}, ` : ""}${actions}.`;
 }
 
@@ -218,6 +242,8 @@ export function ruleActionDone(action: RuleAction): string {
       return `message « ${action.subject} » envoyé`;
     case "cancel_event":
       return "séance annulée";
+    case "price":
+      return action.apply === "rate" ? "tarif changé" : `réduction de ${priceOff(action)}`;
   }
 }
 

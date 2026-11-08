@@ -3,7 +3,13 @@ import type { EventStatus, EventVisibility, PaymentMode } from "../events/types"
 import { amountDueOnline } from "../payments/rules";
 import { remainingSeats } from "./capacity";
 import type { Booking } from "./model";
-import { type PriceLine, quoteBooking, selectionFor, selectionFromLines } from "./pricing";
+import {
+  adjustmentsFromLines,
+  type PriceLine,
+  quoteBooking,
+  selectionFor,
+  selectionFromLines,
+} from "./pricing";
 import type { BookingPaymentStatus, BookingStatus } from "./types";
 
 /**
@@ -111,7 +117,13 @@ export function reschedulePricing(input: {
     };
   }
   const selection = selectionFor(to, booking.seats, selectionFromLines(booking.priceLines));
-  const { lines, amountCents, depositCents } = quoteBooking(to, booking.seats, selection);
+  // Les réductions des règles suivent l'inscription (le passage à un tarif est déjà dans son choix).
+  const { lines, amountCents, depositCents } = quoteBooking(
+    to,
+    booking.seats,
+    selection,
+    adjustmentsFromLines(booking.priceLines),
+  );
   const priced = { amountCents, depositCents, paymentMode: to.paymentMode };
   const dueCents = amountDueOnline(priced, paidCents);
   return {

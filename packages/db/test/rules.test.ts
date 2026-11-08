@@ -139,6 +139,77 @@ describe("règles « si… alors… »", () => {
   });
 
   describe("inscription envoyée", () => {
+    it("tarifs : l'option prise déclenche une réduction, calculée et tracée par le serveur", async () => {
+      const type = await createEventType(deps, owner, {
+        name: "Tournage payant",
+        color: "#A9663F",
+        fields: FIELDS,
+        modules: {
+          pricing: {
+            rates: [
+              { id: "plein", name: "Plein", priceCents: 4000 },
+              { id: "reduit", name: "Réduit", priceCents: 3000 },
+            ],
+            options: [{ id: "cuisson", name: "Cuisson", priceCents: 800, per: "participant" }],
+          },
+        },
+        rules: [
+          {
+            id: "pack",
+            name: "Pack cuisson",
+            trigger: { kind: "booking_submitted" },
+            conditions: [[{ kind: "pricing", target: "option", id: "cuisson" }]],
+            actions: [{ kind: "price", apply: "percent", percent: 10 }],
+          },
+        ],
+      });
+      const [created] = await createEvent(deps, owner, {
+        eventTypeId: type.id,
+        title: "Tournage",
+        startsAt: "2026-10-20T16:00:00Z",
+        endsAt: "2026-10-20T18:00:00Z",
+        timezone: "Europe/Paris",
+        capacity: 10,
+        priceCents: 4000,
+        paymentMode: "on_site",
+        fieldValues: { niveau: "Débutant" },
+      });
+      if (!created) throw new Error("Événement non créé");
+      await publishEvent(deps, owner, created.id);
+      const order = (options: Record<string, number>) =>
+        createEventBooking(deps, customerActor(organizationId), {
+          eventId: created.id,
+          seats: 1,
+          customer: contact(`eleve-${Math.random().toString(36).slice(2, 8)}@mail.com`),
+          participants: [{ firstName: "P", lastName: "Roux", answers: { age: "30" } }],
+          options,
+        });
+      expect((await order({})).booking.amountCents).toBe(4000);
+      const { booking } = await order({ cuisson: 1 });
+      // (40 € + 8 €) − 10 % = 43,20 €.
+      expect(booking.amountCents).toBe(4320);
+      expect(booking.priceLines.at(-1)).toMatchObject({
+        kind: "discount",
+        id: "pack",
+        totalCents: -480,
+      });
+      expect(await runsOf(created.id)).toMatchObject([{ bookingId: booking.id, ruleId: "pack" }]);
+      // Une règle qui vise un tarif absent du type est refusée.
+      await expect(
+        updateEventType(deps, owner, type.id, {
+          rules: [
+            {
+              id: "vip",
+              name: "VIP",
+              trigger: { kind: "booking_submitted" },
+              conditions: [],
+              actions: [{ kind: "price", apply: "rate", rateId: "vip" }],
+            },
+          ],
+        }),
+      ).rejects.toThrow(ValidationError);
+    });
+
     it("un mineur : l'acceptation est exigée, puis enregistrée, tracée et journalisée", async () => {
       const { event } = await publishedEvent([MINORS]);
       const error = await book(event.id, [34, 14]).catch((caught: unknown) => caught);

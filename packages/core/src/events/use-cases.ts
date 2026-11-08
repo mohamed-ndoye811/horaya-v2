@@ -80,7 +80,7 @@ export async function createEventType(
 
   const fields = withModuleFields(data.fields, data.modules);
   const pricing = data.modules.pricing;
-  assertRulesFit(data.rules, fields);
+  assertRulesFit(data.rules, fields, data.modules);
 
   return deps.uow.run(async (repositories) => {
     await assertEquipmentTypesExist(repositories, actor.organizationId, data.modules);
@@ -132,8 +132,12 @@ export async function updateEventType(
     // Avec « Tarifs et options », le prix par défaut est celui du tarif par défaut.
     const pricing = (patch.modules ?? existing.modules).pricing;
     if (pricing) patch.defaultPriceCents = defaultRate(pricing).priceCents;
-    if (patch.fields || patch.rules) {
-      assertRulesFit(patch.rules ?? existing.rules, patch.fields ?? existing.fields);
+    if (patch.fields || patch.rules || patch.modules) {
+      assertRulesFit(
+        patch.rules ?? existing.rules,
+        patch.fields ?? existing.fields,
+        patch.modules ?? existing.modules,
+      );
     }
     const updated = await repositories.eventTypes.update(actor.organizationId, eventTypeId, patch);
     // Les événements gardent leur version du type ; les passés et ceux qui ont des inscrits, toujours.
