@@ -1,4 +1,7 @@
 import { useState } from "react";
+import { Collapse, Disclosure } from "@/components/motion/collapse";
+import { CountUp } from "@/components/motion/count-up";
+import { PresenceItem, PresenceList } from "@/components/motion/presence";
 import { StatusBadge, type Tone } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Field, inputClasses } from "@/components/ui/field";
@@ -51,7 +54,7 @@ export function CustomerPasses({
       .format(value)
       .replace(".", "");
   return (
-    <section className={cn(cardClasses, "gap-3")}>
+    <section className={cn(cardClasses, "relative gap-3")}>
       <h2 className="text-base font-semibold leading-5 text-ink">
         Cartes de séances
         <span className="ml-2 text-[13px] font-normal text-ink-subtle">{passes.length}</span>
@@ -59,76 +62,87 @@ export function CustomerPasses({
       {passes.length === 0 && (
         <p className="text-[13px] leading-[17px] text-ink-subtle">Aucune carte pour l'instant.</p>
       )}
-      {passes.map((pass) => {
-        const state = stateOf(pass, now);
-        return (
-          <article key={pass.id} className="flex flex-col gap-2.5 rounded-[14px] bg-field p-3.5">
-            <div className="flex items-start justify-between gap-3">
-              <div className="flex min-w-0 flex-col gap-0.5">
-                <h3 className="truncate text-sm font-semibold text-ink">{pass.name}</h3>
-                <p className="text-xs text-ink-subtle">
-                  {pass.expiresAt
-                    ? `Valable jusqu'au ${date(pass.expiresAt)}`
-                    : formatMoney(pass.priceCents)}
-                </p>
+      <PresenceList>
+        {passes.map((pass) => {
+          const state = stateOf(pass, now);
+          return (
+            <PresenceItem
+              as="article"
+              key={pass.id}
+              className="flex flex-col gap-2.5 rounded-[14px] bg-field p-3.5"
+            >
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex min-w-0 flex-col gap-0.5">
+                  <h3 className="truncate text-sm font-semibold text-ink">{pass.name}</h3>
+                  <p className="text-xs text-ink-subtle">
+                    {pass.expiresAt
+                      ? `Valable jusqu'au ${date(pass.expiresAt)}`
+                      : formatMoney(pass.priceCents)}
+                  </p>
+                </div>
+                <StatusBadge tone={state.tone}>{state.label}</StatusBadge>
               </div>
-              <StatusBadge tone={state.tone}>{state.label}</StatusBadge>
-            </div>
-            {pass.status !== "pending" && pass.status !== "cancelled" && (
-              <p className="text-sm text-ink">
-                <span className="text-2xl font-semibold tracking-tight">{pass.balance}</span> séance
-                {pass.balance > 1 ? "s" : ""} restante{pass.balance > 1 ? "s" : ""} sur{" "}
-                {pass.sessionsTotal}
-              </p>
-            )}
-            {pass.status === "pending" && <PassPaymentActions passId={pass.id} />}
-            {pass.movements.length > 0 && (
-              <details className="group">
-                <summary className="cursor-pointer text-[13px] font-semibold text-ink-muted hover:text-ink">
-                  Journal ({pass.movements.length})
-                </summary>
-                <ul className="mt-2 flex flex-col">
-                  {pass.movements.map((movement) => (
-                    <li
-                      key={movement.id}
-                      className="flex items-baseline justify-between gap-3 border-t border-line-soft py-1.5 text-[13px]"
-                    >
-                      <span className="min-w-0 text-ink-soft">
-                        <span className="font-semibold text-ink">{KIND_LABELS[movement.kind]}</span>
-                        {movement.bookingId && (
-                          <>
-                            {" · "}
-                            <Link
-                              href={`/app/reservations/${movement.bookingId}`}
-                              className="underline underline-offset-2"
-                            >
-                              {movement.eventTitle ?? movement.bookingReference}
-                            </Link>
-                          </>
-                        )}
-                        {movement.reason && ` · ${movement.reason}`}
-                        <span className="block text-xs text-ink-subtle">
-                          {date(movement.createdAt)}
-                        </span>
-                      </span>
-                      <span
-                        className={cn(
-                          "shrink-0 font-semibold",
-                          movement.delta > 0 ? "text-success" : "text-ink",
-                        )}
+              {pass.status !== "pending" && pass.status !== "cancelled" && (
+                <p className="text-sm text-ink">
+                  <span className="text-2xl font-semibold tracking-tight">
+                    <CountUp value={String(pass.balance)} />
+                  </span>{" "}
+                  séance
+                  {pass.balance > 1 ? "s" : ""} restante{pass.balance > 1 ? "s" : ""} sur{" "}
+                  {pass.sessionsTotal}
+                </p>
+              )}
+              {pass.status === "pending" && <PassPaymentActions passId={pass.id} />}
+              {pass.movements.length > 0 && (
+                <Disclosure
+                  summary={`Journal (${pass.movements.length})`}
+                  summaryClassName="text-[13px] font-semibold text-ink-muted hover:text-ink"
+                >
+                  <ul className="mt-2 flex flex-col">
+                    {pass.movements.map((movement) => (
+                      <li
+                        key={movement.id}
+                        className="flex items-baseline justify-between gap-3 border-t border-line-soft py-1.5 text-[13px]"
                       >
-                        {movement.delta > 0 ? "+" : "−"}
-                        {Math.abs(movement.delta)}
-                      </span>
-                    </li>
-                  ))}
-                </ul>
-              </details>
-            )}
-            {pass.status === "active" && <AdjustForm passId={pass.id} />}
-          </article>
-        );
-      })}
+                        <span className="min-w-0 text-ink-soft">
+                          <span className="font-semibold text-ink">
+                            {KIND_LABELS[movement.kind]}
+                          </span>
+                          {movement.bookingId && (
+                            <>
+                              {" · "}
+                              <Link
+                                href={`/app/reservations/${movement.bookingId}`}
+                                className="underline underline-offset-2"
+                              >
+                                {movement.eventTitle ?? movement.bookingReference}
+                              </Link>
+                            </>
+                          )}
+                          {movement.reason && ` · ${movement.reason}`}
+                          <span className="block text-xs text-ink-subtle">
+                            {date(movement.createdAt)}
+                          </span>
+                        </span>
+                        <span
+                          className={cn(
+                            "shrink-0 font-semibold",
+                            movement.delta > 0 ? "text-success" : "text-ink",
+                          )}
+                        >
+                          {movement.delta > 0 ? "+" : "−"}
+                          {Math.abs(movement.delta)}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                </Disclosure>
+              )}
+              {pass.status === "active" && <AdjustForm passId={pass.id} />}
+            </PresenceItem>
+          );
+        })}
+      </PresenceList>
       {plans.length > 0 && <SellForm customerId={customerId} plans={plans} />}
     </section>
   );
@@ -140,10 +154,10 @@ function AdjustForm({ passId }: { passId: string }) {
     {},
   );
   return (
-    <details>
-      <summary className="cursor-pointer text-[13px] font-semibold text-ink-muted hover:text-ink">
-        Ajuster le solde
-      </summary>
+    <Disclosure
+      summary="Ajuster le solde"
+      summaryClassName="text-[13px] font-semibold text-ink-muted hover:text-ink"
+    >
       <form onSubmit={onSubmit} className="mt-2 flex flex-col gap-3">
         {state.error && !state.fieldErrors && <FormAlert>{state.error}</FormAlert>}
         {state.success && <FormAlert tone="success">{state.success}</FormAlert>}
@@ -184,7 +198,7 @@ function AdjustForm({ passId }: { passId: string }) {
           Noter l'ajustement
         </Button>
       </form>
-    </details>
+    </Disclosure>
   );
 }
 
@@ -213,7 +227,7 @@ function SellForm({ customerId, plans }: { customerId: string; plans: Data["sell
         onChange={(event) => setPaid(event.target.checked)}
         label="Déjà payée"
       />
-      {paid && (
+      <Collapse open={paid}>
         <Select name="paymentMethod" aria-label="Moyen de paiement" variant="compact">
           <option value="">Moyen : non précisé</option>
           {Object.entries(METHOD_LABELS).map(([value, label]) => (
@@ -222,7 +236,7 @@ function SellForm({ customerId, plans }: { customerId: string; plans: Data["sell
             </option>
           ))}
         </Select>
-      )}
+      </Collapse>
       <Button type="submit" size="xs" pending={pending} className="self-start">
         Vendre la carte
       </Button>

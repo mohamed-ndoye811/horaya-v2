@@ -1,5 +1,6 @@
 import type { SeriesEnrollmentRow, SeriesOffer } from "@horaya/db";
 import { useState, useTransition } from "react";
+import { Collapse } from "@/components/motion/collapse";
 import { StatusBadge } from "@/components/ui/badge";
 import { Button, ButtonLink } from "@/components/ui/button";
 import { MoneyCell, PersonCell } from "@/components/ui/cells";
@@ -40,7 +41,7 @@ export function SeriesPanel({
 }) {
   const active = enrollments.filter((row) => row.cancelledAt === null);
   return (
-    <div className="grid gap-6 px-4 pb-8 lg:grid-cols-[340px_minmax(0,1fr)] lg:items-start">
+    <div className="reveal-group grid gap-6 px-4 pb-8 lg:grid-cols-[340px_minmax(0,1fr)] lg:items-start">
       <SeriesSettingsForm seriesId={seriesId} offer={offer} timeZone={timeZone} />
       <div className="flex flex-col gap-3">
         <div className="flex flex-wrap items-center justify-between gap-3">
@@ -274,37 +275,33 @@ function SeriesSettingsForm({
         label="Inscription à la série"
         description="Une place dans chaque séance restante, un seul paiement."
       />
-      {enabled && (
-        <>
-          <Field
-            label="Prix de la série"
-            required
-            error={state.fieldErrors?.enrollmentPriceCents}
-            hint="Le même prix quelle que soit la date d'inscription."
-          >
-            {(field) => (
-              <AffixInput
-                {...field}
-                name="enrollmentPrice"
-                inputMode="decimal"
-                mono
-                suffix="€ TTC"
-                defaultValue={
-                  offer.enrollmentPriceCents === null
-                    ? ""
-                    : centsToInput(offer.enrollmentPriceCents)
-                }
-              />
-            )}
-          </Field>
-          <Switch
-            name="dropInAllowed"
-            defaultChecked={offer.dropInAllowed}
-            label="Réservation à la séance"
-            description="Le public peut aussi réserver une séance à l'unité."
-          />
-        </>
-      )}
+      <Collapse open={enabled} className="flex flex-col gap-5">
+        <Field
+          label="Prix de la série"
+          required
+          error={state.fieldErrors?.enrollmentPriceCents}
+          hint="Le même prix quelle que soit la date d'inscription."
+        >
+          {(field) => (
+            <AffixInput
+              {...field}
+              name="enrollmentPrice"
+              inputMode="decimal"
+              mono
+              suffix="€ TTC"
+              defaultValue={
+                offer.enrollmentPriceCents === null ? "" : centsToInput(offer.enrollmentPriceCents)
+              }
+            />
+          )}
+        </Field>
+        <Switch
+          name="dropInAllowed"
+          defaultChecked={offer.dropInAllowed}
+          label="Réservation à la séance"
+          description="Le public peut aussi réserver une séance à l'unité."
+        />
+      </Collapse>
       <Button type="submit" pending={pending} className="self-start">
         Enregistrer
       </Button>

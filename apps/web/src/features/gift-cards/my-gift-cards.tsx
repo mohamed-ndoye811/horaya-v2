@@ -1,3 +1,4 @@
+import { CountUp } from "@/components/motion/count-up";
 import { cardShellClasses } from "@/components/ui/section";
 import { cn } from "@/lib/cn";
 import { formatMoney } from "@/lib/format";
@@ -29,14 +30,14 @@ export function MyGiftCards({
   return (
     <section
       aria-label="Mes bons cadeaux"
-      className={cn(cardShellClasses, "gap-3 px-7 py-6", className)}
+      className={cn(cardShellClasses, "reveal-group gap-3 px-7 py-6", className)}
     >
       <h2 className="text-[13px] font-semibold leading-4 text-ink-muted">Mes bons cadeaux</h2>
       {cards.map((card) => (
         <div key={card.id} className="flex items-center justify-between gap-4">
           <div className="flex min-w-0 flex-col gap-0.5">
             <p className="text-xl font-semibold leading-[26px] text-ink">
-              {formatMoney(card.balanceCents)} à utiliser
+              <CountUp value={formatMoney(card.balanceCents)} /> à utiliser
             </p>
             {card.expiresAt && (
               <p className="text-sm leading-5 text-ink-muted">

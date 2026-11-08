@@ -1,4 +1,5 @@
 import { PageHeader } from "@/components/app/page-header";
+import { CountUp } from "@/components/motion/count-up";
 import { StatusBadge } from "@/components/ui/badge";
 import { ButtonLink } from "@/components/ui/button";
 import { Eyebrow, inkCardClasses } from "@/components/ui/section";
@@ -36,7 +37,7 @@ export function GiftCardDetailPage({ data }: { data: Awaited<ReturnType<typeof g
           </>
         }
       />
-      <div className="grid items-start gap-4 px-4 pb-4 xl:grid-cols-[minmax(0,1fr)_340px]">
+      <div className="reveal-group grid items-start gap-4 px-4 pb-4 xl:grid-cols-[minmax(0,1fr)_340px]">
         <section className="flex flex-col gap-4 rounded-3xl bg-surface p-5 sm:p-6">
           <h2 className="text-lg font-semibold leading-[22px] text-ink">Journal</h2>
           {movements.length === 0 ? (
@@ -60,11 +61,11 @@ export function GiftCardDetailPage({ data }: { data: Awaited<ReturnType<typeof g
             />
           )}
         </section>
-        <aside className="flex flex-col gap-4">
+        <aside className="reveal-group flex flex-col gap-4">
           <div className={cn(inkCardClasses, "flex flex-col gap-1 rounded-3xl p-5")}>
             <Eyebrow variant="caps">Solde</Eyebrow>
             <p className="text-[40px] font-semibold leading-[44px] tracking-[-0.03em]">
-              {formatMoney(card.balanceCents)}
+              <CountUp value={formatMoney(card.balanceCents)} />
             </p>
             <p className="text-[13px] leading-[18px] text-on-ink-muted">
               sur {formatMoney(card.initialCents)}

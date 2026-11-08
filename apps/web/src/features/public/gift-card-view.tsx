@@ -1,3 +1,4 @@
+import { CountUp } from "@/components/motion/count-up";
 import { StatusBadge } from "@/components/ui/badge";
 import { Button, ButtonLink } from "@/components/ui/button";
 import type { getGiftCardView } from "@/functions/gift-cards";
@@ -21,7 +22,7 @@ export function GiftCardView({
   const pending = card.state === "pending";
   const link = workspace.paymentLinkUrl;
   return (
-    <div className="mx-auto flex w-full max-w-[640px] flex-col gap-4 py-2">
+    <div className="reveal-group mx-auto flex w-full max-w-[640px] flex-col gap-4 py-2">
       {pending && (
         <section className="flex flex-col gap-3 rounded-3xl bg-surface p-6 print:hidden">
           <h1 className="text-xl font-semibold leading-[26px] text-ink">
@@ -64,7 +65,7 @@ export function GiftCardView({
               displayFontClass(workspace.displayFont),
             )}
           >
-            {formatMoney(card.initialCents)}
+            <CountUp value={formatMoney(card.initialCents)} />
           </p>
           <p className="text-[17px] leading-[25px] text-on-ink/85 print:text-black">
             Pour {card.recipientName}, de la part de {card.purchaserName}

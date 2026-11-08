@@ -1,5 +1,6 @@
 import type { GiftCardSettings } from "@horaya/core";
 import { useState } from "react";
+import { Collapse } from "@/components/motion/collapse";
 import { Button } from "@/components/ui/button";
 import { AffixInput, Field, inputClasses, textareaClasses } from "@/components/ui/field";
 import { FormAlert } from "@/components/ui/form-alert";
@@ -31,7 +32,7 @@ export function GiftCardPurchase({
 
   return (
     <div className="flex flex-col gap-4 lg:flex-row lg:items-start">
-      <form onSubmit={onSubmit} className="flex min-w-0 flex-1 flex-col gap-4">
+      <form onSubmit={onSubmit} className="reveal-group flex min-w-0 flex-1 flex-col gap-4">
         <header className="flex flex-col gap-2 px-1 pt-2">
           <h1
             className={cn(
@@ -58,7 +59,7 @@ export function GiftCardPurchase({
                   onChange={() => setAmount(String(cents))}
                   className="peer sr-only"
                 />
-                <span className="flex h-12 min-w-[88px] items-center justify-center rounded-2xl border-[1.5px] border-line bg-surface px-4 text-base font-semibold text-ink transition-colors peer-checked:border-[var(--brand)] peer-checked:bg-[var(--brand)] peer-checked:text-[var(--on-brand)] peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-ink">
+                <span className="flex h-12 min-w-[88px] items-center justify-center rounded-2xl border-[1.5px] border-line bg-surface px-4 text-base font-semibold text-ink press peer-checked:border-[var(--brand)] peer-checked:bg-[var(--brand)] peer-checked:text-[var(--on-brand)] peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-ink">
                   {formatMoney(cents)}
                 </span>
               </label>
@@ -73,13 +74,13 @@ export function GiftCardPurchase({
                   onChange={() => setAmount("autre")}
                   className="peer sr-only"
                 />
-                <span className="flex h-12 min-w-[88px] items-center justify-center rounded-2xl border-[1.5px] border-line bg-surface px-4 text-base font-semibold text-ink transition-colors peer-checked:border-[var(--brand)] peer-checked:bg-[var(--brand)] peer-checked:text-[var(--on-brand)] peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-ink">
+                <span className="flex h-12 min-w-[88px] items-center justify-center rounded-2xl border-[1.5px] border-line bg-surface px-4 text-base font-semibold text-ink press peer-checked:border-[var(--brand)] peer-checked:bg-[var(--brand)] peer-checked:text-[var(--on-brand)] peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-ink">
                   Autre montant
                 </span>
               </label>
             )}
           </div>
-          {amount === "autre" && (
+          <Collapse open={amount === "autre"}>
             <Field
               label="Montant libre"
               error={errors.amountCents}
@@ -100,9 +101,11 @@ export function GiftCardPurchase({
                 />
               )}
             </Field>
-          )}
+          </Collapse>
           {amount !== "autre" && errors.amountCents && (
-            <p className="text-[13px] font-semibold text-danger">{errors.amountCents}</p>
+            <p className="animate-drop text-[13px] font-semibold text-danger">
+              {errors.amountCents}
+            </p>
           )}
         </FormSection>
         <FormSection number={2} title="Toi">

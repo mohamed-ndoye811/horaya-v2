@@ -1,3 +1,4 @@
+import { Swap } from "@/components/motion/swap";
 import { stagger, WordsReveal } from "@/components/motion/words";
 import { StatusBadge } from "@/components/ui/badge";
 import { ButtonLink } from "@/components/ui/button";
@@ -86,16 +87,18 @@ export function ManagedEnrollmentPage({
       </section>
 
       {!cancelled && (
-        <EnrollmentNextSession
-          next={progress.next}
-          progress={progress}
-          timeZone={tz}
-          courseHref={(eventSlug) => `/${slug}/${eventSlug}`}
-          onAbsent={onAbsent}
-        />
+        <div className="reveal" style={stagger(4)}>
+          <EnrollmentNextSession
+            next={progress.next}
+            progress={progress}
+            timeZone={tz}
+            courseHref={(eventSlug) => `/${slug}/${eventSlug}`}
+            onAbsent={onAbsent}
+          />
+        </div>
       )}
 
-      <section className="flex flex-col rounded-3xl bg-surface px-6 py-2">
+      <section className="reveal flex flex-col rounded-3xl bg-surface px-6 py-2" style={stagger(5)}>
         <div className="flex h-14 items-center justify-between gap-4">
           <h2 className="text-lg font-semibold leading-[22px] text-ink">Tes séances</h2>
           {payment && (
@@ -105,7 +108,7 @@ export function ManagedEnrollmentPage({
             </p>
           )}
         </div>
-        <ol className="flex flex-col">
+        <ol className="reveal-group flex flex-col">
           {progress.sessions.map((session, index) => (
             <li
               key={session.bookingId}
@@ -122,19 +125,21 @@ export function ManagedEnrollmentPage({
                   {formatDateTimeShort(session.startsAt, tz)}
                 </span>
               </p>
-              {session.absent ? (
-                <StatusBadge tone="neutral">Absence signalée</StatusBadge>
-              ) : session.status === "cancelled" ? (
-                <StatusBadge tone="draft">Libérée</StatusBadge>
-              ) : session.startsAt <= now ? (
-                <span className="text-[13px] font-semibold text-ink-subtle">
-                  {session.state === "done" ? "Passée" : "En cours"}
-                </span>
-              ) : (
-                !cancelled && (
-                  <AbsenceButton session={session} timeZone={tz} onAbsent={onAbsent} size="xs" />
-                )
-              )}
+              <Swap value={session.absent ? "absent" : session.status}>
+                {session.absent ? (
+                  <StatusBadge tone="neutral">Absence signalée</StatusBadge>
+                ) : session.status === "cancelled" ? (
+                  <StatusBadge tone="draft">Libérée</StatusBadge>
+                ) : session.startsAt <= now ? (
+                  <span className="text-[13px] font-semibold text-ink-subtle">
+                    {session.state === "done" ? "Passée" : "En cours"}
+                  </span>
+                ) : (
+                  !cancelled && (
+                    <AbsenceButton session={session} timeZone={tz} onAbsent={onAbsent} size="xs" />
+                  )
+                )}
+              </Swap>
             </li>
           ))}
         </ol>

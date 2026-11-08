@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Collapse } from "@/components/motion/collapse";
 import { Button, ButtonLink } from "@/components/ui/button";
 import type { getAllCustomerBookings } from "@/functions/customer-space";
 import { historySummary } from "@/lib/customer-space";
@@ -14,7 +15,7 @@ export function AllBookingsPage({
   const { account, groups, history, workspaceCount } = data;
   const [showHistory, setShowHistory] = useState(false);
   return (
-    <section className="flex flex-col gap-9 rounded-3xl bg-surface px-5 pt-6 pb-8 sm:px-11 sm:pt-10 sm:pb-11">
+    <section className="reveal-group flex flex-col gap-9 rounded-3xl bg-surface px-5 pt-6 pb-8 sm:px-11 sm:pt-10 sm:pb-11">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div className="flex flex-col gap-2">
           <SpaceTitle displayFont={null}>Toutes mes réservations</SpaceTitle>
@@ -44,7 +45,7 @@ export function AllBookingsPage({
               Mon espace chez {workspace.name}
             </ButtonLink>
           </div>
-          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+          <div className="reveal-group grid gap-4 md:grid-cols-2 xl:grid-cols-3">
             {upcoming.map((card) => (
               <BookingCard key={card.id} card={card} />
             ))}
@@ -73,13 +74,13 @@ export function AllBookingsPage({
             </Button>
           )}
         </div>
-        {showHistory && (
+        <Collapse open={showHistory}>
           <div className="flex flex-col rounded-2xl bg-surface px-4 py-1">
             {history.map((card) => (
               <BookingRow key={card.id} card={card} />
             ))}
           </div>
-        )}
+        </Collapse>
       </div>
     </section>
   );

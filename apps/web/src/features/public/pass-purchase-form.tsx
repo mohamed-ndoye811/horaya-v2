@@ -27,7 +27,7 @@ export function PassPurchaseForm({
   );
   const errors = state.fieldErrors ?? {};
   return (
-    <form onSubmit={onSubmit} className="auth-fields flex flex-col gap-[22px]">
+    <form onSubmit={onSubmit} className="reveal-group auth-fields flex flex-col gap-[22px]">
       {state.error && !state.fieldErrors && <FormAlert>{state.error}</FormAlert>}
       <fieldset className="flex flex-col gap-2">
         <legend className="mb-2 text-[13px] font-semibold text-ink">Ta carte</legend>
@@ -35,7 +35,7 @@ export function PassPurchaseForm({
           <label
             key={plan.id}
             className={cn(
-              "flex cursor-pointer items-center justify-between gap-3 rounded-2xl border border-line px-4 py-3",
+              "flex cursor-pointer items-center justify-between gap-3 rounded-2xl border border-line px-4 py-3 press",
               "has-checked:border-ink has-checked:bg-band has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-ink",
             )}
           >

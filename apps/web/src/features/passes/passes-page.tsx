@@ -1,4 +1,5 @@
 import { PageHeader } from "@/components/app/page-header";
+import { PresenceItem, PresenceList } from "@/components/motion/presence";
 import { StatusBadge } from "@/components/ui/badge";
 import { ButtonLink } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -62,29 +63,32 @@ export function PassesPage({
                   {pending.length}
                 </span>
               </h2>
-              <ul className="flex flex-col">
-                {pending.map((entry) => (
-                  <li
-                    key={entry.id}
-                    className="flex flex-col gap-2 border-t border-line-faint py-3 first:border-t-0"
-                  >
-                    <div className="flex items-baseline justify-between gap-3">
-                      <Link
-                        href={`/app/clients/${entry.customerId}`}
-                        className="text-sm font-semibold text-ink hover:underline"
-                      >
-                        {entry.customerName}
-                      </Link>
-                      <span className="text-sm font-semibold text-ink">
-                        {formatMoney(entry.priceCents)}
-                      </span>
-                    </div>
-                    <p className="text-xs text-ink-subtle">
-                      {entry.name} · demandée le {day(entry.createdAt)}
-                    </p>
-                    <PassPaymentActions passId={entry.id} />
-                  </li>
-                ))}
+              <ul className="relative flex flex-col">
+                <PresenceList>
+                  {pending.map((entry) => (
+                    <PresenceItem
+                      as="li"
+                      key={entry.id}
+                      className="flex flex-col gap-2 border-t border-line-faint py-3 first:border-t-0"
+                    >
+                      <div className="flex items-baseline justify-between gap-3">
+                        <Link
+                          href={`/app/clients/${entry.customerId}`}
+                          className="text-sm font-semibold text-ink hover:underline"
+                        >
+                          {entry.customerName}
+                        </Link>
+                        <span className="text-sm font-semibold text-ink">
+                          {formatMoney(entry.priceCents)}
+                        </span>
+                      </div>
+                      <p className="text-xs text-ink-subtle">
+                        {entry.name} · demandée le {day(entry.createdAt)}
+                      </p>
+                      <PassPaymentActions passId={entry.id} />
+                    </PresenceItem>
+                  ))}
+                </PresenceList>
               </ul>
             </section>
           )}
@@ -99,14 +103,17 @@ export function PassesPage({
               }
             />
           ) : (
-            <ul aria-label="Formules de carte" className={cn(cardShellClasses, "overflow-hidden")}>
+            <ul
+              aria-label="Formules de carte"
+              className={cn(cardShellClasses, "reveal-group overflow-hidden")}
+            >
               {plans.map((plan) => (
                 <li key={plan.id} className="border-b border-line-soft last:border-b-0">
                   <Link
                     href={`/app/cartes?formule=${plan.id}`}
                     aria-current={plan.id === selected ? "page" : undefined}
                     className={cn(
-                      "flex items-center gap-3.5 px-5 py-4 text-ink hover:bg-band",
+                      "flex items-center gap-3.5 px-5 py-4 text-ink transition-colors hover:bg-band",
                       plan.id === selected && "bg-band",
                     )}
                   >
@@ -144,7 +151,7 @@ export function PassesPage({
           <aside
             className={cn(
               cardShellClasses,
-              "overflow-hidden lg:sticky lg:top-4 lg:w-[460px] lg:shrink-0",
+              "animate-rise overflow-hidden lg:sticky lg:top-4 lg:w-[460px] lg:shrink-0",
             )}
           >
             <PlanForm key={panel.id ?? "nouvelle"} initial={panel} eventTypes={eventTypes} />

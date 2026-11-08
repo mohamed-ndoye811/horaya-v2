@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Collapse } from "@/components/motion/collapse";
 import { StatusBadge } from "@/components/ui/badge";
 import { Button, ButtonLink } from "@/components/ui/button";
 import { ChevronRight } from "@/components/ui/icons";
@@ -66,12 +67,14 @@ export function BookingCard({ card }: { card: CustomerBookingCard }) {
           </Button>
         )}
       </div>
-      {series && open && (
-        <div className="flex flex-col rounded-2xl bg-bg px-4 py-1">
-          {series.sessions.map((session) => (
-            <BookingRow key={session.id} card={session} />
-          ))}
-        </div>
+      {series && (
+        <Collapse open={open}>
+          <div className="flex flex-col rounded-2xl bg-bg px-4 py-1">
+            {series.sessions.map((session) => (
+              <BookingRow key={session.id} card={session} />
+            ))}
+          </div>
+        </Collapse>
       )}
     </article>
   );
@@ -83,7 +86,7 @@ export function BookingRow({ card }: { card: CustomerSessionCard }) {
   return (
     <Link
       href={bookingHref(card)}
-      className="flex items-center gap-3.5 border-b border-line py-3.5 last:border-b-0"
+      className="press flex items-center gap-3.5 border-b border-line py-3.5 last:border-b-0"
     >
       <span className="flex w-12 shrink-0 flex-col items-center rounded-xl bg-bg py-1.5">
         <span className="text-[10px] font-bold uppercase leading-3 tracking-[0.06em] text-[var(--brand-text)]">

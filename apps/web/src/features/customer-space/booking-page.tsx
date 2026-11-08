@@ -108,7 +108,7 @@ export function CustomerBookingPage({
   return (
     <div className="flex flex-col gap-4 lg:min-h-[640px] lg:flex-row">
       <section className="flex flex-1 flex-col rounded-3xl bg-surface px-5 pt-6 pb-8 sm:px-11 sm:pt-10 sm:pb-11">
-        <div className="flex max-w-[620px] flex-col gap-8">
+        <div className="reveal-group flex max-w-[620px] flex-col gap-8">
           <Link
             href={`/${slug}/mon-espace`}
             className="tap-area flex w-fit items-center gap-1.5 text-sm font-semibold leading-[18px] text-ink-muted hover:text-ink"
@@ -377,7 +377,7 @@ function Reschedule({
           <label
             key={entry.id}
             className={cn(
-              "flex cursor-pointer flex-col gap-0.5 rounded-2xl border bg-surface px-4 py-3.5 transition-colors hover:bg-field",
+              "flex cursor-pointer flex-col gap-0.5 rounded-2xl border bg-surface px-4 py-3.5 press hover:bg-field",
               "has-checked:border-[1.5px] has-checked:border-ink has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-ink",
               "border-line",
             )}

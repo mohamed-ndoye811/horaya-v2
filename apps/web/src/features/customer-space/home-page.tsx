@@ -1,4 +1,5 @@
 import { type ReactNode, useState } from "react";
+import { Collapse } from "@/components/motion/collapse";
 import { ActionBar } from "@/components/ui/action-bar";
 import { StatusBadge } from "@/components/ui/badge";
 import { Button, ButtonLink } from "@/components/ui/button";
@@ -55,7 +56,7 @@ export function CustomerHomePage({
 
   return (
     <div className="flex flex-col gap-4 pb-20 lg:flex-row lg:items-start lg:pb-0">
-      <section className="flex min-w-0 flex-1 flex-col gap-6 lg:gap-9 lg:rounded-3xl lg:bg-surface lg:px-11 lg:pt-10 lg:pb-11">
+      <section className="reveal-group flex min-w-0 flex-1 flex-col gap-6 lg:gap-9 lg:rounded-3xl lg:bg-surface lg:px-11 lg:pt-10 lg:pb-11">
         <div className="flex items-end justify-between gap-6 pt-3.5 lg:pt-0">
           <div className="flex flex-col gap-1 sm:gap-2">
             <SpaceTitle displayFont={workspace.displayFont}>
@@ -73,7 +74,7 @@ export function CustomerHomePage({
         {slots.aside && <div className="flex flex-col gap-4 lg:hidden">{slots.aside}</div>}
 
         {next ? (
-          <div className="flex flex-col gap-4">
+          <div className="reveal-group flex flex-col gap-4">
             <div className="flex items-baseline justify-between gap-4 max-lg:hidden">
               <h2 className="text-lg font-semibold leading-6 text-ink">À venir</h2>
               {freeCancellationHours > 0 && (
@@ -84,7 +85,7 @@ export function CustomerHomePage({
             </div>
 
             {/* Mobile (8.6) : une liste compacte, chaque ligne mène à la réservation. */}
-            <div className="flex flex-col rounded-[20px] bg-surface px-4 py-1 lg:hidden">
+            <div className="reveal-group flex flex-col rounded-[20px] bg-surface px-4 py-1 lg:hidden">
               {upcoming.map((card) => (
                 <BookingRow key={card.id} card={card} />
               ))}
@@ -147,7 +148,7 @@ export function CustomerHomePage({
             </div>
 
             {later.length > 0 && (
-              <div className="grid gap-4 max-lg:hidden xl:grid-cols-2">
+              <div className="reveal-group grid gap-4 max-lg:hidden xl:grid-cols-2">
                 {later.map((card) => (
                   <BookingCard key={card.id} card={card} />
                 ))}
@@ -182,17 +183,17 @@ export function CustomerHomePage({
               </Button>
             )}
           </div>
-          {showHistory && (
+          <Collapse open={showHistory}>
             <div className="flex flex-col rounded-2xl bg-surface px-4 py-1 max-lg:px-0">
               {history.map((card) => (
                 <BookingRow key={card.id} card={card} />
               ))}
             </div>
-          )}
+          </Collapse>
         </div>
       </section>
 
-      <aside className="flex flex-col gap-4 lg:w-[400px] lg:shrink-0">
+      <aside className="reveal-group flex flex-col gap-4 lg:w-[400px] lg:shrink-0">
         {slots.aside && <div className="flex flex-col gap-4 max-lg:hidden">{slots.aside}</div>}
         <div className="flex flex-col rounded-3xl bg-surface px-5 py-2 sm:px-7">
           <div className="flex items-center gap-3.5 border-b border-line py-4">

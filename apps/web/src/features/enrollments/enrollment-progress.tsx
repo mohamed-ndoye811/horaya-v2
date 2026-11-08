@@ -1,5 +1,6 @@
 import type { SessionState } from "@horaya/core";
 import { useState, useTransition } from "react";
+import { Swap } from "@/components/motion/swap";
 import { StatusBadge } from "@/components/ui/badge";
 import { Button, ButtonLink } from "@/components/ui/button";
 import { Dialog } from "@/components/ui/dialog";
@@ -63,7 +64,9 @@ export function EnrollmentProgress({
         <p className="flex items-baseline justify-between gap-3">
           <span className="text-sm font-semibold leading-[18px] text-ink">Ton trimestre</span>
           <span className="text-[13px] leading-4 text-ink-muted">
-            {progress.finished ? "terminé" : `séance ${progress.current} sur ${progress.total}`}
+            <Swap value={`${progress.finished}${progress.current}`}>
+              {progress.finished ? "terminé" : `séance ${progress.current} sur ${progress.total}`}
+            </Swap>
           </span>
         </p>
         <span
@@ -75,8 +78,9 @@ export function EnrollmentProgress({
             <span
               // biome-ignore lint/suspicious/noArrayIndexKey: une case par séance, ordre fixe.
               key={index}
+              style={{ animationDelay: `${Math.min(index, 8) * 40}ms` }}
               className={cn(
-                "h-1.5 flex-1 rounded-full",
+                "h-1.5 flex-1 origin-left animate-grow-x rounded-full transition-colors",
                 session.state === "done"
                   ? session.absent
                     ? "bg-line-strong"
@@ -90,7 +94,9 @@ export function EnrollmentProgress({
         </span>
       </div>
       <div className="flex flex-col gap-1.5 text-[13px] leading-[18px] text-ink-muted">
-        <p>{absences}</p>
+        <p>
+          <Swap value={absences}>{absences}</Swap>
+        </p>
         {progress.endsAt && (
           <p>
             {progress.finished ? "Trimestre terminé le " : "Fin du trimestre le "}
