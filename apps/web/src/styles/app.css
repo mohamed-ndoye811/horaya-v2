@@ -235,17 +235,7 @@
   }
 }
 
-/*
- * La place de la barre de défilement reste toujours réservée : une animation qui fait
- * brièvement dépasser (ou plus dépasser) la hauteur de l'écran ne décale plus toute la page.
- */
-html {
-  scrollbar-gutter: stable;
-}
-
 body {
-  /* Un léger agrandissement (press, cascade) ne crée jamais de défilement horizontal. */
-  overflow-x: clip;
   background-color: var(--color-bg);
   color: var(--color-ink);
   font-family: var(--font-ui);
