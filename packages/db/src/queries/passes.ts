@@ -1,6 +1,6 @@
 import { and, asc, desc, eq, isNull, sql } from "drizzle-orm";
 import type { Executor } from "../client";
-import { booking, customer, event, pass, passMovement, passPlan } from "../schema";
+import { booking, customer, event, pass, passMovement, passPlan, tenantSettings } from "../schema";
 
 const iso = (date: Date) => sql`${date.toISOString()}::timestamptz`;
 
@@ -110,6 +110,8 @@ export async function listUsablePasses(
   customerId: string,
   eventTypeId: string | null,
   now: Date,
+  /** Début de la séance à régler : la carte doit être valable à cette date (sinon, à `now`). */
+  sessionStartsAt?: Date,
 ) {
   const rows = await db
     .select({
@@ -126,6 +128,7 @@ export async function listUsablePasses(
         eq(pass.customerId, customerId),
         eq(pass.status, "active"),
         sql`${pass.expiresAt} > ${iso(now)}`,
+        sessionStartsAt ? sql`${pass.expiresAt} > ${iso(sessionStartsAt)}` : undefined,
         eventTypeId
           ? sql`(cardinality(${pass.eventTypeIds}) = 0 or ${eventTypeId}::uuid = any(${pass.eventTypeIds}))`
           : undefined,
@@ -182,11 +185,36 @@ export async function getPublicPassPlan(db: Executor, organizationId: string, pl
   return row ?? null;
 }
 
-/** Type d'un événement (pour filtrer les cartes acceptées) ; null si l'événement n'existe pas. */
+/** Type et début d'un événement (pour filtrer les cartes acceptées) ; null si l'événement n'existe pas. */
 export async function getEventTypeById(db: Executor, organizationId: string, eventId: string) {
   const [row] = await db
-    .select({ eventTypeId: event.eventTypeId })
+    .select({ eventTypeId: event.eventTypeId, startsAt: event.startsAt })
     .from(event)
     .where(and(eq(event.organizationId, organizationId), eq(event.id, eventId)));
-  return row?.eventTypeId ?? null;
+  return row ?? null;
+}
+
+/**
+ * Annulation d'une réservation par l'équipe : a-t-elle été payée avec une carte, et la séance
+ * est-elle encore dans le délai d'annulation gratuite ? (La case « Recréditer la séance ».)
+ */
+export async function getCancelRecreditInfo(
+  db: Executor,
+  organizationId: string,
+  bookingId: string,
+) {
+  const [row] = await db
+    .select({
+      paidWithPass: sql<boolean>`${booking.paymentStatus} = 'paid_with_pass'`,
+      startsAt: sql<Date | null>`coalesce(${event.startsAt}, ${booking.rentalStartsAt})`,
+      passName: sql<
+        string | null
+      >`(select p.name from pass_movement m join pass p on p.id = m.pass_id where m.booking_id = ${booking.id} and m.kind = 'use' limit 1)`,
+      freeCancellationHours: tenantSettings.freeCancellationHours,
+    })
+    .from(booking)
+    .leftJoin(event, eq(event.id, booking.eventId))
+    .innerJoin(tenantSettings, eq(tenantSettings.organizationId, booking.organizationId))
+    .where(and(eq(booking.organizationId, organizationId), eq(booking.id, bookingId)));
+  return row ? { ...row, startsAt: row.startsAt ? new Date(row.startsAt) : null } : null;
 }

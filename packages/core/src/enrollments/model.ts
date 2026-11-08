@@ -9,7 +9,7 @@ export interface Enrollment {
   organizationId: string;
   seriesId: string;
   customerId: string;
-  /** Prix de la série au moment de l'inscription. */
+  /** Prix payé : celui de la série, au prorata des séances restantes si la série le prévoit. */
   amountCents: number;
   currency: string;
   /** Paiement noté par l'équipe (lien externe, sur place). */

@@ -1,23 +1,30 @@
 import { z } from "zod";
 import { requireFeature } from "../billing/use-cases";
-import { SEAT_HOLDING_STATUSES } from "../bookings/capacity";
+import { remainingSeats, SEAT_HOLDING_STATUSES } from "../bookings/capacity";
 import {
   counterCustomerChoice,
   refineCounterCustomer,
   resolveCounterCustomer,
 } from "../bookings/counter";
 import type { Booking } from "../bookings/model";
-import { customerContactSchema } from "../bookings/schemas";
-import { insertEventBooking, SOURCE_BY_ACTOR } from "../bookings/use-cases";
+import { customerContactSchema, participantSchema } from "../bookings/schemas";
+import { assertCustomerCanBook, insertEventBooking, SOURCE_BY_ACTOR } from "../bookings/use-cases";
 import { promoteWaitlist } from "../bookings/waitlist";
 import type { EventSeries } from "../events/model";
+import { rawFieldValuesSchema } from "../fields/schemas";
 import { type Actor, actorRef, assertMemberCan } from "../shared/actor";
 import { ConflictError, ForbiddenError, NotFoundError } from "../shared/errors";
 import { generateToken, hashToken } from "../shared/tokens";
 import type { Deps, Repositories } from "../shared/unit-of-work";
 import { validate } from "../shared/validate";
 import type { Enrollment } from "./model";
-import { assertEnrollmentFits, remainingSessions } from "./rules";
+import {
+  assertEnrollmentFits,
+  enrollmentQuote,
+  isMakeupEarned,
+  makeupTargetIssue,
+  remainingSessions,
+} from "./rules";
 import { type SeriesEnrollmentSettingsInput, seriesEnrollmentSettingsSchema } from "./schemas";
 
 /**
@@ -61,6 +68,10 @@ export const enrollInSeriesSchema = z
     ...counterCustomerChoice,
     /** Comptoir : payé sur place au moment de l'inscription. */
     paid: z.boolean().default(false),
+    /** Questions « Ce que tu demandes » du type : posées une fois pour l'inscription… */
+    answers: rawFieldValuesSchema.default({}),
+    /** … et pour le participant (l'inscrit·e, une seule personne). */
+    participants: z.array(participantSchema).max(1).default([]),
   })
   .superRefine(refineCounterCustomer);
 export type EnrollInSeriesInput = z.input<typeof enrollInSeriesSchema>;
@@ -100,10 +111,8 @@ export async function enrollInSeries(
     if (!series.enrollmentEnabled) {
       throw new ConflictError("L'inscription à toute la série n'est pas ouverte");
     }
-    const sessions = remainingSessions(
-      await repositories.events.listSeriesEvents(actor.organizationId, series.id),
-      now,
-    );
+    const allEvents = await repositories.events.listSeriesEvents(actor.organizationId, series.id);
+    const sessions = remainingSessions(allEvents, now);
     if (actor.type === "customer" && sessions.some((event) => event.visibility !== "public")) {
       throw new ForbiddenError("Cette série est sur invitation");
     }
@@ -129,13 +138,20 @@ export async function enrollInSeries(
       });
     }
     assertEnrollmentFits(places, series.timezone);
+    // Prix au prorata des séances restantes (séances publiées de la série, passées comprises).
+    const quote = enrollmentQuote({
+      fullCents: series.enrollmentPriceCents ?? 0,
+      remaining: locked.length,
+      total: allEvents.filter((event) => event.status === "published").length,
+      prorata: series.enrollmentProrata,
+    });
 
     const settings = await repositories.settings.get(actor.organizationId);
     const enrollment = await repositories.enrollments.insert({
       organizationId: actor.organizationId,
       seriesId: series.id,
       customerId,
-      amountCents: series.enrollmentPriceCents ?? 0,
+      amountCents: quote.priceCents,
       currency: settings.currency,
       paidAt: data.paid ? now : null,
       source: SOURCE_BY_ACTOR[actor.type],
@@ -147,7 +163,8 @@ export async function enrollInSeries(
         await insertEventBooking(repositories, actor, entry, now, {
           customerId,
           seats: 1,
-          participants: [],
+          answers: data.answers,
+          participants: data.participants,
           customerMessage: null,
           manageTokenHash: null,
           enrollmentId: enrollment.id,
@@ -160,7 +177,12 @@ export async function enrollInSeries(
       entityId: enrollment.id,
       action: "enrollment.created",
       ...actorRef(actor),
-      data: { seriesId: series.id, sessions: bookings.length, paid: data.paid },
+      data: {
+        seriesId: series.id,
+        sessions: bookings.length,
+        paid: data.paid,
+        prorated: quote.prorated,
+      },
     });
     return { enrollment, bookings, manageToken };
   });
@@ -172,7 +194,11 @@ async function releaseSession(
   actor: Actor,
   booking: Booking,
   now: Date,
-  change: { action: "booking.absent" | "booking.unenrolled"; absentAt: Date | null },
+  change: {
+    action: "booking.absent" | "booking.unenrolled";
+    absentAt: Date | null;
+    makeupEligible?: boolean;
+  },
 ): Promise<void> {
   const locked = booking.eventId
     ? await repositories.events.lockForBooking(booking.organizationId, booking.eventId)
@@ -184,6 +210,7 @@ async function releaseSession(
     status: "cancelled",
     cancelledAt: now,
     absentAt: change.absentAt,
+    makeupEligible: change.makeupEligible ?? false,
   });
   await repositories.activity.record({
     organizationId: booking.organizationId,
@@ -199,7 +226,8 @@ async function releaseSession(
 /**
  * « Je serai absent·e » : le client libère sa place sur une séance à venir, depuis le lien de
  * gestion de son inscription. L'inscription reste ; la place passe à la liste d'attente.
- * (Pas de rattrapage pour l'instant.)
+ * Signalée dans le délai d'annulation gratuite (et si la série autorise les rattrapages),
+ * l'absence donne une séance à rattraper.
  */
 export async function reportAbsenceWithToken(
   deps: Deps,
@@ -222,6 +250,26 @@ export async function reportAbsenceWithToken(
   });
 }
 
+/** Séance d'une inscription, retrouvée par le client connecté (e-mail de sa fiche client). */
+async function ownEnrollmentBooking(
+  repositories: Repositories,
+  organizationId: string,
+  bookingId: string,
+  email: string,
+) {
+  const booking = await repositories.bookings.find(organizationId, bookingId);
+  const enrollment = booking?.enrollmentId
+    ? await repositories.enrollments.find(organizationId, booking.enrollmentId)
+    : null;
+  const customer = enrollment
+    ? await repositories.customers.find(organizationId, enrollment.customerId)
+    : null;
+  if (!booking || !enrollment || customer?.email?.toLowerCase() !== email.toLowerCase()) {
+    throw new NotFoundError("Séance", bookingId);
+  }
+  return { booking, enrollment };
+}
+
 /**
  * « Je serai absent·e » depuis l'espace client (lot 29) : la séance doit appartenir à une
  * inscription dont la fiche client porte l'e-mail du compte connecté.
@@ -233,16 +281,12 @@ export async function reportAbsenceAsCustomer(
   email: string,
 ): Promise<Booking> {
   return deps.uow.run(async (repositories) => {
-    const booking = await repositories.bookings.find(organizationId, bookingId);
-    const enrollment = booking?.enrollmentId
-      ? await repositories.enrollments.find(organizationId, booking.enrollmentId)
-      : null;
-    const customer = enrollment
-      ? await repositories.customers.find(organizationId, enrollment.customerId)
-      : null;
-    if (!booking || !enrollment || customer?.email?.toLowerCase() !== email.toLowerCase()) {
-      throw new NotFoundError("Séance", bookingId);
-    }
+    const { booking, enrollment } = await ownEnrollmentBooking(
+      repositories,
+      organizationId,
+      bookingId,
+      email,
+    );
     return reportAbsence(deps, repositories, enrollment, booking);
   });
 }
@@ -267,11 +311,198 @@ async function reportAbsence(
   if (!event || event.startsAt <= now) {
     throw new ConflictError("La séance a commencé : préviens directement l'atelier");
   }
+  const series = await repositories.events.findSeries(organizationId, enrollment.seriesId);
+  const { freeCancellationHours } = await repositories.settings.get(organizationId);
   await releaseSession(repositories, actor, booking, now, {
     action: "booking.absent",
     absentAt: now,
+    makeupEligible: isMakeupEarned({
+      makeupAllowed: series?.makeupAllowed ?? false,
+      startsAt: event.startsAt,
+      now,
+      freeCancellationHours,
+    }),
   });
   return (await repositories.bookings.find(organizationId, booking.id)) ?? booking;
+}
+
+/**
+ * « Annuler mon absence » : tant que la séance n'a pas commencé, le client reprend sa place
+ * (si elle n'a pas été prise entre-temps) et le rattrapage non utilisé disparaît.
+ */
+export async function cancelAbsenceWithToken(
+  deps: Deps,
+  organizationId: string,
+  manageToken: string,
+  eventId: string,
+): Promise<Booking> {
+  const tokenHash = await hashToken(manageToken);
+  return deps.uow.run(async (repositories) => {
+    const enrollment = await repositories.enrollments.findByManageTokenHash(
+      organizationId,
+      tokenHash,
+    );
+    if (!enrollment) throw new NotFoundError("Inscription", "lien");
+    const booking = (await repositories.enrollments.listBookings(enrollment.id)).find(
+      (entry) => entry.eventId === eventId,
+    );
+    if (!booking) throw new NotFoundError("Séance", eventId);
+    return cancelAbsence(deps, repositories, enrollment, booking);
+  });
+}
+
+export async function cancelAbsenceAsCustomer(
+  deps: Deps,
+  organizationId: string,
+  bookingId: string,
+  email: string,
+): Promise<Booking> {
+  return deps.uow.run(async (repositories) => {
+    const { booking, enrollment } = await ownEnrollmentBooking(
+      repositories,
+      organizationId,
+      bookingId,
+      email,
+    );
+    return cancelAbsence(deps, repositories, enrollment, booking);
+  });
+}
+
+async function cancelAbsence(
+  deps: Deps,
+  repositories: Repositories,
+  enrollment: Enrollment,
+  booking: Booking,
+): Promise<Booking> {
+  const { organizationId } = enrollment;
+  if (enrollment.cancelledAt) throw new ConflictError("Cette inscription est terminée");
+  if (!booking.absentAt || !booking.eventId) {
+    throw new ConflictError("Aucune absence signalée pour cette séance");
+  }
+  const locked = await repositories.events.lockForBooking(organizationId, booking.eventId);
+  const now = deps.clock.now();
+  if (!locked || locked.event.status !== "published" || locked.event.startsAt <= now) {
+    throw new ConflictError("La séance a commencé : préviens directement l'atelier");
+  }
+  const fresh = await repositories.bookings.find(organizationId, booking.id);
+  if (!fresh?.absentAt) throw new ConflictError("Aucune absence signalée pour cette séance");
+  if (await repositories.enrollments.findActiveMakeup(fresh.id)) {
+    throw new ConflictError("Ton rattrapage est déjà réservé : annule-le d'abord");
+  }
+  const left = remainingSeats(
+    locked.event.capacity,
+    await repositories.bookings.seatsHeld(locked.event.id),
+  );
+  if (left !== null && left < fresh.seats) {
+    throw new ConflictError("Ta place a été reprise par la liste d'attente");
+  }
+  const restored = await repositories.bookings.updateStatus(organizationId, fresh.id, {
+    status: "confirmed",
+    cancelledAt: null,
+    absentAt: null,
+    makeupEligible: false,
+  });
+  await repositories.activity.record({
+    organizationId,
+    entityType: "booking",
+    entityId: fresh.id,
+    action: "booking.absence_cancelled",
+    ...actorRef({ type: "customer", organizationId }),
+  });
+  return restored;
+}
+
+/**
+ * Séance à rattraper : réserve une autre séance du même type d'événement, avant la fin du
+ * trimestre et dans la limite des places. Par le client (espace client) ou attribuée par l'équipe.
+ */
+async function createMakeup(
+  deps: Deps,
+  repositories: Repositories,
+  actor: Actor,
+  enrollment: Enrollment,
+  absent: Booking,
+  targetEventId: string,
+): Promise<Booking> {
+  const { organizationId } = enrollment;
+  const series = await repositories.events.findSeries(organizationId, enrollment.seriesId);
+  if (!series?.makeupAllowed) {
+    throw new ConflictError("Les rattrapages ne sont pas ouverts pour cette série");
+  }
+  if (enrollment.cancelledAt) throw new ConflictError("Cette inscription est terminée");
+  if (!absent.absentAt || !absent.makeupEligible || !absent.eventId) {
+    throw new ConflictError("Cette absence ne donne pas droit à un rattrapage");
+  }
+  const absentEvent = await repositories.events.find(organizationId, absent.eventId);
+  const locked = await repositories.events.lockForBooking(organizationId, targetEventId);
+  if (!absentEvent || !locked) throw new NotFoundError("Séance", targetEventId);
+  if (await repositories.enrollments.findActiveMakeup(absent.id)) {
+    throw new ConflictError("Cette séance a déjà été rattrapée");
+  }
+  const now = deps.clock.now();
+  const seriesEvents = await repositories.events.listSeriesEvents(organizationId, series.id);
+  const seriesEndsAt = seriesEvents
+    .filter((event) => event.status === "published")
+    .reduce((end, event) => (event.endsAt > end ? event.endsAt : end), absentEvent.endsAt);
+  const issue = makeupTargetIssue({
+    absent: absentEvent,
+    target: locked.event,
+    seriesEndsAt,
+    now,
+  });
+  if (issue) throw new ConflictError(issue);
+  if (actor.type === "customer") {
+    assertCustomerCanBook(locked.event, locked.eventType.bookingRules, 1, now, null);
+  }
+  const active = await repositories.bookings.listActive(locked.event.id);
+  if (active.some((entry) => entry.customerId === enrollment.customerId)) {
+    throw new ConflictError("Tu as déjà une place sur cette séance");
+  }
+  return insertEventBooking(repositories, actor, locked, now, {
+    customerId: enrollment.customerId,
+    seats: 1,
+    participants: [],
+    customerMessage: null,
+    manageTokenHash: null,
+    makeupForBookingId: absent.id,
+  });
+}
+
+export async function bookMakeupAsCustomer(
+  deps: Deps,
+  organizationId: string,
+  absentBookingId: string,
+  email: string,
+  targetEventId: string,
+): Promise<Booking> {
+  const actor: Actor = { type: "customer", organizationId };
+  return deps.uow.run(async (repositories) => {
+    const { booking, enrollment } = await ownEnrollmentBooking(
+      repositories,
+      organizationId,
+      absentBookingId,
+      email,
+    );
+    return createMakeup(deps, repositories, actor, enrollment, booking, targetEventId);
+  });
+}
+
+/** L'équipe attribue un rattrapage à un·e inscrit·e (séance à rattraper → séance choisie). */
+export async function assignMakeup(
+  deps: Deps,
+  actor: Actor,
+  absentBookingId: string,
+  targetEventId: string,
+): Promise<Booking> {
+  assertMemberCan(actor, "booking", "create");
+  return deps.uow.run(async (repositories) => {
+    const absent = await repositories.bookings.find(actor.organizationId, absentBookingId);
+    const enrollment = absent?.enrollmentId
+      ? await repositories.enrollments.find(actor.organizationId, absent.enrollmentId)
+      : null;
+    if (!absent || !enrollment) throw new NotFoundError("Séance", absentBookingId);
+    return createMakeup(deps, repositories, actor, enrollment, absent, targetEventId);
+  });
 }
 
 /**
@@ -310,6 +541,20 @@ export async function cancelEnrollment(
         absentAt: null,
       });
       releasedSessions++;
+    }
+    // Un rattrapage à venir part avec l'inscription.
+    for (const absent of bookings.filter((entry) => entry.absentAt)) {
+      const makeup = await repositories.enrollments.findActiveMakeup(absent.id);
+      const makeupEvent = makeup?.eventId
+        ? await repositories.events.find(actor.organizationId, makeup.eventId)
+        : null;
+      if (makeup && makeupEvent && makeupEvent.startsAt > now) {
+        await releaseSession(repositories, actor, makeup, now, {
+          action: "booking.unenrolled",
+          absentAt: null,
+        });
+        releasedSessions++;
+      }
     }
     const cancelled = await repositories.enrollments.update(actor.organizationId, enrollmentId, {
       cancelledAt: now,

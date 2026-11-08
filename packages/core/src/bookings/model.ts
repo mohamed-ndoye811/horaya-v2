@@ -32,6 +32,10 @@ export interface Booking {
   checkedInAt: Date | null;
   /** Absence signalée sur une séance d'une inscription : la place a été libérée. */
   absentAt: Date | null;
+  /** Absence signalée à temps : la séance est à rattraper (voir enrollments/rules). */
+  makeupEligible: boolean;
+  /** Rattrapage : l'absence (réservation annulée d'une inscription) que cette séance remplace. */
+  makeupForBookingId: string | null;
   createdAt: Date;
   updatedAt: Date;
 }

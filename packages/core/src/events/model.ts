@@ -50,6 +50,10 @@ export interface EventSeries {
   enrollmentPriceCents: number | null;
   /** La réservation à la séance reste possible sur la page publique. */
   dropInAllowed: boolean;
+  /** Inscription en cours de route : prix de la série × séances restantes ÷ séances totales. */
+  enrollmentProrata: boolean;
+  /** Une absence signalée à temps donne une séance à rattraper avant la fin de la série. */
+  makeupAllowed: boolean;
 }
 
 export interface Event {

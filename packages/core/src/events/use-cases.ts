@@ -361,7 +361,15 @@ export async function cancelEvent(
         ...actorRef(actor),
         data: { reason: "event_cancelled" },
       });
-      await recreditPassForBooking(repositories, actor, booking, locked.event.startsAt, now);
+      // L'atelier annule tout l'événement : les séances des cartes sont toujours rendues.
+      await recreditPassForBooking(
+        repositories,
+        actor,
+        booking,
+        locked.event.startsAt,
+        now,
+        "always",
+      );
     }
     await repositories.activity.record({
       organizationId: actor.organizationId,

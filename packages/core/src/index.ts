@@ -7,6 +7,7 @@ export * from "./billing/plans";
 export * from "./billing/ports";
 export * from "./billing/rules";
 export * from "./billing/use-cases";
+export * from "./bookings/cancellation";
 export * from "./bookings/capacity";
 export * from "./bookings/check-in";
 export * from "./bookings/counter";

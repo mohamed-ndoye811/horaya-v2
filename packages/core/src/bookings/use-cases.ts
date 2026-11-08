@@ -31,7 +31,7 @@ export const SOURCE_BY_ACTOR: Record<Actor["type"], BookingSource> = {
  * Règles propres aux réservations faites par le client lui-même. Un événement « sur
  * invitation » n'est réservable que par un lien calendrier actif qui le contient.
  */
-function assertCustomerCanBook(
+export function assertCustomerCanBook(
   event: Event,
   rules: { minAdvanceHours?: number; maxSeatsPerBooking?: number },
   seats: number,
@@ -148,12 +148,15 @@ export async function insertEventBooking(
     manageTokenHash: string | null;
     /** Séance d'une inscription à la série : confirmée d'office, payée par l'inscription. */
     enrollmentId?: string;
+    /** Rattrapage d'une absence : confirmé d'office, sans paiement ni question. */
+    makeupForBookingId?: string;
   },
 ): Promise<Booking> {
   if (event.endsAt <= now) throw new ConflictError("Cet événement est terminé");
-  const enrolled = data.enrollmentId !== undefined;
-  // Séances d'une inscription à la série : pas de questions par séance.
-  const participants = enrolled
+  const makeup = data.makeupForBookingId !== undefined;
+  const enrolled = data.enrollmentId !== undefined || makeup;
+  // Un rattrapage ne pose pas de question : l'inscription a déjà répondu.
+  const participants = makeup
     ? []
     : Array.from(
         { length: data.seats },
@@ -175,9 +178,9 @@ export async function insertEventBooking(
   }
   const answered = validateBookingAnswers(
     event.fields,
-    { answers: enrolled ? {} : (data.answers ?? {}), participants },
+    { answers: makeup ? {} : (data.answers ?? {}), participants },
     // L'équipe saisit ce qu'elle sait : les questions requises le sont pour le client.
-    { now, enforceRequired: actor.type !== "member" },
+    { now, enforceRequired: actor.type !== "member" && !makeup },
   );
   if (answered.issues.length > 0) {
     throw new ValidationError("Vérifie les réponses en rouge.", answered.issues);
@@ -209,6 +212,7 @@ export async function insertEventBooking(
       currency: event.currency,
       paymentMode: enrolled ? "free" : event.paymentMode,
       enrollmentId: data.enrollmentId ?? null,
+      makeupForBookingId: data.makeupForBookingId ?? null,
       customerMessage: data.customerMessage,
       answers: answered.answers,
       source: SOURCE_BY_ACTOR[actor.type],
@@ -221,10 +225,14 @@ export async function insertEventBooking(
     organizationId: actor.organizationId,
     entityType: "booking",
     entityId: created.id,
-    // « enrolled » : pas d'e-mail par séance, l'inscription envoie son propre récapitulatif.
-    action: enrolled ? "booking.enrolled" : "booking.created",
+    // « enrolled » et rattrapage : pas d'e-mail par séance, l'inscription envoie son propre récapitulatif.
+    action: makeup ? "booking.makeup" : enrolled ? "booking.enrolled" : "booking.created",
     ...actorRef(actor),
-    data: { status, seats: data.seats },
+    data: {
+      status,
+      seats: data.seats,
+      ...(makeup && { absentBookingId: data.makeupForBookingId }),
+    },
   });
   return created;
 }
@@ -304,6 +312,7 @@ export async function refuseBooking(
       booking,
       event?.startsAt ?? null,
       deps.clock.now(),
+      "always",
     );
     await restoreGiftCardForBooking(repositories, booking, "organizer", null, deps.clock.now());
     if (event && SEAT_HOLDING_STATUSES.has(booking.status)) {
@@ -367,6 +376,7 @@ async function cancelLocked(
   event: Event | null,
   now: Date,
   reason: string | null,
+  recredit?: boolean,
 ): Promise<Booking> {
   if (booking.status === "cancelled" || booking.status === "refused") {
     throw new ConflictError("Cette réservation n'est plus active");
@@ -389,6 +399,7 @@ async function cancelLocked(
     booking,
     event?.startsAt ?? booking.rentalStartsAt,
     now,
+    recredit,
   );
   // Location : les exemplaires bloqués redeviennent libres. Événement : le matériel
   // attribué à la réservation (comptoir) retourne au matériel de l'événement.
@@ -414,12 +425,16 @@ async function cancelLocked(
   return cancelled;
 }
 
-/** Annulation par l'équipe. */
+/**
+ * Annulation par l'équipe. `recredit` : la séance est-elle rendue sur la carte qui a payé ?
+ * Sans choix, oui dans le délai d'annulation gratuite, non après.
+ */
 export async function cancelBooking(
   deps: Deps,
   actor: Actor,
   bookingId: string,
   reason?: string,
+  recredit?: boolean,
 ): Promise<Booking> {
   assertMemberCan(actor, "booking", "cancel");
 
@@ -432,6 +447,7 @@ export async function cancelBooking(
       event,
       deps.clock.now(),
       reason?.trim() || null,
+      recredit,
     );
   });
 }

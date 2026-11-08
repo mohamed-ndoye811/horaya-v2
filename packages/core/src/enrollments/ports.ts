@@ -23,4 +23,6 @@ export interface EnrollmentRepository {
   ): Promise<Enrollment>;
   /** Réservations des séances de l'inscription, tous statuts. */
   listBookings(enrollmentId: string): Promise<Booking[]>;
+  /** Séance de rattrapage encore active (en attente ou confirmée) d'une absence. */
+  findActiveMakeup(absentBookingId: string): Promise<Booking | null>;
 }

@@ -885,6 +885,8 @@ await db.insert(invitation).values({
       enrollmentEnabled: true,
       enrollmentPriceCents: 24000,
       dropInAllowed: true,
+      enrollmentProrata: true,
+      makeupAllowed: true,
     });
     for (const [firstName, lastName] of [
       ["Antoine", "Leroy"],
