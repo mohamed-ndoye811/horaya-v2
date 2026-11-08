@@ -1,4 +1,5 @@
 import { FREE_CANCELLATION_HOURS } from "@horaya/core";
+import { Collapse } from "@/components/motion/collapse";
 import { AffixInput, Field, inputClasses } from "@/components/ui/field";
 import { FormAlert } from "@/components/ui/form-alert";
 import { FormSection } from "@/components/ui/section";
@@ -129,7 +130,7 @@ export function PaymentsForm({
                 )}
               </Field>
             </div>
-            {showPaymentLink && (
+            <Collapse open={showPaymentLink}>
               <Field
                 label="Lien de paiement par défaut"
                 error={errors.paymentLinkUrl}
@@ -152,7 +153,7 @@ export function PaymentsForm({
                   />
                 )}
               </Field>
-            )}
+            </Collapse>
           </FormSection>
         </fieldset>
       </div>

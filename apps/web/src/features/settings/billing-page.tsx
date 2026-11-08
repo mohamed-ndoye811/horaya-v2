@@ -1,6 +1,7 @@
 import { type BillingInterval, PLAN_RANK, PLANS, type PlanId } from "@horaya/core";
 import { useEffect, useRef, useState } from "react";
 import { SettingsShell } from "@/components/app/settings-shell";
+import { Swap } from "@/components/motion/swap";
 import { StatusBadge, type Tone } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { FormAlert } from "@/components/ui/form-alert";
@@ -213,7 +214,9 @@ export function BillingSettingsPage({ data, paid }: { data: Data; paid: boolean 
                     <p className="font-section text-base">{plan.name}</p>
                     <p className="flex items-baseline gap-1">
                       <span className="font-headline text-3xl">
-                        {price === 0 ? "0 €" : formatMoney(price)}
+                        <Swap value={String(price)}>
+                          {price === 0 ? "0 €" : formatMoney(price)}
+                        </Swap>
                       </span>
                       {price > 0 && (
                         <span
@@ -222,7 +225,9 @@ export function BillingSettingsPage({ data, paid }: { data: Data; paid: boolean 
                             isCurrent ? "text-on-ink-muted" : "text-ink-subtle",
                           )}
                         >
-                          {interval === "year" ? "par an" : "par mois"}
+                          <Swap value={interval}>
+                            {interval === "year" ? "par an" : "par mois"}
+                          </Swap>
                         </span>
                       )}
                     </p>

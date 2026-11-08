@@ -119,7 +119,7 @@ export function CustomerDetailPage({ data }: { data: Awaited<ReturnType<typeof g
         }
       />
 
-      <div className="grid grid-cols-2 gap-3 px-4 pb-4 xl:grid-cols-4">
+      <div className="reveal-group grid grid-cols-2 gap-3 px-4 pb-4 xl:grid-cols-4">
         <MiniStat label="Réservations" value={customer.bookings} />
         <MiniStat
           label="Total dépensé"
@@ -155,7 +155,7 @@ export function CustomerDetailPage({ data }: { data: Awaited<ReturnType<typeof g
       </div>
 
       <div className="grid items-start gap-4 px-4 pb-4 xl:grid-cols-[360px_minmax(0,1fr)]">
-        <div className="flex flex-col gap-4">
+        <div className="reveal-group flex flex-col gap-4">
           <section className={cn(cardClasses, "gap-1")}>
             <div className="flex items-baseline justify-between pb-2">
               <h2 className="text-base font-semibold leading-5 text-ink">Coordonnées</h2>

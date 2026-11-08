@@ -53,7 +53,7 @@ export function LoginForm({
 
   if (step === "email") {
     return (
-      <form onSubmit={submitEmail} className="flex flex-col gap-6">
+      <form onSubmit={submitEmail} className="flex animate-fade flex-col gap-6">
         <div className="flex flex-col gap-2">
           {invitation && <Eyebrow>Invitation · {invitation.organizationName}</Eyebrow>}
           <AuthTitle>Bon retour.</AuthTitle>
@@ -88,7 +88,7 @@ export function LoginForm({
   }
 
   return (
-    <form onSubmit={submitPassword} className="flex flex-col gap-6">
+    <form onSubmit={submitPassword} className="flex animate-fade flex-col gap-6">
       <div className="flex flex-col gap-3">
         <Eyebrow>Étape 2 sur 2</Eyebrow>
         <AuthTitle>Mot de passe</AuthTitle>

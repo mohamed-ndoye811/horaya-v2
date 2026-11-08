@@ -65,7 +65,7 @@ export function ForgotPasswordForm() {
     const minutes = Math.floor(cooldown / 60);
     const seconds = String(cooldown % 60).padStart(2, "0");
     return (
-      <div className="flex flex-col gap-6">
+      <div className="flex animate-fade flex-col gap-6">
         <span
           aria-hidden="true"
           className="flex size-16 items-center justify-center rounded-2xl bg-ink text-on-ink"

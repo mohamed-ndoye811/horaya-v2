@@ -1,4 +1,5 @@
 import { type FormEvent, type ReactNode, useState } from "react";
+import { ActiveIndicator } from "@/components/motion/indicator";
 import { ActionBar } from "@/components/ui/action-bar";
 import { cardShellClasses } from "@/components/ui/section";
 import { cn } from "@/lib/cn";
@@ -87,13 +88,17 @@ export function SettingsShell({
                 href={entry.href}
                 aria-current={active ? "page" : undefined}
                 className={cn(
-                  "flex h-11 items-center justify-between gap-2 rounded-[14px] px-3.5 text-sm leading-[18px] transition-colors",
+                  "relative isolate flex h-11 items-center justify-between gap-2 rounded-[14px] px-3.5 text-sm leading-[18px] transition-colors",
                   "focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ink",
-                  active
-                    ? "bg-ink font-semibold text-on-ink"
-                    : "font-medium text-ink hover:bg-field",
+                  active ? "font-semibold text-on-ink" : "font-medium text-ink hover:bg-field",
                 )}
               >
+                {active && (
+                  <ActiveIndicator
+                    id="settings-nav"
+                    className="inset-0 -z-10 rounded-[14px] bg-ink"
+                  />
+                )}
                 {entry.label}
                 {entry.value === "integrations" && (
                   <span
