@@ -6,6 +6,7 @@ import { validateBookingAnswers } from "../fields/values";
 import { applyGiftCardToBooking, restoreGiftCardForBooking } from "../gift-cards/use-cases";
 import { reserveEquipment } from "../inventory/equipment";
 import type { EquipmentChoice } from "../modules/registry";
+import { optionNeedSeats } from "../modules/resources";
 import {
   ageIssues,
   bookingWindow,
@@ -263,6 +264,7 @@ export async function insertEventBooking(
       data.seats,
       data.equipment ?? [],
       actor.type !== "customer" || enrolled,
+      optionNeedSeats(event, data.seats, created.priceLines),
     );
   }
   await repositories.activity.record({
@@ -656,7 +658,16 @@ export async function rescheduleBookingAsCustomer(
     });
     // Le matériel attribué au comptoir pour l'ancienne date y retourne.
     await repositories.inventory.releaseBookingAllocations(organizationId, booking.id);
-    await reserveEquipment(repositories, actor, to.event, booking.id, booking.seats, [], true);
+    await reserveEquipment(
+      repositories,
+      actor,
+      to.event,
+      booking.id,
+      booking.seats,
+      [],
+      true,
+      optionNeedSeats(to.event, booking.seats, moved.priceLines),
+    );
     await repositories.activity.record({
       organizationId,
       entityType: "booking",

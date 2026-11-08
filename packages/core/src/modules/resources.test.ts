@@ -12,6 +12,7 @@ import {
   type EquipmentUnit,
   equipmentCandidates,
   eventPlace,
+  optionNeedSeats,
   planEquipment,
   staffAllowed,
 } from "./resources";
@@ -100,6 +101,59 @@ describe("besoins en matériel", () => {
       byTeam: false,
     });
     expect(wanted).toHaveLength(2);
+  });
+
+  it("option liée : elle remplace la case, une unité par place qui la prend", () => {
+    const needs = [tour({ id: "tablier", required: false })];
+    const candidates = { tablier: free(u1, u2, u3) };
+    const event = (per: "participant" | "booking") => ({
+      paymentMode: "online",
+      modules: {
+        equipment: { needs },
+        pricing: {
+          rates: [{ id: "plein", name: "Plein", priceCents: 4500 }],
+          options: [{ id: "tab", name: "Tablier", priceCents: 500, per, needId: "tablier" }],
+        },
+      },
+    });
+    const lines = (quantity: number) => [{ kind: "option", id: "tab", quantity }];
+    // Par participant : deux places sur trois prennent le tablier.
+    expect(optionNeedSeats(event("participant"), 3, lines(2))).toEqual({ tablier: 2 });
+    // Par inscription : toutes les places, dès que l'option est prise.
+    expect(optionNeedSeats(event("booking"), 3, lines(1))).toEqual({ tablier: 3 });
+    expect(optionNeedSeats(event("booking"), 3, [])).toEqual({ tablier: 0 });
+    // Événement gratuit : pas d'option, la case reste.
+    expect(optionNeedSeats({ ...event("booking"), paymentMode: "free" }, 3, lines(1))).toEqual({});
+
+    const plan = (linked: Record<string, number>, wanted = false) =>
+      planEquipment({
+        needs,
+        seats: 3,
+        choices: [{ needId: "tablier", wanted }],
+        candidates,
+        names,
+        byTeam: false,
+        linked,
+      });
+    expect(plan({ tablier: 2 })).toHaveLength(2);
+    // Sans l'option, la case cochée ne réserve rien : le matériel payant passe par l'option.
+    expect(plan({ tablier: 0 }, true)).toEqual([]);
+  });
+
+  it("option liée : un besoin facultatif du module, une seule option, prise une fois", () => {
+    const modules = (needId: string, over: Partial<EquipmentNeed> = {}, max?: number) => ({
+      equipment: { needs: [tour({ id: "tablier", required: false, ...over })] },
+      pricing: {
+        rates: [{ id: "plein", name: "Plein", priceCents: 4500 }],
+        options: [{ id: "tab", name: "Tablier", priceCents: 500, per: "participant", needId, max }],
+      },
+    });
+    const issue = (value: unknown) =>
+      eventTypeModulesSchema.safeParse(value).error?.issues[0]?.message ?? null;
+    expect(issue(modules("tablier"))).toBeNull();
+    expect(issue(modules("inconnu"))).toMatch(/pas dans le module/);
+    expect(issue(modules("tablier", { required: true }))).toMatch(/obligatoire/);
+    expect(issue(modules("tablier", {}, 3))).toMatch(/une fois/);
   });
 
   it("l'élève choisit : il désigne exactement la quantité, parmi les unités libres", () => {

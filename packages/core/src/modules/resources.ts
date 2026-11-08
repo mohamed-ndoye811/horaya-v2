@@ -43,6 +43,45 @@ export interface PlannedUnit {
 
 export const needQuantity = (need: EquipmentNeed, seats: number) => need.perSeat * seats;
 
+/**
+ * Matériel facultatif lié à une option payante (lot 35) : l'option fait office de case. Rend, pour
+ * chaque besoin lié, le nombre de places qui le prennent (0 : pas pris), d'après les quantités
+ * d'options de la réservation (son détail de prix, déjà vérifié par `quoteBooking`).
+ */
+export function optionNeedSeats(
+  event: { paymentMode: string; modules: EventModules },
+  seats: number,
+  lines: ReadonlyArray<{ kind: string; id: string; quantity: number }>,
+): Record<string, number> {
+  const linked: Record<string, number> = {};
+  // Événement gratuit : pas d'option, le matériel facultatif garde sa case.
+  if (event.paymentMode === "free") return linked;
+  for (const option of event.modules.pricing?.options ?? []) {
+    if (option.needId === undefined) continue;
+    const quantity =
+      lines.find((line) => line.kind === "option" && line.id === option.id)?.quantity ?? 0;
+    linked[option.needId] =
+      option.per === "participant" ? Math.min(quantity, seats) : quantity > 0 ? seats : 0;
+  }
+  return linked;
+}
+
+/**
+ * Places qui prennent un besoin : toutes pour l'obligatoire ; pour le facultatif, toutes si la
+ * case est cochée, ou celles de l'option liée (qui décide seule : la case envoyée est ignorée).
+ */
+export function needSeats(
+  need: EquipmentNeed,
+  seats: number,
+  choices: readonly EquipmentChoice[],
+  linked: Readonly<Record<string, number>> = {},
+): number {
+  if (need.required) return seats;
+  const fromOption = linked[need.id];
+  if (fromOption !== undefined) return fromOption;
+  return choices.some((choice) => choice.needId === need.id && choice.wanted) ? seats : 0;
+}
+
 /** Caractéristiques d'un article : « Assise basse », « Diamètre : 30 ». */
 export function describeItemValues(fields: FieldDefinition[], values: FieldValues): string[] {
   return fields.flatMap((field) => {
@@ -124,16 +163,19 @@ export function planEquipment(input: {
   /** Nom du besoin dans les messages (« Tour », « Tablier »). */
   names: Readonly<Record<string, string>>;
   byTeam: boolean;
+  /** Besoins liés à une option payante : places qui la prennent (`optionNeedSeats`). */
+  linked?: Readonly<Record<string, number>>;
 }): PlannedUnit[] {
-  const { needs, seats, choices, candidates, names, byTeam } = input;
+  const { needs, seats, choices, candidates, names, byTeam, linked } = input;
   const taken = new Set<string>();
   const planned: PlannedUnit[] = [];
   const issues: Array<{ path: string; message: string }> = [];
 
   for (const need of needs) {
     const choice = choices.find((entry) => entry.needId === need.id);
-    if (!need.required && !choice?.wanted) continue;
-    const quantity = needQuantity(need, seats);
+    const taking = needSeats(need, seats, choices, linked);
+    if (taking === 0) continue;
+    const quantity = needQuantity(need, taking);
     const name = (names[need.id] ?? "Matériel").toLowerCase();
     const available = (candidates[need.id] ?? []).filter((entry) => !taken.has(entry.unit.id));
     const chosen = choice?.unitIds ?? [];

@@ -58,9 +58,25 @@ function PriceInput({
 
 const removeClasses = cn(textLinkClasses, "shrink-0 text-[13px] text-ink-muted");
 
-export function PricingPanel({ modules, set }: { modules: EventModules; set: Setter }) {
+export function PricingPanel({
+  modules,
+  set,
+  itemTypes,
+}: {
+  modules: EventModules;
+  set: Setter;
+  /** Types de matériel de l'espace, pour nommer le matériel facultatif qu'une option réserve. */
+  itemTypes: Array<{ id: string; name: string }>;
+}) {
   const pricing: PricingModule = modules.pricing ?? { rates: [] };
   const options = pricing.options ?? [];
+  // Matériel facultatif du module Matériel avancé : une option payante peut le réserver.
+  const optionalNeeds = (modules.equipment?.needs ?? [])
+    .filter((need) => !need.required)
+    .map((need) => ({
+      id: need.id,
+      name: itemTypes.find((type) => type.id === need.itemTypeId)?.name ?? "Matériel",
+    }));
   const defaultId = pricing.defaultRateId ?? pricing.rates[0]?.id;
   const update = (next: Partial<PricingModule>) => set("pricing", { ...pricing, ...next });
   const setRate = (id: string, patch: Partial<Rate>) =>
@@ -189,6 +205,7 @@ export function PricingPanel({ modules, set }: { modules: EventModules; set: Set
                 <AffixInput
                   aria-label="Quantité maximale"
                   inputMode="numeric"
+                  disabled={option.needId !== undefined}
                   value={String(option.max ?? 1)}
                   onChange={(event) => {
                     const max = Math.trunc(Number(event.target.value));
@@ -208,6 +225,29 @@ export function PricingPanel({ modules, set }: { modules: EventModules; set: Set
                 >
                   Retirer
                 </button>
+                {(optionalNeeds.length > 0 || option.needId) && (
+                  <Select
+                    aria-label={`Matériel réservé : ${option.name}`}
+                    variant="compact"
+                    value={option.needId ?? ""}
+                    onChange={(event) =>
+                      setOption(
+                        option.id,
+                        event.target.value
+                          ? { needId: event.target.value, max: undefined }
+                          : { needId: undefined },
+                      )
+                    }
+                    className="sm:col-span-full"
+                  >
+                    <option value="">Ne réserve pas de matériel</option>
+                    {optionalNeeds.map((need) => (
+                      <option key={need.id} value={need.id}>
+                        Réserve le matériel facultatif : {need.name}
+                      </option>
+                    ))}
+                  </Select>
+                )}
               </PresenceItem>
             ))}
           </PresenceList>
@@ -229,6 +269,8 @@ export function PricingPanel({ modules, set }: { modules: EventModules; set: Set
       <p className="text-[13px] leading-[18px] text-ink-muted">
         Chaque participant choisit son tarif. Chaque événement reprend ces tarifs et peut en changer
         les prix.
+        {optionalNeeds.length > 0 &&
+          " Un matériel facultatif payant passe par une option : la cocher réserve l'exemplaire."}
       </p>
     </>
   );

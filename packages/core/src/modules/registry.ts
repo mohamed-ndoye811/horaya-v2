@@ -182,6 +182,11 @@ export const priceOptionSchema = z.object({
   per: z.enum(OPTION_PER),
   /** Quantité au plus (par inscription ou par participant) ; absent : 1, une case à cocher. */
   max: z.int({ error: "Quantité invalide" }).min(1, "Au moins 1").max(99).optional(),
+  /**
+   * Besoin de matériel facultatif (module Matériel avancé) réservé quand l'option est prise : un
+   * matériel facultatif payant passe par son option, qui remplace sa case à cocher.
+   */
+  needId: z.string().trim().min(1).max(40).optional(),
 });
 
 export const pricingModuleSchema = z
@@ -253,11 +258,36 @@ export type ModuleKey = keyof typeof MODULE_SCHEMAS;
 export const MODULE_KEYS = Object.keys(MODULE_SCHEMAS) as ModuleKey[];
 
 /** Les modules actifs d'un type (ou la copie d'un événement). Les clés inconnues sont ignorées. */
-export const eventTypeModulesSchema = z.object(
-  Object.fromEntries(MODULE_KEYS.map((key) => [key, MODULE_SCHEMAS[key].optional()])) as {
-    [K in ModuleKey]: z.ZodOptional<(typeof MODULE_SCHEMAS)[K]>;
-  },
-);
+export const eventTypeModulesSchema = z
+  .object(
+    Object.fromEntries(MODULE_KEYS.map((key) => [key, MODULE_SCHEMAS[key].optional()])) as {
+      [K in ModuleKey]: z.ZodOptional<(typeof MODULE_SCHEMAS)[K]>;
+    },
+  )
+  .superRefine((modules, context) => {
+    // Option liée au matériel : un besoin facultatif du module, une seule option par besoin.
+    const linked = new Set<string>();
+    for (const [index, option] of (modules.pricing?.options ?? []).entries()) {
+      if (option.needId === undefined) continue;
+      const need = modules.equipment?.needs.find((entry) => entry.id === option.needId);
+      const message = !need
+        ? "Ce matériel n'est pas dans le module Matériel avancé"
+        : need.required
+          ? "Le matériel obligatoire est inclus : il ne peut pas être une option"
+          : linked.has(need.id)
+            ? "Ce matériel est déjà lié à une autre option"
+            : (option.max ?? 1) > 1
+              ? "Une option liée au matériel se prend une fois (par participant ou par inscription)"
+              : null;
+      if (message)
+        context.addIssue({
+          code: "custom",
+          message,
+          path: ["pricing", "options", index, "needId"],
+        });
+      linked.add(option.needId);
+    }
+  });
 export type EventModules = z.output<typeof eventTypeModulesSchema>;
 export type PlacesModule = z.output<typeof placesModuleSchema>;
 export type OpeningModule = z.output<typeof openingModuleSchema>;

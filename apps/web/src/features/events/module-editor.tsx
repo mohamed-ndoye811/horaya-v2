@@ -302,7 +302,7 @@ function ModulePanel({
     case "staff":
       return <StaffPanel modules={modules} set={set} context={context} />;
     case "pricing":
-      return <PricingPanel modules={modules} set={set} />;
+      return <PricingPanel modules={modules} set={set} itemTypes={context.itemTypes} />;
     case "deposit":
       return <DepositPanel modules={modules} set={set} />;
     case "payment_methods":

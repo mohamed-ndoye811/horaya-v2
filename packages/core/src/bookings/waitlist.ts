@@ -1,5 +1,6 @@
 import type { Event } from "../events/model";
 import { reserveEquipment } from "../inventory/equipment";
+import { optionNeedSeats } from "../modules/resources";
 import { type Actor, actorRef } from "../shared/actor";
 import { ConflictError } from "../shared/errors";
 import type { Repositories } from "../shared/unit-of-work";
@@ -43,6 +44,7 @@ export async function promoteWaitlist(
       candidate.seats,
       [],
       true,
+      optionNeedSeats(event, candidate.seats, candidate.priceLines),
     ).catch((error: unknown) => {
       if (!(error instanceof ConflictError)) throw error;
     });

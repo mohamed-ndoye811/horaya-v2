@@ -1,6 +1,7 @@
 import {
   defaultRate,
   type EventModules,
+  optionNeedSeats,
   type PriceOption,
   type PriceSelection,
   quoteBooking,
@@ -56,6 +57,8 @@ export function usePriceChoice(event: Priced, seats: number) {
     options,
     selection,
     quote,
+    /** Matériel facultatif lié à une option : places qui le prennent, besoin par besoin. */
+    linked: optionNeedSeats(event, seats, quote.lines),
     rateOf: (seat: number) => known(rates[seat]),
     setRate: (seat: number, id: string) =>
       setRates((current) => current.map((value, index) => (index === seat ? id : value))),

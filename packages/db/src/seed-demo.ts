@@ -355,6 +355,14 @@ const types = Object.fromEntries(
                 priceCents: 800,
                 per: "participant" as const,
               },
+              // Le tablier facultatif est payant : son option le réserve.
+              {
+                id: "tablier",
+                name: "Location d'un tablier",
+                priceCents: 300,
+                per: "participant" as const,
+                needId: "tablier",
+              },
             ],
           },
           messages: {

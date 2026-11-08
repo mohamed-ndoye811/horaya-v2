@@ -313,7 +313,17 @@ export function BookingForm({
               />
             </div>
           )}
-          <EquipmentChoices offers={equipment} seats={seats} errors={errors} />
+          <EquipmentChoices
+            offers={equipment}
+            seats={seats}
+            errors={errors}
+            linked={price?.linked ?? {}}
+            optionNames={Object.fromEntries(
+              (price?.options ?? []).flatMap((option) =>
+                option.needId ? [[option.needId, option.name]] : [],
+              ),
+            )}
+          />
           {Array.from({ length: seats - 1 }, (_, offset) => offset + 1).map((index) => (
             <ExtraParticipant
               key={index}
