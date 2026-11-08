@@ -5,6 +5,7 @@ import {
   formatHour,
   formatMoney,
   formatMonthShort,
+  plural,
   formatPublicSchedule,
   formatRelativeDateTime,
   formatRelativeDay,
@@ -118,5 +119,15 @@ describe("formatPublicSchedule", () => {
       date: "Sam. 20 juin 2026",
       schedule: "9h – 12h",
     });
+  });
+});
+
+describe("plural", () => {
+  it("accorde au singulier jusqu'à 1 inclus", () => {
+    expect(plural(0, "place")).toBe("0 place");
+    expect(plural(1, "place")).toBe("1 place");
+    expect(plural(2, "place")).toBe("2 places");
+    expect(plural(1, "place libre", "places libres")).toBe("1 place libre");
+    expect(plural(3, "place libre", "places libres")).toBe("3 places libres");
   });
 });

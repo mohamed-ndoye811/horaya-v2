@@ -180,3 +180,7 @@ export function formatPublicSchedule(start: Date, end: Date, timeZone = DEFAULT_
     schedule: `${formatHour(start, timeZone)} → ${formatHour(end, timeZone)} ${dayAfter ? "le lendemain" : `le ${endDay}`}`,
   };
 }
+
+/** « 1 place », « 0 place », « 2 places » : le français accorde au singulier jusqu'à 1 inclus. */
+export const plural = (count: number, singular: string, pluralForm = `${singular}s`) =>
+  `${count} ${count > 1 ? pluralForm : singular}`;

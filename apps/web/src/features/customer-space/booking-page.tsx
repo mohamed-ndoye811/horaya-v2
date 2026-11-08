@@ -14,7 +14,7 @@ import {
 } from "@/functions/customer-space";
 import { cn } from "@/lib/cn";
 import { cardDate } from "@/lib/customer-space";
-import { formatEventRange, formatMoney } from "@/lib/format";
+import { formatEventRange, formatMoney, plural } from "@/lib/format";
 import { googleCalendarUrl } from "@/lib/ics";
 import { Link, useRouter } from "@/lib/navigation";
 import { cancellationPolicy } from "@/lib/public-booking";
@@ -401,7 +401,7 @@ function Reschedule({
                 ? "Places libres"
                 : entry.remaining === 1
                   ? "Plus qu'une place"
-                  : `${entry.remaining} places libres`}
+                  : `${plural(entry.remaining, "place libre", "places libres")}`}
             </span>
           </label>
         ))}
