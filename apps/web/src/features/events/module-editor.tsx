@@ -227,10 +227,9 @@ function ModuleRow({
   return (
     <div
       className={cn(
-        "flex flex-col rounded-2xl transition-colors",
-        open
-          ? "border-[1.5px] border-ink bg-surface"
-          : "border-[1.5px] border-transparent bg-field",
+        // Contour (outline) plutôt que bordure : il ne prend pas de place, la liste animée ne saute pas.
+        "flex flex-col rounded-2xl outline-[1.5px] -outline-offset-[1.5px] transition-colors",
+        open ? "bg-surface outline-ink" : "bg-field outline-transparent",
       )}
     >
       <button
