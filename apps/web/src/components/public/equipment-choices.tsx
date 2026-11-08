@@ -4,8 +4,6 @@ import { Collapse } from "@/components/motion/collapse";
 import { Checkbox, FieldError } from "@/components/ui/field";
 import { Select } from "@/components/ui/select";
 
-const lower = (text: string) => text.charAt(0).toLowerCase() + text.slice(1);
-
 /**
  * Module Matériel avancé, formulaire d'inscription : ce que l'atelier réserve avec la place
  * (obligatoire), la case du matériel facultatif et le choix de l'exemplaire quand l'élève
@@ -46,7 +44,6 @@ function EquipmentOfferRow({
   error: string | undefined;
 }) {
   const quantity = offer.perSeat * seats;
-  const name = lower(offer.name);
   const [wanted, setWanted] = useState(false);
   const [picked, setPicked] = useState(() =>
     Array.from({ length: quantity }, (_, slot) => ({ slot, value: "" })),
@@ -64,11 +61,12 @@ function EquipmentOfferRow({
       {offer.required ? (
         <div className="flex flex-col gap-0.5">
           <p className="text-sm font-semibold leading-5 text-ink">
-            {offer.name} · {quantity > 1 ? `${quantity} exemplaires` : "1 exemplaire"}
+            {offer.name}
+            {quantity > 1 ? ` · ${quantity} exemplaires` : ""}
           </p>
           <p className="text-[13px] leading-[18px] text-ink-muted">
             {offer.chooser === "student"
-              ? `Inclus avec ${seats > 1 ? "tes places" : "ta place"} : choisis ${quantity > 1 ? "les exemplaires" : `ton ${name}`}.`
+              ? `Inclus avec ${seats > 1 ? "tes places" : "ta place"} : choisis ${quantity > 1 ? "tes exemplaires" : "ton exemplaire"}.`
               : `Inclus avec ${seats > 1 ? "tes places" : "ta place"} : l'atelier te l'attribue.`}
           </p>
         </div>
@@ -81,9 +79,7 @@ function EquipmentOfferRow({
           label={
             soldOut
               ? `${offer.name} : plus disponible`
-              : quantity > 1
-                ? `Je prends ${quantity} ${name}s`
-                : `Je prends un ${name}`
+              : `Ajouter : ${offer.name}${quantity > 1 ? ` (${quantity})` : ""}`
           }
         />
       )}
@@ -105,7 +101,7 @@ function EquipmentOfferRow({
               aria-invalid={error ? true : undefined}
               required={choosing}
             >
-              <option value="">Choisis ton {name}…</option>
+              <option value="">Choisis ton exemplaire…</option>
               {offer.options.map((option) => (
                 <option
                   key={option.unitId}
