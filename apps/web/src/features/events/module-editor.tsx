@@ -30,6 +30,7 @@ import { uploadDocumentAction } from "@/functions/files";
 import { cn } from "@/lib/cn";
 import { formatOpening } from "@/lib/format";
 import { centsToInput, parseEuroToCents } from "@/lib/money";
+import { EquipmentPanel, LocationPanel, StaffPanel } from "./resources-panels";
 
 /** Saisie d'un nombre entier : vide → réglage absent. */
 const whole = (value: string): number | undefined => {
@@ -53,6 +54,9 @@ const ICON_PATHS: Record<ModuleKey, string> = {
   series: "m17 2 4 4-4 4M3 11v-1a4 4 0 0 1 4-4h14M7 22l-4-4 4-4M21 13v1a4 4 0 0 1-4 4H3",
   messages: "M4 4h16a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2M22 7l-10 6L2 7",
   documents: "M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8zM14 2v6h6M9 13h6M9 17h6",
+  equipment: "M21 8 12 3 3 8v8l9 5 9-5zM3 8l9 5 9-5M12 13v8",
+  location: "M20 10c0 6-8 12-8 12S4 16 4 10a8 8 0 0 1 16 0M12 13a3 3 0 1 0 0-6 3 3 0 0 0 0 6",
+  staff: "M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2M12 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8",
 };
 
 function ModuleIcon({ moduleKey }: { moduleKey: ModuleKey }) {
@@ -84,6 +88,9 @@ export interface ModuleContext {
   noun: string;
   structure: CancellationPolicy;
   timeZone: string;
+  /** Modules Ressources : types de matériel et membres de l'équipe à proposer. */
+  itemTypes: Array<{ id: string; name: string }>;
+  members: Array<{ id: string; name: string }>;
 }
 
 /**
@@ -125,6 +132,8 @@ export function ModuleList({
                 moduleKey={key}
                 summary={moduleSummary(key, modules, {
                   ...context,
+                  itemTypeNames: Object.fromEntries(context.itemTypes.map((t) => [t.id, t.name])),
+                  memberNames: Object.fromEntries(context.members.map((m) => [m.id, m.name])),
                   formatDate: (date) => formatOpening(date, context.timeZone),
                 })}
                 open={open === key || moduleErrors.length > 0}
@@ -279,6 +288,12 @@ function ModulePanel({
       return <SeriesPanel modules={modules} set={set} />;
     case "messages":
       return <MessagesPanel modules={modules} set={set} />;
+    case "equipment":
+      return <EquipmentPanel modules={modules} set={set} context={context} />;
+    case "location":
+      return <LocationPanel modules={modules} set={set} />;
+    case "staff":
+      return <StaffPanel modules={modules} set={set} context={context} />;
     case "documents":
       return (
         <DocumentsPanel

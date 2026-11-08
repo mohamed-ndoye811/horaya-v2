@@ -86,6 +86,8 @@ export interface Event {
   modules: EventModules;
   /** Valeurs de « Ce que tu décris ». */
   fieldValues: FieldValues;
+  /** Module Intervenant : le membre de l'équipe qui anime cet événement. */
+  staffMemberId: string | null;
   publishedAt: Date | null;
   cancelledAt: Date | null;
   createdAt: Date;
@@ -111,4 +113,5 @@ export type EventDetails = Pick<
   | "requiresApproval"
   | "highlights"
   | "paymentLinkUrl"
+  | "staffMemberId"
 >;

@@ -249,6 +249,38 @@ const today = toZonedParts(new Date(), TZ);
 const at = (days: number, hour: number, minute = 0) =>
   fromZonedParts({ ...addDays(today, days), hour, minute }, TZ).toISOString();
 
+// Lot 34b : le matériel du cours de tournage (tours choisis par type d'assise, tabliers).
+const tourFields = [
+  {
+    key: "assise",
+    label: "Assise",
+    type: "choice" as const,
+    required: false,
+    options: ["Basse", "Haute"],
+  },
+];
+const tourShimpo = await createItem(deps, actor, {
+  name: "Tour Shimpo",
+  typeName: "Tours de potier",
+  quantity: 3,
+  storageLocation: "Atelier",
+  typeFields: tourFields,
+  fieldValues: { assise: "Basse" },
+});
+await createItem(deps, actor, {
+  name: "Tour Brent",
+  typeName: "Tours de potier",
+  quantity: 2,
+  storageLocation: "Atelier",
+  fieldValues: { assise: "Haute" },
+});
+const tabliers = await createItem(deps, actor, {
+  name: "Tablier d'atelier",
+  typeName: "Tabliers",
+  quantity: 6,
+  storageLocation: "Vestiaire",
+});
+
 const types = Object.fromEntries(
   await Promise.all(
     [
@@ -284,6 +316,27 @@ const types = Object.fromEntries(
           waitlist: {},
           cancellation: { freeHours: 48, lateRefundPercent: 0 },
           access: { minAge: 12 },
+          // Lot 34b : un tour par place (attribué par l'atelier), un tablier au choix de l'élève.
+          equipment: {
+            needs: [
+              {
+                id: "tour",
+                itemTypeId: tourShimpo.itemTypeId ?? "",
+                perSeat: 1,
+                required: true,
+                chooser: "workshop" as const,
+              },
+              {
+                id: "tablier",
+                itemTypeId: tabliers.itemTypeId ?? "",
+                perSeat: 1,
+                required: false,
+                chooser: "student" as const,
+              },
+            ],
+          },
+          location: { mode: "venue" as const },
+          staff: { memberIds: [owner.id], showOnPublicPage: true },
           messages: {
             bring: "Une tenue qui ne craint rien et les cheveux attachés",
             reminder: { kind: "eve" as const, hour: 18 },
@@ -388,6 +441,8 @@ type Plan = {
   priceCents?: number;
   paymentMode?: "free" | "online" | "deposit" | "on_site";
   depositPercent?: number;
+  /** Module Intervenant : le propriétaire de l'espace anime l'événement. */
+  staff?: boolean;
   publish?: boolean;
   /** Réunions internes : publiées pour l'équipe, absentes de la page publique. */
   internal?: boolean;
@@ -436,6 +491,7 @@ const plans: Plan[] = [
     paymentMode: "on_site",
     description:
       "Deux heures au tour pour reprendre centrage, tournage de cylindres et tournassage. Les pièces sont cuites et émaillées par l'atelier.",
+    staff: true,
     fieldValues: { niveau: "Confirmé", terre: "Grès chamotté", pieces: 2 },
     answers: {
       answers: { deja_tourne: true, depuis_quand: "1 à 3 ans", reglement: "on" },
@@ -630,6 +686,7 @@ for (const plan of plans) {
     highlights: plan.highlights ?? [],
     visibility: plan.internal ? "invite_only" : "public",
     fieldValues: plan.fieldValues ?? {},
+    staffMemberId: plan.staff ? owner.id : null,
   });
   if (!created) continue;
   eventIds.set(plan.title, created.id);

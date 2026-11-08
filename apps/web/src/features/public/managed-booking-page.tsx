@@ -264,6 +264,21 @@ export function ManagedBookingPage({
             <Fact label="Quand">{formatEventRange(startsAt, endsAt, tz)}</Fact>
           )}
           {where && <Fact label="Où">{where}</Fact>}
+          {booking.onlineUrl && (
+            <Fact label="Lien de la visio">
+              <a
+                href={booking.onlineUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="underline underline-offset-2"
+              >
+                {booking.onlineUrl}
+              </a>
+            </Fact>
+          )}
+          {booking.equipment.length > 0 && (
+            <Fact label="Matériel">{booking.equipment.join(", ")}</Fact>
+          )}
           <Fact label="Participants">{participants}</Fact>
           {booking.eventModules?.messages?.bring && (
             <Fact label="À apporter">{booking.eventModules.messages.bring}</Fact>

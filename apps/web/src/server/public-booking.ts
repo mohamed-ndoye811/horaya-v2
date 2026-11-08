@@ -23,6 +23,7 @@ import {
   getSeriesOffer,
   listBookingPayments,
   listCalendarLinkEvents,
+  listEquipmentOffers,
   listPublicEvents,
   listPublicPassPlans,
   listUsablePasses,
@@ -46,6 +47,24 @@ import { clientIp, rateLimited } from "./rate-limit";
 import { deps } from "./services";
 
 const text = (form: FormData, key: string) => String(form.get(key) ?? "").trim();
+
+/**
+ * Module Matériel avancé : `eq.<besoin>.wanted` (case du matériel facultatif) et
+ * `eq.<besoin>.unit` (exemplaire choisi, une valeur par place). Le core juge de tout.
+ */
+function equipmentChoices(form: FormData) {
+  const byNeed = new Map<string, { needId: string; wanted: boolean; unitIds: string[] }>();
+  for (const [key, value] of form.entries()) {
+    const found = /^eq\.([^.]+)\.(wanted|unit)$/.exec(key);
+    const needId = found?.[1];
+    if (!needId) continue;
+    const entry = byNeed.get(needId) ?? { needId, wanted: false, unitIds: [] };
+    if (found[2] === "wanted") entry.wanted = value === "on";
+    else if (String(value)) entry.unitIds.push(String(value));
+    byNeed.set(needId, entry);
+  }
+  return [...byNeed.values()];
+}
 
 /** Mise en page publique : l'espace, ou introuvable. */
 export async function publicWorkspace(slug: string) {
@@ -136,7 +155,7 @@ export async function bookEventPage(
   places: string | undefined,
 ) {
   const data = await publicEventPage(slug, eventSlug, lien);
-  if (!data.event) return { ...data, seats: 1, prefill: null, pass: null };
+  if (!data.event) return { ...data, seats: 1, prefill: null, pass: null, equipment: [] };
   const state = bookingState(data.event, data.now);
   const dropInClosed = data.event.enrollmentEnabled && !data.event.dropInAllowed;
   if (
@@ -170,6 +189,8 @@ export async function bookEventPage(
     seats,
     prefill: await customerPrefill(),
     pass: pass ? { id: pass.id, name: pass.name, balance: pass.balance } : null,
+    // Module Matériel avancé : besoins de l'événement et exemplaires encore libres.
+    equipment: await listEquipmentOffers(db, data.event.id),
   };
 }
 
@@ -300,6 +321,7 @@ export async function createPublicBooking(
         // Le core revérifie que le lien est actif et contient l'événement.
         calendarLinkSlug: link?.slug ?? null,
         giftCardCode: giftCardCode || null,
+        equipment: equipmentChoices(form),
       },
     );
     manageToken = created.manageToken;

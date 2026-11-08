@@ -44,7 +44,15 @@ export function PublicEventPage({
   const state = bookingState(event, now);
   const schedule = formatPublicSchedule(event.startsAt, event.endsAt, tz);
   const recurrence = describeRecurrence(event.seriesRule);
-  const place = event.locationName ?? (event.onlineUrl ? "En ligne" : "À préciser");
+  // Module Lieu : en ligne (le lien n'est donné qu'après l'inscription), chez le client, à l'atelier.
+  const locationMode = event.modules.location?.mode;
+  const place =
+    locationMode === "online"
+      ? "En ligne"
+      : locationMode === "client"
+        ? "Chez toi"
+        : [event.locationName, event.locationAddress].filter(Boolean).join(", ") ||
+          (event.online ? "En ligne" : "À préciser");
   const bookHref = withParams(`/${workspace.slug}/${event.slug}/reserver`, {
     lien: linkSlug ?? undefined,
   });
@@ -66,6 +74,11 @@ export function PublicEventPage({
     // Modules : conditions d'accès et « À apporter ».
     ageLabel(event.modules.access) ? `Réservé : ${ageLabel(event.modules.access)}` : null,
     event.modules.messages?.bring ? `À apporter : ${event.modules.messages.bring}` : null,
+    event.staffFirstName ? `Avec ${event.staffFirstName}` : null,
+    locationMode === "online" ? "Le lien de la visio t'est envoyé dans ta confirmation" : null,
+    locationMode === "client"
+      ? "Nous venons chez toi : ton adresse est demandée à l'inscription"
+      : null,
   ].filter(Boolean);
   // Cours vendu seulement au trimestre : on affiche le prix de la série.
   const seriesOnly = event.enrollmentEnabled && !event.dropInAllowed && offer !== null;

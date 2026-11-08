@@ -60,6 +60,8 @@ export interface EventRepository {
   ): Promise<{ event: Event; eventType: EventType } | null>;
   update(organizationId: string, eventId: string, patch: EventPatch): Promise<Event>;
   slugExists(organizationId: string, slug: string): Promise<boolean>;
+  /** Le membre fait-il partie de l'espace (module Intervenant) ? */
+  memberBelongs(organizationId: string, memberId: string): Promise<boolean>;
   /**
    * « Appliquer aussi aux événements à venir » : remplace les champs et les modules des
    * événements du type qui n'ont pas commencé, ne sont pas annulés et n'ont aucune réservation.

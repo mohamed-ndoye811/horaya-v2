@@ -4,6 +4,8 @@ import type { Event, EventType } from "../events/model";
 import type { RawFieldValues } from "../fields/model";
 import { validateBookingAnswers } from "../fields/values";
 import { applyGiftCardToBooking, restoreGiftCardForBooking } from "../gift-cards/use-cases";
+import { reserveEquipment } from "../inventory/equipment";
+import type { EquipmentChoice } from "../modules/registry";
 import {
   ageIssues,
   bookingWindow,
@@ -117,6 +119,7 @@ export async function createEventBooking(
       participants: data.participants,
       customerMessage: data.customerMessage,
       manageTokenHash,
+      equipment: data.equipment,
     });
     // Sur liste d'attente, rien à payer encore : le bon n'est pas touché.
     const giftCardCents =
@@ -154,6 +157,8 @@ export async function insertEventBooking(
     participants: RawParticipant[];
     customerMessage: string | null;
     manageTokenHash: string | null;
+    /** Module Matériel avancé : cases cochées et exemplaires choisis par le client. */
+    equipment?: EquipmentChoice[];
     /** Séance d'une inscription à la série : confirmée d'office, payée par l'inscription. */
     enrollmentId?: string;
     /** Rattrapage d'une absence : confirmé d'office, sans paiement ni question. */
@@ -243,6 +248,18 @@ export async function insertEventBooking(
     },
     answered.participants,
   );
+  // Matériel avancé : réservé avec la place (sauf liste d'attente, rien n'est encore retenu).
+  if (status !== "waitlisted") {
+    await reserveEquipment(
+      repositories,
+      actor,
+      event,
+      created.id,
+      data.seats,
+      data.equipment ?? [],
+      actor.type !== "customer" || enrolled,
+    );
+  }
   await repositories.activity.record({
     organizationId: actor.organizationId,
     entityType: "booking",
@@ -328,6 +345,7 @@ export async function refuseBooking(
       ...actorRef(actor),
       data: { reason: reason ?? null },
     });
+    await repositories.inventory.releaseBookingAllocations(actor.organizationId, bookingId);
     await recreditPassForBooking(
       repositories,
       actor,
@@ -628,6 +646,7 @@ export async function rescheduleBookingAsCustomer(
     });
     // Le matériel attribué au comptoir pour l'ancienne date y retourne.
     await repositories.inventory.releaseBookingAllocations(organizationId, booking.id);
+    await reserveEquipment(repositories, actor, to.event, booking.id, booking.seats, [], true);
     await repositories.activity.record({
       organizationId,
       entityType: "booking",

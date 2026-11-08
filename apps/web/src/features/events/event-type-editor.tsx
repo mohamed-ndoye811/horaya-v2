@@ -73,6 +73,9 @@ export interface EventTypeEditorValues {
   /** Règle d'annulation de la structure (module Annulation sans réglage). */
   structure: CancellationPolicy;
   timeZone: string;
+  /** Modules Ressources : types de matériel et équipe de l'espace. */
+  itemTypes: Array<{ id: string; name: string }>;
+  members: Array<{ id: string; name: string }>;
 }
 
 /** Les champs d'une liste complète, rangés par portée (l'ordre de chaque portée est gardé). */
@@ -81,7 +84,7 @@ const byScope = (fields: EditableField[], scope: FieldScope) =>
 
 /** Ce que les modules changent pour le visiteur (aperçu des onglets Page et Inscription). */
 function moduleNotes(modules: EventModules, timeZone: string): string[] {
-  const { opening, access, places, messages } = modules;
+  const { opening, access, places, messages, location, staff } = modules;
   // Exemple : un événement dans trois semaines, à 18 h.
   const sample = new Date(Date.now() + 21 * 86_400_000);
   const { opensAt } = bookingWindow(sample, opening);
@@ -100,6 +103,10 @@ function moduleNotes(modules: EventModules, timeZone: string): string[] {
     modules.waitlist ? "Complet : liste d'attente." : null,
     places?.minimum ? `Maintenu à partir de ${places.minimum.seats} inscrits` : null,
     messages?.bring ? `À apporter : ${messages.bring}` : null,
+    location?.mode === "online" ? "Le lien de la visio t'est envoyé dans ta confirmation" : null,
+    location?.mode === "client" ? "Nous venons chez toi : ton adresse est demandée" : null,
+    location?.mode === "venue" && location.address ? `Lieu : ${location.address}` : null,
+    staff?.showOnPublicPage ? "Avec le prénom de l'intervenant" : null,
   ].filter((note): note is string => note !== null);
 }
 
@@ -114,7 +121,9 @@ function Preview({
   fields,
   modules,
   timeZone,
+  itemTypeNames,
 }: {
+  itemTypeNames: Record<string, string>;
   workspaceName: string;
   name: string;
   color: string;
@@ -213,6 +222,23 @@ function Preview({
                 enforceRequired={false}
                 className="flex flex-col gap-3"
               />
+              {(modules.equipment?.needs ?? []).map((need) => {
+                const label = itemTypeNames[need.itemTypeId] ?? "Matériel";
+                return (
+                  <p key={need.id} className="flex items-center gap-2 text-[13px] text-ink/85">
+                    <span
+                      aria-hidden="true"
+                      className={cn(
+                        "size-4 shrink-0 rounded border-[1.5px]",
+                        need.required ? "border-ink bg-ink" : "border-line bg-surface",
+                      )}
+                    />
+                    {need.required
+                      ? `${label} : inclus${need.chooser === "student" ? ", tu choisis l'exemplaire" : ""}`
+                      : `${label} : en option${need.chooser === "student" ? ", tu choisis l'exemplaire" : ""}`}
+                  </p>
+                );
+              })}
               {noteList}
               <div
                 className="flex h-11 items-center justify-center rounded-full text-sm font-semibold text-white"
@@ -494,6 +520,8 @@ export function EventTypeEditor({
                 noun: BOOKING_NOUN_LABELS[noun].singular,
                 structure: initial.structure,
                 timeZone: initial.timeZone,
+                itemTypes: initial.itemTypes,
+                members: initial.members,
               }}
               errors={errors}
             />
@@ -619,6 +647,7 @@ export function EventTypeEditor({
           fields={fields}
           modules={modules}
           timeZone={initial.timeZone}
+          itemTypeNames={Object.fromEntries(initial.itemTypes.map((type) => [type.id, type.name]))}
         />
       </form>
     </div>

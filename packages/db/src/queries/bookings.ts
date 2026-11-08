@@ -33,6 +33,7 @@ import {
   itemUnit,
   user,
 } from "../schema";
+import { listBookingEquipment } from "./inventory";
 
 const toDate = (value: unknown): Date | null =>
   value === null || value === undefined ? null : new Date(String(value));
@@ -366,6 +367,10 @@ export async function getBookingDetail(db: Executor, organizationId: string, boo
         startsAt: event.startsAt,
         endsAt: event.endsAt,
         locationName: event.locationName,
+        locationAddress: event.locationAddress,
+        /** Lien de visio : pour la confirmation et le rappel, jamais pour une page publique. */
+        onlineUrl: event.onlineUrl,
+        staffMemberId: event.staffMemberId,
         capacity: event.capacity,
         status: event.status,
         paymentLinkUrl: event.paymentLinkUrl,
@@ -383,7 +388,7 @@ export async function getBookingDetail(db: Executor, organizationId: string, boo
     .where(and(eq(booking.organizationId, organizationId), eq(booking.id, bookingId)));
   if (!row) return null;
 
-  const [participants, activity, [stats], [held], items] = await Promise.all([
+  const [participants, activity, [stats], [held], items, equipment] = await Promise.all([
     db
       .select()
       .from(bookingParticipant)
@@ -423,6 +428,7 @@ export async function getBookingDetail(db: Executor, organizationId: string, boo
           )
       : Promise.resolve([{ value: 0 }]),
     bookingItems(db, bookingId, row.kind === "event"),
+    listBookingEquipment(db, bookingId),
   ]);
 
   return {
@@ -438,6 +444,8 @@ export async function getBookingDetail(db: Executor, organizationId: string, boo
     }>,
     customerStats: stats ?? { bookings: 0, spentCents: 0, cancellations: 0 },
     eventSeatsHeld: held?.value ?? 0,
+    /** Matériel réservé par le module Matériel avancé (« Tour Shimpo · Assise basse · #2 »). */
+    equipment,
     rentalItems: row.kind === "rental" ? items : [],
     /** Matériel attribué à une réservation d'événement (comptoir). */
     assignedItems: row.kind === "event" ? items : [],

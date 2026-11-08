@@ -15,7 +15,7 @@ import { BookingForm } from "./booking-form";
 /** Maquette 5.3 : coordonnées des participants et paiement (complet ou clos : redirigé avant). */
 export function BookEventPage({
   eventSlug,
-  data: { workspace, event, linkSlug, channel, now, seats, prefill, pass },
+  data: { workspace, event, linkSlug, channel, now, seats, prefill, pass, equipment },
 }: {
   eventSlug: string;
   data: Awaited<ReturnType<typeof getBookEventPage>>;
@@ -64,7 +64,7 @@ export function BookEventPage({
             : `Payer ${formatMoney(dueNow)}`
           : BOOKING_NOUN_LABELS[event.bookingNoun].confirm;
 
-  const place = event.locationName ?? (event.onlineUrl ? "En ligne" : null);
+  const place = event.locationName ?? (event.online ? "En ligne" : null);
   const deposit = depositCents !== null && total > 0;
 
   return (
@@ -97,6 +97,7 @@ export function BookEventPage({
         submitLabel={submitLabel}
         prefill={prefill}
         pass={pass}
+        equipment={equipment}
         payment={
           paysOnline && channel
             ? {

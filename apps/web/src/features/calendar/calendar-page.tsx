@@ -1,6 +1,7 @@
 import { addDays } from "@horaya/core";
 import type { EventRow } from "@horaya/db";
 import { FabLink } from "@/components/app/fab";
+import { FilterSelect } from "@/components/app/filter-select";
 import { PageHeader } from "@/components/app/page-header";
 import { CalendarLegend } from "@/components/calendar/legend";
 import { DayAgenda, MonthCompact, WeekAgenda, WeekStrip } from "@/components/calendar/mobile";
@@ -61,7 +62,8 @@ export function CalendarPage({
   data: Awaited<ReturnType<typeof getCalendar>>;
   view: View;
 }) {
-  const { timeZone, now, today, date, workspaceName, rows, types, selected } = data;
+  const { timeZone, now, today, date, workspaceName, rows, types, selected, staff, staffFilter } =
+    data;
 
   // Période affichée et navigation.
   const { days, previous, next } = calendarPeriod(view, date);
@@ -75,6 +77,7 @@ export function CalendarPage({
       vue: overrides.vue ?? view,
       date: civilKey(overrides.date ?? date),
       evenement: overrides.evenement,
+      intervenant: staffFilter,
     });
 
   const toCalendarEvent = (row: EventRow): CalendarEvent => ({
@@ -231,6 +234,17 @@ export function CalendarPage({
         toolbar={
           <>
             <CalendarLegend categories={types} />
+            {staff.length > 0 && (
+              <FilterSelect
+                param="intervenant"
+                label="Intervenant"
+                className="w-[190px]"
+                options={[
+                  { value: "", label: "Tous les intervenants" },
+                  ...staff.map((entry) => ({ value: entry.id, label: entry.name })),
+                ]}
+              />
+            )}
             {/* Sur mobile, période et vues sur une seule ligne, vues en pleine largeur. */}
             <div className="flex gap-3">
               {periodNav}

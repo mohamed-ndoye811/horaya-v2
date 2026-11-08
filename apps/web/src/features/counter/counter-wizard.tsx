@@ -233,6 +233,7 @@ export function CounterWizard({
             paymentStatus: result.paid ? "paid" : "none",
             amountCents: result.amountCents,
             items: [],
+            equipment: [],
             sessions: result.sessions,
           });
           return;
@@ -1198,8 +1199,13 @@ function CounterDone({
             </span>
           )}
         </DoneRow>
-        {done.items.length > 0 && (
+        {done.items.length + done.equipment.length > 0 && (
           <DoneRow label="Matériel">
+            {done.equipment.map((label) => (
+              <span key={label} className="text-[15px] font-bold leading-5 text-ink">
+                {label}
+              </span>
+            ))}
             {done.items.map((item) => (
               <span key={item.name} className="text-[15px] font-bold leading-5 text-ink">
                 {item.name} {item.labels.join(", ")}

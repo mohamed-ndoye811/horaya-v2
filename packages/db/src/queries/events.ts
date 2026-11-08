@@ -10,7 +10,7 @@ import type {
 } from "@horaya/core";
 import { and, asc, desc, eq, gt, gte, ilike, isNull, lt, ne, or, type SQL, sql } from "drizzle-orm";
 import type { Executor } from "../client";
-import { booking, customer, event, eventType } from "../schema";
+import { booking, customer, event, eventType, member, user } from "../schema";
 
 /**
  * Places occupées (en attente + confirmées), en sous-requête corrélée.
@@ -41,6 +41,11 @@ const eventColumns = {
   paymentMode: event.paymentMode,
   seriesId: event.seriesId,
   coverImageUrl: event.coverImageUrl,
+  /** Module Intervenant. */
+  staffMemberId: event.staffMemberId,
+  staffName: sql<
+    string | null
+  >`(select u.name from member m join "user" u on u.id = m.user_id where m.id = "event"."staff_member_id")`,
   typeId: eventType.id,
   typeName: eventType.name,
   typeColor: eventType.color,
@@ -64,6 +69,8 @@ export interface EventRow {
   paymentMode: PaymentMode;
   seriesId: string | null;
   coverImageUrl: string | null;
+  staffMemberId: string | null;
+  staffName: string | null;
   typeId: string;
   typeName: string;
   typeColor: string;
@@ -89,7 +96,14 @@ function tabCondition(tab: EventTab, now: Date): SQL | undefined {
 export async function listEvents(
   db: Executor,
   organizationId: string,
-  options: { tab: EventTab; now: Date; search?: string; typeId?: string; limit?: number },
+  options: {
+    tab: EventTab;
+    now: Date;
+    search?: string;
+    typeId?: string;
+    staffMemberId?: string;
+    limit?: number;
+  },
 ): Promise<EventRow[]> {
   const search = options.search?.trim();
   const rows = await db
@@ -101,6 +115,7 @@ export async function listEvents(
         eq(event.organizationId, organizationId),
         tabCondition(options.tab, options.now),
         options.typeId ? eq(event.eventTypeId, options.typeId) : undefined,
+        options.staffMemberId ? eq(event.staffMemberId, options.staffMemberId) : undefined,
         search
           ? or(
               ilike(event.title, `%${search}%`),
@@ -137,7 +152,7 @@ export async function countEventsByTab(
 export async function listEventsInRange(
   db: Executor,
   organizationId: string,
-  range: { from: Date; to: Date },
+  range: { from: Date; to: Date; staffMemberId?: string },
 ): Promise<EventRow[]> {
   const rows = await db
     .select(eventColumns)
@@ -149,6 +164,7 @@ export async function listEventsInRange(
         ne(event.status, "cancelled"),
         lt(event.startsAt, range.to),
         gt(event.endsAt, range.from),
+        range.staffMemberId ? eq(event.staffMemberId, range.staffMemberId) : undefined,
       ),
     )
     .orderBy(asc(event.startsAt));
@@ -300,4 +316,18 @@ export async function getEventDetail(db: Executor, organizationId: string, event
       .reduce((total, entry) => total + entry.seats, 0),
     bookedAmountCents: active.reduce((total, entry) => total + entry.amountCents, 0),
   };
+}
+
+/** Membres qui animent au moins un événement (filtre « intervenant » du calendrier et de la liste). */
+export async function listEventStaff(
+  db: Executor,
+  organizationId: string,
+): Promise<Array<{ id: string; name: string }>> {
+  return db
+    .selectDistinct({ id: member.id, name: user.name })
+    .from(event)
+    .innerJoin(member, eq(member.id, event.staffMemberId))
+    .innerJoin(user, eq(user.id, member.userId))
+    .where(eq(event.organizationId, organizationId))
+    .orderBy(asc(user.name));
 }

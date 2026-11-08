@@ -1,4 +1,5 @@
 import type { FieldDefinition } from "../fields/model";
+import type { EquipmentUnit } from "../modules/resources";
 import type { Period } from "./availability";
 import type { Item, ItemAllocation, ItemUnit, NewAllocation } from "./model";
 import type { ItemUnitStatus } from "./types";
@@ -52,8 +53,17 @@ export interface InventoryRepository {
     organizationId: string,
     allocationIds: string[],
     bookingId: string,
+    needId?: string,
   ): Promise<void>;
-  /** Rend au matériel de l'événement les exemplaires attribués à une réservation. */
+  /** Exemplaires des articles d'une catégorie de matériel (module Matériel avancé). */
+  unitsOfItemType(
+    organizationId: string,
+    itemTypeId: string,
+  ): Promise<{ name: string; units: EquipmentUnit[] } | null>;
+  /**
+   * Libère le matériel d'une réservation : ce que le comptoir a attribué retourne au matériel de
+   * l'événement, ce que le module Matériel avancé a réservé est annulé.
+   */
   releaseBookingAllocations(organizationId: string, bookingId: string): Promise<void>;
   /** Décale les allocations d'un événement sur ses nouvelles dates (ConflictError si conflit). */
   moveEventAllocations(organizationId: string, eventId: string, period: Period): Promise<void>;

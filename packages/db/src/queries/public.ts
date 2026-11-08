@@ -24,6 +24,7 @@ import {
   tenantSettings,
 } from "../schema";
 import { calendarLinkCondition } from "./calendar-links";
+import { listBookingEquipment } from "./inventory";
 
 /**
  * Lectures des pages publiques (horaya.app/<espace>) : seulement ce qu'un visiteur peut voir,
@@ -86,6 +87,9 @@ const publicEventColumns = {
   highlights: event.highlights,
   paymentLinkUrl: event.paymentLinkUrl,
   coverImageUrl: event.coverImageUrl,
+  staffName: sql<
+    string | null
+  >`(select u.name from member m join "user" u on u.id = m.user_id where m.id = "event"."staff_member_id")`,
   typeId: eventType.id,
   typeName: eventType.name,
   typeColor: eventType.color,
@@ -99,12 +103,22 @@ const publicEventColumns = {
 
 /** Les champs internes de « Ce que tu décris », les documents et messages ne quittent jamais le serveur. */
 function toPublic<
-  R extends { fields: EventTypeField[]; fieldValues: FieldValues; modules: EventModules },
->(row: R): R {
+  R extends {
+    fields: EventTypeField[];
+    fieldValues: FieldValues;
+    modules: EventModules;
+    onlineUrl: string | null;
+    staffName: string | null;
+  },
+>(row: R): Omit<R, "onlineUrl" | "staffName"> & { online: boolean; staffFirstName: string | null } {
+  const { onlineUrl, staffName, ...rest } = row;
   return {
-    ...row,
+    ...rest,
     ...publicFieldsView(row.fields, row.fieldValues),
     modules: publicModules(row.modules),
+    // Le lien de visio ne quitte pas le serveur avant l'inscription : on ne dit que « en ligne ».
+    online: onlineUrl !== null,
+    staffFirstName: row.modules.staff?.showOnPublicPage ? (staffName?.split(" ")[0] ?? null) : null,
   };
 }
 
@@ -117,7 +131,8 @@ export interface PublicEventRow {
   endsAt: Date;
   locationName: string | null;
   locationAddress: string | null;
-  onlineUrl: string | null;
+  /** Lien de visio : jamais envoyé au navigateur, seulement « en ligne ou non ». */
+  online: boolean;
   capacity: number | null;
   priceCents: number;
   paymentMode: PaymentMode;
@@ -126,6 +141,8 @@ export interface PublicEventRow {
   highlights: string[];
   paymentLinkUrl: string | null;
   coverImageUrl: string | null;
+  /** Module Intervenant, si l'équipe veut afficher son prénom. */
+  staffFirstName: string | null;
   typeId: string;
   typeName: string;
   typeColor: string;
@@ -158,7 +175,7 @@ export async function listPublicEvents(
     .innerJoin(eventType, eq(eventType.id, event.eventTypeId))
     .where(and(isPublic(organizationId), gte(event.startsAt, now)))
     .orderBy(asc(event.startsAt));
-  return (rows as PublicEventRow[]).map(toPublic);
+  return rows.map(toPublic);
 }
 
 /**
@@ -293,7 +310,9 @@ async function findManagedBooking(db: Executor, where: SQL | undefined) {
     .orderBy(asc(bookingParticipant.createdAt), asc(bookingParticipant.id));
   // Les champs internes de « Ce que tu décris » restent dans l'équipe.
   const { fields: eventFields } = publicFieldsView(row.eventFields ?? [], {});
-  return { ...row, eventFields, participants };
+  // Matériel réservé avec la place (module Matériel avancé).
+  const equipment = await listBookingEquipment(db, row.id);
+  return { ...row, eventFields, participants, equipment };
 }
 export type ManagedBooking = NonNullable<Awaited<ReturnType<typeof findManagedBooking>>>;
 
@@ -336,5 +355,5 @@ export async function listCalendarLinkEvents(
       ),
     )
     .orderBy(asc(event.startsAt));
-  return (rows as PublicEventRow[]).map(toPublic);
+  return rows.map(toPublic);
 }

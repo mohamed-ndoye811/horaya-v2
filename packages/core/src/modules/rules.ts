@@ -7,6 +7,7 @@ import type {
   OpeningModule,
   PlacesModule,
 } from "./registry";
+import { CLIENT_ADDRESS_FIELD_KEY, type ResourceNames, resourceSummary } from "./resources";
 
 const HOUR = 3_600_000;
 const DAY = 24 * HOUR;
@@ -95,6 +96,15 @@ export const AGE_FIELD: EventTypeField = {
   help: "En années, le jour de l'événement",
 };
 
+/** La question « Adresse » du module Lieu chez le client. */
+export const CLIENT_ADDRESS_FIELD: EventTypeField = {
+  key: CLIENT_ADDRESS_FIELD_KEY,
+  label: "Adresse où nous viendrons",
+  type: "long_text",
+  scope: "booking",
+  required: true,
+};
+
 const hasAgeLimit = (access: AccessModule | undefined) => Boolean(access?.minAge || access?.maxAge);
 
 /**
@@ -105,6 +115,13 @@ export function withModuleFields(
   fields: EventTypeField[],
   modules: EventModules,
 ): EventTypeField[] {
+  // Lieu « chez le client » : l'adresse est demandée à chaque inscription.
+  if (
+    modules.location?.mode === "client" &&
+    !fields.some((field) => field.key === CLIENT_ADDRESS_FIELD_KEY)
+  ) {
+    fields = [...fields, CLIENT_ADDRESS_FIELD];
+  }
   if (!hasAgeLimit(modules.access)) return fields;
   const existing = fields.find((field) => field.key === AGE_FIELD_KEY);
   if (!existing) return [...fields, AGE_FIELD];
@@ -159,8 +176,20 @@ export function hasAccessTag(access: AccessModule | undefined, tags: readonly st
 
 /** Ce qu'un visiteur voit des modules : ni documents ni messages, sauf « À apporter ». */
 export function publicModules(modules: EventModules): EventModules {
-  const { documents: _documents, messages, ...rest } = modules;
-  return messages?.bring ? { ...rest, messages: { bring: messages.bring } } : rest;
+  const {
+    documents: _documents,
+    messages,
+    equipment: _equipment,
+    location,
+    staff,
+    ...rest
+  } = modules;
+  const visible: EventModules = rest;
+  if (messages?.bring) visible.messages = { bring: messages.bring };
+  // Le lien de visio ne se montre qu'une fois inscrit : il ne quitte pas le serveur.
+  if (location) visible.location = { mode: location.mode };
+  if (staff) visible.staff = { showOnPublicPage: staff.showOnPublicPage };
+  return visible;
 }
 
 /* ---------- Reprise des données ---------- */
@@ -215,7 +244,7 @@ export function closingLabel(hoursBefore: number | undefined): string {
   return `${hoursBefore} h avant`;
 }
 
-export interface SummaryContext {
+export interface SummaryContext extends ResourceNames {
   /** « inscription », « réservation »… */
   noun: string;
   structure: CancellationPolicy;
@@ -303,6 +332,10 @@ export function moduleSummary(
         messages.after && "message après la séance",
       ]);
     }
+    case "equipment":
+    case "location":
+    case "staff":
+      return resourceSummary(key, modules, context);
     case "documents": {
       const files = modules.documents?.files ?? [];
       return files.length

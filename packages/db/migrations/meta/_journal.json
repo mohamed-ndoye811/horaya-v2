@@ -169,6 +169,13 @@
       "when": 1794146151610,
       "tag": "0023_fonctionnement_modules",
       "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1794148975025,
+      "tag": "0024_ressources",
+      "breakpoints": true
     }
   ]
 }

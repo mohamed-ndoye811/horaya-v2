@@ -30,7 +30,7 @@ export function EnrollPage({
   const { quote } = offer;
   const price = quote.priceCents;
   const count = `${offer.sessions.length} séance${offer.sessions.length > 1 ? "s" : ""}`;
-  const place = event.locationName ?? (event.onlineUrl ? "En ligne" : null);
+  const place = event.locationName ?? (event.online ? "En ligne" : null);
   // Paiement par le lien externe de l'atelier (le paiement intégré ne couvre pas les inscriptions).
   const link = channel?.kind === "link" && price > 0 ? channel : null;
 

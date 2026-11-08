@@ -11,7 +11,12 @@ import {
   refuseBooking,
   setBookingCheckIn,
 } from "@horaya/core";
-import { getCancelRecreditInfo, listCounterItems, listCustomers } from "@horaya/db";
+import {
+  getCancelRecreditInfo,
+  listBookingEquipment,
+  listCounterItems,
+  listCustomers,
+} from "@horaya/db";
 import { parseEuroToCents } from "@/lib/money";
 import { sendBookingCreatedEmail } from "./booking-emails";
 import { db } from "./db";
@@ -114,6 +119,8 @@ export type CounterResult =
       paymentStatus: string;
       amountCents: number;
       items: Array<{ name: string; labels: string[] }>;
+      /** Matériel réservé d'office par le module Matériel avancé. */
+      equipment: string[];
     }
   | ({ ok: false } & FormState);
 
@@ -134,6 +141,7 @@ export async function createCounterBookingActionImpl(
       paymentStatus: booking.paymentStatus,
       amountCents: booking.amountCents,
       items: items.map(({ name, labels }) => ({ name, labels })),
+      equipment: await listBookingEquipment(db, booking.id),
     };
   } catch (error) {
     return { ok: false, ...toFormState(error) };

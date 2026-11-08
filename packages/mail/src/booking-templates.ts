@@ -21,6 +21,10 @@ export interface BookingMail {
   bring?: string | null;
   /** Module Documents joints : liens absolus (règlement, plan d'accès). */
   documents?: Array<{ name: string; url: string }>;
+  /** Module Lieu en ligne : lien de la visio (confirmation et rappel seulement). */
+  onlineUrl?: string | null;
+  /** Module Matériel avancé : matériel réservé avec la place. */
+  equipment?: string[];
 }
 
 /** Ce que les modules ajoutent : « À apporter », le texte de l'atelier (confirmation seulement). */
@@ -33,11 +37,17 @@ function practical(mail: BookingMail, withNote: boolean): string[] {
 
 const places = (seats: number) => `${seats} place${seats > 1 ? "s" : ""}`;
 
-function details(mail: BookingMail): Array<[string, string]> {
+function details(mail: BookingMail, withLink: boolean): Array<[string, string]> {
   return [
     ["Événement", mail.title],
     ["Quand", mail.when],
     ...(mail.where ? [["Où", mail.where] as [string, string]] : []),
+    ...(withLink && mail.onlineUrl
+      ? [["Lien de la visio", mail.onlineUrl] as [string, string]]
+      : []),
+    ...(mail.equipment?.length
+      ? [["Matériel", mail.equipment.join(", ")] as [string, string]]
+      : []),
     ["Places", String(mail.seats)],
     ...(mail.amount ? [["Montant", mail.amount] as [string, string]] : []),
     ["Réservation", mail.reference],
@@ -63,7 +73,7 @@ function bookingEmail(
       preheader: content.preheader,
       title: content.title,
       paragraphs: [`Bonjour ${mail.firstName},`, ...content.paragraphs],
-      details: details(mail),
+      details: details(mail, Boolean(content.documents)),
       links: content.documents
         ? (mail.documents ?? []).map((document) => ({ label: document.name, url: document.url }))
         : [],

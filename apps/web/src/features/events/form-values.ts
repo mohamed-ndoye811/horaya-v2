@@ -1,4 +1,4 @@
-import { addDays, toZonedParts } from "@horaya/core";
+import { addDays, type EventModules, toZonedParts } from "@horaya/core";
 import { centsToInput } from "@/lib/money";
 import type { EventFormValues } from "./event-form";
 
@@ -30,6 +30,9 @@ export function emptyEventValues(
     endDate: iso,
     endTime: "16:00",
     locationName: "",
+    locationAddress: "",
+    staffMemberId: "",
+    equipmentUnits: {},
     onlineUrl: "",
     capacity: "",
     price: "",
@@ -50,6 +53,9 @@ export function eventToValues(
     startsAt: Date;
     endsAt: Date;
     locationName: string | null;
+    locationAddress: string | null;
+    staffMemberId: string | null;
+    modules: EventModules;
     onlineUrl: string | null;
     capacity: number | null;
     priceCents: number;
@@ -73,6 +79,11 @@ export function eventToValues(
     endDate: end.date,
     endTime: end.time,
     locationName: event.locationName ?? "",
+    locationAddress: event.locationAddress ?? "",
+    staffMemberId: event.staffMemberId ?? "",
+    equipmentUnits: Object.fromEntries(
+      (event.modules.equipment?.needs ?? []).map((need) => [need.id, need.unitIds ?? []]),
+    ),
     onlineUrl: event.onlineUrl ?? "",
     capacity: event.capacity === null ? "" : String(event.capacity),
     price: event.priceCents > 0 ? centsToInput(event.priceCents) : "",

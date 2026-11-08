@@ -1,8 +1,9 @@
-import { type EventTypeField, fieldsOfScope } from "@horaya/core";
+import { type EquipmentOffer, type EventTypeField, fieldsOfScope } from "@horaya/core";
 import { type FormEvent, type ReactNode, useState } from "react";
 import { FieldInputs } from "@/components/app/field-inputs";
 import { Collapse } from "@/components/motion/collapse";
 import { Swap } from "@/components/motion/swap";
+import { EquipmentChoices } from "@/components/public/equipment-choices";
 import { Button } from "@/components/ui/button";
 import { Checkbox, Field, FieldError, inputClasses, textareaClasses } from "@/components/ui/field";
 import { FormAlert } from "@/components/ui/form-alert";
@@ -140,6 +141,7 @@ export function BookingForm({
   payment,
   prefill,
   pass = null,
+  equipment = [],
   action,
   enrollment = false,
 }: {
@@ -167,6 +169,8 @@ export function BookingForm({
   prefill: { firstName: string; lastName: string; email: string; phone: string } | null;
   /** Lot 31 : client connecté avec une carte de séances utilisable pour ces places. */
   pass?: { id: string; name: string; balance: number } | null;
+  /** Module Matériel avancé : ce que l'élève réserve ou choisit avec sa place. */
+  equipment?: EquipmentOffer[];
   /** Autre envoi que la réservation à la séance (inscription à toute la série). */
   action?: (previous: FormState, form: FormData) => Promise<FormState>;
   /** Inscription à la série : une seule personne, sans entreprise ni message. */
@@ -296,6 +300,7 @@ export function BookingForm({
               />
             </div>
           )}
+          <EquipmentChoices offers={equipment} seats={seats} errors={errors} />
           {Array.from({ length: seats - 1 }, (_, offset) => offset + 1).map((index) => (
             <ExtraParticipant
               key={index}
