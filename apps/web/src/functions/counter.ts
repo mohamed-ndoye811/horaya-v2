@@ -1,10 +1,10 @@
-import { addDays } from "@horaya/core";
+import { addDays, enrollmentQuote } from "@horaya/core";
 import { getCustomerDetail, listCounterEvents } from "@horaya/db";
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import type { CounterEvent } from "@/features/counter/counter-wizard";
 import { startOfDay, todayIn } from "@/lib/dates";
-import { formatDayNumber, formatHour, formatWeekdayShort } from "@/lib/format";
+import { formatDayNumber, formatHour, formatMoney, formatWeekdayShort } from "@/lib/format";
 import { searchText } from "@/lib/search-params";
 import { db } from "@/server/db";
 import { getWorkspaceContext } from "@/server/workspace";
@@ -50,26 +50,45 @@ export const getCounter = createServerFn({ method: "GET" })
       month: "short",
       timeZone,
     });
-    const counterEvents: CounterEvent[] = events.map((event) => ({
-      id: event.id,
-      title: event.title,
-      day:
-        event.startsAt < tomorrow ? "today" : event.startsAt < afterTomorrow ? "tomorrow" : "later",
-      time: clock.format(event.startsAt),
-      duration: duration(event.startsAt, event.endsAt),
-      date: weekday.format(event.startsAt).replace(/^./, (first) => first.toUpperCase()),
-      label: `${formatWeekdayShort(event.startsAt, timeZone)} ${formatDayNumber(event.startsAt, timeZone)} · ${formatHour(event.startsAt, timeZone)}`,
-      range: `${clock.format(event.startsAt)} – ${clock.format(event.endsAt)}`,
-      location: event.locationName,
-      priceCents: event.priceCents,
-      color: event.color,
-      remaining: event.capacity === null ? null : Math.max(0, event.capacity - event.seatsHeld),
-      capacity: event.capacity,
-      waitlist: event.waitlistEnabled,
-      seriesId: event.seriesId,
-      enrollmentPriceCents: event.enrollmentPriceCents,
-      fields: event.fields.filter((field) => field.scope !== "event"),
-    }));
+    const counterEvents: CounterEvent[] = events.map((event) => {
+      // Inscription à toute la série : prix au prorata des séances restantes si la série le prévoit.
+      const quote =
+        event.enrollmentPriceCents === null
+          ? null
+          : enrollmentQuote({
+              fullCents: event.enrollmentPriceCents,
+              remaining: event.seriesRemaining,
+              total: event.seriesTotal,
+              prorata: event.enrollmentProrata,
+            });
+      return {
+        id: event.id,
+        title: event.title,
+        day:
+          event.startsAt < tomorrow
+            ? "today"
+            : event.startsAt < afterTomorrow
+              ? "tomorrow"
+              : "later",
+        time: clock.format(event.startsAt),
+        duration: duration(event.startsAt, event.endsAt),
+        date: weekday.format(event.startsAt).replace(/^./, (first) => first.toUpperCase()),
+        label: `${formatWeekdayShort(event.startsAt, timeZone)} ${formatDayNumber(event.startsAt, timeZone)} · ${formatHour(event.startsAt, timeZone)}`,
+        range: `${clock.format(event.startsAt)} – ${clock.format(event.endsAt)}`,
+        location: event.locationName,
+        priceCents: event.priceCents,
+        color: event.color,
+        remaining: event.capacity === null ? null : Math.max(0, event.capacity - event.seatsHeld),
+        capacity: event.capacity,
+        waitlist: event.waitlistEnabled,
+        seriesId: event.seriesId,
+        enrollmentPriceCents: quote?.priceCents ?? null,
+        enrollmentNote: quote?.prorated
+          ? `${quote.remaining} séance${quote.remaining > 1 ? "s" : ""} restante${quote.remaining > 1 ? "s" : ""} sur ${quote.total} : ${formatMoney(quote.priceCents)} au lieu de ${formatMoney(quote.fullCents)}`
+          : null,
+        fields: event.fields.filter((field) => field.scope !== "event"),
+      };
+    });
 
     return {
       events: counterEvents,

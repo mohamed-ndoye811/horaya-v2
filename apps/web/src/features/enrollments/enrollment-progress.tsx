@@ -170,6 +170,68 @@ export function AbsenceButton({
   );
 }
 
+/**
+ * « Annuler mon absence » : confirme, puis reprend la place (si la liste d'attente ne l'a pas
+ * prise). `onCancel` : l'action du lien de gestion, ou celle de l'espace client.
+ */
+export function CancelAbsenceButton({
+  session,
+  timeZone,
+  onCancel,
+  size = "sm",
+}: {
+  session: Pick<NextSession, "eventId" | "title" | "startsAt">;
+  timeZone: string;
+  onCancel: (eventId: string) => Promise<FormState>;
+  size?: "xs" | "sm";
+}) {
+  const router = useRouter();
+  const [open, setOpen] = useState(false);
+  const [pending, startTransition] = useTransition();
+  const [error, setError] = useState<string | null>(null);
+  return (
+    <>
+      <Button variant="secondary" size={size} onClick={() => setOpen(true)}>
+        Annuler l'absence
+      </Button>
+      {open && (
+        <Dialog
+          open
+          onClose={() => setOpen(false)}
+          title="Finalement, tu viens ?"
+          description={`Tu reprends ta place du ${formatDateTimeShort(session.startsAt, timeZone)} pour « ${session.title} », si personne ne l'a prise entre-temps. Le rattrapage que tu n'as pas utilisé disparaît.`}
+          footer={
+            <>
+              <Button variant="secondary" onClick={() => setOpen(false)} className="flex-1">
+                Retour
+              </Button>
+              <Button
+                className="flex-1"
+                pending={pending}
+                onClick={() =>
+                  startTransition(async () => {
+                    const result = await onCancel(session.eventId);
+                    if (result.error) {
+                      setError(result.error);
+                      return;
+                    }
+                    setOpen(false);
+                    router.refresh();
+                  })
+                }
+              >
+                Reprendre ma place
+              </Button>
+            </>
+          }
+        >
+          {error ? <FormAlert>{error}</FormAlert> : null}
+        </Dialog>
+      )}
+    </>
+  );
+}
+
 /** « Ton prochain cours » (date, cours, actions) avec le bloc « Ton trimestre » à droite. */
 export function EnrollmentNextSession({
   next,

@@ -21,6 +21,7 @@ import { centsToInput } from "@/lib/money";
 import { useRouter } from "@/lib/navigation";
 import { useFormAction } from "@/lib/use-form-action";
 import type { FormState } from "@/server/form-state";
+import { EnrollmentDetails, type MakeupTargets } from "./enrollment-details";
 
 /**
  * Onglet « Série » d'une fiche événement (cours à l'année) : le réglage « Inscription à la
@@ -31,12 +32,15 @@ export function SeriesPanel({
   eventId,
   offer,
   enrollments,
+  targets,
   timeZone,
 }: {
   seriesId: string;
   eventId: string;
   offer: SeriesOffer;
   enrollments: SeriesEnrollmentRow[];
+  /** Séances où rattraper, par séance à rattraper (voir seriesPanel). */
+  targets: MakeupTargets;
   timeZone: string;
 }) {
   const active = enrollments.filter((row) => row.cancelledAt === null);
@@ -88,7 +92,7 @@ export function SeriesPanel({
               </div>
               <div className="relative z-10 flex items-center justify-between gap-3 pl-[54px]">
                 <EnrollmentBadge row={row} />
-                <EnrollmentActions row={row} />
+                <EnrollmentActions row={row} targets={targets} timeZone={timeZone} />
               </div>
             </div>
           )}
@@ -143,7 +147,7 @@ export function SeriesPanel({
               header: <span className="sr-only">Actions</span>,
               width: 70,
               align: "right",
-              cell: (row) => <EnrollmentActions row={row} />,
+              cell: (row) => <EnrollmentActions row={row} targets={targets} timeZone={timeZone} />,
             },
           ]}
         />
@@ -152,13 +156,16 @@ export function SeriesPanel({
   );
 }
 
-/** « 9 séances restantes sur 12 · 1 absence ». */
+/** « 9 séances restantes sur 12 · 1 absence · 1 à rattraper ». */
 function sessionsLabel(row: SeriesEnrollmentRow) {
   return [
     row.cancelledAt
       ? `${row.sessions} séance${row.sessions > 1 ? "s" : ""}`
       : `${row.remaining} restante${row.remaining > 1 ? "s" : ""} sur ${row.sessions}`,
     row.absences > 0 ? `${row.absences} absence${row.absences > 1 ? "s" : ""}` : null,
+    row.makeups.filter((makeup) => makeup.state === "available").length > 0
+      ? `${row.makeups.filter((makeup) => makeup.state === "available").length} à rattraper`
+      : null,
   ]
     .filter(Boolean)
     .join(" · ");
@@ -173,10 +180,19 @@ function EnrollmentBadge({ row }: { row: SeriesEnrollmentRow }) {
 }
 
 /** Menu « … » d'un inscrit : paiement noté ou retiré, désinscription (avec confirmation). */
-function EnrollmentActions({ row }: { row: SeriesEnrollmentRow }) {
+function EnrollmentActions({
+  row,
+  targets,
+  timeZone,
+}: {
+  row: SeriesEnrollmentRow;
+  targets: MakeupTargets;
+  timeZone: string;
+}) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [confirm, setConfirm] = useState(false);
+  const [details, setDetails] = useState(false);
   const [message, setMessage] = useState<FormState | null>(null);
   const run = (action: () => Promise<FormState>, onDone?: () => void) =>
     startTransition(async () => {
@@ -193,6 +209,7 @@ function EnrollmentActions({ row }: { row: SeriesEnrollmentRow }) {
       <ActionMenu
         label={`Actions pour ${row.customerName}`}
         items={[
+          { label: "Réponses et rattrapages", onSelect: () => setDetails(true) },
           {
             label: row.paidAt ? "Retirer le paiement noté" : "Noter le paiement",
             onSelect: () => run(() => setEnrollmentPaidAction(row.id, !row.paidAt)),
@@ -200,6 +217,14 @@ function EnrollmentActions({ row }: { row: SeriesEnrollmentRow }) {
           { label: "Désinscrire", tone: "danger", onSelect: () => setConfirm(true) },
         ]}
       />
+      {details && (
+        <EnrollmentDetails
+          row={row}
+          targets={targets}
+          timeZone={timeZone}
+          onClose={() => setDetails(false)}
+        />
+      )}
       {confirm && (
         <Dialog
           open
@@ -280,7 +305,7 @@ function SeriesSettingsForm({
           label="Prix de la série"
           required
           error={state.fieldErrors?.enrollmentPriceCents}
-          hint="Le même prix quelle que soit la date d'inscription."
+          hint="Le prix pour toutes les séances ; en cours de route, voir le prorata ci-dessous."
         >
           {(field) => (
             <AffixInput
@@ -300,6 +325,18 @@ function SeriesSettingsForm({
           defaultChecked={offer.dropInAllowed}
           label="Réservation à la séance"
           description="Le public peut aussi réserver une séance à l'unité."
+        />
+        <Switch
+          name="enrollmentProrata"
+          defaultChecked={offer.enrollmentProrata}
+          label="Inscription en cours de route au prorata"
+          description="Prix de la série × séances restantes ÷ séances totales, arrondi à l'euro."
+        />
+        <Switch
+          name="makeupAllowed"
+          defaultChecked={offer.makeupAllowed}
+          label="Rattrapages autorisés"
+          description="Une absence signalée dans le délai d'annulation gratuite se rattrape sur une autre séance du même type, avant la fin du trimestre."
         />
       </Collapse>
       <Button type="submit" pending={pending} className="self-start">

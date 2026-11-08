@@ -62,7 +62,7 @@ export function PublicEventPage({
   ].filter(Boolean);
   // Cours vendu seulement au trimestre : on affiche le prix de la série.
   const seriesOnly = event.enrollmentEnabled && !event.dropInAllowed && offer !== null;
-  const priceCents = seriesOnly ? (offer?.enrollmentPriceCents ?? 0) : event.priceCents;
+  const priceCents = seriesOnly ? (offer?.quote.priceCents ?? 0) : event.priceCents;
   const price = priceCents > 0 ? formatMoney(priceCents) : "Gratuit";
   const ctaLabel =
     state.kind === "waitlist"
@@ -247,9 +247,17 @@ export function PublicEventPage({
                 </p>
                 <p className="text-[13px] leading-[18px] text-ink-muted">
                   {offer.sessions.length} séance{offer.sessions.length > 1 ? "s" : ""} ·{" "}
-                  {formatMoney(offer.enrollmentPriceCents ?? 0)} · jusqu'au{" "}
+                  {formatMoney(offer.quote.priceCents)} · jusqu'au{" "}
                   {formatPublicSchedule(lastSession.startsAt, lastSession.endsAt, tz).date}
                 </p>
+                {offer.quote.prorated && (
+                  <p className="text-[13px] font-semibold leading-[18px] text-ink">
+                    {offer.quote.remaining} séance{offer.quote.remaining > 1 ? "s" : ""} restante
+                    {offer.quote.remaining > 1 ? "s" : ""} sur {offer.quote.total} :{" "}
+                    {formatMoney(offer.quote.priceCents)} au lieu de{" "}
+                    {formatMoney(offer.quote.fullCents)}
+                  </p>
+                )}
               </div>
               {offer.fullSessions.length > 0 ? (
                 <p className="text-[13px] font-semibold leading-[18px] text-ink-muted">

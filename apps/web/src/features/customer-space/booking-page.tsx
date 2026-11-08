@@ -5,8 +5,13 @@ import { Button, ButtonLink, buttonClasses } from "@/components/ui/button";
 import { Dialog } from "@/components/ui/dialog";
 import { FormAlert } from "@/components/ui/form-alert";
 import { ArrowLeft } from "@/components/ui/icons";
-import { AbsenceButton, EnrollmentProgress } from "@/features/enrollments/enrollment-progress";
 import {
+  AbsenceButton,
+  CancelAbsenceButton,
+  EnrollmentProgress,
+} from "@/features/enrollments/enrollment-progress";
+import {
+  cancelCustomerAbsenceAction,
   cancelCustomerBookingAction,
   type getCustomerBookingPage,
   reportCustomerAbsenceAction,
@@ -185,16 +190,24 @@ export function CustomerBookingPage({
               enrollment={enrollment}
               timezone={tz}
               absence={
-                active &&
                 booking.eventId &&
                 startsAt &&
-                startsAt > now && (
-                  <AbsenceButton
+                startsAt > now &&
+                (booking.absentAt ? (
+                  <CancelAbsenceButton
                     session={{ eventId: booking.eventId, title, startsAt }}
                     timeZone={tz}
-                    onAbsent={() => reportCustomerAbsenceAction(slug, booking.id)}
+                    onCancel={() => cancelCustomerAbsenceAction(slug, booking.id)}
                   />
-                )
+                ) : (
+                  active && (
+                    <AbsenceButton
+                      session={{ eventId: booking.eventId, title, startsAt }}
+                      timeZone={tz}
+                      onAbsent={() => reportCustomerAbsenceAction(slug, booking.id)}
+                    />
+                  )
+                ))
               }
             />
           )}

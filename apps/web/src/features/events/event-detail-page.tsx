@@ -365,6 +365,7 @@ export function EventDetailPage({
           eventId={event.id}
           offer={series.offer}
           enrollments={series.enrollments}
+          targets={series.targets}
           timeZone={timeZone}
         />
       ) : tab === "materiel" ? (
