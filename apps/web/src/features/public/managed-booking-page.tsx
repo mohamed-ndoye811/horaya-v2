@@ -230,7 +230,8 @@ export function ManagedBookingPage({
           href={withParams(`/${slug}/mon-espace/connexion`, {
             email: booking.customerEmail ?? undefined,
           })}
-          className="flex items-center justify-between gap-3 rounded-[20px] bg-surface px-5 py-[18px] text-ink hover:bg-field"
+          className="reveal press flex items-center justify-between gap-3 rounded-[20px] bg-surface px-5 py-[18px] text-ink hover:bg-field"
+          style={stagger(4)}
         >
           <span className="flex flex-col gap-0.5">
             <span className="text-[15px] font-semibold leading-5">
@@ -244,7 +245,7 @@ export function ManagedBookingPage({
         </Link>
       )}
 
-      <section className="flex flex-col rounded-3xl bg-surface px-6 py-2">
+      <section className="reveal flex flex-col rounded-3xl bg-surface px-6 py-2" style={stagger(5)}>
         <div className="flex h-14 items-center justify-between gap-4">
           <h2 className="text-lg font-semibold leading-[22px] text-ink">Récapitulatif</h2>
           <p className="font-mono text-xs leading-4 text-ink-subtle">Réf. {booking.reference}</p>
@@ -289,7 +290,7 @@ export function ManagedBookingPage({
         </dl>
       </section>
 
-      <div className="flex flex-col gap-4 sm:flex-row">
+      <div className="reveal flex flex-col gap-4 sm:flex-row" style={stagger(6)}>
         {active && startsAt && endsAt ? (
           <div className="flex flex-1 flex-wrap items-center justify-between gap-3 rounded-[20px] bg-surface px-5 py-[18px]">
             <h2 className="text-[15px] font-semibold leading-5 text-ink">Ajouter à ton agenda</h2>

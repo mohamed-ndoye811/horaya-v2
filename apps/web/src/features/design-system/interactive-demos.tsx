@@ -1,5 +1,10 @@
 import { useState } from "react";
+import { Collapse, Disclosure } from "@/components/motion/collapse";
+import { CountUp } from "@/components/motion/count-up";
+import { PresenceItem, PresenceList } from "@/components/motion/presence";
+import { Swap } from "@/components/motion/swap";
 import { CategorySwatch } from "@/components/ui/avatar";
+import { StatusBadge } from "@/components/ui/badge";
 import { Button, IconButton } from "@/components/ui/button";
 import { AddButton, Chip, ChoiceChips } from "@/components/ui/chip";
 import { ChoiceCards } from "@/components/ui/choice-cards";
@@ -336,6 +341,97 @@ export function InteractionDemo() {
           immédiatement.
         </p>
       </Dialog>
+    </div>
+  );
+}
+
+/**
+ * Mouvement (lot 33) : les briques de `components/motion/`. Une courbe, des durées courtes ;
+ * tout est coupé par `prefers-reduced-motion`.
+ */
+export function MotionDemo() {
+  const [open, setOpen] = useState(false);
+  const [absent, setAbsent] = useState(false);
+  const [balance, setBalance] = useState(120);
+  const [rows, setRows] = useState(["Niveau", "Allergies", "Matériel perso"]);
+  return (
+    <div className="grid max-w-[900px] gap-6 md:grid-cols-2">
+      <div className="flex flex-col gap-3 rounded-3xl bg-surface p-5">
+        <p className="text-sm font-bold text-ink">
+          Collapse et Disclosure : ouvrir / fermer en hauteur
+        </p>
+        <Button variant="secondary" size="xs" aria-expanded={open} onClick={() => setOpen(!open)}>
+          {open ? "Masquer" : "Voir les séances"}
+        </Button>
+        <Collapse open={open}>
+          <p className="rounded-2xl bg-field p-4 text-sm text-ink-muted">
+            Le contenu apparaît sans saut, les éléments dessous suivent.
+          </p>
+        </Collapse>
+        <Disclosure
+          summary={(isOpen) => (isOpen ? "Masquer le journal" : "Journal (3)")}
+          summaryClassName="w-fit text-[13px] font-semibold text-ink-muted hover:text-ink"
+        >
+          <p className="pt-2 text-sm text-ink-muted">
+            Remplace les &lt;details&gt;, qui ne s'animent pas.
+          </p>
+        </Disclosure>
+      </div>
+      <div className="flex flex-col gap-3 rounded-3xl bg-surface p-5">
+        <p className="text-sm font-bold text-ink">PresenceList : ajouter, retirer, réordonner</p>
+        <ul className="relative flex flex-col gap-2">
+          <PresenceList>
+            {rows.map((row) => (
+              <PresenceItem
+                as="li"
+                key={row}
+                className="flex items-center justify-between rounded-xl bg-field px-3 py-2 text-sm font-semibold text-ink"
+              >
+                {row}
+                <button
+                  type="button"
+                  className="text-[13px] text-danger"
+                  onClick={() => setRows(rows.filter((entry) => entry !== row))}
+                >
+                  Retirer
+                </button>
+              </PresenceItem>
+            ))}
+          </PresenceList>
+        </ul>
+        <div className="flex gap-2">
+          <Button
+            variant="secondary"
+            size="xs"
+            onClick={() => setRows([...rows, `Question ${rows.length + 1}`])}
+          >
+            Ajouter
+          </Button>
+          <Button variant="secondary" size="xs" onClick={() => setRows([...rows].reverse())}>
+            Inverser
+          </Button>
+        </div>
+      </div>
+      <div className="flex flex-col gap-3 rounded-3xl bg-surface p-5">
+        <p className="text-sm font-bold text-ink">Swap : changement d'état</p>
+        <div className="flex items-center gap-3">
+          <StatusBadge tone={absent ? "neutral" : "success"}>
+            {absent ? "Absence signalée" : "Confirmée"}
+          </StatusBadge>
+          <Button variant="secondary" size="xs" onClick={() => setAbsent(!absent)}>
+            <Swap value={String(absent)}>{absent ? "Annuler l'absence" : "Je serai absent·e"}</Swap>
+          </Button>
+        </div>
+      </div>
+      <div className="flex flex-col gap-3 rounded-3xl bg-surface p-5">
+        <p className="text-sm font-bold text-ink">CountUp : un montant qui défile</p>
+        <p className="text-[40px] font-semibold leading-[44px] tracking-[-0.03em] text-ink">
+          <CountUp key={balance} value={`${balance} €`} />
+        </p>
+        <Button variant="secondary" size="xs" onClick={() => setBalance(balance + 40)}>
+          Ajouter 40 €
+        </Button>
+      </div>
     </div>
   );
 }

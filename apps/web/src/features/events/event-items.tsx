@@ -1,5 +1,7 @@
 import { useId, useState, useTransition } from "react";
 import { ItemTile } from "@/components/app/item-tile";
+import { PresenceItem, PresenceList } from "@/components/motion/presence";
+import { Swap } from "@/components/motion/swap";
 import { Button, IconButton, rowLinkClasses, textLinkClasses } from "@/components/ui/button";
 import { MonoCaption } from "@/components/ui/cells";
 import { inputClasses } from "@/components/ui/field";
@@ -75,65 +77,68 @@ export function EventItems({
           dates et suivent l'événement s'il change d'horaire.
         </p>
       ) : (
-        <ul className="flex flex-col border-t border-line-soft">
-          {reserved.map((entry) => (
-            <li
-              key={entry.itemId}
-              className="flex flex-wrap items-center gap-4 border-b border-line-soft py-3.5"
-            >
-              <ItemTile name={entry.name} reference={entry.reference} photoUrl={entry.photoUrl} />
-              <div className="flex min-w-0 flex-1 flex-col gap-1">
-                <Link
-                  href={`/app/materiel/${entry.itemId}`}
-                  className={cn(rowLinkClasses, "truncate text-base")}
-                >
-                  {entry.name}
-                </Link>
-                <MonoCaption>
-                  Réf. {entry.reference} · ex. {compactUnitLabels(entry.units)}
-                </MonoCaption>
-              </div>
-              {editable ? (
-                <div className="flex items-center gap-2">
-                  <IconButton
-                    label="Un exemplaire de moins"
-                    disabled={pending || entry.quantity <= 1}
-                    onClick={() =>
-                      run(() => setEventItemAction(eventId, entry.itemId, entry.quantity - 1))
-                    }
+        <ul className="relative flex flex-col border-t border-line-soft">
+          <PresenceList>
+            {reserved.map((entry) => (
+              <PresenceItem
+                as="li"
+                key={entry.itemId}
+                className="flex flex-wrap items-center gap-4 border-b border-line-soft py-3.5"
+              >
+                <ItemTile name={entry.name} reference={entry.reference} photoUrl={entry.photoUrl} />
+                <div className="flex min-w-0 flex-1 flex-col gap-1">
+                  <Link
+                    href={`/app/materiel/${entry.itemId}`}
+                    className={cn(rowLinkClasses, "truncate text-base")}
                   >
-                    <span aria-hidden="true" className="text-lg font-bold leading-none">
-                      −
-                    </span>
-                  </IconButton>
-                  <span className="w-10 text-center font-mono text-sm font-semibold">
-                    {entry.quantity}
-                  </span>
-                  <IconButton
-                    label="Un exemplaire de plus"
-                    disabled={pending || entry.quantity >= freeFor(entry.itemId)}
-                    onClick={() =>
-                      run(() => setEventItemAction(eventId, entry.itemId, entry.quantity + 1))
-                    }
-                  >
-                    <span aria-hidden="true" className="text-lg font-bold leading-none">
-                      +
-                    </span>
-                  </IconButton>
-                  <button
-                    type="button"
-                    disabled={pending}
-                    onClick={() => run(() => removeEventItemAction(eventId, entry.itemId))}
-                    className={`${textLinkClasses} ml-1 px-2 py-2.5 text-sm disabled:cursor-not-allowed disabled:opacity-50`}
-                  >
-                    Retirer
-                  </button>
+                    {entry.name}
+                  </Link>
+                  <MonoCaption>
+                    Réf. {entry.reference} · ex. {compactUnitLabels(entry.units)}
+                  </MonoCaption>
                 </div>
-              ) : (
-                <span className="font-mono text-sm font-semibold">{entry.quantity} ex.</span>
-              )}
-            </li>
-          ))}
+                {editable ? (
+                  <div className="flex items-center gap-2">
+                    <IconButton
+                      label="Un exemplaire de moins"
+                      disabled={pending || entry.quantity <= 1}
+                      onClick={() =>
+                        run(() => setEventItemAction(eventId, entry.itemId, entry.quantity - 1))
+                      }
+                    >
+                      <span aria-hidden="true" className="text-lg font-bold leading-none">
+                        −
+                      </span>
+                    </IconButton>
+                    <span className="w-10 text-center font-mono text-sm font-semibold">
+                      <Swap value={String(entry.quantity)}>{entry.quantity}</Swap>
+                    </span>
+                    <IconButton
+                      label="Un exemplaire de plus"
+                      disabled={pending || entry.quantity >= freeFor(entry.itemId)}
+                      onClick={() =>
+                        run(() => setEventItemAction(eventId, entry.itemId, entry.quantity + 1))
+                      }
+                    >
+                      <span aria-hidden="true" className="text-lg font-bold leading-none">
+                        +
+                      </span>
+                    </IconButton>
+                    <button
+                      type="button"
+                      disabled={pending}
+                      onClick={() => run(() => removeEventItemAction(eventId, entry.itemId))}
+                      className={`${textLinkClasses} ml-1 px-2 py-2.5 text-sm disabled:cursor-not-allowed disabled:opacity-50`}
+                    >
+                      Retirer
+                    </button>
+                  </div>
+                ) : (
+                  <span className="font-mono text-sm font-semibold">{entry.quantity} ex.</span>
+                )}
+              </PresenceItem>
+            ))}
+          </PresenceList>
         </ul>
       )}
 

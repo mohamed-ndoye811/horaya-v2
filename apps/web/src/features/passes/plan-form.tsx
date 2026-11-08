@@ -158,7 +158,9 @@ export function PlanForm({
           {initial.id ? "Enregistrer" : "Créer la formule"}
         </Button>
         {archiveError && (
-          <p className="w-full pb-2 text-[13px] font-semibold text-danger-on-ink">{archiveError}</p>
+          <p className="w-full animate-drop pb-2 text-[13px] font-semibold text-danger-on-ink">
+            {archiveError}
+          </p>
         )}
       </div>
     </form>

@@ -59,7 +59,7 @@ interface FieldProps {
 /** Message d'erreur sous un champ (13 px, rouge, gras). `id` : à relier par `aria-describedby`. */
 export function FieldError({ id, children }: { id?: string; children: ReactNode }) {
   return (
-    <p id={id} className="text-[13px] font-semibold leading-4 text-danger">
+    <p id={id} className="animate-drop text-[13px] font-semibold leading-4 text-danger">
       {children}
     </p>
   );

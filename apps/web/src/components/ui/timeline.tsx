@@ -20,7 +20,7 @@ export function Timeline({
   }>;
 }) {
   return (
-    <ol className="flex flex-col">
+    <ol className="reveal-group flex flex-col">
       {items.map((item, index) => {
         const last = index === items.length - 1;
         return (

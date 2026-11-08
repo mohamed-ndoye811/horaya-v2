@@ -6,6 +6,7 @@ import {
 } from "@horaya/core";
 import { useRef, useState } from "react";
 import { FieldInputs } from "@/components/app/field-inputs";
+import { Collapse } from "@/components/motion/collapse";
 import { ActionBar } from "@/components/ui/action-bar";
 import { Button } from "@/components/ui/button";
 import { AffixInput, Checkbox, Field, inputClasses, textareaClasses } from "@/components/ui/field";
@@ -259,7 +260,7 @@ export function ItemForm({
           />
         </FormSection>
 
-        {category && (
+        <Collapse open={Boolean(category)}>
           <FormSection number={3} title={`Champs de « ${category} »`}>
             <p className="text-[13px] font-medium leading-[18px] text-ink-muted">
               Les mêmes pour tous les articles de la catégorie : chacun y met ses valeurs.
@@ -290,7 +291,7 @@ export function ItemForm({
               errors={errors}
             />
           </FormSection>
-        )}
+        </Collapse>
 
         <ActionBar
           message={

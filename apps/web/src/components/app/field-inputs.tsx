@@ -6,6 +6,7 @@ import {
   parseFieldValues,
 } from "@horaya/core";
 import { useState } from "react";
+import { PresenceItem, PresenceList } from "@/components/motion/presence";
 import { Checkbox, Field, inputClasses, textareaClasses } from "@/components/ui/field";
 import { Select } from "@/components/ui/select";
 import { cn } from "@/lib/cn";
@@ -34,7 +35,7 @@ function YesNo({
         <label
           key={option.value}
           className={cn(
-            "flex h-9 items-center rounded-full bg-field px-4 text-sm font-semibold text-ink hover:bg-line-soft",
+            "press flex h-9 items-center rounded-full bg-field px-4 text-sm font-semibold text-ink hover:bg-line-soft",
             "has-checked:bg-ink has-checked:text-on-ink has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-ink",
           )}
         >
@@ -82,7 +83,11 @@ export function FieldInput({
           label={field.label}
           aria-invalid={error ? true : undefined}
         />
-        {error ? <p className="text-[13px] font-semibold text-danger">{error}</p> : hint}
+        {error ? (
+          <p className="animate-drop text-[13px] font-semibold text-danger">{error}</p>
+        ) : (
+          hint
+        )}
       </div>
     );
   }
@@ -189,7 +194,7 @@ export function FieldInputs({
   for (const field of fields) if (isFieldShown(field, values)) shown.push(field);
   return (
     <div
-      className={className}
+      className={cn("relative", className)}
       onChange={(event) => {
         const form = event.currentTarget.closest("form");
         if (!form) return;
@@ -199,26 +204,28 @@ export function FieldInputs({
         );
       }}
     >
-      {shown.map((field) => (
-        <div
-          key={field.key}
-          className={
-            field.type === "long_text" ||
-            field.type === "acceptance" ||
-            field.type === "multi_choice"
-              ? "sm:col-span-2"
-              : undefined
-          }
-        >
-          <FieldInput
-            field={field}
-            name={`${prefix}${field.key}`}
-            defaultValue={defaults[field.key]}
-            error={errors[`${errorPrefix}${field.key}`]}
-            enforceRequired={enforceRequired}
-          />
-        </div>
-      ))}
+      <PresenceList>
+        {shown.map((field) => (
+          <PresenceItem
+            key={field.key}
+            className={
+              field.type === "long_text" ||
+              field.type === "acceptance" ||
+              field.type === "multi_choice"
+                ? "sm:col-span-2"
+                : undefined
+            }
+          >
+            <FieldInput
+              field={field}
+              name={`${prefix}${field.key}`}
+              defaultValue={defaults[field.key]}
+              error={errors[`${errorPrefix}${field.key}`]}
+              enforceRequired={enforceRequired}
+            />
+          </PresenceItem>
+        ))}
+      </PresenceList>
     </div>
   );
 }

@@ -6,6 +6,9 @@ import {
 } from "@horaya/core";
 import { type FormEvent, type ReactNode, useEffect, useRef, useState, useTransition } from "react";
 import { FieldInputs } from "@/components/app/field-inputs";
+import { Collapse } from "@/components/motion/collapse";
+import { PresenceItem, PresenceList } from "@/components/motion/presence";
+import { Swap } from "@/components/motion/swap";
 import { WordsReveal } from "@/components/motion/words";
 import { ActionBar } from "@/components/ui/action-bar";
 import { Avatar } from "@/components/ui/avatar";
@@ -412,95 +415,97 @@ export function CounterWizard({
             )
           }
         >
-          {customer ? (
-            <div className="flex items-center gap-3 rounded-[14px] bg-field py-2.5 pr-2.5 pl-3">
-              <Avatar name={customer.name} size="sm" />
-              <span className="flex min-w-0 flex-1 flex-col gap-px">
-                <span className="truncate text-sm font-semibold leading-[18px] text-ink">
-                  {customer.name}
+          <Swap value={customer ? "choisi" : creating ? "creation" : "recherche"} block>
+            {customer ? (
+              <div className="flex items-center gap-3 rounded-[14px] bg-field py-2.5 pr-2.5 pl-3">
+                <Avatar name={customer.name} size="sm" />
+                <span className="flex min-w-0 flex-1 flex-col gap-px">
+                  <span className="truncate text-sm font-semibold leading-[18px] text-ink">
+                    {customer.name}
+                  </span>
+                  <span className="truncate text-xs leading-4 text-ink-subtle">
+                    {[
+                      customer.email,
+                      customer.phone,
+                      `${customer.bookings} réservation${customer.bookings > 1 ? "s" : ""}`,
+                    ]
+                      .filter(Boolean)
+                      .join(" · ")}
+                  </span>
                 </span>
-                <span className="truncate text-xs leading-4 text-ink-subtle">
-                  {[
-                    customer.email,
-                    customer.phone,
-                    `${customer.bookings} réservation${customer.bookings > 1 ? "s" : ""}`,
-                  ]
-                    .filter(Boolean)
-                    .join(" · ")}
-                </span>
-              </span>
-              <Button variant="secondary" size="xs" onClick={() => setCustomer(null)}>
-                Changer
-              </Button>
-            </div>
-          ) : creating ? (
-            <fieldset className="grid gap-3 sm:grid-cols-2">
-              <legend className="sr-only">Nouveau client</legend>
-              <ContactInput
-                label="Prénom"
-                value={contact.firstName}
-                error={fieldErrors["customer.firstName"]}
-                onChange={(firstName) => setContact({ ...contact, firstName })}
-              />
-              <ContactInput
-                label="Nom"
-                value={contact.lastName}
-                error={fieldErrors["customer.lastName"]}
-                onChange={(lastName) => setContact({ ...contact, lastName })}
-              />
-              <ContactInput
-                label="Téléphone"
-                type="tel"
-                value={contact.phone}
-                error={fieldErrors["customer.phone"]}
-                onChange={(phone) => setContact({ ...contact, phone })}
-              />
-              <ContactInput
-                label="E-mail (facultatif)"
-                type="email"
-                value={contact.email}
-                error={fieldErrors["customer.email"]}
-                hint="Sans e-mail, pas de confirmation envoyée : donne-lui la référence."
-                onChange={(email) => setContact({ ...contact, email })}
-              />
-            </fieldset>
-          ) : (
-            <>
-              <SearchInput
-                label="Rechercher un client"
-                placeholder="Nom, téléphone ou e-mail"
-                value={search}
-                onChange={(change) => setSearch(change.target.value)}
-              />
-              {hits.length > 0 && (
-                <div className="flex flex-col overflow-hidden rounded-[14px] border border-bg">
-                  {hits.map((hit) => (
-                    <button
-                      key={hit.id}
-                      type="button"
-                      onClick={() => setCustomer(hit)}
-                      className="flex items-center gap-3 border-t border-bg px-3 py-2.5 text-left first:border-t-0 hover:bg-field"
-                    >
-                      <Avatar name={hit.name} size="sm" />
-                      <span className="flex min-w-0 flex-col gap-px">
-                        <span className="text-sm font-semibold leading-[18px] text-ink">
-                          {hit.name}
+                <Button variant="secondary" size="xs" onClick={() => setCustomer(null)}>
+                  Changer
+                </Button>
+              </div>
+            ) : creating ? (
+              <fieldset className="grid gap-3 sm:grid-cols-2">
+                <legend className="sr-only">Nouveau client</legend>
+                <ContactInput
+                  label="Prénom"
+                  value={contact.firstName}
+                  error={fieldErrors["customer.firstName"]}
+                  onChange={(firstName) => setContact({ ...contact, firstName })}
+                />
+                <ContactInput
+                  label="Nom"
+                  value={contact.lastName}
+                  error={fieldErrors["customer.lastName"]}
+                  onChange={(lastName) => setContact({ ...contact, lastName })}
+                />
+                <ContactInput
+                  label="Téléphone"
+                  type="tel"
+                  value={contact.phone}
+                  error={fieldErrors["customer.phone"]}
+                  onChange={(phone) => setContact({ ...contact, phone })}
+                />
+                <ContactInput
+                  label="E-mail (facultatif)"
+                  type="email"
+                  value={contact.email}
+                  error={fieldErrors["customer.email"]}
+                  hint="Sans e-mail, pas de confirmation envoyée : donne-lui la référence."
+                  onChange={(email) => setContact({ ...contact, email })}
+                />
+              </fieldset>
+            ) : (
+              <div className="flex flex-col gap-3">
+                <SearchInput
+                  label="Rechercher un client"
+                  placeholder="Nom, téléphone ou e-mail"
+                  value={search}
+                  onChange={(change) => setSearch(change.target.value)}
+                />
+                {hits.length > 0 && (
+                  <div className="flex flex-col overflow-hidden rounded-[14px] border border-bg">
+                    {hits.map((hit) => (
+                      <button
+                        key={hit.id}
+                        type="button"
+                        onClick={() => setCustomer(hit)}
+                        className="flex items-center gap-3 border-t border-bg px-3 py-2.5 text-left first:border-t-0 hover:bg-field"
+                      >
+                        <Avatar name={hit.name} size="sm" />
+                        <span className="flex min-w-0 flex-col gap-px">
+                          <span className="text-sm font-semibold leading-[18px] text-ink">
+                            {hit.name}
+                          </span>
+                          <span className="truncate text-xs leading-4 text-ink-subtle">
+                            {[
+                              hit.phone ?? hit.email,
+                              `${hit.bookings} réservation${hit.bookings > 1 ? "s" : ""}`,
+                            ]
+                              .filter(Boolean)
+                              .join(" · ")}
+                          </span>
                         </span>
-                        <span className="truncate text-xs leading-4 text-ink-subtle">
-                          {[
-                            hit.phone ?? hit.email,
-                            `${hit.bookings} réservation${hit.bookings > 1 ? "s" : ""}`,
-                          ]
-                            .filter(Boolean)
-                            .join(" · ")}
-                        </span>
-                      </span>
-                    </button>
-                  ))}
-                </div>
-              )}
-            </>
-          )}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+          </Swap>
           {seats > 1 && !asking && (
             <p className="text-xs leading-4 text-ink-subtle">
               {seats === 2
@@ -563,44 +568,48 @@ export function CounterWizard({
         )}
 
         <Section number={asking ? 4 : 3} title={enrolling ? "Paiement" : "Matériel et paiement"}>
-          <div className={cn("flex flex-wrap gap-2", enrolling && "hidden")}>
-            {chosenItems.map(([id, quantity]) => (
-              <span
-                key={id}
-                className="flex h-9 items-center gap-2 rounded-full bg-field pr-0.5 pl-3 text-[13px] font-semibold leading-4 text-ink"
-              >
-                {itemName(id)} ×{quantity}
-                {/* 32 px dans la pastille, zone de toucher agrandie à 48 px de haut. */}
-                <IconButton
-                  label={`Retirer ${itemName(id)}`}
-                  size="sm"
-                  className="tap-area"
-                  onClick={() => setQuantities({ ...quantities, [id]: 0 })}
+          <div className={cn("relative flex flex-wrap gap-2", enrolling && "hidden")}>
+            <PresenceList>
+              {chosenItems.map(([id, quantity]) => (
+                <PresenceItem
+                  key={id}
+                  className="flex h-9 items-center gap-2 rounded-full bg-field pr-0.5 pl-3 text-[13px] font-semibold leading-4 text-ink"
                 >
-                  <CloseIcon size={10} />
-                </IconButton>
-              </span>
-            ))}
-            <AddButton
-              size="sm"
-              icon={Boolean(items?.length)}
-              disabled={!event || items === null || items.length === 0}
-              aria-expanded={pickingItems}
-              onClick={() => setPickingItems(!pickingItems)}
-            >
-              {!event
-                ? "Choisis d'abord une séance"
-                : items === null
-                  ? "Chargement du matériel…"
-                  : items.length === 0
-                    ? "Aucun matériel libre sur cette séance"
-                    : "Ajouter du matériel"}
-            </AddButton>
+                  {itemName(id)} ×{quantity}
+                  {/* 32 px dans la pastille, zone de toucher agrandie à 48 px de haut. */}
+                  <IconButton
+                    label={`Retirer ${itemName(id)}`}
+                    size="sm"
+                    className="tap-area"
+                    onClick={() => setQuantities({ ...quantities, [id]: 0 })}
+                  >
+                    <CloseIcon size={10} />
+                  </IconButton>
+                </PresenceItem>
+              ))}
+              <PresenceItem key="add">
+                <AddButton
+                  size="sm"
+                  icon={Boolean(items?.length)}
+                  disabled={!event || items === null || items.length === 0}
+                  aria-expanded={pickingItems}
+                  onClick={() => setPickingItems(!pickingItems)}
+                >
+                  {!event
+                    ? "Choisis d'abord une séance"
+                    : items === null
+                      ? "Chargement du matériel…"
+                      : items.length === 0
+                        ? "Aucun matériel libre sur cette séance"
+                        : "Ajouter du matériel"}
+                </AddButton>
+              </PresenceItem>
+            </PresenceList>
           </div>
-          {pickingItems && items && items.length > 0 && (
-            // Cartes du matériel : choisies, elles prennent le contour noir des séances.
-            <div className="grid gap-4 sm:grid-cols-2 2xl:grid-cols-3">
-              {items.map((item) => {
+          <Collapse open={pickingItems && items !== null && items.length > 0}>
+            {/* Cartes du matériel : choisies, elles prennent le contour noir des séances. */}
+            <div className="reveal-group grid gap-4 sm:grid-cols-2 2xl:grid-cols-3">
+              {items?.map((item) => {
                 const quantity = quantities[item.id] ?? 0;
                 const left = item.free - quantity;
                 // Photo de l'article, sinon un dégradé de l'app ; même teinte sombre que meshCover.
@@ -649,8 +658,8 @@ export function CounterWizard({
                 );
               })}
             </div>
-          )}
-          {total > 0 && passes.length > 0 && (
+          </Collapse>
+          <Collapse open={total > 0 && passes.length > 0}>
             <fieldset className="flex flex-col gap-2">
               <legend className="mb-1 text-[13px] font-semibold text-ink">
                 Régler avec une carte de séances
@@ -695,75 +704,73 @@ export function CounterWizard({
                 );
               })}
             </fieldset>
-          )}
-          {total > 0 && !passId && (
-            <>
-              {!enrolling && (
-                <Field
-                  label="Bon cadeau"
-                  error={fieldErrors.giftCardCode}
-                  hint={
-                    <p className="text-xs leading-4 text-ink-subtle">
-                      Le montant du bon est déduit ; le reste se paie normalement.
-                    </p>
-                  }
-                >
-                  {(field) => (
+          </Collapse>
+          <Collapse open={total > 0 && !passId} className="flex flex-col gap-3">
+            {!enrolling && (
+              <Field
+                label="Bon cadeau"
+                error={fieldErrors.giftCardCode}
+                hint={
+                  <p className="text-xs leading-4 text-ink-subtle">
+                    Le montant du bon est déduit ; le reste se paie normalement.
+                  </p>
+                }
+              >
+                {(field) => (
+                  <input
+                    {...field}
+                    value={giftCode}
+                    onChange={(event) => setGiftCode(event.target.value)}
+                    maxLength={40}
+                    autoComplete="off"
+                    spellCheck={false}
+                    placeholder="TERRE-8K2F"
+                    className={cn(inputClasses(), "font-mono uppercase placeholder:normal-case")}
+                  />
+                )}
+              </Field>
+            )}
+            <OptionCards
+              legend="Paiement"
+              value={paid}
+              onChange={setPaid}
+              options={[
+                {
+                  value: true,
+                  label: "Payé sur place",
+                  detail: "Espèces, carte, chèque ou virement",
+                },
+                { value: false, label: "À payer", detail: "Lien envoyé avec la confirmation" },
+              ]}
+            />
+            {paid && !enrolling && (
+              <fieldset className="flex flex-wrap gap-1.5">
+                <legend className="sr-only">Moyen de paiement</legend>
+                {METHODS.map((entry) => (
+                  <label
+                    key={entry.value}
+                    className={cn(
+                      "flex h-9 items-center rounded-full px-3.5 text-[13px] font-semibold leading-4",
+                      "has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-ink",
+                      method === entry.value
+                        ? "bg-ink text-on-ink"
+                        : "bg-field text-ink hover:bg-line-soft",
+                    )}
+                  >
                     <input
-                      {...field}
-                      value={giftCode}
-                      onChange={(event) => setGiftCode(event.target.value)}
-                      maxLength={40}
-                      autoComplete="off"
-                      spellCheck={false}
-                      placeholder="TERRE-8K2F"
-                      className={cn(inputClasses(), "font-mono uppercase placeholder:normal-case")}
+                      type="radio"
+                      name="moyen"
+                      value={entry.value}
+                      checked={method === entry.value}
+                      onChange={() => setMethod(entry.value)}
+                      className="sr-only"
                     />
-                  )}
-                </Field>
-              )}
-              <OptionCards
-                legend="Paiement"
-                value={paid}
-                onChange={setPaid}
-                options={[
-                  {
-                    value: true,
-                    label: "Payé sur place",
-                    detail: "Espèces, carte, chèque ou virement",
-                  },
-                  { value: false, label: "À payer", detail: "Lien envoyé avec la confirmation" },
-                ]}
-              />
-              {paid && !enrolling && (
-                <fieldset className="flex flex-wrap gap-1.5">
-                  <legend className="sr-only">Moyen de paiement</legend>
-                  {METHODS.map((entry) => (
-                    <label
-                      key={entry.value}
-                      className={cn(
-                        "flex h-9 items-center rounded-full px-3.5 text-[13px] font-semibold leading-4",
-                        "has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-ink",
-                        method === entry.value
-                          ? "bg-ink text-on-ink"
-                          : "bg-field text-ink hover:bg-line-soft",
-                      )}
-                    >
-                      <input
-                        type="radio"
-                        name="moyen"
-                        value={entry.value}
-                        checked={method === entry.value}
-                        onChange={() => setMethod(entry.value)}
-                        className="sr-only"
-                      />
-                      {entry.label}
-                    </label>
-                  ))}
-                </fieldset>
-              )}
-            </>
-          )}
+                    {entry.label}
+                  </label>
+                ))}
+              </fieldset>
+            )}
+          </Collapse>
         </Section>
       </div>
 

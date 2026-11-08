@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { Swap } from "@/components/motion/swap";
 import { cn } from "@/lib/cn";
 
 export type Tone = "success" | "warning" | "danger" | "info" | "draft" | "ink" | "neutral";
@@ -31,12 +32,12 @@ export function StatusBadge({
   return (
     <span
       className={cn(
-        "inline-flex shrink-0 items-center rounded-full font-bold whitespace-nowrap",
+        "inline-flex shrink-0 items-center rounded-full font-bold whitespace-nowrap transition-colors",
         size === "sm" ? "h-5 px-2 text-[11px] leading-[14px]" : "h-6 px-2.5 text-xs leading-4",
         tones[tone],
       )}
     >
-      {children}
+      <Swap value={typeof children === "string" ? children : tone}>{children}</Swap>
     </span>
   );
 }

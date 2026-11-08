@@ -33,7 +33,7 @@ export function FormShell({ aside, children }: { aside: ReactNode; children: Rea
   return (
     <div className="flex flex-col gap-4 lg:min-h-[640px] lg:flex-row">
       <section className="flex flex-1 flex-col items-center justify-center rounded-3xl bg-surface px-6 py-10 sm:p-12">
-        <div className="flex w-full max-w-[440px] flex-col gap-[22px]">{children}</div>
+        <div className="reveal-group flex w-full max-w-[440px] flex-col gap-[22px]">{children}</div>
       </section>
       {aside}
     </div>

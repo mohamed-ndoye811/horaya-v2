@@ -6,6 +6,8 @@ import {
 } from "@horaya/core";
 import { type ReactNode, useMemo, useState } from "react";
 import { FieldInputs } from "@/components/app/field-inputs";
+import { Collapse } from "@/components/motion/collapse";
+import { Swap } from "@/components/motion/swap";
 import { ActionBar } from "@/components/ui/action-bar";
 import { CategorySwatch } from "@/components/ui/avatar";
 import { ChoiceCards } from "@/components/ui/choice-cards";
@@ -221,7 +223,7 @@ export function EventForm({
       onSubmit={onSubmit}
       className="grid gap-4 px-4 pb-4 xl:grid-cols-[minmax(0,1fr)_340px]"
     >
-      <div className="flex min-w-0 flex-col gap-4">
+      <div className="reveal-group flex min-w-0 flex-col gap-4">
         {state.error && <FormAlert>{state.error}</FormAlert>}
 
         <FormSection number={1} title="Informations">
@@ -378,7 +380,7 @@ export function EventForm({
                     : "Une seule date"
                 }
               />
-              {recurring && (
+              <Collapse open={recurring}>
                 <div className="flex flex-wrap items-center gap-3">
                   <input type="hidden" name="frequency" value={frequency.split(":")[0]} />
                   <input type="hidden" name="interval" value={frequency.split(":")[1]} />
@@ -411,7 +413,7 @@ export function EventForm({
                     fois
                   </label>
                 </div>
-              )}
+              </Collapse>
             </div>
           )}
           {(countInvalid.message ?? errors.recurrence) && (
@@ -477,7 +479,7 @@ export function EventForm({
                 />
               )}
             </Field>
-            {values.paymentMode !== "free" && (
+            <Collapse open={values.paymentMode !== "free"}>
               <Field label="Prix par personne" required error={errors.priceCents}>
                 {(field) => (
                   <AffixInput
@@ -492,8 +494,8 @@ export function EventForm({
                   />
                 )}
               </Field>
-            )}
-            {values.paymentMode === "deposit" && (
+            </Collapse>
+            <Collapse open={values.paymentMode === "deposit"}>
               <Field label="Acompte" required error={errors.depositPercent}>
                 {(field) => (
                   <AffixInput
@@ -509,9 +511,9 @@ export function EventForm({
                   />
                 )}
               </Field>
-            )}
+            </Collapse>
           </div>
-          {(values.paymentMode === "online" || values.paymentMode === "deposit") && (
+          <Collapse open={values.paymentMode === "online" || values.paymentMode === "deposit"}>
             <Field
               label="Lien de paiement"
               error={errors.paymentLinkUrl}
@@ -534,7 +536,7 @@ export function EventForm({
                 />
               )}
             </Field>
-          )}
+          </Collapse>
           <Checkbox
             name="requiresApproval"
             checked={values.requiresApproval}
@@ -543,22 +545,23 @@ export function EventForm({
           />
         </FormSection>
 
-        {described.length > 0 && (
+        <Collapse open={described.length > 0}>
           <FormSection
             number={4}
             title="Ce que tu décris"
             description={`Les informations d'un ${type?.name.toLowerCase() ?? "événement"}`}
           >
-            <FieldInputs
-              key={type?.id}
-              fields={described}
-              prefix="f."
-              errorPrefix="fieldValues."
-              defaults={fieldValues}
-              errors={errors}
-            />
+            <div key={type?.id} className="animate-fade">
+              <FieldInputs
+                fields={described}
+                prefix="f."
+                errorPrefix="fieldValues."
+                defaults={fieldValues}
+                errors={errors}
+              />
+            </div>
           </FormSection>
-        )}
+        </Collapse>
 
         <ActionBar
           message={
@@ -579,7 +582,7 @@ export function EventForm({
         </ActionBar>
       </div>
 
-      <aside className="flex flex-col gap-4 xl:sticky xl:top-4 xl:self-start">
+      <aside className="reveal-group flex flex-col gap-4 xl:sticky xl:top-4 xl:self-start">
         <div className="flex flex-col overflow-hidden rounded-3xl bg-surface">
           <div
             className="flex h-[120px] flex-col justify-between p-4"
@@ -620,27 +623,35 @@ export function EventForm({
           <p className="flex items-baseline justify-between">
             <span className="text-[15px] font-semibold text-ink">Prêt à publier</span>
             <span className="text-sm font-semibold text-ink">
-              {ready}
+              <Swap value={String(ready)}>{ready}</Swap>
               <span className="font-normal text-ink-muted"> / {checklist.length}</span>
             </span>
           </p>
           <div className="flex h-1 rounded-full bg-line-soft">
             <div
-              className="h-1 rounded-full bg-ink transition-[width]"
-              style={{ width: `${(ready / checklist.length) * 100}%` }}
+              className="h-1 w-full origin-left rounded-full bg-ink transition-transform"
+              style={{ transform: `scaleX(${ready / checklist.length})` }}
             />
           </div>
           <ul className="flex flex-col gap-2.5 pt-1">
             {checklist.map((item) => (
               <li key={item.label} className="flex items-center gap-2.5 text-sm text-ink">
-                {item.done ? (
-                  <span className="flex size-[18px] items-center justify-center rounded-full bg-success text-white">
-                    <Check size={10} />
-                  </span>
-                ) : (
-                  <span className="size-[18px] rounded-full border-[1.5px] border-line" />
-                )}
-                <span className={item.done ? undefined : "text-ink-muted"}>{item.label}</span>
+                <span className="flex">
+                  <Swap value={String(item.done)}>
+                    {item.done ? (
+                      <span className="flex size-[18px] items-center justify-center rounded-full bg-success text-white">
+                        <Check size={10} />
+                      </span>
+                    ) : (
+                      <span className="size-[18px] rounded-full border-[1.5px] border-line" />
+                    )}
+                  </Swap>
+                </span>
+                <span
+                  className={item.done ? "transition-colors" : "text-ink-muted transition-colors"}
+                >
+                  {item.label}
+                </span>
               </li>
             ))}
           </ul>

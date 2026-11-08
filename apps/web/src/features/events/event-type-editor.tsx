@@ -12,6 +12,9 @@ import { isRedirect, useRouter } from "@tanstack/react-router";
 import { type ReactNode, useState, useTransition } from "react";
 import { FieldInputs } from "@/components/app/field-inputs";
 import { PageHeader } from "@/components/app/page-header";
+import { Collapse } from "@/components/motion/collapse";
+import { ActiveIndicator } from "@/components/motion/indicator";
+import { PresenceItem, PresenceList } from "@/components/motion/presence";
 import { ActionBar } from "@/components/ui/action-bar";
 import { Button, ButtonLink } from "@/components/ui/button";
 import { AffixInput, Checkbox, Field, inputClasses } from "@/components/ui/field";
@@ -107,7 +110,7 @@ function SettingRow({
   return (
     <div
       className={cn(
-        "flex flex-col rounded-2xl",
+        "flex flex-col rounded-2xl transition-colors",
         open ? "border-[1.5px] border-ink bg-surface" : "bg-field",
       )}
     >
@@ -119,7 +122,7 @@ function SettingRow({
       >
         <span
           className={cn(
-            "flex size-9 shrink-0 items-center justify-center rounded-[10px]",
+            "flex size-9 shrink-0 items-center justify-center rounded-[10px] transition-colors",
             open ? "bg-ink text-on-ink" : "bg-surface text-ink",
           )}
         >
@@ -132,9 +135,9 @@ function SettingRow({
         <ChevronDown className={cn("mr-1.5 shrink-0 transition-transform", open && "rotate-180")} />
       </button>
       {/* Replié, les réglages restent dans le formulaire (envoyés avec le reste). */}
-      <div hidden={!open} className="flex flex-col gap-4 px-3 pb-4 sm:pl-[62px]">
-        {children}
-      </div>
+      <Collapse keepMounted open={open}>
+        <div className="flex flex-col gap-4 px-3 pb-4 sm:pl-[62px]">{children}</div>
+      </Collapse>
     </div>
   );
 }
@@ -166,7 +169,7 @@ function Preview({
     (field.type === "boolean" ? "Oui" : field.type === "number" ? "2" : (field.help ?? "…"));
   const price = Number.isFinite(priceCents) && priceCents > 0 ? formatMoney(priceCents) : null;
   return (
-    <aside className="flex w-full shrink-0 flex-col gap-3 lg:sticky lg:top-4 lg:w-[340px]">
+    <aside className="animate-rise flex w-full shrink-0 flex-col gap-3 lg:sticky lg:top-4 lg:w-[340px]">
       <div className="flex items-center justify-between px-1">
         <h2 className="text-base font-semibold leading-5 text-ink">Aperçu en direct</h2>
         <span className="text-label leading-4 text-ink-subtle">suit chaque changement</span>
@@ -190,17 +193,23 @@ function Preview({
             aria-selected={tab === value}
             onClick={() => setTab(value)}
             className={cn(
-              "flex flex-1 items-center justify-center rounded-full text-[13px] font-semibold leading-4",
-              tab === value ? "bg-ink text-on-ink" : "text-ink hover:bg-field",
+              "relative isolate flex flex-1 items-center justify-center rounded-full text-[13px] font-semibold leading-4 transition-colors",
+              tab === value ? "text-on-ink" : "text-ink hover:bg-field",
             )}
           >
+            {tab === value && (
+              <ActiveIndicator
+                id="type-preview-tab"
+                className="inset-0 -z-10 rounded-full bg-ink"
+              />
+            )}
             {label}
           </button>
         ))}
       </div>
       <div className="flex flex-col overflow-hidden rounded-3xl bg-surface shadow-[0_1px_2px_rgba(0,0,0,0.04),0_16px_40px_rgba(0,0,0,0.06)]">
         <div
-          className="flex flex-col gap-1 px-[18px] pt-[18px] pb-3.5"
+          className="flex flex-col gap-1 px-[18px] pt-[18px] pb-3.5 transition-colors"
           style={{ backgroundColor: color }}
         >
           <p className="text-[11px] font-bold uppercase leading-[14px] tracking-[0.06em] text-white/80">
@@ -212,7 +221,7 @@ function Preview({
           </p>
         </div>
         {/* Champs de démonstration : hors de l'envoi (noms en « apercu. »), rien n'est requis. */}
-        <div className="flex flex-col gap-3.5 px-[18px] pt-4 pb-[18px]">
+        <div key={tab} className="flex animate-fade flex-col gap-3.5 px-[18px] pt-4 pb-[18px]">
           {tab === "booking" && (
             <>
               <FieldInputs
@@ -277,13 +286,15 @@ function Preview({
                 </div>
               )}
               {visible.length > 0 ? (
-                <dl className="flex flex-col gap-2">
-                  {visible.map((field) => (
-                    <div key={field.key} className="flex justify-between gap-4">
-                      <dt className="text-[13px] text-ink-muted">{field.label}</dt>
-                      <dd className="text-sm font-semibold text-ink">{sample(field)}</dd>
-                    </div>
-                  ))}
+                <dl className="relative flex flex-col gap-2">
+                  <PresenceList>
+                    {visible.map((field) => (
+                      <PresenceItem key={field.key} className="flex justify-between gap-4">
+                        <dt className="text-[13px] text-ink-muted">{field.label}</dt>
+                        <dd className="text-sm font-semibold text-ink">{sample(field)}</dd>
+                      </PresenceItem>
+                    ))}
+                  </PresenceList>
                 </dl>
               ) : (
                 <p className="text-sm text-ink-muted">
@@ -376,7 +387,7 @@ export function EventTypeEditor({
         onSubmit={onSubmit}
         className="flex flex-col gap-4 px-4 pb-4 lg:flex-row lg:items-start"
       >
-        <div className="flex min-w-0 flex-1 flex-col gap-4">
+        <div className="reveal-group flex min-w-0 flex-1 flex-col gap-4">
           {state.error && <FormAlert>{state.error}</FormAlert>}
 
           <FormSection number={1} title="Identité">

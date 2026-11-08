@@ -263,7 +263,7 @@ export function BookingDetailPage({ data }: { data: Awaited<ReturnType<typeof ge
         </div>
       )}
       <div className="flex flex-col gap-4 px-4 lg:flex-row lg:items-start">
-        <div className="flex min-w-0 flex-1 flex-col gap-4">
+        <div className="reveal-group flex min-w-0 flex-1 flex-col gap-4">
           {isPending && (
             <section className="flex animate-drop flex-wrap items-center gap-x-4 gap-y-3 rounded-3xl bg-warning-bg py-3.5 pr-3.5 pl-5">
               <span
@@ -588,7 +588,7 @@ export function BookingDetailPage({ data }: { data: Awaited<ReturnType<typeof ge
           )}
         </div>
 
-        <aside className="flex flex-col gap-4 lg:w-[400px] lg:shrink-0">
+        <aside className="reveal-group flex flex-col gap-4 lg:w-[400px] lg:shrink-0">
           <section className={cn(card, "gap-4")}>
             <div className="flex items-center gap-3.5">
               <Avatar name={name} size="profile" />

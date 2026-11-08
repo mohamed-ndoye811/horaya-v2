@@ -202,7 +202,7 @@ export function ItemDetailPage({ data }: { data: Awaited<ReturnType<typeof getIt
       />
 
       <div className="grid items-start gap-4 px-4 pb-4 lg:grid-cols-[340px_minmax(0,1fr)]">
-        <aside className="flex flex-col gap-4">
+        <aside className="reveal-group flex flex-col gap-4">
           <ItemPhoto id={item.id} photoUrl={item.photoUrl} />
           <section className={cn(cardShellClasses, "px-5 py-2")}>
             <dl className="flex flex-col">
@@ -234,7 +234,7 @@ export function ItemDetailPage({ data }: { data: Awaited<ReturnType<typeof getIt
           </section>
         </aside>
 
-        <div className="flex min-w-0 flex-col gap-4">
+        <div className="reveal-group flex min-w-0 flex-col gap-4">
           <section className={cn(cardClasses, "gap-3.5")}>
             <div className="flex items-center justify-between gap-4">
               <h2 className="text-base font-semibold leading-5 text-ink">Disponibilité</h2>

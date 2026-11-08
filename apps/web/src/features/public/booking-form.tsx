@@ -1,6 +1,8 @@
 import { type EventTypeField, fieldsOfScope } from "@horaya/core";
 import { type FormEvent, type ReactNode, useState } from "react";
 import { FieldInputs } from "@/components/app/field-inputs";
+import { Collapse } from "@/components/motion/collapse";
+import { Swap } from "@/components/motion/swap";
 import { Button } from "@/components/ui/button";
 import { Checkbox, Field, FieldError, inputClasses, textareaClasses } from "@/components/ui/field";
 import { FormAlert } from "@/components/ui/form-alert";
@@ -81,41 +83,45 @@ function ExtraParticipant({
             aria-controls={panelId}
             onClick={() => setOpen(!expanded)}
           >
-            {expanded ? "Fermer" : summary ? "Modifier" : "Compléter"}
+            <Swap value={expanded ? "fermer" : summary ? "modifier" : "completer"}>
+              {expanded ? "Fermer" : summary ? "Modifier" : "Compléter"}
+            </Swap>
           </Button>
         )}
       </div>
-      <div id={panelId} hidden={!expanded} className="auth-fields flex flex-col gap-3">
-        <div className="grid gap-3 sm:grid-cols-2">
-          <Field label="Prénom" error={errors[`p${index}.firstName`]}>
-            {(field) => (
-              <input
-                {...field}
-                name={`p${index}.firstName`}
-                maxLength={60}
-                className={inputClasses()}
-              />
-            )}
-          </Field>
-          <Field label="Nom" error={errors[`p${index}.lastName`]}>
-            {(field) => (
-              <input
-                {...field}
-                name={`p${index}.lastName`}
-                maxLength={60}
-                className={inputClasses()}
-              />
-            )}
-          </Field>
+      <Collapse keepMounted open={expanded}>
+        <div id={panelId} className="auth-fields flex flex-col gap-3">
+          <div className="grid gap-3 sm:grid-cols-2">
+            <Field label="Prénom" error={errors[`p${index}.firstName`]}>
+              {(field) => (
+                <input
+                  {...field}
+                  name={`p${index}.firstName`}
+                  maxLength={60}
+                  className={inputClasses()}
+                />
+              )}
+            </Field>
+            <Field label="Nom" error={errors[`p${index}.lastName`]}>
+              {(field) => (
+                <input
+                  {...field}
+                  name={`p${index}.lastName`}
+                  maxLength={60}
+                  className={inputClasses()}
+                />
+              )}
+            </Field>
+          </div>
+          <FieldInputs
+            fields={fields}
+            prefix={`p${index}.`}
+            errorPrefix={`participants.${index}.answers.`}
+            errors={errors}
+            className="grid gap-3 sm:grid-cols-2"
+          />
         </div>
-        <FieldInputs
-          fields={fields}
-          prefix={`p${index}.`}
-          errorPrefix={`participants.${index}.answers.`}
-          errors={errors}
-          className="grid gap-3 sm:grid-cols-2"
-        />
-      </div>
+      </Collapse>
     </fieldset>
   );
 }
@@ -196,7 +202,7 @@ export function BookingForm({
 
   return (
     <form onSubmit={onSubmit} className="flex flex-col gap-4 lg:flex-row lg:items-start">
-      <div className="flex min-w-0 flex-1 flex-col gap-4">
+      <div className="reveal-group flex min-w-0 flex-1 flex-col gap-4">
         {state.error && <FormAlert>{state.error}</FormAlert>}
         <FormSection number={1} title={`Participant${seats > 1 ? "s" : ""} · ${seats}`}>
           <div className="auth-fields flex flex-col gap-3.5 rounded-[18px] bg-field p-[18px]">
@@ -386,7 +392,7 @@ export function BookingForm({
         </div>
       </div>
 
-      <aside className="order-first flex w-full shrink-0 flex-col overflow-hidden rounded-3xl bg-surface lg:sticky lg:top-[62px] lg:order-none lg:w-[400px]">
+      <aside className="order-first flex w-full animate-rise shrink-0 flex-col overflow-hidden rounded-3xl bg-surface lg:sticky lg:top-[62px] lg:order-none lg:w-[400px]">
         {summary}
       </aside>
     </form>

@@ -6,6 +6,8 @@ import {
   type FieldType,
 } from "@horaya/core";
 import { type ReactNode, useState } from "react";
+import { Collapse } from "@/components/motion/collapse";
+import { PresenceItem, PresenceList } from "@/components/motion/presence";
 import { Button, textLinkClasses } from "@/components/ui/button";
 import { Checkbox, Field, FieldError, inputClasses } from "@/components/ui/field";
 import { PlusIcon } from "@/components/ui/icons";
@@ -62,7 +64,7 @@ function FieldRow({
       type="button"
       onClick={onEdit}
       aria-label={`Modifier « ${field.label} »`}
-      className="flex min-h-12 w-full grow items-center gap-3 rounded-xl bg-field px-3 py-2 text-left hover:bg-line-soft"
+      className="flex min-h-12 w-full grow items-center gap-3 rounded-xl bg-field px-3 py-2 text-left press hover:bg-line-soft"
     >
       <span className="hidden w-[110px] shrink-0 sm:block">
         <span className="inline-flex rounded-md bg-surface px-2 py-[3px] text-label font-semibold leading-4 text-ink-muted">
@@ -157,7 +159,7 @@ function FieldEditor({
           if (draft.label.trim()) save();
         }
       }}
-      className="flex flex-col gap-4 rounded-2xl border-[1.5px] border-ink bg-surface p-4"
+      className="flex animate-fade flex-col gap-4 rounded-2xl border-[1.5px] border-ink bg-surface p-4"
     >
       <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_180px]">
         <Field label={draft.type === "acceptance" ? "Texte à accepter" : "Libellé"} required>
@@ -191,7 +193,7 @@ function FieldEditor({
           )}
         </Field>
       </div>
-      {choices(draft.type) && (
+      <Collapse open={choices(draft.type)}>
         <Field label="Choix possibles" hint={<Hint>Un choix par ligne.</Hint>}>
           {(props) => (
             <textarea
@@ -204,7 +206,7 @@ function FieldEditor({
             />
           )}
         </Field>
-      )}
+      </Collapse>
       <Field label="Aide" hint={<Hint>Affichée sous le champ (facultatif).</Hint>}>
         {(props) => (
           <input
@@ -377,98 +379,106 @@ export function FieldListEditor({
   };
 
   return (
-    <div className="flex flex-col gap-2">
-      {fields.map((field, index) =>
-        open === index ? (
-          <FieldEditor
-            key={field.key}
-            initial={field}
-            previous={fields.slice(0, index)}
-            types={types}
-            describes={describes}
-            error={error}
-            onCancel={close}
-            onSave={(saved) => commit(fields.map((entry, at) => (at === index ? saved : entry)))}
-            onRemove={() =>
-              commit(
-                fields
-                  .filter((_, at) => at !== index)
-                  // Les champs qui en dépendaient redeviennent toujours affichés.
-                  .map((entry) =>
-                    entry.condition?.fieldKey === field.key
-                      ? { ...entry, condition: undefined }
-                      : entry,
-                  ),
-              )
-            }
-            onMove={(offset) => {
-              const target = index + offset;
-              if (target < 0 || target >= fields.length) return;
-              const next = [...fields];
-              [next[index], next[target]] = [next[target] as EditableField, field];
-              const problem = onChange(next);
-              if (problem) setError(problem);
-              else {
-                setError(null);
-                setOpen(target);
+    <div className="relative flex flex-col gap-2">
+      <PresenceList>
+        {fields.map((field, index) => (
+          <PresenceItem key={field.key}>
+            {open === index ? (
+              <FieldEditor
+                initial={field}
+                previous={fields.slice(0, index)}
+                types={types}
+                describes={describes}
+                error={error}
+                onCancel={close}
+                onSave={(saved) =>
+                  commit(fields.map((entry, at) => (at === index ? saved : entry)))
+                }
+                onRemove={() =>
+                  commit(
+                    fields
+                      .filter((_, at) => at !== index)
+                      // Les champs qui en dépendaient redeviennent toujours affichés.
+                      .map((entry) =>
+                        entry.condition?.fieldKey === field.key
+                          ? { ...entry, condition: undefined }
+                          : entry,
+                      ),
+                  )
+                }
+                onMove={(offset) => {
+                  const target = index + offset;
+                  if (target < 0 || target >= fields.length) return;
+                  const next = [...fields];
+                  [next[index], next[target]] = [next[target] as EditableField, field];
+                  const problem = onChange(next);
+                  if (problem) setError(problem);
+                  else {
+                    setError(null);
+                    setOpen(target);
+                  }
+                }}
+              />
+            ) : (
+              <FieldRow
+                field={field}
+                all={fields}
+                onEdit={() => {
+                  setError(null);
+                  setOpen(index);
+                }}
+              />
+            )}
+          </PresenceItem>
+        ))}
+        {open === "new" ? (
+          <PresenceItem key="new">
+            <FieldEditor
+              initial={{
+                key: "",
+                label: "",
+                type: types[0] ?? "short_text",
+                required: false,
+                ...(scope ? { scope } : {}),
+              }}
+              previous={fields}
+              types={types}
+              describes={describes}
+              error={error}
+              onCancel={close}
+              onSave={(saved) =>
+                commit([
+                  ...fields,
+                  {
+                    ...saved,
+                    key: keyFor(
+                      saved.label,
+                      all.map((field) => field.key),
+                    ),
+                  },
+                ])
               }
-            }}
-          />
+            />
+          </PresenceItem>
         ) : (
-          <FieldRow
-            key={field.key}
-            field={field}
-            all={fields}
-            onEdit={() => {
-              setError(null);
-              setOpen(index);
-            }}
-          />
-        ),
-      )}
-      {open === "new" ? (
-        <FieldEditor
-          initial={{
-            key: "",
-            label: "",
-            type: types[0] ?? "short_text",
-            required: false,
-            ...(scope ? { scope } : {}),
-          }}
-          previous={fields}
-          types={types}
-          describes={describes}
-          error={error}
-          onCancel={close}
-          onSave={(saved) =>
-            commit([
-              ...fields,
-              {
-                ...saved,
-                key: keyFor(
-                  saved.label,
-                  all.map((field) => field.key),
-                ),
-              },
-            ])
-          }
-        />
-      ) : (
-        <button
-          type="button"
-          onClick={() => {
-            setError(null);
-            setOpen("new");
-          }}
-          className="flex flex-wrap items-center gap-x-2.5 gap-y-0.5 pt-2.5 text-left"
-        >
-          <span className={cn(textLinkClasses, "flex items-center gap-2 text-sm")}>
-            <PlusIcon size={10} />
-            {addLabel}
-          </span>
-          <span className="text-[13px] leading-[17px] text-ink-subtle">{addHint}</span>
-        </button>
-      )}
+          <PresenceItem key="add">
+            <button
+              type="button"
+              onClick={() => {
+                setError(null);
+                setOpen("new");
+              }}
+              className="flex flex-wrap items-center gap-x-2.5 gap-y-0.5 pt-2.5 text-left"
+            >
+              <span className={cn(textLinkClasses, "flex items-center gap-2 text-sm")}>
+                <PlusIcon size={10} />
+                {addLabel}
+              </span>
+              <span className="text-[13px] leading-[17px] text-ink-subtle">{addHint}</span>
+            </button>
+          </PresenceItem>
+        )}
+      </PresenceList>
     </div>
   );
 }

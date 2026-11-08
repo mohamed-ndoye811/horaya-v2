@@ -83,13 +83,13 @@ export function EventTypesPage({
             <>
               <ul
                 aria-label="Types d'événements"
-                className="flex flex-col overflow-hidden rounded-3xl bg-surface lg:hidden"
+                className="reveal-group flex flex-col overflow-hidden rounded-3xl bg-surface lg:hidden"
               >
                 {types.map((type) => (
                   <li key={type.id} className="border-b border-line-soft">
                     <Link
                       href={`/app/evenements/types?type=${type.id}`}
-                      className="flex items-center gap-3.5 px-4 py-4 text-ink hover:bg-band"
+                      className="press flex items-center gap-3.5 px-4 py-4 text-ink hover:bg-band"
                     >
                       <span
                         className="size-2.5 shrink-0 rounded-[3px]"
@@ -142,12 +142,12 @@ export function EventTypesPage({
                         ))}
                       </tr>
                     </thead>
-                    <tbody>
+                    <tbody className="reveal-group [--reveal:var(--animate-fade)]">
                       {types.map((type) => {
                         return (
                           <tr
                             key={type.id}
-                            className="relative h-[60px] border-t border-line-faint hover:bg-band"
+                            className="relative h-[60px] border-t border-line-faint transition-colors hover:bg-band"
                           >
                             <td className="px-3 pl-5">
                               <div className="flex items-center gap-3">
