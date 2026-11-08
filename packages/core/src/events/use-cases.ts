@@ -1,3 +1,4 @@
+import { defaultRate } from "../bookings/pricing";
 import { promoteWaitlist } from "../bookings/waitlist";
 import { fieldsOfScope, validateFieldValues } from "../fields/values";
 import type { EventModules } from "../modules/registry";
@@ -19,6 +20,7 @@ import {
   assertCanPublish,
   assertCapacityFits,
   assertEventConsistency,
+  eventMoney,
 } from "./rules";
 import {
   type CreateEventInput,
@@ -76,6 +78,7 @@ export async function createEventType(
   const data = validate(createEventTypeSchema, input);
 
   const fields = withModuleFields(data.fields, data.modules);
+  const pricing = data.modules.pricing;
 
   return deps.uow.run(async (repositories) => {
     await assertEquipmentTypesExist(repositories, actor.organizationId, data.modules);
@@ -84,7 +87,9 @@ export async function createEventType(
       ...data,
       fields,
       defaultDurationMinutes: data.defaultDurationMinutes ?? null,
-      defaultPriceCents: data.defaultPriceCents ?? null,
+      defaultPriceCents: pricing
+        ? defaultRate(pricing).priceCents
+        : (data.defaultPriceCents ?? null),
     });
     await repositories.activity.record({
       organizationId: actor.organizationId,
@@ -122,6 +127,9 @@ export async function updateEventType(
     if (patch.modules) {
       await assertEquipmentTypesExist(repositories, actor.organizationId, patch.modules);
     }
+    // Avec « Tarifs et options », le prix par défaut est celui du tarif par défaut.
+    const pricing = (patch.modules ?? existing.modules).pricing;
+    if (pricing) patch.defaultPriceCents = defaultRate(pricing).priceCents;
     const updated = await repositories.eventTypes.update(actor.organizationId, eventTypeId, patch);
     // Les événements gardent leur version du type ; les passés et ceux qui ont des inscrits, toujours.
     const appliedTo =
@@ -129,7 +137,13 @@ export async function updateEventType(
         ? await repositories.events.applyTypeConfig(
             actor.organizationId,
             eventTypeId,
-            { fields: updated.fields, modules: updated.modules },
+            {
+              fields: updated.fields,
+              modules: updated.modules,
+              ...(updated.modules.pricing && {
+                priceCents: defaultRate(updated.modules.pricing).priceCents,
+              }),
+            },
             deps.clock.now(),
           )
         : 0;
@@ -207,21 +221,36 @@ export async function createEvent(
   input: CreateEventInput,
 ): Promise<Event[]> {
   assertMemberCan(actor, "event", "create");
-  const { eventTypeId, recurrence, requiresApproval, equipmentUnits, ...details } = validate(
-    createEventSchema,
-    input,
-  );
-  assertEventConsistency(details);
+  const {
+    eventTypeId,
+    recurrence,
+    requiresApproval,
+    equipmentUnits,
+    deposit,
+    prices,
+    ...fromInput
+  } = validate(createEventSchema, input);
 
   const starts = recurrence
-    ? generateOccurrences(recurrence, details.startsAt, details.timezone)
-    : [details.startsAt];
-  const duration = details.endsAt.getTime() - details.startsAt.getTime();
+    ? generateOccurrences(recurrence, fromInput.startsAt, fromInput.timezone)
+    : [fromInput.startsAt];
+  const duration = fromInput.endsAt.getTime() - fromInput.startsAt.getTime();
 
   return deps.uow.run(async (repositories) => {
     const eventType = await repositories.eventTypes.find(actor.organizationId, eventTypeId);
     if (!eventType || eventType.archivedAt)
       throw new NotFoundError("Type d'événement", eventTypeId);
+    // Tarifs et acompte : ceux du type, prix et acompte ajustés sur l'événement.
+    const money = eventMoney(
+      {
+        modules: eventType.modules,
+        priceCents: fromInput.priceCents,
+        paymentMode: fromInput.paymentMode,
+      },
+      { deposit, prices },
+    );
+    const details = { ...fromInput, priceCents: money.priceCents };
+    assertEventConsistency({ ...details, modules: money.modules });
     const settings = await repositories.settings.get(actor.organizationId);
     const fieldValues = validateFieldValues(
       fieldsOfScope(eventType.fields, "event"),
@@ -256,8 +285,8 @@ export async function createEvent(
     // Module Lieu : adresse de l'espace ou lien de visio du type, sauf ce que l'équipe a saisi.
     const place = eventPlace(eventType.modules.location, details, settings.address ?? null);
     const modules = equipmentUnits
-      ? restrictEquipment(eventType.modules, equipmentUnits)
-      : eventType.modules;
+      ? restrictEquipment(money.modules, equipmentUnits)
+      : money.modules;
     // Module « Conditions d'accès » sur invitation : jamais d'événement public de ce type.
     const visibility =
       eventType.modules.access?.inviteOnly && details.visibility === "public"
@@ -313,7 +342,10 @@ export async function updateEvent(
   input: UpdateEventInput,
 ): Promise<Event> {
   assertMemberCan(actor, "event", "update");
-  const { fieldValues, equipmentUnits, ...details } = validate(updateEventSchema, input);
+  const { fieldValues, equipmentUnits, deposit, prices, ...details } = validate(
+    updateEventSchema,
+    input,
+  );
   const patch: EventPatch = details;
 
   return deps.uow.run(async (repositories) => {
@@ -338,8 +370,20 @@ export async function updateEvent(
         patch.staffMemberId,
       );
     }
-    if (equipmentUnits) patch.modules = restrictEquipment(event.modules, equipmentUnits);
-
+    const money = eventMoney(
+      {
+        modules: event.modules,
+        priceCents: patch.priceCents ?? event.priceCents,
+        paymentMode: patch.paymentMode ?? event.paymentMode,
+      },
+      { deposit, prices },
+    );
+    if (deposit !== undefined || prices) patch.modules = money.modules;
+    if (money.priceCents !== event.priceCents || "priceCents" in patch)
+      patch.priceCents = money.priceCents;
+    if (equipmentUnits) {
+      patch.modules = restrictEquipment(patch.modules ?? event.modules, equipmentUnits);
+    }
     const merged = { ...event, ...patch };
     assertEventConsistency(merged);
 

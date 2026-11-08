@@ -63,6 +63,20 @@ export const EVENT_TYPE_TEMPLATES: readonly EventTypeTemplate[] = [
       cancellation: { freeHours: 48, lateRefundPercent: 0 },
       location: { mode: "venue" },
       staff: { showOnPublicPage: true },
+      pricing: {
+        rates: [
+          { id: "plein", name: "Plein", priceCents: 4500 },
+          {
+            id: "reduit",
+            name: "Réduit",
+            priceCents: 3500,
+            description: "étudiant, demandeur d'emploi",
+          },
+        ],
+        options: [
+          { id: "cuisson", name: "Cuisson et émaillage", priceCents: 800, per: "participant" },
+        ],
+      },
     },
     fields: [
       level,
@@ -98,6 +112,27 @@ export const EVENT_TYPE_TEMPLATES: readonly EventTypeTemplate[] = [
       places: { capacity: 8, minimum: { seats: 4, daysBefore: 7 } },
       opening: { closesHoursBefore: 168 },
       cancellation: { freeHours: 168, lateRefundPercent: 50 },
+      pricing: {
+        rates: [
+          { id: "plein", name: "Plein", priceCents: 25000 },
+          {
+            id: "reduit",
+            name: "Réduit",
+            priceCents: 21000,
+            description: "étudiant, demandeur d'emploi",
+          },
+        ],
+        options: [
+          {
+            id: "dejeuner",
+            name: "Déjeuner sur place",
+            priceCents: 1500,
+            per: "participant",
+            max: 3,
+          },
+        ],
+      },
+      deposit: { percent: 30, balance: "on_site" },
     },
     fields: [
       level,
@@ -125,6 +160,17 @@ export const EVENT_TYPE_TEMPLATES: readonly EventTypeTemplate[] = [
       places: { capacity: 10 },
       waitlist: {},
       series: { dropInAllowed: true, prorata: true, makeupAllowed: true },
+      pricing: {
+        rates: [
+          { id: "plein", name: "Plein", priceCents: 3000 },
+          {
+            id: "reduit",
+            name: "Réduit",
+            priceCents: 2500,
+            description: "étudiant, moins de 18 ans",
+          },
+        ],
+      },
     },
     fields: [level, firstName, rules],
   },
@@ -141,6 +187,7 @@ export const EVENT_TYPE_TEMPLATES: readonly EventTypeTemplate[] = [
       opening: { closesHoursBefore: 24 },
       cancellation: { freeHours: 24, lateRefundPercent: 0 },
       staff: { showOnPublicPage: true },
+      pricing: { rates: [{ id: "seance", name: "Séance", priceCents: 6000 }] },
     },
     fields: [
       {
@@ -160,7 +207,18 @@ export const EVENT_TYPE_TEMPLATES: readonly EventTypeTemplate[] = [
     defaultDurationMinutes: 240,
     defaultPriceCents: 4000,
     bookingNoun: "location",
-    modules: { places: { capacity: 1 }, approval: {}, location: { mode: "venue" } },
+    modules: {
+      places: { capacity: 1 },
+      approval: {},
+      location: { mode: "venue" },
+      pricing: {
+        rates: [{ id: "demi-journee", name: "Demi-journée", priceCents: 4000 }],
+        options: [
+          { id: "terre", name: "Pain de terre (10 kg)", priceCents: 1800, per: "booking", max: 5 },
+        ],
+      },
+      deposit: { amountCents: 2000, balance: "on_site" },
+    },
     fields: [
       {
         key: "usage",
@@ -178,9 +236,23 @@ export const EVENT_TYPE_TEMPLATES: readonly EventTypeTemplate[] = [
     description: "Anniversaire, team building, sur demande.",
     color: "#66537C",
     defaultDurationMinutes: 180,
-    defaultPriceCents: null,
+    defaultPriceCents: 3500,
     bookingNoun: "demande",
-    modules: { approval: {} },
+    modules: {
+      approval: {},
+      pricing: {
+        rates: [
+          { id: "adulte", name: "Adulte", priceCents: 3500 },
+          { id: "enfant", name: "Enfant", priceCents: 2500, description: "moins de 12 ans" },
+        ],
+        options: [
+          { id: "gouter", name: "Goûter d'anniversaire", priceCents: 4000, per: "booking" },
+          { id: "cuisson", name: "Cuisson des pièces", priceCents: 600, per: "participant" },
+        ],
+      },
+      deposit: { percent: 30, balance: "later" },
+      payment_methods: { passes: false },
+    },
     fields: [
       {
         key: "occasion",

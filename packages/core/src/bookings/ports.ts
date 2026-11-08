@@ -2,6 +2,7 @@ import type { Customer, CustomerNote } from "../customers/model";
 import type { PaymentMode } from "../events/types";
 import type { ActorType } from "../tenants/types";
 import type { Booking, CustomerContact, ParticipantInput } from "./model";
+import type { PriceLine } from "./pricing";
 import type { BookingPaymentStatus, BookingStatus } from "./types";
 
 export type NewBooking = Omit<
@@ -19,7 +20,10 @@ export type NewBooking = Omit<
   | "absentAt"
   | "makeupEligible"
   | "makeupForBookingId"
+  | "priceLines"
 > & {
+  /** Détail du prix ; absent : aucun (location, séance d'une inscription). */
+  priceLines?: PriceLine[];
   /** null : réservation d'une inscription, gérée par le lien de l'inscription. */
   manageTokenHash: string | null;
   rentalStartsAt?: Date | null;
@@ -66,6 +70,7 @@ export interface BookingRepository {
       /** Nouveau prix, quand la date change de tarif. */
       amountCents?: number;
       depositCents?: number | null;
+      priceLines?: PriceLine[];
       paymentMode?: PaymentMode;
       paymentStatus?: BookingPaymentStatus;
     },

@@ -65,12 +65,13 @@ export interface EventRepository {
   /**
    * « Appliquer aussi aux événements à venir » : remplace les champs et les modules des
    * événements du type qui n'ont pas commencé, ne sont pas annulés et n'ont aucune réservation.
-   * Renvoie leur nombre.
+   * Chaque événement garde son acompte (lié à son mode de paiement) ; `priceCents` : prix du
+   * tarif par défaut du type, repris par les événements payants. Renvoie leur nombre.
    */
   applyTypeConfig(
     organizationId: string,
     eventTypeId: string,
-    config: { fields?: EventTypeField[]; modules?: EventModules },
+    config: { fields?: EventTypeField[]; modules?: EventModules; priceCents?: number },
     now: Date,
   ): Promise<number>;
 }

@@ -51,15 +51,8 @@ describe("registre des modules", () => {
 
   it("les modules « Bientôt » n'ont pas de schéma et sont ignorés à l'enregistrement", () => {
     const soon = MODULE_CATALOG.filter((module) => module.soon).map((module) => module.key);
-    expect(soon).toEqual([
-      "sessions",
-      "slots",
-      "duration",
-      "pricing",
-      "deposit",
-      "payment_methods",
-    ]);
-    expect(eventTypeModulesSchema.parse({ pricing: { tiers: [] }, waitlist: {} })).toEqual({
+    expect(soon).toEqual(["sessions", "slots", "duration"]);
+    expect(eventTypeModulesSchema.parse({ sessions: {}, waitlist: {} })).toEqual({
       waitlist: {},
     });
   });

@@ -2,6 +2,7 @@ import type { EventTypeField, FieldValues } from "../fields/model";
 import { ValidationError } from "../shared/errors";
 import type {
   AccessModule,
+  DepositModule,
   EventModules,
   ModuleKey,
   OpeningModule,
@@ -244,9 +245,22 @@ export function closingLabel(hoursBefore: number | undefined): string {
   return `${hoursBefore} h avant`;
 }
 
+/** « 30 % », « 20 € par place ». */
+export function depositLabel(deposit: DepositModule): string {
+  return deposit.percent !== undefined
+    ? `${deposit.percent} %`
+    : `${money(deposit.amountCents ?? 0)} par place`;
+}
+
+/** « le reste sur place », « le reste plus tard, en ligne ». */
+export const balanceLabel = (deposit: DepositModule) =>
+  deposit.balance === "later" ? "le reste plus tard, en ligne" : "le reste sur place";
+
 export interface SummaryContext extends ResourceNames {
   /** « inscription », « réservation »… */
   noun: string;
+  /** Formules de cartes de l'espace (module « Moyens acceptés »). */
+  passPlans?: ReadonlyArray<{ id: string; name: string }>;
   structure: CancellationPolicy;
   /** Met en forme une date fixe d'ouverture (fuseau de l'espace). */
   formatDate?: (date: Date) => string;
@@ -336,6 +350,40 @@ export function moduleSummary(
     case "location":
     case "staff":
       return resourceSummary(key, modules, context);
+    case "pricing": {
+      const pricing = modules.pricing ?? { rates: [] };
+      return join([
+        ...pricing.rates.map(
+          (rate) =>
+            `${rate.name} ${money(rate.priceCents)}${rate.description ? ` (${rate.description})` : ""}`,
+        ),
+        ...(pricing.options ?? []).map((option) => `${option.name} + ${money(option.priceCents)}`),
+      ]);
+    }
+    case "deposit": {
+      const deposit = modules.deposit;
+      return deposit
+        ? `${depositLabel(deposit)} à l'${context.noun === "inscription" ? "inscription" : "réservation"} · ${balanceLabel(deposit)}`
+        : "Aucun acompte";
+    }
+    case "payment_methods": {
+      const methods = modules.payment_methods ?? {};
+      const names = methods.passPlanIds
+        ?.map((id) => context.passPlans?.find((plan) => plan.id === id)?.name)
+        .filter(Boolean);
+      const sessions = methods.sessionsPerSeat ?? 1;
+      return join([
+        methods.passes === false
+          ? "Pas de carte de séances"
+          : methods.passPlanIds
+            ? names?.length
+              ? `Cartes acceptées : ${names.join(", ")}`
+              : "Aucune formule de carte choisie"
+            : "Toutes les cartes de séances",
+        methods.passes !== false && `${plural(sessions, "séance")} par place`,
+        methods.giftCards === false ? "pas de bon cadeau" : "bons cadeaux acceptés",
+      ]);
+    }
     case "documents": {
       const files = modules.documents?.files ?? [];
       return files.length
