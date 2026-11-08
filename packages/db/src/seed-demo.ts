@@ -431,6 +431,78 @@ const types = Object.fromEntries(
             help: "12 ans minimum",
           },
         ],
+        // Lot 36 : trois règles « si… alors… ».
+        rules: [
+          {
+            id: "autorisation-mineurs",
+            name: "Autorisation des mineurs",
+            trigger: { kind: "booking_submitted" as const },
+            conditions: [
+              [
+                {
+                  kind: "field" as const,
+                  fieldKey: "age",
+                  operator: "less_than" as const,
+                  value: 16,
+                },
+              ],
+            ],
+            actions: [
+              {
+                kind: "ask" as const,
+                field: {
+                  key: "accord_representant",
+                  label: "Je suis son représentant légal et j'autorise sa participation",
+                  type: "acceptance" as const,
+                },
+              },
+              {
+                kind: "remind_document" as const,
+                label: "l'autorisation parentale signée",
+              },
+            ],
+          },
+          {
+            id: "dernieres-places-debutants",
+            name: "Dernières places débutants",
+            trigger: { kind: "before_start" as const, hours: 7 * 24 },
+            conditions: [
+              [
+                {
+                  kind: "field" as const,
+                  fieldKey: "niveau",
+                  operator: "equals" as const,
+                  value: "Débutant",
+                },
+                {
+                  kind: "seats" as const,
+                  measure: "remaining" as const,
+                  operator: "greater_than" as const,
+                  value: 0,
+                },
+              ],
+            ],
+            actions: [
+              {
+                kind: "notify_team" as const,
+                message: "Il reste des places au cours débutants : relance les anciens élèves.",
+              },
+            ],
+          },
+          // Tarifs dans les règles : la cuisson offerte à moitié prix aux nouveaux élèves.
+          {
+            id: "bienvenue-cuisson",
+            name: "Bienvenue",
+            trigger: { kind: "booking_submitted" as const },
+            conditions: [
+              [
+                { kind: "customer" as const, is: "new" as const },
+                { kind: "pricing" as const, target: "option" as const, id: "cuisson" },
+              ],
+            ],
+            actions: [{ kind: "price" as const, apply: "amount" as const, amountCents: 400 }],
+          },
+        ],
       },
       {
         key: "atelier",
@@ -538,6 +610,25 @@ const plans: Plan[] = [
       ["Léa", "Fontaine", 2],
       ["Marc", "Dupont", 1],
     ],
+  },
+  // Lot 36 : à J-7 avec des places libres, la règle « Dernières places débutants » prévient l'équipe.
+  {
+    type: "tournage",
+    title: "Cours de tournage · débutants",
+    start: [5, 10],
+    end: [5, 12],
+    location: "Atelier Terre & Feu",
+    capacity: 8,
+    priceCents: 4500,
+    paymentMode: "on_site",
+    description:
+      "Premier contact avec le tour : centrage, ouverture et premiers cylindres, à ton rythme.",
+    fieldValues: { niveau: "Débutant", terre: "Grès blanc" },
+    answers: {
+      answers: { deja_tourne: false, reglement: "on" },
+      participants: [{ firstName: "Inès", lastName: "Moreau", answers: { age: "29" } }],
+    },
+    bookings: [["Inès", "Moreau", 1]],
   },
   {
     type: "meetup",

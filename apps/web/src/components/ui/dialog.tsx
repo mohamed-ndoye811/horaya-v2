@@ -16,6 +16,7 @@ export function Dialog({
   children,
   footer,
   size = "md",
+  density = "regular",
 }: {
   open: boolean;
   onClose: () => void;
@@ -25,7 +26,10 @@ export function Dialog({
   footer?: ReactNode;
   /** `xl` : choix en grille (modèles d'un nouveau type). */
   size?: "md" | "lg" | "xl";
+  /** `compact` : titre plus petit, marges serrées, pied séparé d'un filet (fenêtres d'édition denses). */
+  density?: "regular" | "compact";
 }) {
+  const compact = density === "compact";
   const ref = useRef<HTMLDialogElement>(null);
   const titleId = useId();
 
@@ -53,27 +57,53 @@ export function Dialog({
       )}
     >
       <div className="flex flex-col">
-        <header className="flex items-start justify-between gap-4 px-6 pt-6 pb-2">
-          <div className="flex flex-col gap-1">
-            <h2 id={titleId} className="font-headline text-2xl leading-7">
+        <header
+          className={cn(
+            "flex items-start justify-between gap-4",
+            compact ? "px-5 pt-4 pb-1" : "px-6 pt-6 pb-2",
+          )}
+        >
+          <div className={cn("flex flex-col", compact ? "gap-0.5" : "gap-1")}>
+            <h2
+              id={titleId}
+              className={cn("font-headline", compact ? "text-lg leading-6" : "text-2xl leading-7")}
+            >
               {title}
             </h2>
             {description && (
-              <p className="text-sm font-medium leading-5 text-ink-muted">{description}</p>
+              <p
+                className={cn(
+                  "font-medium text-ink-muted",
+                  compact ? "text-[13px] leading-[18px]" : "text-sm leading-5",
+                )}
+              >
+                {description}
+              </p>
             )}
           </div>
           <button
             type="button"
             onClick={onClose}
             aria-label="Fermer"
-            className="flex size-10 shrink-0 items-center justify-center rounded-full bg-field hover:bg-line-soft"
+            className={cn(
+              "flex shrink-0 items-center justify-center rounded-full bg-field hover:bg-line-soft",
+              compact ? "size-8" : "size-10",
+            )}
           >
-            <CloseIcon />
+            <CloseIcon size={compact ? 10 : undefined} />
           </button>
         </header>
-        {children && <div className="px-6 py-4">{children}</div>}
+        {children && <div className={compact ? "px-5 py-3" : "px-6 py-4"}>{children}</div>}
+        {/* Collé en bas quand le contenu défile : les boutons restent à portée. */}
         {footer && (
-          <footer className="flex flex-wrap justify-end gap-2 px-6 pt-2 pb-6">{footer}</footer>
+          <footer
+            className={cn(
+              "sticky bottom-0 flex flex-wrap justify-end gap-2 bg-surface",
+              compact ? "border-t border-line-soft px-5 py-3" : "px-6 pt-2 pb-6",
+            )}
+          >
+            {footer}
+          </footer>
         )}
       </div>
     </dialog>

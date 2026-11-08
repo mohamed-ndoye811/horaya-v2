@@ -13,6 +13,7 @@ import {
   FIELD_TYPES,
   type FieldScope,
   fieldsOfScope,
+  type Rule,
   withModuleFields,
 } from "@horaya/core";
 import { isRedirect, useRouter } from "@tanstack/react-router";
@@ -37,6 +38,7 @@ import type { FormState } from "@/server/form-state";
 import { BookingOptions, SeatPrice, usePriceChoice } from "../public/price-choice";
 import { type EditableField, FieldListEditor } from "./field-list-editor";
 import { ModuleList } from "./module-editor";
+import { type RuleEditing, RuleList } from "./rule-editor";
 
 export const TYPE_COLORS = [
   "#528D74",
@@ -69,6 +71,10 @@ export interface EventTypeEditorValues {
   defaultPriceCents: number | null;
   modules: EventModules;
   fields: EventTypeField[];
+  /** Règles « si… alors… » (section 5). */
+  rules: Rule[];
+  /** « Tester sur une inscription » : dernières inscriptions aux événements du type. */
+  testBookings?: Array<{ id: string; label: string }>;
   eventCount: number;
   /** Événements à venir sans inscription (« Appliquer aussi aux N événements à venir »). */
   upcomingUnbooked: number;
@@ -354,7 +360,7 @@ function Preview({
   );
 }
 
-/** Maquette 9.1 : éditeur d'un type (Identité, Fonctionnement, Ce que tu décris, Ce que tu demandes). */
+/** Maquette 9.1 : éditeur d'un type (Identité, Fonctionnement, Ce que tu décris, Ce que tu demandes, Règles). */
 export function EventTypeEditor({
   initial,
   workspaceName,
@@ -376,6 +382,8 @@ export function EventTypeEditor({
   const [duration, setDuration] = useState(initial.defaultDurationMinutes?.toString() ?? "");
   const [modules, setModules] = useState<EventModules>(initial.modules);
   const [fields, setFields] = useState<EditableField[]>(initial.fields);
+  const [rules, setRules] = useState<Rule[]>(initial.rules);
+  const [editingRule, setEditingRule] = useState<RuleEditing>(null);
   const router = useRouter();
   const [archiving, startArchive] = useTransition();
   const [archiveError, setArchiveError] = useState<string | null>(null);
@@ -563,6 +571,7 @@ export function EventTypeEditor({
                 passPlans: initial.passPlans,
               }}
               errors={errors}
+              onCreateRule={() => setEditingRule("new")}
             />
           </FormSection>
 
@@ -615,6 +624,31 @@ export function EventTypeEditor({
               </div>
             ))}
             {errors.fields && <FormAlert>{errors.fields}</FormAlert>}
+          </FormSection>
+
+          <input type="hidden" name="rules" value={JSON.stringify(rules)} />
+          <FormSection
+            number={5}
+            title="Règles"
+            description="Si… alors… pour tout le reste"
+            aside={
+              rules.length > 0 ? `${rules.length} règle${rules.length > 1 ? "s" : ""}` : undefined
+            }
+          >
+            <RuleList
+              rules={rules}
+              onChange={setRules}
+              editing={editingRule}
+              setEditing={setEditingRule}
+              context={{
+                typeName: name,
+                fields: fields as EventTypeField[],
+                documents: modules.documents?.files ?? [],
+                testBookings: initial.testBookings ?? [],
+                pricing: modules.pricing,
+              }}
+              error={Object.entries(errors).find(([path]) => path.startsWith("rules"))?.[1]}
+            />
           </FormSection>
 
           {initial.id && initial.upcomingUnbooked > 0 && (

@@ -17,4 +17,5 @@ export * from "./platform";
 export * from "./privacy";
 export * from "./public";
 export * from "./reminders";
+export * from "./rules";
 export * from "./settings";

@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { eventTypeFieldsSchema, rawFieldValuesSchema } from "../fields/schemas";
 import { depositModuleSchema, eventTypeModulesSchema } from "../modules/registry";
+import { eventTypeRulesSchema } from "../rules/model";
 import { paymentLinkSchema } from "../shared/links";
 import { isValidTimeZone } from "../shared/time";
 import { BOOKING_NOUNS } from "./model";
@@ -31,6 +32,7 @@ const eventTypeFields = {
   defaultPriceCents: z.int().min(0).max(10_000_000).nullable(),
   modules: eventTypeModulesSchema,
   fields: eventTypeFieldsSchema,
+  rules: eventTypeRulesSchema,
   bookingNoun: z.enum(BOOKING_NOUNS),
 };
 
@@ -40,13 +42,14 @@ export const createEventTypeSchema = z.object({
   defaultPriceCents: eventTypeFields.defaultPriceCents.optional().default(null),
   modules: eventTypeFields.modules.default({}),
   fields: eventTypeFields.fields.default([]),
+  rules: eventTypeFields.rules.default([]),
   bookingNoun: eventTypeFields.bookingNoun.default("reservation"),
 });
 export type CreateEventTypeInput = z.input<typeof createEventTypeSchema>;
 
 export const updateEventTypeSchema = z.object({
   ...z.object(eventTypeFields).partial().shape,
-  /** Champs et modules aussi sur les événements à venir sans inscription (sinon : les prochains). */
+  /** Champs, modules et règles aussi sur les événements à venir sans inscription (sinon : les prochains). */
   applyToUpcoming: z.boolean().optional(),
 });
 export type UpdateEventTypeInput = z.input<typeof updateEventTypeSchema>;

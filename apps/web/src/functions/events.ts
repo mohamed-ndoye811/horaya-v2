@@ -12,6 +12,7 @@ import {
   getEventDetail,
   listCalendarLinks,
   listEventItems,
+  listEventRuleRuns,
   listEventStaff,
   listEvents,
   listEventTypes,
@@ -19,6 +20,7 @@ import {
   listItemTypes,
   listLinkableEvents,
   listPassPlans,
+  listRuleTestBookings,
   listTeam,
   tenantSettingsReader,
 } from "@horaya/db";
@@ -41,6 +43,7 @@ import {
   keepEventActionImpl,
   publishEventActionImpl,
   removeEventItemActionImpl,
+  ruleTestFactsImpl,
   saveCalendarLink,
   saveEvent as saveEventImpl,
   saveEventType as saveEventTypeImpl,
@@ -184,9 +187,10 @@ export const getEvent = createServerFn({ method: "GET" })
   .validator(z.object({ id: z.string().uuid(), onglet: eventSearch.shape.onglet }))
   .handler(async ({ data }) => {
     const { workspace, timeZone } = await getWorkspaceContext();
-    const [detail, items] = await Promise.all([
+    const [detail, items, ruleRuns] = await Promise.all([
       getEventDetail(db, workspace.id, data.id),
       listEventItems(db, workspace.id, data.id),
+      data.onglet === "infos" ? listEventRuleRuns(db, workspace.id, data.id) : [],
     ]);
     if (!detail) throw notFound();
     const now = new Date();
@@ -195,6 +199,8 @@ export const getEvent = createServerFn({ method: "GET" })
       now,
       detail,
       items,
+      // Onglet « Infos » : ce que les règles « si… alors… » ont fait (lot 36).
+      ruleRuns,
       // Check-in : à partir de la veille, la fiche sert à pointer les arrivées.
       checkIn: detail.event.status === "published" && isCheckInOpen(detail.event, now),
       candidates:
@@ -258,12 +264,15 @@ export const getEventTypes = createServerFn({ method: "GET" })
   .validator(eventTypesSearch)
   .handler(async ({ data }) => {
     const { workspace, timeZone } = await getWorkspaceContext();
-    const [types, settings, itemTypes, team, plans] = await Promise.all([
+    const [types, settings, itemTypes, team, plans, testBookings] = await Promise.all([
       listEventTypes(db, workspace.id),
       tenantSettingsReader(db).get(workspace.id),
       listItemTypes(db, workspace.id),
       listTeam(db, workspace.id, new Date()),
       listPassPlans(db, workspace.id),
+      data.type && data.type !== "nouveau"
+        ? listRuleTestBookings(db, workspace.id, data.type).catch(() => [])
+        : [],
     ]);
     const existing = types.find((type) => type.id === data.type);
     const source = types.find((type) => type.id === data.depuis);
@@ -274,6 +283,7 @@ export const getEventTypes = createServerFn({ method: "GET" })
       bookingNoun: "reservation" as const,
       fields: [],
       modules: {},
+      rules: [],
     };
     // Nouveau type : copie d'un type, ou modèle du core (nom libre si déjà pris).
     const base = existing ?? source ?? template;
@@ -308,6 +318,11 @@ export const getEventTypes = createServerFn({ method: "GET" })
             passPlans: plans
               .filter((plan) => !plan.archivedAt)
               .map((plan) => ({ id: plan.id, name: plan.name })),
+            // « Tester sur une inscription » : les dernières inscriptions aux événements du type.
+            testBookings: testBookings.map((entry) => ({
+              id: entry.id,
+              label: `${entry.customerName || entry.reference} · ${entry.eventTitle} · ${formatShortDateTime(entry.startsAt, timeZone)}`,
+            })),
           };
     return {
       workspaceName: workspace.name,
@@ -389,6 +404,9 @@ const keepFn = createServerFn({ method: "POST" })
 const saveTypeFn = createServerFn({ method: "POST" })
   .validator(formDataInput)
   .handler(({ data }) => saveEventTypeImpl(idOf(data), data));
+const ruleTestFactsFn = createServerFn({ method: "GET" })
+  .validator(id)
+  .handler(({ data }) => ruleTestFactsImpl(data));
 const archiveTypeFn = createServerFn({ method: "POST" })
   .validator(id)
   .handler(({ data }) => archiveEventTypeActionImpl(data));
@@ -425,6 +443,8 @@ export function saveEventType(typeId: string | null, _previous: FormState, form:
 }
 /** Archive le type puis renvoie vers la liste (redirection levée, à suivre par l'appelant). */
 export const archiveEventTypeAction = (typeId: string) => archiveTypeFn({ data: typeId });
+/** Ce qu'on sait d'une inscription pour « Tester sur une inscription » (rien n'est exécuté). */
+export const getRuleTestFacts = (bookingId: string) => ruleTestFactsFn({ data: bookingId });
 
 export const setEventItemAction = (eventId: string, itemId: string, quantity: number) =>
   setItemFn({ data: { eventId, itemId, quantity } });

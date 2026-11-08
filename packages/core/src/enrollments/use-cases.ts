@@ -13,6 +13,7 @@ import { promoteWaitlist } from "../bookings/waitlist";
 import type { EventSeries } from "../events/model";
 import { rawFieldValuesSchema } from "../fields/schemas";
 import { cancellationPolicyOf } from "../modules/rules";
+import { runBookingRules } from "../rules/use-cases";
 import { type Actor, actorRef, assertMemberCan } from "../shared/actor";
 import { ConflictError, ForbiddenError, NotFoundError } from "../shared/errors";
 import { generateToken, hashToken } from "../shared/tokens";
@@ -159,7 +160,7 @@ export async function enrollInSeries(
       manageTokenHash,
     });
     const bookings: Booking[] = [];
-    for (const entry of locked) {
+    for (const [index, entry] of locked.entries()) {
       bookings.push(
         await insertEventBooking(repositories, actor, entry, now, {
           customerId,
@@ -169,6 +170,8 @@ export async function enrollInSeries(
           customerMessage: null,
           manageTokenHash: null,
           enrollmentId: enrollment.id,
+          // Les règles agissent sur chaque séance, mais ne préviennent qu'une fois.
+          quietRules: index > 0,
         }),
       );
     }
@@ -221,6 +224,7 @@ async function releaseSession(
     ...actorRef(actor),
   });
   // La place libérée profite à la liste d'attente existante.
+  await runBookingRules(repositories, actor, "seat_released", locked.event, fresh, now);
   await promoteWaitlist(repositories, locked.event, actor, now);
 }
 

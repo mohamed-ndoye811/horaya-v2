@@ -1,5 +1,6 @@
 import type { EventTypeField, FieldValues } from "../fields/model";
 import type { EventModules } from "../modules/registry";
+import type { Rule } from "../rules/model";
 import type { EventStatus, EventVisibility, PaymentMode } from "./types";
 
 /**
@@ -21,6 +22,8 @@ export interface EventType {
   modules: EventModules;
   /** « Ce que tu décris » et « Ce que tu demandes ». */
   fields: EventTypeField[];
+  /** Règles « si… alors… » (lot 36). */
+  rules: Rule[];
   bookingNoun: BookingNoun;
   archivedAt: Date | null;
 }
@@ -84,6 +87,8 @@ export interface Event {
    * l'événement restent dans `capacity` et `requiresApproval`.
    */
   modules: EventModules;
+  /** Règles du type copiées à la création, comme les champs et les modules (lot 36). */
+  rules: Rule[];
   /** Valeurs de « Ce que tu décris ». */
   fieldValues: FieldValues;
   /** Module Intervenant : le membre de l'équipe qui anime cet événement. */

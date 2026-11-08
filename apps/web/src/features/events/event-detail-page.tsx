@@ -1,4 +1,11 @@
-import { depositLabel, fieldsOfScope, minimumDecisionAt } from "@horaya/core";
+import {
+  depositLabel,
+  fieldsOfScope,
+  minimumDecisionAt,
+  ruleJournalLine,
+  ruleMomentLabel,
+  ruleSentence,
+} from "@horaya/core";
 import { useState, useTransition } from "react";
 import { BookingRowActions, CheckInToggle } from "@/components/app/booking-actions";
 import { useImageUpload } from "@/components/app/image-upload";
@@ -6,7 +13,7 @@ import { PageHeader } from "@/components/app/page-header";
 import { CategorySwatch } from "@/components/ui/avatar";
 import { StatusBadge } from "@/components/ui/badge";
 import { Banner } from "@/components/ui/banner";
-import { ButtonLink } from "@/components/ui/button";
+import { ButtonLink, textLinkClasses } from "@/components/ui/button";
 import { MoneyCell, PersonCell } from "@/components/ui/cells";
 import { DataTable } from "@/components/ui/data-table";
 import { fillTone, ProgressBar } from "@/components/ui/progress";
@@ -25,9 +32,10 @@ import {
   formatMoney,
   formatOpening,
   formatRelativeDateTime,
+  formatShortDateTime,
   PAYMENT_MODE_LABELS,
 } from "@/lib/format";
-import { useRouter } from "@/lib/navigation";
+import { Link, useRouter } from "@/lib/navigation";
 import { EventActions } from "./event-actions";
 import { EventItems } from "./event-items";
 
@@ -91,7 +99,7 @@ export function EventDetailPage({
   data: Awaited<ReturnType<typeof getEvent>>;
   tab: "participants" | "materiel" | "infos" | "serie";
 }) {
-  const { timeZone, now, detail, items, checkIn, candidates, series } = data;
+  const { timeZone, now, detail, items, checkIn, candidates, series, ruleRuns } = data;
   const { event, bookings, waitlisted, bookedAmountCents } = detail;
   const active = bookings.filter(
     (entry) => entry.status === "pending" || entry.status === "confirmed",
@@ -452,6 +460,55 @@ export function EventDetailPage({
                 <span className="text-ink-muted">Pas encore de description.</span>
               )}
             </p>
+            {event.rules.length > 0 && (
+              <>
+                <Eyebrow className="pt-4">Règles « si… alors… »</Eyebrow>
+                <ul className="flex flex-col gap-2">
+                  {event.rules.map((rule) => (
+                    <li
+                      key={rule.id}
+                      className="flex items-start gap-3.5 rounded-[14px] bg-surface px-3.5 py-3"
+                    >
+                      <span className="w-[92px] shrink-0 pt-0.5 text-[11px] font-bold uppercase leading-[14px] tracking-[0.06em] text-ink-subtle">
+                        {ruleMomentLabel(rule.trigger)}
+                      </span>
+                      <span className="text-sm leading-[19px] text-ink">
+                        <strong className="font-semibold">{rule.name}</strong> ·{" "}
+                        {ruleSentence(rule, event.fields, event.modules.pricing)}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+                <p className="text-[13px] font-semibold leading-4 text-ink-muted">
+                  Ce que les règles ont fait
+                </p>
+                {ruleRuns.length === 0 ? (
+                  <p className="text-sm text-ink-muted">Aucune règle n'a encore agi.</p>
+                ) : (
+                  <ul className="flex flex-col gap-1.5">
+                    {ruleRuns.map((run) => (
+                      <li key={run.id} className="text-sm leading-5 text-ink">
+                        <span className="text-ink-muted">
+                          {formatShortDateTime(run.createdAt, timeZone)} ·{" "}
+                        </span>
+                        {ruleJournalLine(run.ruleName, run.actions)}
+                        {run.bookingId && (
+                          <>
+                            {" · "}
+                            <Link
+                              href={`/app/reservations/${run.bookingId}`}
+                              className={textLinkClasses}
+                            >
+                              {run.customerName ?? run.bookingReference}
+                            </Link>
+                          </>
+                        )}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </>
+            )}
           </div>
           <dl className="flex flex-col overflow-hidden rounded-3xl bg-surface">
             {[

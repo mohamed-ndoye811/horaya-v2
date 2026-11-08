@@ -1,4 +1,4 @@
-import { cancelEventBelowMinimum } from "@horaya/core";
+import { cancelEventBelowMinimum, runScheduledRule } from "@horaya/core";
 import {
   claimBookingReminders,
   claimDueCustomReminders,
@@ -9,6 +9,7 @@ import {
   claimWeeklyDigests,
   countConfirmedSeats,
   listConfirmedBookingIds,
+  listDueRules,
 } from "@horaya/db";
 import {
   notifyMinimum,
@@ -52,7 +53,9 @@ export async function sendDueReminders(now = new Date()): Promise<number> {
  * Tâches des modules (lot 34), à chaque passage :
  * - seuil de maintien : l'équipe prévenue la veille de J-x, puis décision à J-x (annulation
  *   par le core, avec le parcours habituel : e-mails aux inscrits, cartes recréditées) ;
- * - rappel au moment choisi et message après la séance (module Messages).
+ * - rappel au moment choisi et message après la séance (module Messages) ;
+ * - règles « si… alors… » planifiées (X avant la séance, après la séance, lot 36) : chacune
+ *   prend sa trace sous le verrou de l'événement, ses envois partent après la transaction.
  * Chaque envoi est réservé avant de partir (voir queries/reminders.ts).
  */
 export async function sendModuleTasks(now = new Date()) {
@@ -74,6 +77,11 @@ export async function sendModuleTasks(now = new Date()) {
     for (const id of await listConfirmedBookingIds(db, event.id)) {
       await sendFollowUp(event.organizationId, id);
     }
+  }
+  for (const due of await listDueRules(db, now)) {
+    await runScheduledRule(deps, due.organizationId, due.eventId, due.ruleId).catch((error) =>
+      console.error("Règle planifiée", due, error),
+    );
   }
 }
 

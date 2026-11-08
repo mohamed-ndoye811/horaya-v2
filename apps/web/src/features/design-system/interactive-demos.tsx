@@ -244,6 +244,7 @@ const REASONS = ["Atelier complet", "Profil non adapté", "Événement annulé",
 export function InteractionDemo() {
   const [reason, setReason] = useState<string | null>(REASONS[0] ?? null);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [compactOpen, setCompactOpen] = useState(false);
   const [lastAction, setLastAction] = useState<string | null>(null);
 
   return (
@@ -281,6 +282,9 @@ export function InteractionDemo() {
           </Button>
           <Button variant="success" icon={<Check />}>
             Valider la réservation
+          </Button>
+          <Button variant="secondary" size="sm" onClick={() => setCompactOpen(true)}>
+            Fenêtre compacte
           </Button>
         </div>
         <div className="flex items-center gap-3">
@@ -340,6 +344,36 @@ export function InteractionDemo() {
           Motif : <strong>{reason ?? "aucun"}</strong>. La pré-autorisation de 35 € est libérée
           immédiatement.
         </p>
+      </Dialog>
+
+      {/* Fenêtre d'édition dense (règle « si… alors… ») : `density="compact"`, lignes de 36 px. */}
+      <Dialog
+        open={compactOpen}
+        onClose={() => setCompactOpen(false)}
+        density="compact"
+        size="lg"
+        title="Nouvelle règle"
+        description="Cours de tournage · règle 1 sur 1"
+        footer={
+          <Button size="sm" onClick={() => setCompactOpen(false)}>
+            Enregistrer
+          </Button>
+        }
+      >
+        <div className="flex flex-wrap items-center gap-1.5">
+          <Select variant="dense" aria-label="Information testée" className="min-w-40 flex-1">
+            <option>Participant · Âge</option>
+          </Select>
+          <Select variant="dense" aria-label="Comparaison" className="min-w-36">
+            <option>est inférieur à</option>
+          </Select>
+          <div className="w-[72px]">
+            <input aria-label="Valeur" defaultValue="16" className={inputClasses("xs")} />
+          </div>
+          <IconButton label="Retirer la condition">
+            <CloseIcon size={10} />
+          </IconButton>
+        </div>
       </Dialog>
     </div>
   );

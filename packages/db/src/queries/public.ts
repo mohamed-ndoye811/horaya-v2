@@ -6,9 +6,11 @@ import {
   type EventTypeField,
   type EventVisibility,
   type FieldValues,
+  formRules,
   type PaymentMode,
   publicFieldsView,
   publicModules,
+  type Rule,
 } from "@horaya/core";
 import { and, asc, eq, gte, type SQL, sql } from "drizzle-orm";
 import type { Executor } from "../client";
@@ -97,10 +99,14 @@ const publicEventColumns = {
   visibility: event.visibility,
   fields: event.fields,
   fieldValues: event.fieldValues,
+  rules: event.rules,
   seatsHeld,
 };
 
-/** Les champs internes de « Ce que tu décris », les documents et messages ne quittent jamais le serveur. */
+/**
+ * Les champs internes de « Ce que tu décris », les documents et messages ne quittent jamais le
+ * serveur ; des règles, seules les questions à poser partent, déjà tranchées pour l'événement.
+ */
 function toPublic<
   R extends {
     fields: EventTypeField[];
@@ -108,6 +114,9 @@ function toPublic<
     modules: EventModules;
     onlineUrl: string | null;
     staffName: string | null;
+    rules: Rule[];
+    capacity: number | null;
+    seatsHeld: number;
   },
 >(row: R): Omit<R, "onlineUrl" | "staffName"> & { online: boolean; staffFirstName: string | null } {
   const { onlineUrl, staffName, ...rest } = row;
@@ -118,6 +127,11 @@ function toPublic<
     // Le lien de visio ne quitte pas le serveur avant l'inscription : on ne dit que « en ligne ».
     online: onlineUrl !== null,
     staffFirstName: row.modules.staff?.showOnPublicPage ? (staffName?.split(" ")[0] ?? null) : null,
+    rules: formRules(row.rules, row.fields, {
+      fieldValues: row.fieldValues,
+      capacity: row.capacity,
+      seatsHeld: row.seatsHeld,
+    }),
   };
 }
 
@@ -151,6 +165,8 @@ export interface PublicEventRow {
   /** Champs de l'événement (sans les champs internes) et valeurs visibles. */
   fields: EventTypeField[];
   fieldValues: FieldValues;
+  /** Règles réduites aux questions du formulaire (voir formRules). */
+  rules: Rule[];
   seatsHeld: number;
 }
 

@@ -1,4 +1,4 @@
-import { addDays, enrollmentQuote } from "@horaya/core";
+import { addDays, enrollmentQuote, formRules } from "@horaya/core";
 import { getCustomerDetail, listCounterEvents } from "@horaya/db";
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
@@ -93,6 +93,12 @@ export const getCounter = createServerFn({ method: "GET" })
           ? `${quote.remaining} séance${quote.remaining > 1 ? "s" : ""} restante${quote.remaining > 1 ? "s" : ""} sur ${quote.total} : ${formatMoney(quote.priceCents)} au lieu de ${formatMoney(quote.fullCents)}`
           : null,
         fields: event.fields.filter((field) => field.scope !== "event"),
+        // Questions en plus des règles, tranchées pour cette séance (lot 36).
+        rules: formRules(event.rules, event.fields, {
+          fieldValues: event.fieldValues,
+          capacity: event.capacity,
+          seatsHeld: event.seatsHeld,
+        }),
       };
     });
 

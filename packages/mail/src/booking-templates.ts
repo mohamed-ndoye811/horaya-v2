@@ -214,6 +214,47 @@ export function bookingFollowUpEmail(mail: BookingMail & { message: string }): E
   });
 }
 
+/** Règle « si… alors… » (lot 36) : message de l'atelier au client. */
+export function bookingRuleMessageEmail(
+  mail: BookingMail & { subject: string; message: string },
+): EmailContent {
+  return bookingEmail(mail, {
+    subject: `${mail.subject} · ${mail.title}`,
+    title: mail.subject,
+    preheader: mail.message.slice(0, 90),
+    paragraphs: [mail.message],
+  });
+}
+
+/** Règle « si… alors… » (lot 36) : l'équipe est prévenue. */
+export function teamRuleEmail(input: {
+  workspaceName: string;
+  rule: string;
+  title: string;
+  when: string;
+  /** « Camille Roux » quand la règle porte sur une inscription. */
+  customerName?: string | null;
+  message?: string | null;
+  url: string;
+}): EmailContent {
+  return {
+    subject: `Règle « ${input.rule} » : ${input.title}`,
+    ...renderEmail({
+      preheader: input.message ?? `${input.title} · ${input.when}`,
+      title: `Règle « ${input.rule} »`,
+      paragraphs: [
+        `La règle « ${input.rule} » s'applique à « ${input.title} » (${input.when})${input.customerName ? `, pour l'inscription de ${input.customerName}` : ""}.`,
+        ...(input.message ? [input.message] : []),
+      ],
+      action: {
+        label: input.customerName ? "Voir l'inscription" : "Voir l'événement",
+        url: input.url,
+      },
+      footnote: teamFootnote(input.workspaceName),
+    }),
+  };
+}
+
 /** Seuil de maintien, la veille de J-x : il manque des inscrits. */
 export function teamMinimumRiskEmail(input: {
   workspaceName: string;

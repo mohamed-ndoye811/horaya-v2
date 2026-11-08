@@ -7,9 +7,11 @@ import {
   type PaymentMethod,
   type PaymentMode,
   passSessionsFor,
+  type Rule,
 } from "@horaya/core";
 import { type FormEvent, type ReactNode, useEffect, useRef, useState, useTransition } from "react";
 import { FieldInputs } from "@/components/app/field-inputs";
+import { RuleQuestions } from "@/components/app/rule-questions";
 import { Collapse } from "@/components/motion/collapse";
 import { PresenceItem, PresenceList } from "@/components/motion/presence";
 import { Swap } from "@/components/motion/swap";
@@ -68,6 +70,8 @@ export interface CounterEvent {
   enrollmentNote: string | null;
   /** « Ce que tu demandes » : questions une fois et par participant. */
   fields: EventTypeField[];
+  /** Règles réduites aux questions à poser (lot 36). */
+  rules: Rule[];
 }
 
 interface CustomerHit {
@@ -167,7 +171,7 @@ export function CounterWizard({
   const giftCardsAccepted = acceptsGiftCards(event?.modules.payment_methods);
   const full = event?.remaining !== null && event !== undefined && seats > (event.remaining ?? 0);
   // Questions du type, aussi pour l'inscription à toute la série (une fois, pour une personne).
-  const asking = Boolean(event && event.fields.length > 0);
+  const asking = Boolean(event && (event.fields.length > 0 || event.rules.length > 0));
   const participantFields = fieldsOfScope(event?.fields ?? [], "participant");
   const newName = `${contact.firstName} ${contact.lastName}`.trim();
   const customerName = customer?.name ?? (newName || null);
@@ -556,6 +560,13 @@ export function CounterWizard({
               fields={fieldsOfScope(event.fields, "booking")}
               prefix="a."
               errorPrefix="answers."
+              errors={fieldErrors}
+              enforceRequired={false}
+            />
+            <RuleQuestions
+              rules={event.rules}
+              fields={event.fields}
+              seats={seats}
               errors={fieldErrors}
               enforceRequired={false}
             />

@@ -1,4 +1,11 @@
-import { can, externalPaidCents, paidCents, priceDetail, rentalDays } from "@horaya/core";
+import {
+  askedFields,
+  can,
+  externalPaidCents,
+  paidCents,
+  priceDetail,
+  rentalDays,
+} from "@horaya/core";
 import type { ReactNode } from "react";
 import {
   BookingHeaderActions,
@@ -475,7 +482,13 @@ export function BookingDetailPage({ data }: { data: Awaited<ReturnType<typeof ge
           {Object.keys(booking.answers).length > 0 && (
             <section className={cn(card, "gap-3")}>
               <CardTitle>Réponses</CardTitle>
-              <FieldAnswers fields={booking.event?.fields ?? []} values={booking.answers} />
+              <FieldAnswers
+                fields={[
+                  ...(booking.event?.fields ?? []),
+                  ...askedFields(booking.event?.rules ?? []),
+                ]}
+                values={booking.answers}
+              />
             </section>
           )}
 

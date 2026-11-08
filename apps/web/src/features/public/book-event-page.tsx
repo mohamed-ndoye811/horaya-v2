@@ -95,6 +95,7 @@ export function BookEventPage({
         linkSlug={linkSlug}
         seats={seats}
         fields={event.fields}
+        rules={event.rules}
         workspaceName={workspace.name}
         submitLabel={submitLabel}
         prefill={prefill}

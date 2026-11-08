@@ -12,7 +12,9 @@ import {
   fromZonedParts,
   keepEventDespiteMinimum,
   publishEvent,
+  type RuleFacts,
   removeEventItem,
+  ruleTestFacts,
   setEventItemQuantity,
   type UpdateEventInput,
   type UpdateEventTypeInput,
@@ -194,9 +196,11 @@ export async function saveEventType(typeId: string | null, form: FormData): Prom
   // Champs et modules arrivent en JSON ; le core les valide (schémas des champs et des modules).
   let fields: unknown;
   let modules: unknown;
+  let rules: unknown;
   try {
     fields = JSON.parse(text(form, "fields") || "[]");
     modules = JSON.parse(text(form, "modules") || "{}");
+    rules = JSON.parse(text(form, "rules") || "[]");
   } catch {
     return { error: "Réglages illisibles." };
   }
@@ -209,6 +213,7 @@ export async function saveEventType(typeId: string | null, form: FormData): Prom
     defaultPriceCents: price === "" ? null : parseEuroToCents(price),
     fields,
     modules,
+    rules,
   };
 
   let savedId: string;
@@ -224,6 +229,12 @@ export async function saveEventType(typeId: string | null, form: FormData): Prom
     return toFormState(error);
   }
   throw redirect({ href: `/app/evenements/types?type=${savedId}` });
+}
+
+/** « Tester sur une inscription » (maquette 9.4) : ce qu'on sait d'une inscription, rien n'est exécuté. */
+export async function ruleTestFactsImpl(bookingId: string): Promise<RuleFacts> {
+  const { actor } = await getWorkspaceContext();
+  return ruleTestFacts(deps, actor, bookingId);
 }
 
 export async function archiveEventTypeActionImpl(typeId: string): Promise<FormState> {

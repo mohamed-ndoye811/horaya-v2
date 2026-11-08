@@ -1,11 +1,13 @@
 import {
   type ActivityEntry,
   amountDueOnline,
+  askedFields,
   awaitsOnlinePayment,
   balanceLabel,
   type NotificationType,
   paidCents,
   priceDetail,
+  type RuleAction,
 } from "@horaya/core";
 import {
   claimAlmostFull,
@@ -13,9 +15,11 @@ import {
   getBookingDetail,
   getEnrollment,
   getPassForEmail,
+  getRuleEventSummary,
   getWeeklyDigest,
   getWorkspaceSettings,
   listBookingPayments,
+  listConfirmedBookingIds,
   listNotificationRecipients,
   tenantSettingsReader,
 } from "@horaya/db";
@@ -32,6 +36,7 @@ import {
   bookingRefusedEmail,
   bookingReminderEmail,
   bookingRescheduledEmail,
+  bookingRuleMessageEmail,
   bookingSoonEmail,
   bookingWaitlistedEmail,
   type EmailContent,
@@ -42,6 +47,7 @@ import {
   teamMinimumCancelledEmail,
   teamMinimumRiskEmail,
   teamReminderEmail,
+  teamRuleEmail,
   weeklyDigestEmail,
 } from "@horaya/mail";
 import { textOn } from "@/lib/colors";
@@ -119,10 +125,21 @@ async function loadBooking(organizationId: string, bookingId: string) {
     booking.amountCents > 0
       ? `${formatMoney(booking.amountCents)}${detailLabel ? ` (${detailLabel})` : ""} · ${paymentNote}`
       : null;
+  // Règles qui ont agi sur l'inscription (lot 36) : documents à apporter, questions en plus.
+  const ruleActions = detail.activity
+    .filter((entry) => entry.action === "booking.rule_applied")
+    .flatMap((entry) => (entry.data?.actions ?? []) as RuleAction[]);
+  const ruleDocuments = ruleActions.flatMap((action) =>
+    action.kind === "remind_document" ? [action] : [],
+  );
+  const bring =
+    [booking.event?.modules.messages?.bring, ...ruleDocuments.map((action) => action.label)]
+      .filter(Boolean)
+      .join(" · ") || null;
   // Récapitulatif des réponses du client : jamais les champs de description (internes compris).
   const answers = answerGroups(
     {
-      fields: booking.event?.fields ?? [],
+      fields: [...(booking.event?.fields ?? []), ...askedFields(booking.event?.rules ?? [])],
       answers: booking.answers,
       participants: detail.participants,
     },
@@ -154,11 +171,11 @@ async function loadBooking(organizationId: string, bookingId: string) {
     manageUrl: url,
     // Modules copiés sur l'événement : messages et documents joints (liens absolus).
     note: booking.event?.modules.messages?.confirmation ?? null,
-    bring: booking.event?.modules.messages?.bring ?? null,
-    documents: (booking.event?.modules.documents?.files ?? []).map((file) => ({
-      name: file.name,
-      url: absoluteUrl(file.url),
-    })),
+    bring,
+    documents: [
+      ...(booking.event?.modules.documents?.files ?? []),
+      ...ruleDocuments.flatMap((action) => (action.file ? [action.file] : [])),
+    ].map((file) => ({ name: file.name, url: absoluteUrl(file.url) })),
   });
   return {
     booking,
@@ -509,10 +526,60 @@ async function sendPassActivatedEmail(organizationId: string, passId: string) {
   );
 }
 
+/**
+ * Règle planifiée qui a agi sur un événement (lot 36) : l'équipe est prévenue, chaque inscrit
+ * confirmé reçoit le message.
+ */
+async function notifyEventRule(entry: ActivityEntry) {
+  const [event, workspace] = await Promise.all([
+    getRuleEventSummary(db, entry.organizationId, entry.entityId),
+    getWorkspaceSettings(db, entry.organizationId),
+  ]);
+  if (!event || !workspace) return;
+  const rule = String(entry.data?.rule ?? "");
+  const when = formatEventRange(event.startsAt, event.endsAt, event.timezone);
+  const link = `/app/evenements/${event.id}`;
+  for (const action of (entry.data?.actions ?? []) as RuleAction[]) {
+    if (action.kind === "notify_team") {
+      await notifyTeam(
+        entry.organizationId,
+        "rule_applied",
+        teamRuleEmail({
+          workspaceName: workspace.name,
+          rule,
+          title: event.title,
+          when,
+          message: action.message,
+          url: absoluteUrl(link),
+        }),
+        { title: `Règle « ${rule} » : ${event.title}`, body: action.message ?? when, link },
+      );
+    }
+    if (action.kind === "message") {
+      for (const id of await listConfirmedBookingIds(db, event.id)) {
+        const loaded = await loadBooking(entry.organizationId, id);
+        if (!loaded) continue;
+        await send(
+          loaded.booking.customer.email,
+          bookingRuleMessageEmail({
+            ...loaded.mail(loaded.linkRequestUrl),
+            subject: action.subject,
+            message: action.body,
+          }),
+        );
+      }
+    }
+  }
+}
+
 /** Branché sur la fin des transactions (createDeps) : chaque changement de statut prévient qui de droit. */
 export async function notifyFromActivity(entries: ActivityEntry[]) {
   for (const entry of entries) {
     if (entry.entityType === "enrollment") await notifyEnrollmentCreated(entry);
+    if (entry.entityType === "event" && entry.action === "event.rule_applied") {
+      await notifyEventRule(entry);
+      continue;
+    }
     if (entry.entityType === "pass" && entry.action === "pass.activated") {
       await sendPassActivatedEmail(entry.organizationId, entry.entityId);
       continue;
@@ -667,6 +734,40 @@ export async function notifyFromActivity(entries: ActivityEntry[]) {
               link: adminPath,
             },
           );
+        }
+        break;
+      }
+      case "booking.rule_applied": {
+        // Séances 2 et suivantes d'une inscription à la série : déjà prévenu une fois.
+        if (entry.data?.notify === false) break;
+        const rule = String(entry.data?.rule ?? "");
+        for (const action of (entry.data?.actions ?? []) as RuleAction[]) {
+          if (action.kind === "notify_team") {
+            await notifyTeam(
+              entry.organizationId,
+              "rule_applied",
+              teamRuleEmail({
+                workspaceName: workspace.name,
+                rule,
+                title,
+                when: mail(linkRequestUrl).when,
+                customerName,
+                message: action.message,
+                url: adminUrl,
+              }),
+              { title: `Règle « ${rule} »`, body: action.message ?? summary, link: adminPath },
+            );
+          }
+          if (action.kind === "message") {
+            await send(
+              to,
+              bookingRuleMessageEmail({
+                ...mail(linkRequestUrl),
+                subject: action.subject,
+                message: action.body,
+              }),
+            );
+          }
         }
         break;
       }
