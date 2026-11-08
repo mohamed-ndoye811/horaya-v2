@@ -10,6 +10,22 @@ export const BOOKING_STATUS_BADGE: Record<BookingStatus, { label: string; tone: 
   cancelled: { label: "Annulée", tone: "draft" },
 };
 
+/**
+ * Statut d'une réservation, en tenant compte des cours à l'année : une séance réservée par une
+ * inscription à la série s'affiche « Inscrit·e au trimestre », ou « Absence signalée ».
+ */
+export function bookingStatusBadge(booking: {
+  status: BookingStatus;
+  enrollmentId?: string | null;
+  absentAt?: Date | null;
+}): { label: string; tone: Tone } {
+  if (booking.absentAt) return { label: "Absence signalée", tone: "neutral" };
+  if (booking.enrollmentId && booking.status === "confirmed") {
+    return { label: "Inscrit·e au trimestre", tone: "info" };
+  }
+  return BOOKING_STATUS_BADGE[booking.status];
+}
+
 /** Présence à un événement passé, d'après le check-in (fiche client). */
 export const ATTENDANCE_BADGE = {
   present: { label: "Venu·e", tone: "info" },

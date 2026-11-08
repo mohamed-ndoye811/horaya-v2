@@ -9,8 +9,9 @@ import { DataTable } from "@/components/ui/data-table";
 import { fillTone, ProgressBar } from "@/components/ui/progress";
 import { Eyebrow } from "@/components/ui/section";
 import { Stat } from "@/components/ui/stat";
-import { BOOKING_STATUS_BADGE, eventStatusBadge } from "@/components/ui/status";
+import { bookingStatusBadge, eventStatusBadge } from "@/components/ui/status";
 import { Tabs } from "@/components/ui/tabs";
+import { SeriesPanel } from "@/features/enrollments/series-panel";
 import type { getEvent } from "@/functions/events";
 import { cn } from "@/lib/cn";
 import { meshCover } from "@/lib/cover";
@@ -30,9 +31,9 @@ export function EventDetailPage({
   tab,
 }: {
   data: Awaited<ReturnType<typeof getEvent>>;
-  tab: "participants" | "materiel" | "infos";
+  tab: "participants" | "materiel" | "infos" | "serie";
 }) {
-  const { timeZone, now, detail, items, checkIn, candidates } = data;
+  const { timeZone, now, detail, items, checkIn, candidates, series } = data;
   const { event, bookings, waitlisted, bookedAmountCents } = detail;
   const active = bookings.filter(
     (entry) => entry.status === "pending" || entry.status === "confirmed",
@@ -168,6 +169,15 @@ export function EventDetailPage({
               count: items.reduce((total, entry) => total + entry.quantity, 0),
             },
             { value: "infos", label: "Infos", href: `/app/evenements/${event.id}?onglet=infos` },
+            ...(event.seriesId
+              ? [
+                  {
+                    value: "serie",
+                    label: "Série",
+                    href: `/app/evenements/${event.id}?onglet=serie`,
+                  },
+                ]
+              : []),
           ]}
         />
         <p className="text-[13px] text-ink-muted">
@@ -223,8 +233,8 @@ export function EventDetailPage({
                   )}
                 </div>
                 <div className="flex items-center justify-between gap-3 pl-[54px]">
-                  <StatusBadge tone={BOOKING_STATUS_BADGE[row.status].tone}>
-                    {BOOKING_STATUS_BADGE[row.status].label}
+                  <StatusBadge tone={bookingStatusBadge(row).tone}>
+                    {bookingStatusBadge(row).label}
                   </StatusBadge>
                   {row.status !== "pending" && (
                     <div className="relative z-10">
@@ -326,8 +336,8 @@ export function EventDetailPage({
                 width: 170,
                 align: "right",
                 cell: (row) => (
-                  <StatusBadge tone={BOOKING_STATUS_BADGE[row.status].tone}>
-                    {BOOKING_STATUS_BADGE[row.status].label}
+                  <StatusBadge tone={bookingStatusBadge(row).tone}>
+                    {bookingStatusBadge(row).label}
                   </StatusBadge>
                 ),
               },
@@ -347,6 +357,14 @@ export function EventDetailPage({
             ]}
           />
         </div>
+      ) : tab === "serie" && series && event.seriesId ? (
+        <SeriesPanel
+          seriesId={event.seriesId}
+          eventId={event.id}
+          offer={series.offer}
+          enrollments={series.enrollments}
+          timeZone={timeZone}
+        />
       ) : tab === "materiel" ? (
         <EventItems
           eventId={event.id}

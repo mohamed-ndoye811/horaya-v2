@@ -1,12 +1,14 @@
 import { type ReactNode, useState } from "react";
 import { StatusBadge, type Tone } from "@/components/ui/badge";
-import { Button, buttonClasses } from "@/components/ui/button";
+import { Button, ButtonLink, buttonClasses } from "@/components/ui/button";
 import { Dialog } from "@/components/ui/dialog";
 import { FormAlert } from "@/components/ui/form-alert";
 import { ArrowLeft } from "@/components/ui/icons";
+import { AbsenceButton, EnrollmentProgress } from "@/features/enrollments/enrollment-progress";
 import {
   cancelCustomerBookingAction,
   type getCustomerBookingPage,
+  reportCustomerAbsenceAction,
   rescheduleCustomerBookingAction,
 } from "@/functions/customer-space";
 import { cn } from "@/lib/cn";
@@ -47,7 +49,7 @@ export function CustomerBookingPage({
   data: Data;
   paymentReturn: string | undefined;
 }) {
-  const { booking, now, awaitsPayment, due, channel, paid, refund, reschedule } = data;
+  const { booking, now, awaitsPayment, due, channel, paid, refund, reschedule, enrollment } = data;
   const slug = workspace.slug;
   const tz = workspace.timezone;
   const title = booking.eventTitle ?? "Location de matériel";
@@ -61,7 +63,9 @@ export function CustomerBookingPage({
     month: "long",
   }).format(booking.createdAt);
   const badge: { label: string; tone: Tone } =
+    (booking.absentAt ? { label: "Absence signalée", tone: "neutral" } : null) ??
     STATUS[booking.status] ??
+    (booking.enrollmentId ? { label: "Inscrit·e au trimestre", tone: "info" } : null) ??
     (awaitsPayment
       ? { label: `À payer · ${formatMoney(due)}`, tone: "warning" }
       : booking.paymentStatus === "paid"
@@ -156,7 +160,26 @@ export function CustomerBookingPage({
             </div>
           )}
 
-          {active && (
+          {booking.enrollmentId && enrollment && (
+            <Enrollment
+              enrollment={enrollment}
+              timezone={tz}
+              absence={
+                active &&
+                booking.eventId &&
+                startsAt &&
+                startsAt > now && (
+                  <AbsenceButton
+                    session={{ eventId: booking.eventId, title, startsAt }}
+                    timeZone={tz}
+                    onAbsent={() => reportCustomerAbsenceAction(slug, booking.id)}
+                  />
+                )
+              }
+            />
+          )}
+
+          {active && !booking.enrollmentId && (
             <div id="changer" className="flex flex-col gap-3.5 border-t border-line pt-7">
               {booking.kind === "event" ? (
                 <Reschedule
@@ -179,6 +202,55 @@ export function CustomerBookingPage({
           ? truncate(booking.eventDescription, 220)
           : `Réservation ${booking.reference} chez ${workspace.name}.`}
       </SpaceAside>
+    </div>
+  );
+}
+
+/** Lot 30 : la séance fait partie d'une inscription au trimestre (progression, paiement, absence). */
+function Enrollment({
+  enrollment,
+  timezone,
+  absence,
+}: {
+  enrollment: NonNullable<Data["enrollment"]>;
+  timezone: string;
+  absence: ReactNode;
+}) {
+  const { payment } = enrollment;
+  return (
+    <div className="flex flex-col gap-3.5 border-t border-line pt-7">
+      <div className="flex flex-col gap-1">
+        <h2 className="text-lg font-semibold leading-6 text-ink">Ton inscription au trimestre</h2>
+        <p className="text-sm leading-5 text-ink-muted">
+          Un empêchement ? Signale ton absence : ta place profite à quelqu'un d'autre, ton
+          inscription continue pour les autres séances.
+        </p>
+      </div>
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-stretch">
+        <EnrollmentProgress progress={enrollment.progress} timeZone={timezone} />
+        <div className="flex flex-1 flex-col items-start justify-between gap-3">
+          {payment && (
+            <p className="flex items-center gap-2.5 text-[15px] font-semibold text-ink">
+              {formatMoney(enrollment.amountCents)}
+              <StatusBadge tone={payment.tone}>{payment.label}</StatusBadge>
+            </p>
+          )}
+          <div className="flex flex-wrap gap-2">
+            {payment?.payUrl && (
+              <ButtonLink
+                href={payment.payUrl}
+                target="_blank"
+                rel="noreferrer"
+                variant="brand"
+                size="sm"
+              >
+                Payer {formatMoney(enrollment.amountCents)} ↗
+              </ButtonLink>
+            )}
+            {absence}
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

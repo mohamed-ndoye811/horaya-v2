@@ -17,11 +17,14 @@ export function bookingBadge(booking: {
   amountCents: number;
   /** Paiement en ligne attendu. */
   payable: boolean;
+  /** Séance d'une inscription au trimestre (lot 30). */
+  enrollmentId?: string | null;
 }): { label: string; tone: Tone } {
   if (booking.status === "cancelled") return { label: "Annulée", tone: "draft" };
   if (booking.status === "refused") return { label: "Non retenue", tone: "danger" };
   if (booking.status === "waitlisted") return { label: "Liste d'attente", tone: "warning" };
   if (booking.status === "pending") return { label: "À valider", tone: "info" };
+  if (booking.enrollmentId) return { label: "Inscrit·e au trimestre", tone: "info" };
   if (booking.payable) return { label: "À payer", tone: "warning" };
   if (booking.paymentStatus === "paid") return { label: "Payée", tone: "success" };
   return { label: "Confirmée", tone: "success" };

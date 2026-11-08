@@ -44,6 +44,11 @@ export const eventSeries = pgTable("event_series", {
   rrule: text().notNull(),
   until: timestamp({ withTimezone: true }),
   timezone: text().notNull(),
+  /** Cours à l'année : inscription à toute la série, au prix de la série. */
+  enrollmentEnabled: boolean().notNull().default(false),
+  enrollmentPriceCents: cents(),
+  /** La réservation à la séance reste ouverte au public. */
+  dropInAllowed: boolean().notNull().default(true),
   createdAt: createdAt(),
 });
 

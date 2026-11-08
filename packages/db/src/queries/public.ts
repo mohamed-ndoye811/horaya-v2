@@ -152,6 +152,10 @@ export async function getPublicEvent(
       ...publicEventColumns,
       customFields: eventType.customFields,
       seriesRule: eventSeries.rrule,
+      seriesId: event.seriesId,
+      /** Cours à l'année : inscription à toute la série (voir getSeriesOffer). */
+      enrollmentEnabled: sql<boolean>`coalesce(${eventSeries.enrollmentEnabled}, false)`,
+      dropInAllowed: sql<boolean>`coalesce(${eventSeries.dropInAllowed}, true)`,
     })
     .from(event)
     .innerJoin(eventType, eq(eventType.id, event.eventTypeId))
@@ -168,7 +172,13 @@ export async function getPublicEvent(
     (row.visibility === "public" ||
       (link !== null && calendarLinkAllows(link, { id: row.id, eventTypeId: row.typeId })));
   return (visible ? row : null) as
-    | (PublicEventRow & { customFields: CustomFieldDefinition[]; seriesRule: string | null })
+    | (PublicEventRow & {
+        customFields: CustomFieldDefinition[];
+        seriesRule: string | null;
+        seriesId: string | null;
+        enrollmentEnabled: boolean;
+        dropInAllowed: boolean;
+      })
     | null;
 }
 
@@ -217,6 +227,8 @@ async function findManagedBooking(db: Executor, where: SQL | undefined) {
       rentalStartsAt: booking.rentalStartsAt,
       rentalEndsAt: booking.rentalEndsAt,
       createdAt: booking.createdAt,
+      enrollmentId: booking.enrollmentId,
+      absentAt: booking.absentAt,
       customerFirstName: customer.firstName,
       customerLastName: customer.lastName,
       customerEmail: customer.email,

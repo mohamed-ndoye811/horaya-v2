@@ -65,3 +65,18 @@ it("distingue un paiement noté par l'équipe", () => {
     }).title,
   ).toBe(`Paiement noté par Camille · ${formatMoney(3500)}`);
 });
+
+describe("historique d'une séance d'inscription", () => {
+  it("décrit l'inscription, l'absence et la désinscription", () => {
+    const entry = { actorType: "member" as const, actorName: "Moh Ndoye", data: null };
+    expect(describeBookingActivity({ ...entry, action: "booking.enrolled" }).title).toBe(
+      "Inscription au trimestre par Moh",
+    );
+    expect(
+      describeBookingActivity({ ...entry, actorType: "customer", action: "booking.absent" }).tone,
+    ).toBe("warning");
+    expect(describeBookingActivity({ ...entry, action: "booking.unenrolled" }).title).toBe(
+      "Désinscription de la série par Moh",
+    );
+  });
+});

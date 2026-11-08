@@ -35,6 +35,8 @@ export async function listAccountBookings(
       paymentStatus: booking.paymentStatus,
       createdAt: booking.createdAt,
       eventId: booking.eventId,
+      /** Séance d'une inscription à une série (lot 30). */
+      enrollmentId: booking.enrollmentId,
       eventTitle: event.title,
       eventTypeId: event.eventTypeId,
       eventPriceCents: event.priceCents,

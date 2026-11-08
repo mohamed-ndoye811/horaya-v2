@@ -4,6 +4,7 @@ import {
   bookingConfirmedEmail,
   bookingRefusedEmail,
   bookingRescheduledEmail,
+  enrollmentConfirmedEmail,
   teamAlmostFullEmail,
   weeklyDigestEmail,
 } from "./booking-templates";
@@ -127,5 +128,21 @@ describe("notch", () => {
     const png = notchFlankPng("left", "#111111");
     expect(png.subarray(1, 4).toString()).toBe("PNG");
     expect([png.readUInt32BE(16), png.readUInt32BE(20)]).toEqual([88, 100]);
+  });
+});
+
+describe("e-mail d'inscription à une série", () => {
+  it("récapitule chaque séance et mène au lien de gestion", () => {
+    const email = enrollmentConfirmedEmail({
+      workspace: mail.workspace,
+      firstName: "Léa",
+      title: "Tournage du mardi",
+      sessions: ["mar. 18 nov., 18 h 30", "mar. 25 nov., 18 h 30"],
+      amount: "300,00 € · à régler sur place",
+      manageUrl: mail.manageUrl,
+    });
+    expect(email.subject).toBe("Inscription confirmée : Tournage du mardi");
+    expect(email.text).toContain("Séance 2 : mar. 25 nov., 18 h 30");
+    expect(email.text).toContain(`Gérer mon inscription : ${mail.manageUrl}`);
   });
 });

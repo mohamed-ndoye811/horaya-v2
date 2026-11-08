@@ -8,6 +8,7 @@ import type {
 import type { CalendarFeedRepository } from "../calendar-feeds/ports";
 import type { CalendarLinkRepository } from "../calendar-links/ports";
 import type { CustomerAccountRepository } from "../customer-accounts/ports";
+import type { EnrollmentRepository } from "../enrollments/ports";
 import type { EventRepository, EventTypeRepository } from "../events/ports";
 import type { InventoryRepository } from "../inventory/ports";
 import type { PaymentRepository } from "../payments/ports";
@@ -31,6 +32,7 @@ export interface Repositories {
   calendarFeeds: CalendarFeedRepository;
   billing: BillingRepository;
   customerAccounts: CustomerAccountRepository;
+  enrollments: EnrollmentRepository;
 }
 
 /** Exécute un travail dans une transaction : tout est validé, ou rien. */

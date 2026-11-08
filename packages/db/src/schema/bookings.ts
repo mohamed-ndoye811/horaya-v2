@@ -8,6 +8,7 @@ import {
   text,
   timestamp,
   unique,
+  uniqueIndex,
   uuid,
 } from "drizzle-orm/pg-core";
 import { cents, createdAt, currency, id, organizationId, updatedAt } from "./_columns";
@@ -22,7 +23,44 @@ import {
   paymentMode,
   paymentRecordStatus,
 } from "./enums";
-import { event } from "./events";
+import { event, eventSeries } from "./events";
+
+/**
+ * Inscription d'un client à toute une série (cours à l'année) : un seul paiement, et une
+ * réservation par séance restante (`booking.enrollment_id`).
+ */
+export const seriesEnrollment = pgTable(
+  "series_enrollment",
+  {
+    id: id(),
+    organizationId: organizationId(),
+    seriesId: uuid()
+      .notNull()
+      .references(() => eventSeries.id, { onDelete: "restrict" }),
+    customerId: uuid()
+      .notNull()
+      .references(() => customer.id, { onDelete: "restrict" }),
+    amountCents: cents().notNull().default(0),
+    currency: currency(),
+    /** Paiement noté par l'équipe (lien externe, sur place). */
+    paidAt: timestamp({ withTimezone: true }),
+    source: bookingSource().notNull(),
+    /** Hash du jeton du lien de gestion de l'inscription. */
+    manageTokenHash: text().notNull(),
+    cancelledAt: timestamp({ withTimezone: true }),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (t) => [
+    // Pas de double inscription en cours à la même série.
+    uniqueIndex("series_enrollment_active_idx")
+      .on(t.seriesId, t.customerId)
+      .where(sql`${t.cancelledAt} IS NULL`),
+    index().on(t.customerId),
+    unique().on(t.manageTokenHash),
+    check("series_enrollment_amount_positive", sql`${t.amountCents} >= 0`),
+  ],
+);
 
 /**
  * Une réservation porte soit sur un événement (`kind = event`),
@@ -36,6 +74,8 @@ export const booking = pgTable(
     reference: text().notNull(),
     kind: bookingKind().notNull().default("event"),
     eventId: uuid().references(() => event.id, { onDelete: "restrict" }),
+    /** Séance réservée par une inscription à la série. */
+    enrollmentId: uuid().references(() => seriesEnrollment.id, { onDelete: "restrict" }),
     customerId: uuid()
       .notNull()
       .references(() => customer.id, { onDelete: "restrict" }),
@@ -57,6 +97,8 @@ export const booking = pgTable(
     cancelledAt: timestamp({ withTimezone: true }),
     /** Arrivée pointée le jour J (check-in), pour toute la réservation. */
     checkedInAt: timestamp({ withTimezone: true }),
+    /** Absence signalée sur une séance d'une inscription (la place a été libérée). */
+    absentAt: timestamp({ withTimezone: true }),
     /** Rappel de la veille envoyé au client (une seule fois). */
     reminderSentAt: timestamp({ withTimezone: true }),
     createdAt: createdAt(),
@@ -67,6 +109,7 @@ export const booking = pgTable(
     index().on(t.organizationId, t.status, t.createdAt),
     index().on(t.eventId, t.status),
     index().on(t.customerId),
+    index().on(t.enrollmentId),
     check("booking_seats_positive", sql`${t.seats} > 0`),
     check("booking_amount_positive", sql`${t.amountCents} >= 0`),
     check(

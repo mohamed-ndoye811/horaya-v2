@@ -66,6 +66,8 @@ export const getCounter = createServerFn({ method: "GET" })
       remaining: event.capacity === null ? null : Math.max(0, event.capacity - event.seatsHeld),
       capacity: event.capacity,
       waitlist: event.waitlistEnabled,
+      seriesId: event.seriesId,
+      enrollmentPriceCents: event.enrollmentPriceCents,
     }));
 
     return {

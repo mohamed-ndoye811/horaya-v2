@@ -22,7 +22,7 @@ import { withParams } from "@/lib/search-params";
 
 /** Maquette 5.2 : page publique d'un événement. */
 export function PublicEventPage({
-  data: { workspace, event, linkSlug, channel, now },
+  data: { workspace, event, linkSlug, channel, offer, now },
 }: {
   data: Awaited<ReturnType<typeof getPublicEventPage>>;
 }) {
@@ -57,7 +57,10 @@ export function PublicEventPage({
       ? cancellationPolicy(event.startsAt, workspace, tz).split(".")[0]
       : null,
   ].filter(Boolean);
-  const price = event.priceCents > 0 ? formatMoney(event.priceCents) : "Gratuit";
+  // Cours vendu seulement au trimestre : on affiche le prix de la série.
+  const seriesOnly = event.enrollmentEnabled && !event.dropInAllowed && offer !== null;
+  const priceCents = seriesOnly ? (offer?.enrollmentPriceCents ?? 0) : event.priceCents;
+  const price = priceCents > 0 ? formatMoney(priceCents) : "Gratuit";
   const ctaLabel =
     state.kind === "waitlist"
       ? "Rejoindre la liste d'attente"
@@ -66,6 +69,10 @@ export function PublicEventPage({
         : "Réserver mes places";
 
   const badge = eventBadge(state, seats, event.requiresApproval);
+  // Cours à l'année : l'organisateur peut réserver la séance à l'unité aux inscrits.
+  const dropIn = !event.enrollmentEnabled || event.dropInAllowed;
+  const bookable = dropIn && (state.kind === "open" || state.kind === "waitlist");
+  const lastSession = offer?.sessions.at(-1);
 
   return (
     <div className="flex flex-col gap-3.5 sm:gap-6">
@@ -184,8 +191,10 @@ export function PublicEventPage({
             <span className="text-[36px] font-medium leading-10 tracking-[-0.03em] text-ink">
               {price}
             </span>
-            {event.priceCents > 0 && (
-              <span className="text-[15px] leading-5 text-ink-subtle">/ personne</span>
+            {priceCents > 0 && (
+              <span className="text-[15px] leading-5 text-ink-subtle">
+                {seriesOnly ? "le trimestre" : "/ personne"}
+              </span>
             )}
           </p>
           <div className="flex flex-col gap-2">
@@ -220,19 +229,63 @@ export function PublicEventPage({
               </span>
             )}
           </div>
-          {state.kind === "open" || state.kind === "waitlist" ? (
-            <SeatPicker
-              bookHref={bookHref}
-              priceCents={event.priceCents}
-              maxSeats={state.maxSeats}
-              label={ctaLabel}
-            />
+          {offer && lastSession && (
+            <div className="flex flex-col gap-3 border-t border-bg pt-4">
+              <div className="flex flex-col gap-1">
+                <p className="text-[15px] font-semibold leading-5 text-ink">
+                  Inscris-toi pour tout le trimestre
+                </p>
+                <p className="text-[13px] leading-[18px] text-ink-muted">
+                  {offer.sessions.length} séance{offer.sessions.length > 1 ? "s" : ""} ·{" "}
+                  {formatMoney(offer.enrollmentPriceCents ?? 0)} · jusqu'au{" "}
+                  {formatPublicSchedule(lastSession.startsAt, lastSession.endsAt, tz).date}
+                </p>
+              </div>
+              {offer.fullSessions.length > 0 ? (
+                <p className="text-[13px] font-semibold leading-[18px] text-ink-muted">
+                  Complet pour le trimestre : il manque une place le{" "}
+                  {offer.fullSessions
+                    .map(
+                      (session) => formatPublicSchedule(session.startsAt, session.endsAt, tz).date,
+                    )
+                    .join(", le ")}
+                  .
+                </p>
+              ) : (
+                <ButtonLink
+                  href={`/${workspace.slug}/${event.slug}/inscription`}
+                  variant={bookable ? "secondary" : "brand"}
+                  arrow
+                >
+                  M'inscrire au trimestre
+                </ButtonLink>
+              )}
+            </div>
+          )}
+          {bookable ? (
+            <>
+              {offer && (
+                <p className="-mb-2 text-[13px] font-semibold leading-4 text-ink-subtle">
+                  Ou à la séance
+                </p>
+              )}
+              <SeatPicker
+                bookHref={bookHref}
+                priceCents={event.priceCents}
+                maxSeats={state.maxSeats}
+                label={ctaLabel}
+              />
+            </>
           ) : (
-            <p className="border-t border-bg pt-4 text-[15px] font-semibold leading-[22px] text-ink-muted">
-              {state.kind === "full"
-                ? "C'est complet : il n'y a plus de place pour cet événement."
-                : "Les réservations en ligne sont closes pour cet événement."}
-            </p>
+            !offer && (
+              <p className="border-t border-bg pt-4 text-[15px] font-semibold leading-[22px] text-ink-muted">
+                {!dropIn
+                  ? "Ce cours se réserve pour toute la série : les inscriptions sont closes."
+                  : state.kind === "full"
+                    ? "C'est complet : il n'y a plus de place pour cet événement."
+                    : "Les réservations en ligne sont closes pour cet événement."}
+              </p>
+            )
           )}
           <ul className="flex flex-col gap-2 rounded-[14px] bg-field p-3.5 text-[13px] leading-[18px] text-ink/85">
             {(state.kind === "waitlist"
@@ -245,16 +298,18 @@ export function PublicEventPage({
         </aside>
       </div>
 
-      {(state.kind === "open" || state.kind === "waitlist") && (
+      {(bookable || offer) && (
         <BottomNotch label="Réserver">
           <p className="flex flex-col gap-px pl-3">
             <span className="text-lg font-semibold leading-[22px] text-on-ink">{price}</span>
             <span className="text-[11px] leading-[14px] text-notch-idle">
-              {state.kind === "waitlist"
-                ? "liste d'attente"
-                : event.priceCents > 0
-                  ? "par personne"
-                  : seats.label}
+              {seriesOnly
+                ? "le trimestre"
+                : state.kind === "waitlist"
+                  ? "liste d'attente"
+                  : event.priceCents > 0
+                    ? "par personne"
+                    : seats.label}
             </span>
           </p>
           <ButtonLink href="#reserver" variant="brand" arrow>

@@ -7,6 +7,8 @@ export interface Booking {
   reference: string;
   kind: BookingKind;
   eventId: string | null;
+  /** Réservation créée par une inscription à une série (cours à l'année). */
+  enrollmentId: string | null;
   customerId: string;
   seats: number;
   status: BookingStatus;
@@ -25,6 +27,8 @@ export interface Booking {
   cancelledAt: Date | null;
   /** Arrivée pointée le jour J, pour toute la réservation. */
   checkedInAt: Date | null;
+  /** Absence signalée sur une séance d'une inscription : la place a été libérée. */
+  absentAt: Date | null;
   createdAt: Date;
   updatedAt: Date;
 }

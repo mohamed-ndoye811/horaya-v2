@@ -13,7 +13,7 @@ import { PlusIcon } from "@/components/ui/icons";
 import { ActionMenu } from "@/components/ui/menu";
 import { SearchInput } from "@/components/ui/search-input";
 import { SegmentedLinks } from "@/components/ui/segmented";
-import { BOOKING_STATUS_BADGE } from "@/components/ui/status";
+import { bookingStatusBadge } from "@/components/ui/status";
 import type { getBookings } from "@/functions/bookings";
 import { cn } from "@/lib/cn";
 import { elapsed } from "@/lib/dashboard";
@@ -224,8 +224,8 @@ export function BookingsPage({
                   <div className="flex shrink-0 flex-col items-end gap-1.5">
                     <MoneyCell cents={row.amountCents} caption={amountCaption(row)} />
                     {row.status !== "pending" && (
-                      <StatusBadge tone={BOOKING_STATUS_BADGE[row.status].tone}>
-                        {BOOKING_STATUS_BADGE[row.status].label}
+                      <StatusBadge tone={bookingStatusBadge(row).tone}>
+                        {bookingStatusBadge(row).label}
                       </StatusBadge>
                     )}
                   </div>
@@ -319,8 +319,8 @@ export function BookingsPage({
                 width: 150,
                 align: "right",
                 cell: (row) => (
-                  <StatusBadge tone={BOOKING_STATUS_BADGE[row.status].tone}>
-                    {BOOKING_STATUS_BADGE[row.status].label}
+                  <StatusBadge tone={bookingStatusBadge(row).tone}>
+                    {bookingStatusBadge(row).label}
                   </StatusBadge>
                 ),
               },

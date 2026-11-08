@@ -10,7 +10,9 @@ import {
   cancelBookingAsCustomer,
   customerAccountForSession,
   deleteCustomerAccount,
+  enrollmentProgress,
   LOGIN_LINK_MINUTES,
+  reportAbsenceAsCustomer,
   requestCustomerLoginLink,
   rescheduleBookingAsCustomer,
   rescheduleClosedReason,
@@ -24,6 +26,7 @@ import {
   type AccountBooking,
   findCustomerAccountByCalendarToken,
   getAccountBooking,
+  getEnrollment,
   listAccountBookings,
   listCandidatesForTypes,
   listRescheduleCandidates,
@@ -34,6 +37,7 @@ import { deleteCookie, getCookie, setCookie } from "@tanstack/react-start/server
 import { customerFeedIcs, FEED_DAYS_AFTER, FEED_DAYS_BEFORE } from "@/lib/calendar-feed";
 import { textOn } from "@/lib/colors";
 import { isUpcoming } from "@/lib/customer-space";
+import { enrollmentPayment } from "@/lib/enrollment";
 import { buildIcs } from "@/lib/ics";
 import { withParams } from "@/lib/search-params";
 import { db } from "./db";
@@ -74,6 +78,9 @@ function toCard(row: AccountBooking, now: Date, candidates: Candidates) {
   const payable = channel !== null && awaitsOnlinePayment(row);
   return {
     id: row.id,
+    eventId: row.eventId,
+    /** Séance d'une inscription au trimestre (lot 30) : absence plutôt qu'annulation. */
+    enrollmentId: row.enrollmentId,
     slug: row.workspace.slug,
     timezone: row.workspace.timezone,
     title: row.eventTitle ?? "Location de matériel",
@@ -91,6 +98,7 @@ function toCard(row: AccountBooking, now: Date, candidates: Candidates) {
     // Même règle que le détail : délai, et au moins une autre date possible.
     reschedulable:
       row.kind === "event" &&
+      row.enrollmentId === null &&
       row.startsAt !== null &&
       row.eventId !== null &&
       row.eventTypeId !== null &&
@@ -140,6 +148,21 @@ async function split(rows: AccountBooking[], now: Date) {
     upcoming: cards.filter((card) => isUpcoming(card, now)),
     // Le plus récent d'abord.
     history: cards.filter((card) => !isUpcoming(card, now)).reverse(),
+  };
+}
+
+/** Inscription au trimestre (lot 30) : progression et paiement, null si elle est terminée. */
+async function enrollmentOf(
+  workspace: { id: string; paymentLinkUrl: string | null },
+  enrollmentId: string,
+  now: Date,
+) {
+  const enrollment = await getEnrollment(db, workspace.id, { id: enrollmentId });
+  if (!enrollment || enrollment.cancelledAt) return null;
+  return {
+    amountCents: enrollment.amountCents,
+    progress: enrollmentProgress(enrollment.sessions, now),
+    payment: enrollmentPayment(enrollment, workspace.paymentLinkUrl),
   };
 }
 
@@ -234,6 +257,16 @@ export async function customerHome(slug: string) {
   };
 }
 
+/** Lot 30 : « Ton trimestre » de l'accueil, l'inscription de la prochaine séance qui en a une. */
+export async function customerTerm(slug: string) {
+  const workspace = await publicWorkspace(slug);
+  const account = await requireAccount(slug);
+  const now = new Date();
+  const rows = await listAccountBookings(db, account.email, workspace.id);
+  const next = rows.find((row) => row.enrollmentId && isUpcoming(row, now));
+  return next?.enrollmentId ? enrollmentOf(workspace, next.enrollmentId, now) : null;
+}
+
 /** Maquette 8.3 : une réservation, son paiement, l'agenda, changer de date, annuler. */
 export async function customerBookingPage(slug: string, bookingId: string) {
   const workspace = await publicWorkspace(slug);
@@ -243,8 +276,9 @@ export async function customerBookingPage(slug: string, bookingId: string) {
   const now = new Date();
   const money = await bookingMoney(workspace, booking, now);
   const startsAt = booking.eventStartsAt;
-  const closed =
-    booking.eventId && booking.eventTypeId && startsAt
+  const closed = booking.enrollmentId
+    ? "Séance de ton inscription au trimestre : signale plutôt ton absence"
+    : booking.eventId && booking.eventTypeId && startsAt
       ? rescheduleClosedReason({
           status: booking.status,
           startsAt,
@@ -288,6 +322,9 @@ export async function customerBookingPage(slug: string, bookingId: string) {
     booking,
     now,
     ...money,
+    enrollment: booking.enrollmentId
+      ? await enrollmentOf(workspace, booking.enrollmentId, now)
+      : null,
     reschedule: {
       closed,
       deadline: startsAt ? rescheduleDeadline(startsAt, workspace.freeCancellationHours) : null,
@@ -373,6 +410,18 @@ export async function rescheduleCustomerBooking(
   return {
     success: "C'est fait : ta réservation a changé de date. Un e-mail récapitulatif est parti.",
   };
+}
+
+/** Lot 30 : « Je serai absent·e » sur une séance de son inscription, en étant connecté. */
+export async function reportCustomerAbsence(slug: string, bookingId: string): Promise<FormState> {
+  const workspace = await publicWorkspace(slug);
+  const account = await requireAccount(slug);
+  try {
+    await reportAbsenceAsCustomer(deps, workspace.id, bookingId, account.email);
+  } catch (error) {
+    return toFormState(error);
+  }
+  return { success: "C'est noté : ta place profite à quelqu'un d'autre." };
 }
 
 export async function saveCustomerProfile(slug: string | null, form: FormData): Promise<FormState> {

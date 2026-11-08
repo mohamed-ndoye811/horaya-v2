@@ -82,6 +82,8 @@ export interface BookingRow {
   eventTitle: string | null;
   eventStartsAt: Date | null;
   typeColor: string | null;
+  enrollmentId: string | null;
+  absentAt: Date | null;
 }
 
 /** Liste des réservations (écran 05) : statut, recherche, événement. */
@@ -121,6 +123,8 @@ export async function listBookings(
       eventTitle: bookingTitle,
       eventStartsAt: bookingStartsAt,
       typeColor: eventType.color,
+      enrollmentId: booking.enrollmentId,
+      absentAt: booking.absentAt,
     })
     .from(booking)
     .innerJoin(customer, eq(customer.id, booking.customerId))
@@ -214,6 +218,11 @@ export async function listCounterEvents(
       capacity: event.capacity,
       priceCents: event.priceCents,
       color: eventType.color,
+      seriesId: event.seriesId,
+      /** Prix de l'inscription à toute la série, si elle est ouverte. */
+      enrollmentPriceCents: sql<
+        number | null
+      >`(select s.enrollment_price_cents from event_series s where s.id = ${event.seriesId} and s.enrollment_enabled)`,
       waitlistEnabled: sql<boolean>`coalesce((${eventType.bookingRules}->>'waitlistEnabled')::boolean, false)`,
       seatsHeld: sql<number>`coalesce((select sum(b.seats) from booking b where b.event_id = "event"."id" and b.status in ('pending', 'confirmed')), 0)::int`,
     })
@@ -277,6 +286,8 @@ export async function getBookingDetail(db: Executor, organizationId: string, boo
       kind: booking.kind,
       status: booking.status,
       seats: booking.seats,
+      enrollmentId: booking.enrollmentId,
+      absentAt: booking.absentAt,
       amountCents: booking.amountCents,
       depositCents: booking.depositCents,
       paymentMode: booking.paymentMode,
