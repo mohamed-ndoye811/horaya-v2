@@ -41,15 +41,16 @@ export function TemplateDialog({
       open
       onClose={onClose}
       size="xl"
+      density="compact"
       title="Nouveau type"
       description="Pars d'un modèle : ses réglages et ses champs sont déjà prêts. Tu pourras tout changer ensuite."
       footer={
-        <div className="flex w-full flex-wrap items-center justify-between gap-3 border-t border-line-soft pt-3">
+        <div className="flex w-full flex-wrap items-center justify-between gap-3">
           <Swap value={String(duplicating)} block>
             {duplicating ? (
               <div className="flex flex-wrap items-center gap-2">
                 <Select
-                  variant="compact"
+                  variant="dense"
                   aria-label="Type à dupliquer"
                   value={source}
                   onChange={(event) => setSource(event.target.value)}
@@ -93,6 +94,7 @@ export function TemplateDialog({
                   : `/app/evenements/types?type=nouveau&modele=${chosen}`
               }
               variant="primary"
+              size="sm"
             >
               Continuer
             </ButtonLink>
@@ -104,7 +106,7 @@ export function TemplateDialog({
         role="radiogroup"
         aria-label="Modèles"
         className={cn(
-          "reveal-group grid grid-cols-1 gap-3 transition-opacity sm:grid-cols-2 lg:grid-cols-4",
+          "reveal-group grid grid-cols-1 gap-2 transition-opacity sm:grid-cols-2 lg:grid-cols-4",
           duplicating && "pointer-events-none opacity-40",
         )}
       >
@@ -114,7 +116,7 @@ export function TemplateDialog({
             <label
               key={entry.id}
               className={cn(
-                "press flex flex-col gap-2.5 rounded-[18px] p-4 hover:bg-field",
+                "press flex flex-col gap-1.5 rounded-xl p-3 hover:bg-field",
                 "has-checked:border-ink has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-ink",
                 empty
                   ? "border-[1.5px] border-dashed border-line-strong has-checked:border-solid"
@@ -132,16 +134,14 @@ export function TemplateDialog({
               <span
                 aria-hidden="true"
                 className={cn(
-                  "size-7 rounded-lg",
+                  "size-5 rounded-md",
                   empty && "border-[1.5px] border-dashed border-ink-faint",
                 )}
                 style={empty ? undefined : { backgroundColor: entry.color }}
               />
               <span className="flex flex-col gap-[3px]">
-                <span className="text-base font-semibold leading-5 text-ink">{entry.name}</span>
-                <span className="text-[13px] leading-[17px] text-ink-muted">
-                  {entry.description}
-                </span>
+                <span className="text-sm font-semibold leading-[18px] text-ink">{entry.name}</span>
+                <span className="text-xs leading-4 text-ink-muted">{entry.description}</span>
               </span>
               {!empty && (
                 <span className="flex flex-wrap gap-1">

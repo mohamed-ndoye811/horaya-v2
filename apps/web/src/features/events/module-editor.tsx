@@ -973,10 +973,11 @@ function ModuleCatalog({
       open
       onClose={onClose}
       size="xl"
+      density="compact"
       title="Ajouter un module"
       description="Chaque module ajoute ses réglages au type, et ses questions au formulaire d'inscription s'il en a besoin."
     >
-      <div className="flex flex-col gap-7">
+      <div className="flex flex-col gap-4">
         <SearchInput
           label="Chercher un module"
           size="sm"
@@ -989,13 +990,13 @@ function ModuleCatalog({
             Aucun module ne correspond. Pour le reste, crée une règle « si… alors… ».
           </p>
         )}
-        <div className="reveal-group flex flex-col gap-7">
+        <div className="reveal-group flex flex-col gap-4">
           {groups.map((group) => (
-            <section key={group.id} className="flex flex-col gap-2.5">
+            <section key={group.id} className="flex flex-col gap-1.5">
               <h3 className="text-xs font-bold uppercase leading-4 tracking-[0.06em] text-ink-subtle">
                 {group.label}
               </h3>
-              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              <div className="grid gap-1.5 sm:grid-cols-2 lg:grid-cols-4">
                 {group.entries.map((entry) => {
                   const active = !entry.soon && modules[entry.key as ModuleKey] !== undefined;
                   return (
@@ -1005,7 +1006,7 @@ function ModuleCatalog({
                       disabled={entry.soon !== undefined}
                       onClick={() => onPick(entry.key as ModuleKey)}
                       className={cn(
-                        "press flex flex-col gap-1 rounded-2xl border px-4 py-3.5 text-left",
+                        "press flex flex-col gap-0.5 rounded-xl border px-3 py-2 text-left",
                         active
                           ? "border-field bg-field"
                           : "border-bg hover:border-line-strong hover:bg-band",
@@ -1013,7 +1014,7 @@ function ModuleCatalog({
                       )}
                     >
                       <span className="flex items-center justify-between gap-3">
-                        <span className="text-[15px] font-semibold leading-5 text-ink">
+                        <span className="text-sm font-semibold leading-[18px] text-ink">
                           {entry.name}
                         </span>
                         {active && (
@@ -1027,9 +1028,7 @@ function ModuleCatalog({
                           </span>
                         )}
                       </span>
-                      <span className="text-[13px] leading-[17px] text-ink-muted">
-                        {entry.description}
-                      </span>
+                      <span className="text-xs leading-4 text-ink-muted">{entry.description}</span>
                     </button>
                   );
                 })}
@@ -1037,19 +1036,24 @@ function ModuleCatalog({
             </section>
           ))}
         </div>
-        <div className="flex flex-col gap-4 rounded-[20px] bg-ink px-6 py-[22px] sm:flex-row sm:items-center sm:gap-6">
-          <div className="flex grow flex-col gap-1.5">
+        <div className="flex flex-col gap-3 rounded-2xl bg-ink px-4 py-3.5 sm:flex-row sm:items-center sm:gap-5">
+          <div className="flex grow flex-col gap-1">
             <p className="text-xs font-bold uppercase leading-4 tracking-[0.06em] text-on-ink-muted">
               Sur mesure
             </p>
-            <p className="text-xl font-semibold leading-6 text-white">Règles « si… alors… »</p>
-            <p className="text-sm leading-[19px] text-on-ink-soft">
+            <p className="text-base font-semibold leading-5 text-white">Règles « si… alors… »</p>
+            <p className="text-[13px] leading-[18px] text-on-ink-soft">
               Pour tout ce qu'aucun module ne fait. Si l'âge est sous 16 ans, demander
               l'autorisation parentale. Si le tarif est réduit, demander un justificatif. Si moins
               de 4 inscrits à J-2, annuler et prévenir.
             </p>
           </div>
-          <Button variant="inverse" onClick={onCreateRule} className="self-start sm:self-center">
+          <Button
+            variant="inverse"
+            size="sm"
+            onClick={onCreateRule}
+            className="self-start sm:self-center"
+          >
             Créer une règle
           </Button>
         </div>

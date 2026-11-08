@@ -17,6 +17,8 @@ const inputBase =
  * dès qu'on touche le champ.
  */
 const sizes = {
+  /** 36 px : champ d'une ligne dense (constructeur de règle, fenêtre compacte). */
+  xs: "h-9 pl-3 text-base lg:text-[13px]",
   /** 40 px : champ dans une ligne ou à côté d'une pastille (code couleur). */
   sm: "h-10 pl-3.5 text-base lg:text-sm",
   md: "h-11 pl-3.5 text-base lg:text-[15px]",
@@ -25,9 +27,9 @@ const sizes = {
 
 /** Marge droite : normale, ou réservée à une icône / un bouton placé dans le champ. */
 const trailingPadding = {
-  none: { sm: "pr-3.5", md: "pr-3.5", lg: "pr-4" },
-  icon: { sm: "pr-10", md: "pr-10", lg: "pr-10" },
-  action: { sm: "pr-24", md: "pr-24", lg: "pr-24" },
+  none: { xs: "pr-3", sm: "pr-3.5", md: "pr-3.5", lg: "pr-4" },
+  icon: { xs: "pr-9", sm: "pr-10", md: "pr-10", lg: "pr-10" },
+  action: { xs: "pr-24", sm: "pr-24", md: "pr-24", lg: "pr-24" },
 };
 
 export type InputSize = keyof typeof sizes;

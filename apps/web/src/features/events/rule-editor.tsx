@@ -29,7 +29,7 @@ import {
 } from "@horaya/core";
 import { type ReactNode, useEffect, useState } from "react";
 import { FieldInputs } from "@/components/app/field-inputs";
-import { Collapse } from "@/components/motion/collapse";
+import { Collapse, Disclosure } from "@/components/motion/collapse";
 import { PresenceItem, PresenceList } from "@/components/motion/presence";
 import { Button } from "@/components/ui/button";
 import { Dialog } from "@/components/ui/dialog";
@@ -259,8 +259,8 @@ function actionFor(kind: RuleAction["kind"]): RuleAction {
   }
 }
 
-/** Petite pilule de saisie du constructeur (maquette : 40 px, fond gris, contour clair). */
-const pillInput = cn(inputClasses("sm"), "w-auto min-w-0");
+/** Petite pilule de saisie du constructeur (36 px, fond gris, contour clair). */
+const pillInput = cn(inputClasses("xs"), "w-auto min-w-0");
 
 function ValueInput({
   field,
@@ -274,7 +274,7 @@ function ValueInput({
   if (field?.type === "boolean") {
     return (
       <Select
-        variant="compact"
+        variant="dense"
         aria-label="Réponse"
         value={value === false || value === "false" ? "false" : "true"}
         onChange={(event) => onChange(event.target.value === "true")}
@@ -288,7 +288,7 @@ function ValueInput({
   if (field?.type === "choice" || field?.type === "multi_choice") {
     return (
       <Select
-        variant="compact"
+        variant="dense"
         aria-label="Réponse"
         value={String(value ?? "")}
         onChange={(event) => onChange(event.target.value)}
@@ -351,6 +351,7 @@ function ConditionRow({
   fields,
   bookingKnown,
   pricing,
+  prefix,
 }: {
   condition: RuleCondition;
   onChange: (next: RuleCondition) => void;
@@ -359,19 +360,22 @@ function ConditionRow({
   /** Le déclencheur porte sur une inscription : réponses et client sont connus. */
   bookingKnown: boolean;
   pricing: PricingModule | undefined;
+  /** « et », « ou » devant la condition (rien pour la première). */
+  prefix: string;
 }) {
   const field =
     condition.kind === "field"
       ? fields.find((entry) => entry.key === condition.fieldKey)
       : undefined;
   return (
-    <div className="flex flex-wrap items-center gap-2">
+    <div className="flex flex-wrap items-center gap-1.5">
+      <span className="w-5 shrink-0 text-[13px] font-semibold text-ink-subtle">{prefix}</span>
       <Select
-        variant="compact"
+        variant="dense"
         aria-label="Information testée"
         value={subjectOf(condition)}
         onChange={(event) => onChange(conditionFor(event.target.value, fields))}
-        className="min-w-48"
+        className="min-w-40 flex-1"
       >
         {(["event", "booking", "participant"] as const).map((scope) => {
           const scoped = fields.filter(
@@ -421,7 +425,7 @@ function ConditionRow({
         <>
           {operatorsFor(field.type).length > 1 && (
             <Select
-              variant="compact"
+              variant="dense"
               aria-label="Comparaison"
               value={condition.operator}
               onChange={(event) =>
@@ -453,7 +457,7 @@ function ConditionRow({
       {(condition.kind === "seats" || condition.kind === "equipment") && (
         <>
           <Select
-            variant="compact"
+            variant="dense"
             aria-label="Comparaison"
             value={condition.operator}
             onChange={(event) =>
@@ -506,14 +510,14 @@ function ActionRow({
   const allowed = ACTIONS_BY_TRIGGER[trigger.kind];
   const toBooking = BOOKING_TRIGGERS.has(trigger.kind);
   return (
-    <div className="flex flex-col gap-2 rounded-2xl border border-line-soft p-2.5">
-      <div className="flex flex-wrap items-center gap-2">
+    <div className="flex flex-col gap-1.5">
+      <div className="flex flex-wrap items-center gap-1.5">
         <Select
-          variant="compact"
+          variant="dense"
           aria-label="Action"
           value={action.kind}
           onChange={(event) => onChange(actionFor(event.target.value as RuleAction["kind"]))}
-          className="min-w-56"
+          className="min-w-44"
         >
           {RULE_ACTION_CATALOG.map((entry) => (
             <option key={entry.kind} value={entry.kind} disabled={!allowed.includes(entry.kind)}>
@@ -526,7 +530,7 @@ function ActionRow({
         {action.kind === "ask" && (
           <>
             <Select
-              variant="compact"
+              variant="dense"
               aria-label="Type de question"
               value={action.field.type}
               onChange={(event) =>
@@ -555,7 +559,7 @@ function ActionRow({
               onChange={(event) =>
                 onChange({ ...action, field: { ...action.field, label: event.target.value } })
               }
-              className={cn(pillInput, "min-w-64 flex-1")}
+              className={cn(pillInput, "min-w-40 flex-1")}
             />
           </>
         )}
@@ -567,11 +571,11 @@ function ActionRow({
               maxLength={120}
               placeholder="l'autorisation signée"
               onChange={(event) => onChange({ ...action, label: event.target.value })}
-              className={cn(pillInput, "min-w-56 flex-1")}
+              className={cn(pillInput, "min-w-40 flex-1")}
             />
             {documents.length > 0 && (
               <Select
-                variant="compact"
+                variant="dense"
                 aria-label="Modèle en PDF"
                 value={action.file?.url ?? ""}
                 onChange={(event) => {
@@ -598,7 +602,7 @@ function ActionRow({
             maxLength={300}
             placeholder="Ce cours est réservé aux plus de 16 ans"
             onChange={(event) => onChange({ ...action, message: event.target.value })}
-            className={cn(pillInput, "min-w-64 flex-1")}
+            className={cn(pillInput, "min-w-40 flex-1")}
           />
         )}
         {action.kind === "notify_team" && (
@@ -614,7 +618,7 @@ function ActionRow({
                   : { kind: "notify_team" },
               )
             }
-            className={cn(pillInput, "min-w-64 flex-1")}
+            className={cn(pillInput, "min-w-40 flex-1")}
           />
         )}
         {action.kind === "price" && (
@@ -627,7 +631,7 @@ function ActionRow({
             maxLength={120}
             placeholder="Objet de l'e-mail"
             onChange={(event) => onChange({ ...action, subject: event.target.value })}
-            className={cn(pillInput, "min-w-56 flex-1")}
+            className={cn(pillInput, "min-w-40 flex-1")}
           />
         )}
         <RemoveButton label="Retirer l'action" onClick={onRemove} />
@@ -682,7 +686,7 @@ function PriceActionInputs({
   return (
     <>
       <Select
-        variant="compact"
+        variant="dense"
         aria-label="Changement de prix"
         value={action.apply}
         onChange={(event) => {
@@ -703,7 +707,7 @@ function PriceActionInputs({
       </Select>
       {action.apply === "rate" ? (
         <Select
-          variant="compact"
+          variant="dense"
           aria-label="Tarif"
           value={action.rateId ?? ""}
           onChange={(event) => onChange({ ...action, rateId: event.target.value })}
@@ -759,9 +763,9 @@ function ReductionInput({
 
 function BuilderRow({ label, children }: { label: string; children: ReactNode }) {
   return (
-    <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:gap-4">
-      <p className={cn(labelClasses, "shrink-0 sm:w-16 sm:pt-3")}>{label}</p>
-      <div className="flex min-w-0 grow flex-col gap-2">{children}</div>
+    <div className="flex flex-col gap-1.5 sm:flex-row sm:items-start sm:gap-3">
+      <p className={cn(labelClasses, "shrink-0 sm:w-12 sm:pt-2.5")}>{label}</p>
+      <div className="flex min-w-0 grow flex-col gap-1.5">{children}</div>
     </div>
   );
 }
@@ -775,16 +779,16 @@ function TriggerInput({
 }) {
   const days = trigger.kind === "before_start" && trigger.hours % 24 === 0;
   return (
-    <div className="flex flex-wrap items-center gap-2">
+    <div className="flex flex-wrap items-center gap-1.5">
       <Select
-        variant="compact"
+        variant="dense"
         aria-label="Quand"
         value={trigger.kind}
         onChange={(event) => {
           const kind = event.target.value as RuleTrigger["kind"];
           onChange(kind === "before_start" ? { kind, hours: 7 * 24 } : ({ kind } as RuleTrigger));
         }}
-        className="min-w-60"
+        className="min-w-52"
       >
         {RULE_TRIGGERS.map((kind) => (
           <option key={kind} value={kind}>
@@ -801,7 +805,7 @@ function TriggerInput({
             }
           />
           <Select
-            variant="compact"
+            variant="dense"
             aria-label="Unité"
             value={days ? "days" : "hours"}
             onChange={(event) => {
@@ -819,7 +823,7 @@ function TriggerInput({
   );
 }
 
-/** Encadrés des possibilités (bas de la maquette 9.4). */
+/** Encadrés des possibilités (bas de la maquette 9.4), repliés derrière une ligne. */
 function Possibilities() {
   const boxes: Array<[string, Array<{ label: string; soon?: string }>]> = [
     ["Quand", RULE_TRIGGERS.map((kind) => ({ label: RULE_TRIGGER_LABELS[kind] }))],
@@ -827,21 +831,31 @@ function Possibilities() {
     ["Alors", [...RULE_ACTION_CATALOG]],
   ];
   return (
-    <div className="grid gap-3 border-t border-line-soft pt-5 sm:grid-cols-3">
-      {boxes.map(([title, entries]) => (
-        <div key={title} className="flex flex-col gap-2 rounded-2xl bg-field p-4">
-          <p className={labelClasses}>{title}</p>
-          <ul className="text-[13px] leading-[21px] text-ink-soft">
-            {entries.map((entry) => (
-              <li key={entry.label} className={cn(entry.soon && "text-ink-subtle")}>
-                {entry.label}
-                {entry.soon && " · bientôt"}
-              </li>
-            ))}
-          </ul>
-        </div>
-      ))}
-    </div>
+    <Disclosure
+      summary={(open) => (
+        <>
+          <ChevronRight className={cn("transition-transform", open && "rotate-90")} />
+          Ce que tu peux combiner
+        </>
+      )}
+      summaryClassName="flex items-center gap-2 text-[13px] font-semibold leading-[18px] text-ink-muted hover:text-ink"
+    >
+      <div className="grid gap-2 pt-2.5 sm:grid-cols-3">
+        {boxes.map(([title, entries]) => (
+          <div key={title} className="flex flex-col gap-1.5 rounded-xl bg-field p-3">
+            <p className={labelClasses}>{title}</p>
+            <ul className="text-[13px] leading-[19px] text-ink-soft">
+              {entries.map((entry) => (
+                <li key={entry.label} className={cn(entry.soon && "text-ink-subtle")}>
+                  {entry.label}
+                  {entry.soon && " · bientôt"}
+                </li>
+              ))}
+            </ul>
+          </div>
+        ))}
+      </div>
+    </Disclosure>
   );
 }
 
@@ -882,18 +896,18 @@ function RuleTest({ rule, context }: { rule: Rule; context: RuleEditorContext })
   const matched = facts ? ruleMatches(rule, fields, facts) : false;
 
   return (
-    <div className="flex flex-col gap-3 rounded-2xl bg-field p-4">
+    <div className="flex flex-col gap-2.5 rounded-xl bg-field p-3">
       <div className="flex flex-wrap items-center gap-2">
-        <p className="text-sm font-semibold text-ink">Tester sur</p>
+        <p className="text-[13px] font-semibold text-ink">Tester sur</p>
         <Select
-          variant="compact"
+          variant="dense"
           aria-label="Inscription à tester"
           value={source}
           onChange={(event) => {
             setSource(event.target.value);
             setError(null);
           }}
-          className="min-w-64 flex-1"
+          className="min-w-40 flex-1"
         >
           {context.testBookings.map((booking) => (
             <option key={booking.id} value={booking.id}>
@@ -1085,13 +1099,40 @@ function RuleDialog({
       open
       onClose={onClose}
       size="xl"
+      density="compact"
       title={draft.name || "Nouvelle règle"}
       description={`${context.typeName || "Ce type"} · règle ${position} sur ${total}`}
+      footer={
+        <div className="flex w-full flex-col gap-2">
+          {error && <FieldError>{error}</FieldError>}
+          <div className="flex flex-col-reverse gap-2 sm:flex-row sm:items-center sm:justify-between">
+            {onDelete ? (
+              <button
+                type="button"
+                onClick={onDelete}
+                className="self-start text-[13px] font-semibold leading-[18px] text-danger hover:underline"
+              >
+                Supprimer la règle
+              </button>
+            ) : (
+              <span />
+            )}
+            <div className="flex flex-wrap gap-2">
+              <Button variant="secondary" size="sm" onClick={() => setTesting(!testing)}>
+                {testing ? "Fermer le test" : "Tester sur une inscription"}
+              </Button>
+              <Button size="sm" onClick={save}>
+                Enregistrer la règle
+              </Button>
+            </div>
+          </div>
+        </div>
+      }
     >
       {/* Entrée dans un champ : pas d'envoi du formulaire du type. */}
       {/* biome-ignore lint/a11y/noStaticElementInteractions: on bloque seulement l'envoi par Entrée des champs. */}
       <div
-        className="flex flex-col gap-6"
+        className="flex flex-col gap-4"
         onKeyDown={(event) => {
           if (event.key === "Enter" && event.target instanceof HTMLInputElement) {
             event.preventDefault();
@@ -1106,12 +1147,12 @@ function RuleDialog({
               maxLength={80}
               placeholder="Autorisation des mineurs"
               onChange={(event) => set({ name: event.target.value })}
-              className={inputClasses()}
+              className={inputClasses("sm")}
             />
           )}
         </Field>
 
-        <p className="rounded-2xl bg-warning-bg px-[18px] py-4 text-[17px] leading-[25px] text-warning-strong">
+        <p className="rounded-xl bg-warning-bg px-3.5 py-2.5 text-[15px] leading-[22px] text-warning-strong">
           {description.when},{" "}
           {description.condition && (
             <>
@@ -1121,7 +1162,7 @@ function RuleDialog({
           <strong>{description.actions || "…"}</strong>.
         </p>
 
-        <div className="flex flex-col gap-[18px]">
+        <div className="flex flex-col gap-3">
           <BuilderRow label="Quand">
             <TriggerInput
               trigger={draft.trigger}
@@ -1138,32 +1179,27 @@ function RuleDialog({
 
           <BuilderRow label="Si">
             {draft.conditions.length === 0 && (
-              <p className="pt-2.5 text-sm text-ink-muted">Toujours (aucune condition).</p>
+              <p className="pt-2 text-[13px] text-ink-muted">Toujours (aucune condition).</p>
             )}
-            {draft.conditions.map((group, groupIndex) => (
-              // biome-ignore lint/suspicious/noArrayIndexKey: groupes sans identifiant, dans l'ordre.
-              <div key={groupIndex} className="flex flex-col gap-2">
-                {groupIndex > 0 && <p className={labelClasses}>ou</p>}
-                {group.map((condition, index) => (
+            {draft.conditions.map((group, groupIndex) =>
+              group.map((condition, index) => (
+                <ConditionRow
                   // biome-ignore lint/suspicious/noArrayIndexKey: conditions sans identifiant, dans l'ordre.
-                  <div key={index} className="flex flex-col gap-1">
-                    {index > 0 && <p className="text-[13px] font-semibold text-ink-subtle">et</p>}
-                    <ConditionRow
-                      condition={condition}
-                      fields={fields}
-                      bookingKnown={bookingKnown}
-                      pricing={context.pricing}
-                      onChange={(next) => setCondition(groupIndex, index, next)}
-                      onRemove={() => setCondition(groupIndex, index, null)}
-                    />
-                  </div>
-                ))}
-              </div>
-            ))}
-            <div className="flex items-center gap-3">
+                  key={`${groupIndex}-${index}`}
+                  prefix={index > 0 ? "et" : groupIndex > 0 ? "ou" : ""}
+                  condition={condition}
+                  fields={fields}
+                  bookingKnown={bookingKnown}
+                  pricing={context.pricing}
+                  onChange={(next) => setCondition(groupIndex, index, next)}
+                  onRemove={() => setCondition(groupIndex, index, null)}
+                />
+              )),
+            )}
+            <div className="flex items-center gap-3 pl-[26px]">
               <button
                 type="button"
-                className="text-sm font-semibold leading-[18px] text-link hover:underline"
+                className="text-[13px] font-semibold leading-[18px] text-link hover:underline"
                 onClick={() =>
                   set({
                     conditions:
@@ -1181,7 +1217,7 @@ function RuleDialog({
               </button>
               <button
                 type="button"
-                className="text-sm font-semibold leading-[18px] text-link hover:underline"
+                className="text-[13px] font-semibold leading-[18px] text-link hover:underline"
                 onClick={() => set({ conditions: [...draft.conditions, [newCondition()]] })}
               >
                 + Ou
@@ -1207,7 +1243,7 @@ function RuleDialog({
             {draft.actions.length < 6 && (
               <button
                 type="button"
-                className="self-start text-sm font-semibold leading-[18px] text-link hover:underline"
+                className="self-start text-[13px] font-semibold leading-[18px] text-link hover:underline"
                 onClick={() =>
                   set({
                     actions: [
@@ -1226,27 +1262,6 @@ function RuleDialog({
         <Collapse open={testing}>{testing && <RuleTest rule={draft} context={context} />}</Collapse>
 
         <Possibilities />
-
-        {error && <FieldError>{error}</FieldError>}
-        <div className="flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-between">
-          {onDelete ? (
-            <button
-              type="button"
-              onClick={onDelete}
-              className="self-start text-sm font-semibold leading-[18px] text-danger hover:underline"
-            >
-              Supprimer la règle
-            </button>
-          ) : (
-            <span />
-          )}
-          <div className="flex flex-wrap gap-2">
-            <Button variant="secondary" onClick={() => setTesting(!testing)}>
-              {testing ? "Fermer le test" : "Tester sur une inscription"}
-            </Button>
-            <Button onClick={save}>Enregistrer la règle</Button>
-          </div>
-        </div>
       </div>
     </Dialog>
   );
