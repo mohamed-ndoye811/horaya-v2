@@ -1,5 +1,6 @@
 import type { Booking, CustomerContact } from "../bookings/model";
 import { customerContactSchema } from "../bookings/schemas";
+import { paidCents } from "../payments/rules";
 import { type Actor, actorRef, assertMemberCan } from "../shared/actor";
 import { ConflictError, ForbiddenError, NotFoundError } from "../shared/errors";
 import type { Deps, Repositories } from "../shared/unit-of-work";
@@ -242,6 +243,12 @@ export async function payBookingWithPassIn(
   }
   if (booking.paymentStatus !== "none" && booking.paymentStatus !== "failed") {
     throw new ConflictError("Cette réservation est déjà réglée");
+  }
+  // Règle unique : une carte ne paie qu'une réservation sans aucun paiement (bon cadeau compris).
+  if (paidCents(await repositories.payments.listForBooking(booking.id)) > 0) {
+    throw new ConflictError(
+      "Cette réservation est déjà en partie payée : la carte ne peut pas la régler",
+    );
   }
   if (booking.kind !== "event" || !booking.eventId || booking.amountCents <= 0) {
     throw new ConflictError("Il n'y a rien à régler avec une carte sur cette réservation");
