@@ -6,6 +6,7 @@ import type {
   PricingModule,
   Rate,
 } from "../modules/registry";
+import { durationOf } from "../modules/time";
 import { ValidationError } from "../shared/errors";
 
 /**
@@ -16,8 +17,8 @@ import { ValidationError } from "../shared/errors";
 
 /** Une ligne du détail, enregistrée sur la réservation : l'historique ne bouge plus si le type change. */
 export interface PriceLine {
-  /** `discount` : réduction d'une règle (lot 36), montant négatif. */
-  kind: "rate" | "option" | "discount";
+  /** `discount` : réduction d'une règle (lot 36), montant négatif ; `duration` : durée choisie (lot 37). */
+  kind: "rate" | "option" | "discount" | "duration";
   /** Identifiant du tarif ou de l'option dans le module « Tarifs et options » (la règle pour une réduction). */
   id: string;
   label: string;
@@ -43,6 +44,8 @@ export interface PriceSelection {
   rates?: readonly string[];
   /** Quantité de chaque option (une option « par participant » : le nombre de participants qui la prennent). */
   options?: Readonly<Record<string, number>>;
+  /** Module « Durée au choix » : la durée choisie (absent : celle par défaut). */
+  durationId?: string | null;
 }
 
 type Priced = Pick<Event, "priceCents" | "paymentMode" | "modules">;
@@ -107,8 +110,12 @@ export function quoteBooking(
       { path: "rates", message: "Plus de tarifs que de places" },
     ]);
   }
+  // Durée au choix : la durée fixe le prix de chaque place, les tarifs ne s'appliquent pas.
+  const duration = event.modules.duration
+    ? durationOf(event.modules.duration, selection.durationId)
+    : null;
   const counts = new Map<string, number>();
-  for (let seat = 0; seat < seats; seat++) {
+  for (let seat = 0; seat < (duration ? 0 : seats); seat++) {
     const id = chosen[seat] ?? fallback.id;
     if (!rates.some((rate) => rate.id === id)) {
       throw new ValidationError("Ce tarif n'existe pas", [
@@ -117,21 +124,32 @@ export function quoteBooking(
     }
     counts.set(id, (counts.get(id) ?? 0) + 1);
   }
-  const lines: PriceLine[] = rates.flatMap((rate) => {
-    const quantity = counts.get(rate.id) ?? 0;
-    return quantity > 0
-      ? [
-          {
-            kind: "rate" as const,
-            id: rate.id,
-            label: rate.name,
-            unitCents: rate.priceCents,
-            quantity,
-            totalCents: rate.priceCents * quantity,
-          },
-        ]
-      : [];
-  });
+  const lines: PriceLine[] = duration
+    ? [
+        {
+          kind: "duration",
+          id: duration.id,
+          label: duration.label,
+          unitCents: duration.priceCents,
+          quantity: seats,
+          totalCents: duration.priceCents * seats,
+        },
+      ]
+    : rates.flatMap((rate) => {
+        const quantity = counts.get(rate.id) ?? 0;
+        return quantity > 0
+          ? [
+              {
+                kind: "rate" as const,
+                id: rate.id,
+                label: rate.name,
+                unitCents: rate.priceCents,
+                quantity,
+                totalCents: rate.priceCents * quantity,
+              },
+            ]
+          : [];
+      });
 
   const options = pricing?.options ?? [];
   for (const [id, quantity] of Object.entries(selection.options ?? {})) {
@@ -202,6 +220,7 @@ export function selectionFromLines(lines: readonly PriceLine[]): PriceSelection 
     options: Object.fromEntries(
       lines.filter((line) => line.kind === "option").map((line) => [line.id, line.quantity]),
     ),
+    durationId: lines.find((line) => line.kind === "duration")?.id,
   };
 }
 
@@ -237,6 +256,9 @@ export function selectionFor(
         return option ? [[id, Math.min(quantity, optionMax(option, seats))]] : [];
       }),
     ),
+    durationId: event.modules.duration?.options.some((option) => option.id === selection.durationId)
+      ? selection.durationId
+      : undefined,
   };
 }
 
@@ -245,6 +267,9 @@ export function priceLinesLabel(lines: readonly PriceLine[]): string {
   const rates = lines.filter((line) => line.kind === "rate");
   const options = lines.filter((line) => line.kind === "option");
   return [
+    ...lines
+      .filter((line) => line.kind === "duration")
+      .map((line) => (line.quantity > 1 ? `${line.label} × ${line.quantity}` : line.label)),
     rates.map((line) => `${line.quantity} ${line.label}`).join(", "),
     ...options.map((line) => (line.quantity > 1 ? `${line.label} × ${line.quantity}` : line.label)),
     ...lines.filter((line) => line.kind === "discount").map((line) => line.label),

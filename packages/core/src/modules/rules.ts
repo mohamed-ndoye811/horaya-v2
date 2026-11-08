@@ -9,6 +9,7 @@ import type {
   PlacesModule,
 } from "./registry";
 import { CLIENT_ADDRESS_FIELD_KEY, type ResourceNames, resourceSummary } from "./resources";
+import { durationTitle } from "./time";
 
 const HOUR = 3_600_000;
 const DAY = 24 * HOUR;
@@ -237,6 +238,7 @@ export const moneyLabel = (cents: number) =>
     .format(cents / 100)
     .replace(/ | /g, " ");
 
+const WEEKDAYS_SHORT = ["lun.", "mar.", "mer.", "jeu.", "ven.", "sam.", "dim."];
 const plural = (count: number, word: string) => `${count} ${word}${count > 1 ? "s" : ""}`;
 
 /** « J-1 », « 2 h avant », « le début ». */
@@ -386,6 +388,33 @@ export function moduleSummary(
         methods.passes !== false && `${plural(sessions, "séance")} par place`,
         methods.giftCards === false ? "pas de bon cadeau" : "bons cadeaux acceptés",
       ]);
+    }
+    case "sessions": {
+      const sessions = modules.sessions ?? {};
+      return join([
+        "Une inscription pour toutes les séances",
+        sessions.singleSession ? "séance à l'unité possible" : "pas de séance à l'unité",
+        sessions.sameEquipment && "même matériel à chaque séance",
+      ]);
+    }
+    case "slots": {
+      const slots = modules.slots;
+      if (!slots) return "";
+      const open = slots.weekly
+        .map((ranges, day) => (ranges.length ? WEEKDAYS_SHORT[day] : null))
+        .filter(Boolean);
+      return join([
+        open.length ? open.join(", ") : "Aucune disponibilité",
+        `un départ toutes les ${slots.intervalMinutes} min`,
+        slots.breakMinutes && `pause ${slots.breakMinutes} min`,
+        `${plural(slots.seatsPerSlot ?? 1, "place")} par créneau`,
+      ]);
+    }
+    case "duration": {
+      const options = modules.duration?.options ?? [];
+      return options
+        .map((option) => `${durationTitle(option)} ${moneyLabel(option.priceCents)}`)
+        .join(" · ");
     }
     case "documents": {
       const files = modules.documents?.files ?? [];

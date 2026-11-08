@@ -4,13 +4,22 @@ import { stagger, WordsReveal } from "@/components/motion/words";
 import { StatusBadge } from "@/components/ui/badge";
 import { ButtonLink } from "@/components/ui/button";
 import { inkCardClasses } from "@/components/ui/section";
-import { cancelAbsenceAction, reportAbsenceAction } from "@/functions/public";
+import {
+  cancelAbsenceAction,
+  cancelStageEnrollmentAction,
+  reportAbsenceAction,
+} from "@/functions/public";
 import { cn } from "@/lib/cn";
 import { displayFontClass } from "@/lib/fonts";
 import { formatDateTimeShort, formatMoney } from "@/lib/format";
 import { Link } from "@/lib/navigation";
 import type { ManagedEnrollment } from "@/server/enrollments";
-import { AbsenceButton, CancelAbsenceButton, EnrollmentNextSession } from "./enrollment-progress";
+import {
+  AbsenceButton,
+  CancelAbsenceButton,
+  CancelStageButton,
+  EnrollmentNextSession,
+} from "./enrollment-progress";
 
 /**
  * Lien de gestion d'une inscription à une série (même adresse que « Gérer ma réservation ») :
@@ -41,6 +50,7 @@ export function ManagedEnrollmentPage({
   const toCatchUp = enrollment.makeups.filter((makeup) => makeup.state === "available").length;
   const { answers } = enrollment;
   const count = `${progress.total} séance${progress.total > 1 ? "s" : ""}`;
+  const stage = enrollment.seriesKind === "stage";
 
   return (
     <div className="mx-auto flex w-full max-w-[1000px] flex-col gap-4">
@@ -49,7 +59,9 @@ export function ManagedEnrollmentPage({
           {cancelled ? (
             <StatusBadge tone="draft">Désinscrit·e</StatusBadge>
           ) : (
-            <StatusBadge tone="info">Inscrit·e au trimestre</StatusBadge>
+            <StatusBadge tone="info">
+              {stage ? "Inscrit·e au stage" : "Inscrit·e au trimestre"}
+            </StatusBadge>
           )}
         </span>
         <h1
@@ -67,8 +79,12 @@ export function ManagedEnrollmentPage({
           style={stagger(3)}
         >
           {cancelled
-            ? `${workspace.name} a mis fin à ton inscription à « ${title} ». Les séances à venir sont libérées.`
-            : `${fresh ? `Merci ${enrollment.customerFirstName}. ` : ""}Une place t'attend à chacune des ${count} de « ${title} ». Un empêchement ? Signale ton absence ici : ta place profite à quelqu'un d'autre, ton inscription reste.`}
+            ? stage
+              ? `Ton inscription au stage « ${title} » est annulée, pour toutes ses séances.`
+              : `${workspace.name} a mis fin à ton inscription à « ${title} ». Les séances à venir sont libérées.`
+            : stage
+              ? `${fresh ? `Merci ${enrollment.customerFirstName}. ` : ""}Une place t'attend à chacune des ${count} du stage « ${title} ». Un empêchement ? Tu peux annuler ton inscription ici, selon la règle d'annulation de l'atelier.`
+              : `${fresh ? `Merci ${enrollment.customerFirstName}. ` : ""}Une place t'attend à chacune des ${count} de « ${title} ». Un empêchement ? Signale ton absence ici : ta place profite à quelqu'un d'autre, ton inscription reste.`}
         </p>
         <div className="flex flex-col gap-3.5 pt-1 sm:flex-row sm:items-center">
           {payment?.payUrl && !cancelled && (
@@ -81,6 +97,9 @@ export function ManagedEnrollmentPage({
             >
               Payer {formatMoney(enrollment.amountCents)} ↗
             </ButtonLink>
+          )}
+          {stage && !cancelled && (
+            <CancelStageButton onCancel={() => cancelStageEnrollmentAction(slug, token)} />
           )}
           {enrollment.customerEmail && (
             <p className="text-sm leading-[18px] text-notch-idle">
@@ -131,6 +150,9 @@ export function ManagedEnrollmentPage({
                 >
                   {formatDateTimeShort(session.startsAt, tz)}
                 </span>
+                {session.sessionTopic && (
+                  <span className="text-ink-muted">{session.sessionTopic}</span>
+                )}
               </p>
               <Swap
                 value={

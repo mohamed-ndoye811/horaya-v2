@@ -9,6 +9,7 @@ import {
   ratesOf,
 } from "@horaya/core";
 import { useState } from "react";
+import { choiceTileClasses, choiceTileMutedClasses } from "@/components/public/choice-tile";
 import { Checkbox } from "@/components/ui/field";
 import { Stepper } from "@/components/ui/stepper";
 import { cn } from "@/lib/cn";
@@ -74,7 +75,7 @@ export function usePriceChoice(event: Priced, seats: number) {
 
 export type PriceChoice = ReturnType<typeof usePriceChoice>;
 
-/** Maquette 9.1 (aperçu) : les tarifs en tuiles, celle choisie cerclée de noir. */
+/** Les tarifs en tuiles : celle choisie est pleine, de la couleur de l'atelier (lot 37). */
 export function RateTiles({
   rates,
   value,
@@ -96,10 +97,8 @@ export function RateTiles({
           <label
             key={rate.id}
             className={cn(
-              "flex min-w-0 grow basis-0 cursor-pointer flex-col gap-px rounded-[10px] px-2.5 py-2 transition-colors",
-              value === rate.id
-                ? "border-[1.5px] border-ink bg-surface"
-                : "border border-line-soft bg-field hover:border-line",
+              choiceTileClasses(value === rate.id),
+              "flex min-w-0 grow basis-0 cursor-pointer flex-col gap-px px-2.5 py-2 has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-ink",
             )}
           >
             <input
@@ -110,8 +109,10 @@ export function RateTiles({
               onChange={() => onChange(rate.id)}
               className="sr-only"
             />
-            <span className="text-[13px] font-semibold leading-4 text-ink">{rate.name}</span>
-            <span className="text-label leading-[15px] text-ink-muted">
+            <span className="text-[13px] font-semibold leading-4">{rate.name}</span>
+            <span
+              className={cn("text-label leading-[15px]", choiceTileMutedClasses(value === rate.id))}
+            >
               {formatMoney(rate.priceCents)}
               {rate.description && ` · ${rate.description}`}
             </span>

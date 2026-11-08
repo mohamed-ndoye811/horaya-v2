@@ -15,6 +15,7 @@ import {
   type RuleFacts,
   removeEventItem,
   ruleTestFacts,
+  type StageSessionInput,
   setEventItemQuantity,
   type UpdateEventInput,
   type UpdateEventTypeInput,
@@ -48,6 +49,32 @@ function equipmentUnits(form: FormData) {
     return { equipmentUnits: JSON.parse(raw) as Record<string, string[]> };
   } catch {
     return {};
+  }
+}
+
+/** Séances d'un stage (JSON du formulaire, heures murales de l'espace) ; null hors stage. */
+function stageSessions(form: FormData, timeZone: string): StageSessionInput[] | null {
+  const raw = text(form, "sessions");
+  if (!raw) return null;
+  try {
+    const drafts = JSON.parse(raw) as Array<{
+      date: string;
+      start: string;
+      end: string;
+      topic: string;
+    }>;
+    return drafts.map((draft) => {
+      const at = (time: string) => {
+        const date = parseCivilDate(draft.date);
+        const match = time.match(/^(\d{2}):(\d{2})$/);
+        return date && match
+          ? fromZonedParts({ ...date, hour: Number(match[1]), minute: Number(match[2]) }, timeZone)
+          : "date invalide";
+      };
+      return { startsAt: at(draft.start), endsAt: at(draft.end), topic: draft.topic || null };
+    });
+  } catch {
+    return null;
   }
 }
 
@@ -116,9 +143,16 @@ export async function saveEvent(eventId: string | null, form: FormData): Promise
       targetId = eventId;
     } else {
       const recurring = form.get("recurring") === "on";
+      const sessions = stageSessions(form, timeZone);
       const created = await createEvent(deps, actor, {
         ...(fields as unknown as Omit<CreateEventInput, "eventTypeId">),
         eventTypeId: text(form, "eventTypeId"),
+        durationId: text(form, "durationId") || undefined,
+        ...(sessions && {
+          sessions,
+          singleSession: form.get("singleSession") === "on",
+          sameEquipment: form.get("sameEquipment") === "on",
+        }),
         recurrence: recurring
           ? {
               frequency: text(form, "frequency") as "daily" | "weekly" | "monthly",

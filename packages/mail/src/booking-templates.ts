@@ -558,6 +558,8 @@ export function enrollmentConfirmedEmail(input: {
   /** Lien de paiement externe, si l'inscription se règle en ligne. */
   payUrl?: string | null;
   manageUrl: string;
+  /** Stage (lot 37) : on annule tout le stage, plutôt que de signaler une absence. */
+  stage?: boolean;
 }): EmailContent {
   const count = `${input.sessions.length} séance${input.sessions.length > 1 ? "s" : ""}`;
   return {
@@ -573,10 +575,12 @@ export function enrollmentConfirmedEmail(input: {
               `Règle ton inscription via le lien de paiement de ${input.workspace.name} : ${input.payUrl}`,
             ]
           : []),
-        "Un empêchement ? Signale ton absence depuis le lien ci-dessous : ta place profite à quelqu'un d'autre, ton inscription reste.",
+        input.stage
+          ? "Un empêchement ? Tu peux annuler ton inscription au stage depuis le lien ci-dessous, selon la règle d'annulation de l'atelier."
+          : "Un empêchement ? Signale ton absence depuis le lien ci-dessous : ta place profite à quelqu'un d'autre, ton inscription reste.",
       ],
       details: [
-        ["Cours", input.title],
+        [input.stage ? "Stage" : "Cours", input.title],
         ...(input.where ? [["Où", input.where] as [string, string]] : []),
         ...(input.amount ? [["Montant", input.amount] as [string, string]] : []),
         ...input.sessions.map(
@@ -584,6 +588,45 @@ export function enrollmentConfirmedEmail(input: {
         ),
       ],
       action: { label: "Gérer mon inscription", url: input.manageUrl },
+      footnote: `Cet e-mail t'est envoyé par ${input.workspace.name} via Horaya, suite à ton inscription.`,
+      brand: input.workspace,
+    }),
+  };
+}
+
+/**
+ * Stage annulé (lot 37) : par l'atelier (toutes les séances), ou par l'élève (son inscription,
+ * remboursée selon la règle d'annulation). Un seul message, pas un par séance.
+ */
+export function stageCancelledEmail(input: {
+  workspace: BookingMail["workspace"];
+  firstName: string;
+  title: string;
+  /** Séances annulées, déjà mises en forme. */
+  sessions: string[];
+  byCustomer: boolean;
+  /** Élève : « 100 % remboursés », « 50 % remboursés », « rien n'est remboursé ». */
+  refund?: string | null;
+  eventsUrl: string;
+}): EmailContent {
+  return {
+    subject: `${input.byCustomer ? "Inscription annulée" : "Stage annulé"} : ${input.title}`,
+    ...renderEmail({
+      preheader: input.byCustomer
+        ? "Ton annulation est bien prise en compte."
+        : `${input.workspace.name} a annulé le stage.`,
+      title: input.byCustomer ? "Inscription annulée" : "Stage annulé",
+      paragraphs: [
+        `Bonjour ${input.firstName},`,
+        input.byCustomer
+          ? `Ton inscription au stage « ${input.title} » est annulée, pour toutes ses séances.`
+          : `${input.workspace.name} a annulé le stage « ${input.title} » : toutes ses séances sont annulées.`,
+        ...(input.refund ? [`Remboursement : ${input.refund}.`] : []),
+      ],
+      details: input.sessions.map(
+        (session, index) => [`Séance ${index + 1}`, session] as [string, string],
+      ),
+      action: { label: "Voir les autres événements", url: input.eventsUrl },
       footnote: `Cet e-mail t'est envoyé par ${input.workspace.name} via Horaya, suite à ton inscription.`,
       brand: input.workspace,
     }),

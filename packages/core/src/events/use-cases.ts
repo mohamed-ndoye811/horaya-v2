@@ -1,9 +1,10 @@
-import { defaultRate } from "../bookings/pricing";
+import { BASE_RATE_ID, defaultRate } from "../bookings/pricing";
 import { promoteWaitlist } from "../bookings/waitlist";
 import { fieldsOfScope, validateFieldValues } from "../fields/values";
 import type { EventModules } from "../modules/registry";
 import { eventPlace, restrictEquipment, staffAllowed } from "../modules/resources";
 import { minimumState, withModuleFields } from "../modules/rules";
+import { durationOf, withChosenDuration } from "../modules/time";
 import { recreditPassForBooking } from "../passes/use-cases";
 import { assertRulesFit } from "../rules/engine";
 import { type Actor, actorRef, assertMemberCan } from "../shared/actor";
@@ -200,13 +201,14 @@ export async function archiveEventType(
 /** Pages publiques d'un espace dont l'adresse ne peut pas servir à un événement. */
 const RESERVED_EVENT_SLUGS: ReadonlySet<string> = new Set([
   "calendrier",
+  "creneaux",
   "mentions-legales",
   "mes-reservations",
   "reservation",
 ]);
 
 /** Adresse unique dans l'espace : « seminaire-annuel », puis « seminaire-annuel-2 »… */
-async function uniqueSlug(repositories: Repositories, organizationId: string, base: string) {
+export async function uniqueSlug(repositories: Repositories, organizationId: string, base: string) {
   const root = base || "evenement";
   for (let attempt = 1; attempt <= 50; attempt++) {
     const slug = attempt === 1 ? root : `${root}-${attempt}`;
@@ -215,6 +217,8 @@ async function uniqueSlug(repositories: Repositories, organizationId: string, ba
   }
   return `${root}-${Date.now().toString(36)}`;
 }
+
+type StageSession = { startsAt: Date; endsAt: Date; topic: string | null };
 
 function localDate(date: Date, timeZone: string): string {
   const { year, month, day } = toZonedParts(date, timeZone);
@@ -237,29 +241,85 @@ export async function createEvent(
     requiresApproval,
     equipmentUnits,
     deposit,
-    prices,
-    ...fromInput
+    prices: inputPrices,
+    durationId,
+    sessions: inputSessions,
+    singleSession,
+    sameEquipment,
+    ...input0
   } = validate(createEventSchema, input);
+  // Stage : les séances, dans l'ordre ; le premier début et la première fin servent de repère.
+  const sessions = inputSessions
+    ? [...inputSessions].sort((a, b) => a.startsAt.getTime() - b.startsAt.getTime())
+    : null;
+  const fromInput = sessions
+    ? {
+        ...input0,
+        startsAt: (sessions[0] as StageSession).startsAt,
+        endsAt: (sessions[0] as StageSession).endsAt,
+      }
+    : input0;
 
-  const starts = recurrence
-    ? generateOccurrences(recurrence, fromInput.startsAt, fromInput.timezone)
-    : [fromInput.startsAt];
-  const duration = fromInput.endsAt.getTime() - fromInput.startsAt.getTime();
+  const starts = sessions
+    ? sessions.map((session) => session.startsAt)
+    : recurrence
+      ? generateOccurrences(recurrence, fromInput.startsAt, fromInput.timezone)
+      : [fromInput.startsAt];
 
   return deps.uow.run(async (repositories) => {
     const eventType = await repositories.eventTypes.find(actor.organizationId, eventTypeId);
     if (!eventType || eventType.archivedAt)
       throw new NotFoundError("Type d'événement", eventTypeId);
+    if (sessions && !eventType.modules.sessions) {
+      throw new ValidationError("Ce type n'a pas le module Plusieurs séances", [
+        { path: "sessions", message: "Ajoute le module Plusieurs séances au type" },
+      ]);
+    }
+    // Durée au choix : l'événement prend la durée choisie (sa fin, son prix).
+    const chosen =
+      eventType.modules.duration && !sessions
+        ? durationOf(eventType.modules.duration, durationId)
+        : null;
+    if (chosen) {
+      fromInput.endsAt = new Date(fromInput.startsAt.getTime() + chosen.minutes * 60_000);
+      if (fromInput.paymentMode !== "free") fromInput.priceCents = chosen.priceCents;
+    }
+    // Stage : les prix saisis sont ceux de tout le stage ; chaque séance vaut sa part (à l'euro).
+    const stagePrices = sessions
+      ? eventType.modules.pricing
+        ? Object.fromEntries(
+            eventType.modules.pricing.rates.map((rate) => [
+              rate.id,
+              inputPrices?.[rate.id] ?? rate.priceCents,
+            ]),
+          )
+        : { [BASE_RATE_ID]: fromInput.priceCents }
+      : null;
+    const share = (cents: number) => Math.round(cents / (sessions?.length ?? 1) / 100) * 100;
+    const prices = stagePrices
+      ? {
+          ...inputPrices,
+          ...Object.fromEntries(
+            Object.entries(stagePrices).map(([id, cents]) => [id, share(cents)]),
+          ),
+        }
+      : inputPrices;
     // Tarifs et acompte : ceux du type, prix et acompte ajustés sur l'événement.
     const money = eventMoney(
       {
-        modules: eventType.modules,
-        priceCents: fromInput.priceCents,
+        modules: chosen ? withChosenDuration(eventType.modules, chosen) : eventType.modules,
+        priceCents:
+          stagePrices && !eventType.modules.pricing
+            ? share(fromInput.priceCents)
+            : fromInput.priceCents,
         paymentMode: fromInput.paymentMode,
       },
       { deposit, prices },
     );
-    const details = { ...fromInput, priceCents: money.priceCents };
+    const details = {
+      ...fromInput,
+      priceCents: chosen && fromInput.paymentMode !== "free" ? chosen.priceCents : money.priceCents,
+    };
     assertEventConsistency({ ...details, modules: money.modules });
     const settings = await repositories.settings.get(actor.organizationId);
     const fieldValues = validateFieldValues(
@@ -271,21 +331,42 @@ export async function createEvent(
 
     // Module « Inscription à la série » : les nouvelles séries du type partent avec son réglage.
     const preset = eventType.modules.series;
-    const series = recurrence
+    const stage = eventType.modules.sessions;
+    const series = sessions
       ? await repositories.events.insertSeries({
           organizationId: actor.organizationId,
-          rrule: toRRule(recurrence),
-          until: starts.at(-1) ?? null,
+          kind: "stage",
+          rrule: "",
+          until: (sessions.at(-1) as StageSession).startsAt,
           timezone: details.timezone,
-          ...(preset && {
-            enrollmentEnabled: true,
-            enrollmentPriceCents: preset.priceCents ?? details.priceCents * starts.length,
-            dropInAllowed: preset.dropInAllowed ?? true,
-            enrollmentProrata: preset.prorata ?? true,
-            makeupAllowed: preset.makeupAllowed ?? true,
-          }),
+          enrollmentEnabled: true,
+          enrollmentPriceCents:
+            details.paymentMode === "free"
+              ? 0
+              : eventType.modules.pricing
+                ? ((stagePrices ?? {})[defaultRate(eventType.modules.pricing).id] ?? 0)
+                : fromInput.priceCents,
+          enrollmentPrices: details.paymentMode === "free" ? null : stagePrices,
+          dropInAllowed: singleSession ?? stage?.singleSession ?? false,
+          enrollmentProrata: false,
+          makeupAllowed: false,
+          sameEquipment: sameEquipment ?? stage?.sameEquipment ?? false,
         })
-      : null;
+      : recurrence
+        ? await repositories.events.insertSeries({
+            organizationId: actor.organizationId,
+            rrule: toRRule(recurrence),
+            until: starts.at(-1) ?? null,
+            timezone: details.timezone,
+            ...(preset && {
+              enrollmentEnabled: true,
+              enrollmentPriceCents: preset.priceCents ?? details.priceCents * starts.length,
+              dropInAllowed: preset.dropInAllowed ?? true,
+              enrollmentProrata: preset.prorata ?? true,
+              makeupAllowed: preset.makeupAllowed ?? true,
+            }),
+          })
+        : null;
     await assertStaffMember(
       repositories,
       actor.organizationId,
@@ -303,8 +384,10 @@ export async function createEvent(
         ? "invite_only"
         : details.visibility;
 
+    const duration = details.endsAt.getTime() - details.startsAt.getTime();
     const created: Event[] = [];
-    for (const startsAt of starts) {
+    for (const [index, startsAt] of starts.entries()) {
+      const session = sessions?.[index];
       const base = slugify(details.title);
       const slug = await uniqueSlug(
         repositories,
@@ -320,7 +403,8 @@ export async function createEvent(
         ...place,
         visibility,
         startsAt,
-        endsAt: new Date(startsAt.getTime() + duration),
+        endsAt: session?.endsAt ?? new Date(startsAt.getTime() + duration),
+        sessionTopic: session?.topic ?? null,
         currency: settings.currency,
         requiresApproval: requiresApproval ?? Boolean(eventType.modules.approval),
         fields: eventType.fields,
@@ -491,7 +575,8 @@ export async function cancelLockedEvent(
   });
   await repositories.inventory.cancelAllocations(actor.organizationId, { eventId: locked.id }, now);
   const active = await repositories.bookings.listActive(locked.id);
-  const bookingReason = reason === "minimum_not_reached" ? reason : "event_cancelled";
+  const bookingReason =
+    reason === "minimum_not_reached" || reason === "stage_cancelled" ? reason : "event_cancelled";
   for (const booking of active) {
     await repositories.bookings.updateStatus(actor.organizationId, booking.id, {
       status: "cancelled",

@@ -5,6 +5,7 @@ import { formDataInput } from "@/lib/form-data";
 import {
   assignMakeupImpl,
   cancelEnrollmentImpl,
+  cancelStageImpl,
   createCounterEnrollmentImpl,
   saveSeriesEnrollment,
   setEnrollmentPaidImpl,
@@ -25,6 +26,9 @@ const saveFn = createServerFn({ method: "POST" })
 const cancelFn = createServerFn({ method: "POST" })
   .validator(id)
   .handler(({ data }) => cancelEnrollmentImpl(data));
+const cancelStageFn = createServerFn({ method: "POST" })
+  .validator(id)
+  .handler(({ data }) => cancelStageImpl(data));
 const paidFn = createServerFn({ method: "POST" })
   .validator(z.object({ enrollmentId: id, paid: z.boolean() }))
   .handler(({ data }) => setEnrollmentPaidImpl(data.enrollmentId, data.paid));
@@ -47,3 +51,4 @@ export const createCounterEnrollmentAction = (input: EnrollInSeriesInput) =>
   counterFn({ data: input });
 export const assignMakeupAction = (absentBookingId: string, eventId: string) =>
   makeupFn({ data: { absentBookingId, eventId } });
+export const cancelStageAction = (seriesId: string) => cancelStageFn({ data: seriesId });

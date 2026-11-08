@@ -235,6 +235,117 @@ export const paymentMethodsModuleSchema = z.object({
   giftCards: z.boolean().optional(),
 });
 
+/* ---------- Le temps (lot 37) ---------- */
+
+/** « Plusieurs séances » : un stage, une inscription pour toutes ses dates (réglage de départ). */
+export const sessionsModuleSchema = z.object({
+  /** Les élèves peuvent aussi réserver une seule séance. */
+  singleSession: z.boolean().optional(),
+  /** Le même matériel (le même tour) est réservé à l'élève sur toutes les séances. */
+  sameEquipment: z.boolean().optional(),
+});
+
+/** Heure murale « 14:00 ». */
+const clockTime = z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, "Heure invalide (HH:MM)");
+/** Date civile « 2026-12-23 ». */
+const civilDate = z.iso.date({ error: "Date invalide" });
+
+export const timeRangeSchema = z
+  .object({ start: clockTime, end: clockTime })
+  .refine((range) => range.start < range.end, {
+    message: "La fin doit suivre le début",
+    path: ["end"],
+  });
+export type TimeRange = z.output<typeof timeRangeSchema>;
+
+export const closureSchema = z
+  .object({
+    from: civilDate,
+    to: civilDate,
+    label: z.string().trim().max(40).optional(),
+  })
+  .refine((closure) => closure.from <= closure.to, {
+    message: "La fin précède le début",
+    path: ["to"],
+  });
+export type Closure = z.output<typeof closureSchema>;
+
+export const slotsModuleSchema = z
+  .object({
+    /** Plages de chaque jour de la semaine, 0 = lundi … 6 = dimanche ; vide : fermé. */
+    weekly: z.array(z.array(timeRangeSchema).max(6, "6 plages au plus par jour")).length(7),
+    /** Fermetures datées (vacances), dates incluses. */
+    closures: z.array(closureSchema).max(30, "30 fermetures au plus").optional(),
+    /** Un départ toutes les N minutes. */
+    intervalMinutes: z.int({ error: "Intervalle invalide" }).min(5).max(480),
+    /** Pause entre deux élèves. */
+    breakMinutes: z.int({ error: "Pause invalide" }).min(0).max(240).optional(),
+    /** Places par créneau (1 : cours particulier). */
+    seatsPerSlot: z.int({ error: "Nombre de places invalide" }).min(1).max(100).optional(),
+    /** Réservable au plus tôt N jours avant. */
+    opensDaysBefore: z.int({ error: "Nombre de jours invalide" }).min(1).max(365).optional(),
+    /** Réservable au plus tard X heures avant. */
+    closesHoursBefore: hours.optional(),
+    /** Intervenants proposés (vide : pas d'intervenant attaché au créneau). */
+    memberIds: z.array(z.uuid()).max(50).optional(),
+    /** L'élève choisit avec qui (sinon : le premier intervenant libre). */
+    chooseStaff: z.boolean().optional(),
+  })
+  .superRefine((slots, context) => {
+    for (const [day, ranges] of slots.weekly.entries()) {
+      const sorted = [...ranges].sort((a, b) => a.start.localeCompare(b.start));
+      for (let index = 1; index < sorted.length; index++) {
+        if ((sorted[index] as TimeRange).start < (sorted[index - 1] as TimeRange).end) {
+          context.addIssue({
+            code: "custom",
+            message: "Deux plages se chevauchent",
+            path: ["weekly", day],
+          });
+          break;
+        }
+      }
+    }
+  });
+export type SlotsModule = z.output<typeof slotsModuleSchema>;
+
+export const durationOptionSchema = z.object({
+  id: priceId,
+  /** « 1 h », « Journée ». */
+  label: z.string().trim().min(1, "Nomme la durée").max(40),
+  minutes: z
+    .int({ error: "Durée invalide" })
+    .min(5, "5 minutes au moins")
+    .max(24 * 60, "24 heures au plus"),
+  priceCents: cents,
+  /** « Découverte », « Repas compris ». */
+  description: z.string().trim().max(120).optional(),
+});
+export type DurationOption = z.output<typeof durationOptionSchema>;
+
+export const durationModuleSchema = z
+  .object({
+    options: z
+      .array(durationOptionSchema)
+      .min(1, "Au moins une durée")
+      .max(10, "10 durées au plus"),
+    /** Durée choisie d'office ; absent : la première. */
+    defaultId: priceId.optional(),
+  })
+  .refine(
+    (value) => new Set(value.options.map((option) => option.id)).size === value.options.length,
+    {
+      message: "Deux durées ont le même identifiant",
+      path: ["options"],
+    },
+  )
+  .refine(
+    (value) =>
+      value.defaultId === undefined ||
+      value.options.some((option) => option.id === value.defaultId),
+    { message: "Durée par défaut inconnue", path: ["defaultId"] },
+  );
+export type DurationModule = z.output<typeof durationModuleSchema>;
+
 /** Schéma de chaque module disponible (les modules « Bientôt » n'en ont pas encore). */
 export const MODULE_SCHEMAS = {
   places: placesModuleSchema,
@@ -252,6 +363,9 @@ export const MODULE_SCHEMAS = {
   pricing: pricingModuleSchema,
   deposit: depositModuleSchema,
   payment_methods: paymentMethodsModuleSchema,
+  sessions: sessionsModuleSchema,
+  slots: slotsModuleSchema,
+  duration: durationModuleSchema,
 } as const;
 
 export type ModuleKey = keyof typeof MODULE_SCHEMAS;
@@ -265,6 +379,16 @@ export const eventTypeModulesSchema = z
     },
   )
   .superRefine((modules, context) => {
+    // Trois façons de poser les dates : une seule à la fois.
+    const timing = (["series", "sessions", "slots"] as const).filter((key) => modules[key]);
+    if (timing.length > 1) {
+      context.addIssue({
+        code: "custom",
+        message:
+          "Créneaux, Plusieurs séances et Inscription à la série ne vont pas ensemble : garde-en un",
+        path: [timing[1] as string],
+      });
+    }
     // Option liée au matériel : un besoin facultatif du module, une seule option par besoin.
     const linked = new Set<string>();
     for (const [index, option] of (modules.pricing?.options ?? []).entries()) {
@@ -305,6 +429,7 @@ export type Rate = z.output<typeof rateSchema>;
 export type PriceOption = z.output<typeof priceOptionSchema>;
 export type DepositModule = z.output<typeof depositModuleSchema>;
 export type PaymentMethodsModule = z.output<typeof paymentMethodsModuleSchema>;
+export type SessionsModule = z.output<typeof sessionsModuleSchema>;
 
 export const MODULE_GROUPS = [
   { id: "reserve", label: "Réserver" },
@@ -385,7 +510,7 @@ export const MODULE_CATALOG: readonly ModuleDefinition[] = [
     group: "time",
     description: "Un stage sur trois samedis : une inscription, toutes les dates.",
     keywords: "stage dates",
-    soon: "lot 37",
+    defaults: { sameEquipment: false },
   },
   {
     key: "series",
@@ -401,7 +526,23 @@ export const MODULE_CATALOG: readonly ModuleDefinition[] = [
     group: "time",
     description: "Tu donnes tes disponibilités, l'élève choisit son créneau.",
     keywords: "rendez-vous disponibilités",
-    soon: "lot 37",
+    defaults: {
+      weekly: [
+        [],
+        [{ start: "14:00", end: "18:00" }],
+        [],
+        [{ start: "14:00", end: "18:00" }],
+        [],
+        [{ start: "10:00", end: "13:00" }],
+        [],
+      ],
+      intervalMinutes: 30,
+      breakMinutes: 15,
+      seatsPerSlot: 1,
+      opensDaysBefore: 30,
+      closesHoursBefore: 24,
+      chooseStaff: true,
+    },
   },
   {
     key: "duration",
@@ -409,7 +550,14 @@ export const MODULE_CATALOG: readonly ModuleDefinition[] = [
     group: "time",
     description: "1 h, 2 h ou la journée : chaque durée a son prix.",
     keywords: "location heure journée",
-    soon: "lot 37",
+    defaults: {
+      options: [
+        { id: "1h", label: "1 h", minutes: 60, priceCents: 4500, description: "Découverte" },
+        { id: "2h", label: "2 h", minutes: 120, priceCents: 8000 },
+        { id: "journee", label: "Journée", minutes: 360, priceCents: 18000 },
+      ],
+      defaultId: "1h",
+    },
   },
   {
     key: "pricing",

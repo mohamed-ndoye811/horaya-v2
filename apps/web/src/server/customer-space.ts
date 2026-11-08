@@ -209,7 +209,10 @@ async function enrollmentOf(
   if (!enrollment || enrollment.cancelledAt) return null;
   return {
     amountCents: enrollment.amountCents,
-    progress: enrollmentProgress(enrollment.sessions, now),
+    progress: {
+      ...enrollmentProgress(enrollment.sessions, now),
+      stage: enrollment.seriesKind === "stage",
+    },
     payment: enrollmentPayment(enrollment, workspace.paymentLinkUrl),
   };
 }

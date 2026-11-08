@@ -49,6 +49,17 @@ export function enrollmentRepository(db: Executor): EnrollmentRepository {
       return (found as Enrollment | undefined) ?? null;
     },
 
+    async listActive(organizationId, seriesId) {
+      const rows = await select().where(
+        and(
+          inOrganization(organizationId),
+          eq(seriesEnrollment.seriesId, seriesId),
+          isNull(seriesEnrollment.cancelledAt),
+        ),
+      );
+      return rows as Enrollment[];
+    },
+
     async update(organizationId, enrollmentId, patch) {
       const [updated] = await db
         .update(seriesEnrollment)

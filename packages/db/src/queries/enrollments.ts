@@ -1,4 +1,10 @@
-import type { BookingStatus, EventStatus, EventTypeField, FieldValues } from "@horaya/core";
+import type {
+  BookingStatus,
+  EventStatus,
+  EventTypeField,
+  FieldValues,
+  SeriesKind,
+} from "@horaya/core";
 import { and, asc, desc, eq, inArray, isNull, sql } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 import type { Executor } from "../client";
@@ -34,6 +40,10 @@ export async function getSeriesOffer(
       id: eventSeries.id,
       enrollmentEnabled: eventSeries.enrollmentEnabled,
       enrollmentPriceCents: eventSeries.enrollmentPriceCents,
+      /** Stage (lot 37) : prix de chaque tarif pour tout le stage. */
+      kind: eventSeries.kind,
+      enrollmentPrices: eventSeries.enrollmentPrices,
+      sameEquipment: eventSeries.sameEquipment,
       dropInAllowed: eventSeries.dropInAllowed,
       enrollmentProrata: eventSeries.enrollmentProrata,
       makeupAllowed: eventSeries.makeupAllowed,
@@ -51,6 +61,7 @@ export async function getSeriesOffer(
       endsAt: event.endsAt,
       capacity: event.capacity,
       visibility: event.visibility,
+      sessionTopic: event.sessionTopic,
       seatsHeld,
     })
     .from(event)
@@ -319,6 +330,8 @@ export interface EnrollmentSession {
   slug: string;
   startsAt: Date;
   endsAt: Date;
+  /** Stage : le sujet de la séance. */
+  sessionTopic: string | null;
   locationName: string | null;
   eventStatus: EventStatus;
   status: BookingStatus;
@@ -340,6 +353,9 @@ export async function getEnrollment(
       id: seriesEnrollment.id,
       seriesId: seriesEnrollment.seriesId,
       makeupAllowed: sql<boolean>`(select s.makeup_allowed from event_series s where s.id = ${seriesEnrollment.seriesId})`,
+      /** Stage (lot 37) : les séances se prennent ensemble, l'élève annule tout le stage. */
+      seriesKind: sql<SeriesKind>`(select s.kind from event_series s where s.id = ${seriesEnrollment.seriesId})`,
+      priceLines: seriesEnrollment.priceLines,
       amountCents: seriesEnrollment.amountCents,
       currency: seriesEnrollment.currency,
       paidAt: seriesEnrollment.paidAt,
@@ -369,6 +385,7 @@ export async function getEnrollment(
       slug: event.slug,
       startsAt: event.startsAt,
       endsAt: event.endsAt,
+      sessionTopic: event.sessionTopic,
       locationName: event.locationName,
       eventStatus: event.status,
       status: booking.status,
@@ -418,4 +435,21 @@ export async function listCustomerEnrollmentIds(
     )
     .orderBy(desc(seriesEnrollment.createdAt));
   return rows.map((row) => row.id);
+}
+
+/** Stage (lot 37) : son titre et toutes ses séances, annulées comprises (e-mail d'annulation). */
+export async function getStageSessions(db: Executor, organizationId: string, seriesId: string) {
+  const sessions = await db
+    .select({
+      id: event.id,
+      title: event.title,
+      startsAt: event.startsAt,
+      endsAt: event.endsAt,
+      sessionTopic: event.sessionTopic,
+      status: event.status,
+    })
+    .from(event)
+    .where(and(eq(event.organizationId, organizationId), eq(event.seriesId, seriesId)))
+    .orderBy(asc(event.startsAt));
+  return { title: sessions[0]?.title ?? null, sessions };
 }

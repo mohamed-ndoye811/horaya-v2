@@ -45,6 +45,8 @@ export const seriesEnrollment = pgTable(
       .references(() => customer.id, { onDelete: "restrict" }),
     amountCents: cents().notNull().default(0),
     currency: currency(),
+    /** Stage : le tarif choisi (lot 37) ; vide pour une série. */
+    priceLines: jsonb().$type<PriceLine[]>().notNull().default([]),
     /** Paiement noté par l'équipe (lien externe, sur place). */
     paidAt: timestamp({ withTimezone: true }),
     source: bookingSource().notNull(),

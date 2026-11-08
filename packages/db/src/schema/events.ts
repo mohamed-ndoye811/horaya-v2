@@ -1,4 +1,11 @@
-import type { BookingNoun, EventModules, EventTypeField, FieldValues, Rule } from "@horaya/core";
+import type {
+  BookingNoun,
+  EventModules,
+  EventTypeField,
+  FieldValues,
+  Rule,
+  SeriesKind,
+} from "@horaya/core";
 import { sql } from "drizzle-orm";
 import {
   boolean,
@@ -49,9 +56,15 @@ export const eventSeries = pgTable("event_series", {
   rrule: text().notNull(),
   until: timestamp({ withTimezone: true }),
   timezone: text().notNull(),
+  /** `stage` : plusieurs séances, une inscription (lot 37) ; `recurrence` : série récurrente. */
+  kind: text().$type<SeriesKind>().notNull().default("recurrence"),
   /** Cours à l'année : inscription à toute la série, au prix de la série. */
   enrollmentEnabled: boolean().notNull().default(false),
   enrollmentPriceCents: cents(),
+  /** Stage : prix de chaque tarif pour tout le stage (`rate.id` → centimes). */
+  enrollmentPrices: jsonb().$type<Record<string, number>>(),
+  /** Stage : le même matériel est réservé à l'élève sur toutes les séances. */
+  sameEquipment: boolean().notNull().default(false),
   /** La réservation à la séance reste ouverte au public. */
   dropInAllowed: boolean().notNull().default(true),
   /** Inscription en cours de route au prorata des séances restantes. */
@@ -102,6 +115,10 @@ export const event = pgTable(
     fieldValues: jsonb().$type<FieldValues>().notNull().default({}),
     /** Module Intervenant : le membre de l'équipe qui anime l'événement. */
     staffMemberId: uuid().references(() => member.id, { onDelete: "set null" }),
+    /** Module Créneaux : événement créé par la réservation d'un créneau (lot 37). */
+    fromSlot: boolean().notNull().default(false),
+    /** Module Plusieurs séances : le sujet de cette séance du stage. */
+    sessionTopic: text(),
     publishedAt: timestamp({ withTimezone: true }),
     cancelledAt: timestamp({ withTimezone: true }),
     /** Rappel de la veille envoyé à l'équipe (une seule fois). */
@@ -123,6 +140,7 @@ export const event = pgTable(
     index().on(t.organizationId, t.status),
     index().on(t.seriesId),
     index().on(t.staffMemberId),
+    index().on(t.eventTypeId, t.startsAt).where(sql`${t.fromSlot}`),
     check("event_period_valid", sql`${t.endsAt} > ${t.startsAt}`),
     check("event_capacity_positive", sql`${t.capacity} IS NULL OR ${t.capacity} > 0`),
     check("event_price_positive", sql`${t.priceCents} >= 0`),
@@ -164,4 +182,32 @@ export const calendarLink = pgTable(
     updatedAt: updatedAt(),
   },
   (t) => [unique().on(t.organizationId, t.slug)],
+);
+
+/**
+ * Créneau gardé 10 minutes pendant que l'élève remplit le formulaire (module Créneaux,
+ * lot 37). Expiré, il ne compte plus ; il est supprimé à la réservation ou au nettoyage.
+ */
+export const slotHold = pgTable(
+  "slot_hold",
+  {
+    id: id(),
+    organizationId: organizationId(),
+    eventTypeId: uuid()
+      .notNull()
+      .references(() => eventType.id, { onDelete: "cascade" }),
+    startsAt: timestamp({ withTimezone: true }).notNull(),
+    endsAt: timestamp({ withTimezone: true }).notNull(),
+    durationId: text(),
+    staffMemberId: uuid().references(() => member.id, { onDelete: "cascade" }),
+    /** Créneau déjà réservé que l'élève vient compléter. */
+    eventId: uuid().references(() => event.id, { onDelete: "cascade" }),
+    seats: integer().notNull().default(1),
+    expiresAt: timestamp({ withTimezone: true }).notNull(),
+    createdAt: createdAt(),
+  },
+  (t) => [
+    index().on(t.organizationId, t.expiresAt),
+    check("slot_hold_period_valid", sql`${t.endsAt} > ${t.startsAt}`),
+  ],
 );

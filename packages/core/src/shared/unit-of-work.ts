@@ -15,6 +15,7 @@ import type { InventoryRepository } from "../inventory/ports";
 import type { PassRepository } from "../passes/ports";
 import type { PaymentRepository } from "../payments/ports";
 import type { RuleRepository } from "../rules/ports";
+import type { SlotRepository } from "../slots/ports";
 import type { NotificationPreferenceRepository } from "../tenants/ports";
 import type { TenantSettingsStore } from "../tenants/settings";
 import type { Clock } from "./clock";
@@ -39,6 +40,7 @@ export interface Repositories {
   passes: PassRepository;
   giftCards: GiftCardRepository;
   rules: RuleRepository;
+  slots: SlotRepository;
 }
 
 /** Exécute un travail dans une transaction : tout est validé, ou rien. */

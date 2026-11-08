@@ -6,8 +6,17 @@ import type { Event, EventSeries, EventType } from "./model";
 export type NewEventType = Omit<EventType, "id" | "archivedAt">;
 export type NewEvent = Omit<
   Event,
-  "id" | "createdAt" | "updatedAt" | "publishedAt" | "cancelledAt" | "status" | "coverImageUrl"
->;
+  | "id"
+  | "createdAt"
+  | "updatedAt"
+  | "publishedAt"
+  | "cancelledAt"
+  | "status"
+  | "coverImageUrl"
+  | "fromSlot"
+  | "sessionTopic"
+> &
+  Partial<Pick<Event, "fromSlot" | "sessionTopic">>;
 export type EventPatch = Partial<
   Omit<
     Event,
@@ -19,6 +28,8 @@ export type SeriesEnrollmentSettings = Pick<
   EventSeries,
   | "enrollmentEnabled"
   | "enrollmentPriceCents"
+  | "enrollmentPrices"
+  | "sameEquipment"
   | "dropInAllowed"
   | "enrollmentProrata"
   | "makeupAllowed"
@@ -30,6 +41,8 @@ export interface EventTypeRepository {
   insert(eventType: NewEventType): Promise<EventType>;
   find(organizationId: string, eventTypeId: string): Promise<EventType | null>;
   update(organizationId: string, eventTypeId: string, patch: EventTypePatch): Promise<EventType>;
+  /** Types actifs avec le module Créneaux (lot 37). */
+  listWithSlots(organizationId: string): Promise<EventType[]>;
 }
 
 export interface EventRepository {
@@ -39,6 +52,7 @@ export interface EventRepository {
       rrule: string;
       until: Date | null;
       timezone: string;
+      kind?: EventSeries["kind"];
     } & Partial<SeriesEnrollmentSettings>,
   ): Promise<{ id: string }>;
   findSeries(organizationId: string, seriesId: string): Promise<EventSeries | null>;

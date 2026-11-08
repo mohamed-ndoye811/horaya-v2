@@ -103,7 +103,7 @@ export const EVENT_TYPE_TEMPLATES: readonly EventTypeTemplate[] = [
   {
     id: "stage",
     name: "Stage",
-    description: "Plusieurs jours, une seule inscription.",
+    description: "Plusieurs séances, une seule inscription.",
     color: "#528D74",
     defaultDurationMinutes: 1440,
     defaultPriceCents: 25000,
@@ -111,6 +111,7 @@ export const EVENT_TYPE_TEMPLATES: readonly EventTypeTemplate[] = [
     modules: {
       places: { capacity: 8, minimum: { seats: 4, daysBefore: 7 } },
       opening: { closesHoursBefore: 168 },
+      sessions: { singleSession: false, sameEquipment: true },
       cancellation: { freeHours: 168, lateRefundPercent: 50 },
       pricing: {
         rates: [
@@ -177,17 +178,38 @@ export const EVENT_TYPE_TEMPLATES: readonly EventTypeTemplate[] = [
   {
     id: "rendez-vous",
     name: "Rendez-vous",
-    description: "Cours particulier, sur une heure fixée.",
+    description: "Cours particulier : l'élève choisit son créneau et sa durée.",
     color: "#CF879C",
     defaultDurationMinutes: 60,
-    defaultPriceCents: 6000,
+    defaultPriceCents: 4500,
     bookingNoun: "reservation",
     modules: {
-      places: { capacity: 1, maxPerBooking: 1 },
-      opening: { closesHoursBefore: 24 },
+      places: { maxPerBooking: 1 },
       cancellation: { freeHours: 24, lateRefundPercent: 0 },
-      staff: { showOnPublicPage: true },
-      pricing: { rates: [{ id: "seance", name: "Séance", priceCents: 6000 }] },
+      slots: {
+        weekly: [
+          [],
+          [{ start: "14:00", end: "18:00" }],
+          [],
+          [{ start: "14:00", end: "18:00" }],
+          [],
+          [{ start: "10:00", end: "13:00" }],
+          [],
+        ],
+        intervalMinutes: 30,
+        breakMinutes: 15,
+        seatsPerSlot: 1,
+        opensDaysBefore: 30,
+        closesHoursBefore: 24,
+        chooseStaff: true,
+      },
+      duration: {
+        options: [
+          { id: "1h", label: "1 h", minutes: 60, priceCents: 4500, description: "Découverte" },
+          { id: "2h", label: "2 h", minutes: 120, priceCents: 8000 },
+        ],
+        defaultId: "1h",
+      },
     },
     fields: [
       {
@@ -211,6 +233,14 @@ export const EVENT_TYPE_TEMPLATES: readonly EventTypeTemplate[] = [
       places: { capacity: 1 },
       approval: {},
       location: { mode: "venue" },
+      duration: {
+        options: [
+          { id: "2h", label: "2 h", minutes: 120, priceCents: 2500 },
+          { id: "demi-journee", label: "Demi-journée", minutes: 240, priceCents: 4000 },
+          { id: "journee", label: "Journée", minutes: 480, priceCents: 7000 },
+        ],
+        defaultId: "demi-journee",
+      },
       pricing: {
         rates: [{ id: "demi-journee", name: "Demi-journée", priceCents: 4000 }],
         options: [

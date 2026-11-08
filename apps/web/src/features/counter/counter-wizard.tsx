@@ -45,6 +45,8 @@ import { BookingOptions, SeatPrice, usePriceChoice } from "../public/price-choic
 
 export interface CounterEvent {
   id: string;
+  /** Créneau libre d'un type « sur rendez-vous » : l'événement naît à la réservation (lot 37). */
+  slot?: { eventTypeId: string; startsAt: string; durationId: string | null };
   title: string;
   day: "today" | "tomorrow" | "later";
   time: string;
@@ -202,7 +204,7 @@ export function CounterWizard({
     setItems(null);
     setQuantities({});
     setPickingItems(false);
-    if (eventId) counterItemsAction(eventId).then(setItems);
+    if (eventId && !eventId.startsWith("slot:")) counterItemsAction(eventId).then(setItems);
   }, [eventId]);
 
   // Cartes de séances utilisables par le client pour cette séance.
@@ -210,7 +212,9 @@ export function CounterWizard({
   useEffect(() => {
     setPassId(null);
     setPasses([]);
-    if (customerId && eventId) counterPassesAction(customerId, eventId).then(setPasses);
+    if (customerId && eventId && !eventId.startsWith("slot:")) {
+      counterPassesAction(customerId, eventId).then(setPasses);
+    }
   }, [customerId, eventId]);
 
   function blocking(): string | null {
@@ -261,7 +265,7 @@ export function CounterWizard({
       return;
     }
     const input: CounterBookingInput = {
-      eventId,
+      ...(event?.slot ? { slot: event.slot } : { eventId }),
       seats,
       ...who,
       items: chosenItems.map(([itemId, quantity]) => ({ itemId, quantity })),

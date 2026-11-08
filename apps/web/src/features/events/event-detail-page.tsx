@@ -132,6 +132,11 @@ export function EventDetailPage({
             <CategorySwatch color={event.typeColor} size={12} />
             {[
               event.typeName,
+              event.seriesKind === "stage"
+                ? `Séance du stage${event.sessionTopic ? ` : ${event.sessionTopic}` : ""}`
+                : event.fromSlot
+                  ? "Créneau réservé"
+                  : null,
               formatEventRange(event.startsAt, event.endsAt, timeZone),
               event.locationName ?? (event.onlineUrl ? "En ligne" : null),
               event.staffName ? `avec ${event.staffName}` : null,
@@ -251,7 +256,7 @@ export function EventDetailPage({
               ? [
                   {
                     value: "serie",
-                    label: "Série",
+                    label: event.seriesKind === "stage" ? "Stage" : "Série",
                     href: `/app/evenements/${event.id}?onglet=serie`,
                   },
                 ]
@@ -440,6 +445,7 @@ export function EventDetailPage({
           seriesId={event.seriesId}
           eventId={event.id}
           offer={series.offer}
+          rates={event.modules.pricing?.rates ?? []}
           enrollments={series.enrollments}
           targets={series.targets}
           timeZone={timeZone}

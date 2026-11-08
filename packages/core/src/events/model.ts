@@ -10,6 +10,9 @@ import type { EventStatus, EventVisibility, PaymentMode } from "./types";
 export const BOOKING_NOUNS = ["reservation", "inscription", "location", "demande"] as const;
 export type BookingNoun = (typeof BOOKING_NOUNS)[number];
 
+export const SERIES_KINDS = ["recurrence", "stage"] as const;
+export type SeriesKind = (typeof SERIES_KINDS)[number];
+
 export interface EventType {
   id: string;
   organizationId: string;
@@ -40,8 +43,14 @@ export interface EventSeries {
   timezone: string;
   /** « Inscription à la série » : une place dans chaque séance restante, un seul paiement. */
   enrollmentEnabled: boolean;
+  /** `stage` : plusieurs séances, une inscription (lot 37) ; `recurrence` : série récurrente. */
+  kind: SeriesKind;
   /** Prix de l'inscription à toute la série (ex. le trimestre), en centimes. */
   enrollmentPriceCents: number | null;
+  /** Stage : prix de chaque tarif pour tout le stage (`rate.id` → centimes). */
+  enrollmentPrices: Record<string, number> | null;
+  /** Stage : le même matériel est réservé à l'élève sur toutes les séances. */
+  sameEquipment: boolean;
   /** La réservation à la séance reste possible sur la page publique. */
   dropInAllowed: boolean;
   /** Inscription en cours de route : prix de la série × séances restantes ÷ séances totales. */
@@ -93,6 +102,10 @@ export interface Event {
   fieldValues: FieldValues;
   /** Module Intervenant : le membre de l'équipe qui anime cet événement. */
   staffMemberId: string | null;
+  /** Module Créneaux : événement créé par la réservation d'un créneau (lot 37). */
+  fromSlot: boolean;
+  /** Module Plusieurs séances : le sujet de cette séance du stage (« Tournassage »). */
+  sessionTopic: string | null;
   publishedAt: Date | null;
   cancelledAt: Date | null;
   createdAt: Date;

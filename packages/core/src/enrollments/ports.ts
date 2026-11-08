@@ -1,7 +1,8 @@
 import type { Booking } from "../bookings/model";
 import type { Enrollment } from "./model";
 
-export type NewEnrollment = Omit<Enrollment, "id" | "createdAt" | "cancelledAt"> & {
+export type NewEnrollment = Omit<Enrollment, "id" | "createdAt" | "cancelledAt" | "priceLines"> & {
+  priceLines?: Enrollment["priceLines"];
   /** Empreinte du jeton du lien de gestion de l'inscription. */
   manageTokenHash: string;
 };
@@ -21,6 +22,8 @@ export interface EnrollmentRepository {
     enrollmentId: string,
     patch: Partial<Pick<Enrollment, "paidAt" | "cancelledAt">>,
   ): Promise<Enrollment>;
+  /** Inscriptions en cours (non annulées) à une série. */
+  listActive(organizationId: string, seriesId: string): Promise<Enrollment[]>;
   /** Réservations des séances de l'inscription, tous statuts. */
   listBookings(enrollmentId: string): Promise<Booking[]>;
   /** Séance de rattrapage encore active (en attente ou confirmée) d'une absence. */

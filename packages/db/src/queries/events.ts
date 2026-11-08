@@ -8,6 +8,7 @@ import type {
   FieldValues,
   PaymentMode,
   Rule,
+  SeriesKind,
 } from "@horaya/core";
 import { and, asc, desc, eq, gt, gte, ilike, isNull, lt, ne, or, type SQL, sql } from "drizzle-orm";
 import type { Executor } from "../client";
@@ -51,6 +52,10 @@ const eventColumns = {
   typeName: eventType.name,
   typeColor: eventType.color,
   seatsHeld,
+  /** Le temps (lot 37) : séance d'un stage, créneau réservé. */
+  sessionTopic: event.sessionTopic,
+  fromSlot: event.fromSlot,
+  seriesKind: sql<SeriesKind | null>`(select s.kind from event_series s where s.id = "event"."series_id")`,
 };
 
 export interface EventRow {
@@ -76,6 +81,9 @@ export interface EventRow {
   typeName: string;
   typeColor: string;
   seatsHeld: number;
+  sessionTopic: string | null;
+  fromSlot: boolean;
+  seriesKind: SeriesKind | null;
 }
 
 export type EventTab = "all" | "published" | "draft" | "past";
