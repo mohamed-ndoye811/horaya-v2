@@ -7,6 +7,7 @@ describe("FILE_KEY", () => {
     expect(FILE_KEY.test(`org_123/articles/${id}.webp`)).toBe(true);
     expect(FILE_KEY.test(`user-9/profils/${id}.png`)).toBe(true);
     expect(FILE_KEY.test(`org_123/couvertures/${id}.jpg`)).toBe(true);
+    expect(FILE_KEY.test(`org_123/documents/${id}.pdf`)).toBe(true);
   });
   it("refuse les chemins détournés et les fichiers inattendus", () => {
     expect(FILE_KEY.test(`../articles/${id}.webp`)).toBe(false);
@@ -14,5 +15,7 @@ describe("FILE_KEY", () => {
     expect(FILE_KEY.test(`org/factures/${id}.webp`)).toBe(false);
     expect(FILE_KEY.test(`org/articles/${id}.svg`)).toBe(false);
     expect(FILE_KEY.test(`org/articles/${id}.webp?x=1`)).toBe(false);
+    expect(FILE_KEY.test(`org/articles/${id}.pdf`)).toBe(false);
+    expect(FILE_KEY.test(`org/documents/${id}.webp`)).toBe(false);
   });
 });

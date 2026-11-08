@@ -1,4 +1,4 @@
-import type { BookingNoun, BookingRules, EventTypeField, FieldValues } from "@horaya/core";
+import type { BookingNoun, EventModules, EventTypeField, FieldValues } from "@horaya/core";
 import { sql } from "drizzle-orm";
 import {
   boolean,
@@ -25,13 +25,12 @@ export const eventType = pgTable(
     description: text(),
     defaultDurationMinutes: integer(),
     defaultPriceCents: cents(),
-    defaultCapacity: integer(),
-    requiresApproval: boolean().notNull().default(false),
+    /** « Fonctionnement » (lot 34) : une clé par module actif, validée par le core. */
+    modules: jsonb().$type<EventModules>().notNull().default({}),
     /** « Ce que tu décris » et « Ce que tu demandes » (lot 33). */
     fields: jsonb().$type<EventTypeField[]>().notNull().default([]),
     /** « inscription », « réservation »… sur la page publique et le bouton du formulaire. */
     bookingNoun: text().$type<BookingNoun>().notNull().default("reservation"),
-    bookingRules: jsonb().$type<BookingRules>().notNull().default({}),
     archivedAt: timestamp({ withTimezone: true }),
     createdAt: createdAt(),
     updatedAt: updatedAt(),
@@ -93,6 +92,8 @@ export const event = pgTable(
     coverImageUrl: text(),
     /** Champs du type copiés à la création : l'événement garde sa version. */
     fields: jsonb().$type<EventTypeField[]>().notNull().default([]),
+    /** Modules du type copiés à la création (lot 34). */
+    modules: jsonb().$type<EventModules>().notNull().default({}),
     /** Valeurs de « Ce que tu décris ». */
     fieldValues: jsonb().$type<FieldValues>().notNull().default({}),
     publishedAt: timestamp({ withTimezone: true }),
@@ -101,6 +102,12 @@ export const event = pgTable(
     reminderSentAt: timestamp({ withTimezone: true }),
     /** Équipe prévenue que l'événement est presque complet (une seule fois). */
     almostFullNotifiedAt: timestamp({ withTimezone: true }),
+    /** Seuil de maintien : équipe prévenue du risque d'annulation, la veille de J-x. */
+    minimumWarnedAt: timestamp({ withTimezone: true }),
+    /** Seuil de maintien : décision prise à J-x (maintenu ou annulé), une seule fois. */
+    minimumDecidedAt: timestamp({ withTimezone: true }),
+    /** Module Messages : message après la séance envoyé (une seule fois). */
+    followUpSentAt: timestamp({ withTimezone: true }),
     createdAt: createdAt(),
     updatedAt: updatedAt(),
   },

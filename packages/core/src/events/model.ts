@@ -1,4 +1,5 @@
 import type { EventTypeField, FieldValues } from "../fields/model";
+import type { EventModules } from "../modules/registry";
 import type { EventStatus, EventVisibility, PaymentMode } from "./types";
 
 /**
@@ -8,15 +9,6 @@ import type { EventStatus, EventVisibility, PaymentMode } from "./types";
 export const BOOKING_NOUNS = ["reservation", "inscription", "location", "demande"] as const;
 export type BookingNoun = (typeof BOOKING_NOUNS)[number];
 
-export interface BookingRules {
-  /** Délai minimum avant le début pour réserver en ligne, en heures. */
-  minAdvanceHours?: number;
-  /** Places maximum par réservation en ligne. */
-  maxSeatsPerBooking?: number;
-  /** Quand c'est complet, les demandes passent en liste d'attente au lieu d'être refusées. */
-  waitlistEnabled?: boolean;
-}
-
 export interface EventType {
   id: string;
   organizationId: string;
@@ -25,12 +17,11 @@ export interface EventType {
   description: string | null;
   defaultDurationMinutes: number | null;
   defaultPriceCents: number | null;
-  defaultCapacity: number | null;
-  requiresApproval: boolean;
+  /** « Fonctionnement » (lot 34) : places, liste d'attente, ouverture, annulation… */
+  modules: EventModules;
   /** « Ce que tu décris » et « Ce que tu demandes ». */
   fields: EventTypeField[];
   bookingNoun: BookingNoun;
-  bookingRules: BookingRules;
   archivedAt: Date | null;
 }
 
@@ -88,6 +79,11 @@ export interface Event {
    * change ensuite (sauf « Appliquer aussi aux événements à venir », sans inscription).
    */
   fields: EventTypeField[];
+  /**
+   * Modules du type copiés à la création, comme les champs. La jauge et la validation de
+   * l'événement restent dans `capacity` et `requiresApproval`.
+   */
+  modules: EventModules;
   /** Valeurs de « Ce que tu décris ». */
   fieldValues: FieldValues;
   publishedAt: Date | null;

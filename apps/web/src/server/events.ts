@@ -10,6 +10,7 @@ import {
   createEventType,
   deleteCalendarLink,
   fromZonedParts,
+  keepEventDespiteMinimum,
   publishEvent,
   removeEventItem,
   setEventItemQuantity,
@@ -118,6 +119,17 @@ export async function publishEventActionImpl(eventId: string): Promise<FormState
   return { success: "Événement publié." };
 }
 
+/** « Maintenir quand même » : l'événement ne sera pas annulé faute d'inscrits. */
+export async function keepEventActionImpl(eventId: string): Promise<FormState> {
+  const { actor } = await getWorkspaceContext();
+  try {
+    await keepEventDespiteMinimum(deps, actor, eventId);
+  } catch (error) {
+    return toFormState(error);
+  }
+  return { success: "Événement maintenu, quel que soit le nombre d'inscrits." };
+}
+
 export async function cancelEventActionImpl(eventId: string, reason: string): Promise<FormState> {
   const { actor } = await getWorkspaceContext();
   try {
@@ -149,15 +161,15 @@ const DURATIONS: Record<string, number | null> = {
 export async function saveEventType(typeId: string | null, form: FormData): Promise<FormState> {
   const { actor } = await getWorkspaceContext();
   const price = text(form, "defaultPrice");
-  const capacity = text(form, "defaultCapacity");
-  const maxSeats = text(form, "maxSeatsPerBooking");
-  const minAdvance = text(form, "minAdvanceHours");
 
+  // Champs et modules arrivent en JSON ; le core les valide (schémas des champs et des modules).
   let fields: unknown;
+  let modules: unknown;
   try {
     fields = JSON.parse(text(form, "fields") || "[]");
+    modules = JSON.parse(text(form, "modules") || "{}");
   } catch {
-    return { error: "Champs illisibles." };
+    return { error: "Réglages illisibles." };
   }
 
   const input = {
@@ -166,14 +178,8 @@ export async function saveEventType(typeId: string | null, form: FormData): Prom
     bookingNoun: text(form, "bookingNoun") || "reservation",
     defaultDurationMinutes: DURATIONS[text(form, "defaultDuration")] ?? null,
     defaultPriceCents: price === "" ? null : parseEuroToCents(price),
-    defaultCapacity: capacity === "" ? null : Number(capacity),
-    requiresApproval: form.get("requiresApproval") === "on",
     fields,
-    bookingRules: {
-      waitlistEnabled: form.get("waitlistEnabled") === "on",
-      ...(minAdvance !== "" ? { minAdvanceHours: Number(minAdvance) } : {}),
-      ...(maxSeats !== "" ? { maxSeatsPerBooking: Number(maxSeats) } : {}),
-    },
+    modules,
   };
 
   let savedId: string;

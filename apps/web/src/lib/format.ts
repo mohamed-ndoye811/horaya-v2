@@ -60,6 +60,12 @@ export function formatDateTimeShort(date: Date, timeZone = DEFAULT_TIME_ZONE): s
   return `${formatWeekdayShort(date, timeZone)} ${day} · ${formatHour(date, timeZone)}`;
 }
 
+/** « mer. 17 juin à 11h » (ouverture des inscriptions). */
+export function formatOpening(date: Date, timeZone = DEFAULT_TIME_ZONE): string {
+  const day = part(date, timeZone, { day: "numeric", month: "long" });
+  return `${formatWeekdayShort(date, timeZone).toLowerCase()} ${day} à ${formatHour(date, timeZone)}`;
+}
+
 /** « Aujourd'hui, 8:30 », « Hier, 21:12 », « 14 juin, 11:20 » (colonne « Réservé le »). */
 export function formatRelativeDateTime(
   date: Date,

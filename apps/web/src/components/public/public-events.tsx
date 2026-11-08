@@ -74,6 +74,7 @@ export function eventBadge(
   requiresApproval: boolean,
 ): { label: string; tone: Tone } | null {
   if (state.kind === "closed") return { label: "Réservations closes", tone: "draft" };
+  if (state.kind === "upcoming") return { label: "Ouverture prochaine", tone: "info" };
   if (state.kind !== "open") return { label: "Complet", tone: "draft" };
   if (requiresApproval) return { label: "Sur validation", tone: "info" };
   if (seats.tone === "warning") return { label: seats.label, tone: "warning" };
@@ -84,6 +85,7 @@ const ACTIONS: Record<BookingState["kind"], { label: string; className: string }
   open: { label: "Réserver →", className: "text-[var(--brand-text)]" },
   waitlist: { label: "Liste d'attente →", className: "text-ink" },
   full: { label: "Complet", className: "text-ink-subtle" },
+  upcoming: { label: "Voir →", className: "text-ink" },
   closed: { label: "Voir →", className: "text-ink-subtle" },
 };
 

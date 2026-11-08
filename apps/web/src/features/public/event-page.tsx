@@ -1,4 +1,4 @@
-import { fieldsOfScope } from "@horaya/core";
+import { ageLabel, cancellationPolicyOf, fieldsOfScope } from "@horaya/core";
 import { BottomNotch } from "@/components/app/bottom-notch";
 import { FieldAnswers } from "@/components/app/field-answers";
 import { WordsReveal } from "@/components/motion/words";
@@ -12,7 +12,7 @@ import type { getPublicEventPage } from "@/functions/public";
 import { cn } from "@/lib/cn";
 import { BOOKING_NOUN_LABELS } from "@/lib/fields";
 import { displayFontClass } from "@/lib/fonts";
-import { formatMoney, formatPublicSchedule } from "@/lib/format";
+import { formatMoney, formatOpening, formatPublicSchedule } from "@/lib/format";
 import { Link } from "@/lib/navigation";
 import {
   availability,
@@ -57,8 +57,15 @@ export function PublicEventPage({
     paymentNote(event.paymentMode, channel, event.depositPercent),
     event.requiresApproval ? "Sur validation de l'organisateur" : null,
     event.paymentMode !== "free"
-      ? cancellationPolicy(event.startsAt, workspace, tz).split(".")[0]
+      ? cancellationPolicy(
+          event.startsAt,
+          cancellationPolicyOf(event.modules, workspace),
+          tz,
+        ).split(".")[0]
       : null,
+    // Modules : conditions d'accès et « À apporter ».
+    ageLabel(event.modules.access) ? `Réservé : ${ageLabel(event.modules.access)}` : null,
+    event.modules.messages?.bring ? `À apporter : ${event.modules.messages.bring}` : null,
   ].filter(Boolean);
   // Cours vendu seulement au trimestre : on affiche le prix de la série.
   const seriesOnly = event.enrollmentEnabled && !event.dropInAllowed && offer !== null;
@@ -299,9 +306,11 @@ export function PublicEventPage({
               <p className="border-t border-bg pt-4 text-[15px] font-semibold leading-[22px] text-ink-muted">
                 {!dropIn
                   ? "Ce cours se réserve pour toute la série : les inscriptions sont closes."
-                  : state.kind === "full"
-                    ? "C'est complet : il n'y a plus de place pour cet événement."
-                    : "Les réservations en ligne sont closes pour cet événement."}
+                  : state.kind === "upcoming"
+                    ? `Inscriptions ouvertes le ${formatOpening(state.opensAt, tz)}.`
+                    : state.kind === "full"
+                      ? "C'est complet : il n'y a plus de place pour cet événement."
+                      : "Les réservations en ligne sont closes pour cet événement."}
               </p>
             )
           )}

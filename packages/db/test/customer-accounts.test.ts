@@ -61,7 +61,7 @@ async function stageType(waitlist = false) {
   return createEventType(deps, owner, {
     name: `Stage ${Math.random().toString(36).slice(2, 7)}`,
     color: "#B4532A",
-    bookingRules: { waitlistEnabled: waitlist },
+    modules: waitlist ? { waitlist: {} } : {},
   });
 }
 

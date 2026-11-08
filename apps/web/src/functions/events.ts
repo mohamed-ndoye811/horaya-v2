@@ -1,4 +1,10 @@
-import { can, EVENT_TYPE_TEMPLATES, type EventTypeField, isCheckInOpen } from "@horaya/core";
+import {
+  can,
+  EVENT_TYPE_TEMPLATES,
+  type EventModules,
+  type EventTypeField,
+  isCheckInOpen,
+} from "@horaya/core";
 import {
   countEventsByTab,
   getEventDetail,
@@ -8,6 +14,7 @@ import {
   listEventTypes,
   listItemsAvailableBetween,
   listLinkableEvents,
+  tenantSettingsReader,
 } from "@horaya/db";
 import { notFound, redirect } from "@tanstack/react-router";
 import { createServerFn } from "@tanstack/react-start";
@@ -25,6 +32,7 @@ import {
   archiveEventTypeActionImpl,
   cancelEventActionImpl,
   deleteCalendarLinkImpl,
+  keepEventActionImpl,
   publishEventActionImpl,
   removeEventItemActionImpl,
   saveCalendarLink,
@@ -78,8 +86,7 @@ const typeOption = (type: {
   fields: EventTypeField[];
   defaultDurationMinutes: number | null;
   defaultPriceCents: number | null;
-  defaultCapacity: number | null;
-  requiresApproval: boolean;
+  modules: EventModules;
 }) => ({
   id: type.id,
   name: type.name,
@@ -87,8 +94,10 @@ const typeOption = (type: {
   fields: type.fields,
   defaultDurationMinutes: type.defaultDurationMinutes,
   defaultPriceCents: type.defaultPriceCents,
-  defaultCapacity: type.defaultCapacity,
-  requiresApproval: type.requiresApproval,
+  // Réglages de départ des modules (places, validation, invitation).
+  defaultCapacity: type.modules.places?.capacity ?? null,
+  requiresApproval: Boolean(type.modules.approval),
+  inviteOnly: Boolean(type.modules.access?.inviteOnly),
 });
 
 export const newEventSearch = z.object({ date: searchText, titre: searchText });
@@ -163,8 +172,7 @@ export const getEditEvent = createServerFn({ method: "GET" })
       fields: event.fields,
       defaultDurationMinutes: null,
       defaultPriceCents: null,
-      defaultCapacity: null,
-      requiresApproval: false,
+      modules: {},
     };
     const options = [
       ...types.filter((type) => type.id !== event.typeId).map(typeOption),
@@ -190,8 +198,11 @@ export const eventTypesSearch = z.object({
 export const getEventTypes = createServerFn({ method: "GET" })
   .validator(eventTypesSearch)
   .handler(async ({ data }) => {
-    const { workspace } = await getWorkspaceContext();
-    const types = await listEventTypes(db, workspace.id);
+    const { workspace, timeZone } = await getWorkspaceContext();
+    const [types, settings] = await Promise.all([
+      listEventTypes(db, workspace.id),
+      tenantSettingsReader(db).get(workspace.id),
+    ]);
     const existing = types.find((type) => type.id === data.type);
     const source = types.find((type) => type.id === data.depuis);
     const template = EVENT_TYPE_TEMPLATES.find((entry) => entry.id === data.modele);
@@ -200,6 +211,7 @@ export const getEventTypes = createServerFn({ method: "GET" })
       upcomingUnbooked: 0,
       bookingNoun: "reservation" as const,
       fields: [],
+      modules: {},
     };
     // Nouveau type : copie d'un type, ou modèle du core (nom libre si déjà pris).
     const base = existing ?? source ?? template;
@@ -224,6 +236,11 @@ export const getEventTypes = createServerFn({ method: "GET" })
               : source
                 ? `Copie de « ${source.name} »`
                 : `Créé depuis le modèle « ${template?.name} »`,
+            structure: {
+              freeCancellationHours: settings.freeCancellationHours,
+              lateCancellationRefundPercent: settings.lateCancellationRefundPercent,
+            },
+            timeZone,
           };
     return {
       workspaceName: workspace.name,
@@ -299,6 +316,9 @@ const publishFn = createServerFn({ method: "POST" })
 const cancelFn = createServerFn({ method: "POST" })
   .validator(z.object({ eventId: id, reason: z.string().max(500) }))
   .handler(({ data }) => cancelEventActionImpl(data.eventId, data.reason));
+const keepFn = createServerFn({ method: "POST" })
+  .validator(id)
+  .handler(({ data }) => keepEventActionImpl(data));
 const saveTypeFn = createServerFn({ method: "POST" })
   .validator(formDataInput)
   .handler(({ data }) => saveEventTypeImpl(idOf(data), data));
@@ -329,6 +349,7 @@ export function saveEvent(eventId: string | null, _previous: FormState, form: Fo
 export const publishEventAction = (eventId: string) => publishFn({ data: eventId });
 export const cancelEventAction = (eventId: string, reason: string) =>
   cancelFn({ data: { eventId, reason } });
+export const keepEventAction = (eventId: string) => keepFn({ data: eventId });
 
 /** Création (typeId null) ou modification d'un type ; renvoie vers son panneau. */
 export function saveEventType(typeId: string | null, _previous: FormState, form: FormData) {

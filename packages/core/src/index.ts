@@ -65,6 +65,8 @@ export * from "./inventory/pricing";
 export * from "./inventory/schemas";
 export * from "./inventory/types";
 export * from "./inventory/use-cases";
+export * from "./modules/registry";
+export * from "./modules/rules";
 export * from "./passes/model";
 export * from "./passes/ports";
 export * from "./passes/rules";

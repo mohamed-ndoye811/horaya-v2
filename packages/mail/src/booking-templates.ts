@@ -16,6 +16,19 @@ export interface BookingMail {
   manageUrl: string;
   /** Réponses aux questions du type (« Niveau », « Léa · Allergies »), déjà mises en forme. */
   answers?: Array<[string, string]>;
+  /** Module Messages : texte ajouté à la confirmation et « À apporter ». */
+  note?: string | null;
+  bring?: string | null;
+  /** Module Documents joints : liens absolus (règlement, plan d'accès). */
+  documents?: Array<{ name: string; url: string }>;
+}
+
+/** Ce que les modules ajoutent : « À apporter », le texte de l'atelier (confirmation seulement). */
+function practical(mail: BookingMail, withNote: boolean): string[] {
+  return [
+    ...(withNote && mail.note ? [mail.note] : []),
+    ...(mail.bring ? [`À apporter : ${mail.bring}`] : []),
+  ];
 }
 
 const places = (seats: number) => `${seats} place${seats > 1 ? "s" : ""}`;
@@ -40,6 +53,8 @@ function bookingEmail(
     preheader: string;
     paragraphs: string[];
     action?: { label: string; url: string };
+    /** Joindre les documents du type (confirmation, rappel). */
+    documents?: boolean;
   },
 ): EmailContent {
   return {
@@ -49,6 +64,9 @@ function bookingEmail(
       title: content.title,
       paragraphs: [`Bonjour ${mail.firstName},`, ...content.paragraphs],
       details: details(mail),
+      links: content.documents
+        ? (mail.documents ?? []).map((document) => ({ label: document.name, url: document.url }))
+        : [],
       action: content.action ?? { label: "Gérer ma réservation", url: mail.manageUrl },
       footnote: `Cet e-mail t'est envoyé par ${mail.workspace.name} via Horaya, suite à ta réservation.`,
       brand: mail.workspace,
@@ -61,7 +79,11 @@ export function bookingConfirmedEmail(mail: BookingMail): EmailContent {
     subject: `C'est réservé : ${mail.title}`,
     title: "C'est réservé !",
     preheader: `${places(mail.seats)} confirmée${mail.seats > 1 ? "s" : ""} pour ${mail.title}.`,
-    paragraphs: [`Tes ${places(mail.seats)} pour « ${mail.title} » sont confirmées. À bientôt !`],
+    paragraphs: [
+      `Tes ${places(mail.seats)} pour « ${mail.title} » sont confirmées. À bientôt !`,
+      ...practical(mail, true),
+    ],
+    documents: true,
   });
 }
 
@@ -98,7 +120,9 @@ export function bookingPromotedEmail(mail: BookingMail & { confirmed: boolean })
       mail.confirmed
         ? `Bonne nouvelle : des places se sont libérées pour « ${mail.title} ». Ta réservation est confirmée.`
         : `Des places se sont libérées pour « ${mail.title} ». Ta demande passe en attente de validation : tu recevras un e-mail dès que ${mail.workspace.name} l'aura validée.`,
+      ...(mail.confirmed ? practical(mail, true) : []),
     ],
+    documents: mail.confirmed,
   });
 }
 
@@ -145,10 +169,91 @@ export function bookingReminderEmail(mail: BookingMail): EmailContent {
     preheader: `${mail.title} · ${mail.when}`,
     paragraphs: [
       `Petit rappel : « ${mail.title} », c'est demain. On t'attend !`,
+      ...practical(mail, false),
       "Un empêchement ? Tu peux gérer ta réservation en ligne.",
     ],
     action: { label: "Voir mes réservations", url: mail.manageUrl },
+    documents: true,
   });
+}
+
+/** Rappel au moment choisi par l'atelier (module Messages) : « C'est bientôt ». */
+export function bookingSoonEmail(mail: BookingMail): EmailContent {
+  return bookingEmail(mail, {
+    subject: `Bientôt : ${mail.title}`,
+    title: "C'est bientôt !",
+    preheader: `${mail.title} · ${mail.when}`,
+    paragraphs: [
+      `Petit rappel : « ${mail.title} », ${mail.when}. On t'attend !`,
+      ...practical(mail, false),
+      "Un empêchement ? Tu peux gérer ta réservation en ligne.",
+    ],
+    action: { label: "Voir mes réservations", url: mail.manageUrl },
+    documents: true,
+  });
+}
+
+/** Message après la séance (module Messages), envoyé par la tâche planifiée. */
+export function bookingFollowUpEmail(mail: BookingMail & { message: string }): EmailContent {
+  return bookingEmail(mail, {
+    subject: `Merci : ${mail.title}`,
+    title: "Merci d'être venu·e",
+    preheader: mail.message.slice(0, 90),
+    paragraphs: [mail.message],
+    action: { label: "Voir les prochains rendez-vous", url: mail.manageUrl },
+  });
+}
+
+/** Seuil de maintien, la veille de J-x : il manque des inscrits. */
+export function teamMinimumRiskEmail(input: {
+  workspaceName: string;
+  title: string;
+  when: string;
+  seats: number;
+  minimum: number;
+  decision: string;
+  url: string;
+}): EmailContent {
+  return {
+    subject: `Risque d'annulation : ${input.title}`,
+    ...renderEmail({
+      preheader: `${input.seats} inscrit${input.seats > 1 ? "s" : ""} sur ${input.minimum} nécessaires`,
+      title: "Risque d'annulation",
+      paragraphs: [
+        `« ${input.title} » (${input.when}) : ${places(input.seats)} prise${input.seats > 1 ? "s" : ""}, il en faut ${input.minimum} pour le maintenir.`,
+        `Sans inscriptions d'ici ${input.decision}, il sera annulé automatiquement et chaque inscrit prévenu. Pour le maintenir quand même, ouvre l'événement et choisis « Maintenir quand même ».`,
+      ],
+      action: { label: "Voir l'événement", url: input.url },
+      footnote: teamFootnote(input.workspaceName),
+    }),
+  };
+}
+
+/** Seuil de maintien à J-x : l'événement a été annulé. */
+export function teamMinimumCancelledEmail(input: {
+  workspaceName: string;
+  title: string;
+  when: string;
+  seats: number;
+  minimum: number;
+  cancelledBookings: number;
+  url: string;
+}): EmailContent {
+  return {
+    subject: `Annulé faute d'inscrits : ${input.title}`,
+    ...renderEmail({
+      preheader: `${input.seats} inscrit${input.seats > 1 ? "s" : ""} sur ${input.minimum}`,
+      title: "Événement annulé",
+      paragraphs: [
+        `« ${input.title} » (${input.when}) n'a pas atteint son seuil de maintien : ${places(input.seats)} prise${input.seats > 1 ? "s" : ""} sur ${input.minimum} nécessaires.`,
+        input.cancelledBookings > 0
+          ? `Horaya l'a annulé et a prévenu ${input.cancelledBookings > 1 ? `les ${input.cancelledBookings} inscrits` : "l'inscrit"} ; les séances payées avec une carte sont recréditées. Pense aux remboursements éventuels.`
+          : "Horaya l'a annulé ; personne n'était inscrit.",
+      ],
+      action: { label: "Voir l'événement", url: input.url },
+      footnote: teamFootnote(input.workspaceName),
+    }),
+  };
 }
 
 /** Rappel la veille à l'équipe : l'événement de demain et ses inscrits. */

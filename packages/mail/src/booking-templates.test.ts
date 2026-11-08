@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
 import {
   type BookingMail,
+  bookingCancelledEmail,
   bookingConfirmedEmail,
+  bookingFollowUpEmail,
   bookingRefusedEmail,
   bookingRescheduledEmail,
   enrollmentConfirmedEmail,
@@ -27,6 +29,24 @@ const mail: BookingMail = {
 };
 
 describe("e-mails aux participants", () => {
+  it("ajoute les messages et les documents du type à la confirmation, pas à l'annulation", () => {
+    const withModules = {
+      ...mail,
+      note: "Le code de la porte est 1234.",
+      bring: "Un tablier",
+      documents: [{ name: "Règlement", url: "https://horaya.app/fichiers/org/documents/a.pdf" }],
+    };
+    const confirmed = bookingConfirmedEmail(withModules);
+    expect(confirmed.text).toContain("Le code de la porte est 1234.");
+    expect(confirmed.text).toContain("À apporter : Un tablier");
+    expect(confirmed.text).toContain("Règlement : https://horaya.app/fichiers/org/documents/a.pdf");
+    expect(confirmed.html).toContain('href="https://horaya.app/fichiers/org/documents/a.pdf"');
+    const cancelled = bookingCancelledEmail({ ...withModules, byCustomer: true, eventsUrl: "x" });
+    expect(cancelled.text).not.toContain("Un tablier");
+    expect(cancelled.text).not.toContain("Règlement");
+    expect(bookingFollowUpEmail({ ...withModules, message: "Merci !" }).text).toContain("Merci !");
+  });
+
   it("récapitule les réponses aux questions du type", () => {
     const email = bookingConfirmedEmail({ ...mail, answers: [["Niveau", "Débutant"]] });
     expect(email.text).toContain("Niveau : Débutant");

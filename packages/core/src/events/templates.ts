@@ -1,5 +1,6 @@
 import type { EventTypeField } from "../fields/model";
-import type { BookingNoun, BookingRules } from "./model";
+import type { EventModules } from "../modules/registry";
+import type { BookingNoun } from "./model";
 
 /** Point de départ d'un nouveau type (maquette 9.3) : constantes, pas de table. */
 export interface EventTypeTemplate {
@@ -9,10 +10,9 @@ export interface EventTypeTemplate {
   color: string;
   defaultDurationMinutes: number | null;
   defaultPriceCents: number | null;
-  defaultCapacity: number | null;
-  requiresApproval: boolean;
   bookingNoun: BookingNoun;
-  bookingRules: BookingRules;
+  /** Modules du modèle (lot 34). */
+  modules: EventModules;
   fields: EventTypeField[];
 }
 
@@ -55,10 +55,13 @@ export const EVENT_TYPE_TEMPLATES: readonly EventTypeTemplate[] = [
     color: "#A9663F",
     defaultDurationMinutes: 120,
     defaultPriceCents: 4500,
-    defaultCapacity: 12,
-    requiresApproval: false,
     bookingNoun: "inscription",
-    bookingRules: { waitlistEnabled: true, minAdvanceHours: 24 },
+    modules: {
+      places: { capacity: 12, minimum: { seats: 4, daysBefore: 2 } },
+      waitlist: {},
+      opening: { closesHoursBefore: 24 },
+      cancellation: { freeHours: 48, lateRefundPercent: 0 },
+    },
     fields: [
       level,
       bring,
@@ -88,10 +91,12 @@ export const EVENT_TYPE_TEMPLATES: readonly EventTypeTemplate[] = [
     color: "#528D74",
     defaultDurationMinutes: 1440,
     defaultPriceCents: 25000,
-    defaultCapacity: 8,
-    requiresApproval: false,
     bookingNoun: "inscription",
-    bookingRules: { minAdvanceHours: 168 },
+    modules: {
+      places: { capacity: 8, minimum: { seats: 4, daysBefore: 7 } },
+      opening: { closesHoursBefore: 168 },
+      cancellation: { freeHours: 168, lateRefundPercent: 50 },
+    },
     fields: [
       level,
       { key: "programme", label: "Programme", type: "long_text", scope: "event", required: false },
@@ -113,10 +118,12 @@ export const EVENT_TYPE_TEMPLATES: readonly EventTypeTemplate[] = [
     color: "#3165B8",
     defaultDurationMinutes: 120,
     defaultPriceCents: 3000,
-    defaultCapacity: 10,
-    requiresApproval: false,
     bookingNoun: "inscription",
-    bookingRules: { waitlistEnabled: true },
+    modules: {
+      places: { capacity: 10 },
+      waitlist: {},
+      series: { dropInAllowed: true, prorata: true, makeupAllowed: true },
+    },
     fields: [level, firstName, rules],
   },
   {
@@ -126,10 +133,12 @@ export const EVENT_TYPE_TEMPLATES: readonly EventTypeTemplate[] = [
     color: "#CF879C",
     defaultDurationMinutes: 60,
     defaultPriceCents: 6000,
-    defaultCapacity: 1,
-    requiresApproval: false,
     bookingNoun: "reservation",
-    bookingRules: { maxSeatsPerBooking: 1, minAdvanceHours: 24 },
+    modules: {
+      places: { capacity: 1, maxPerBooking: 1 },
+      opening: { closesHoursBefore: 24 },
+      cancellation: { freeHours: 24, lateRefundPercent: 0 },
+    },
     fields: [
       {
         key: "objectif",
@@ -147,10 +156,8 @@ export const EVENT_TYPE_TEMPLATES: readonly EventTypeTemplate[] = [
     color: "#D8BC66",
     defaultDurationMinutes: 240,
     defaultPriceCents: 4000,
-    defaultCapacity: 1,
-    requiresApproval: true,
     bookingNoun: "location",
-    bookingRules: {},
+    modules: { places: { capacity: 1 }, approval: {} },
     fields: [
       {
         key: "usage",
@@ -169,10 +176,8 @@ export const EVENT_TYPE_TEMPLATES: readonly EventTypeTemplate[] = [
     color: "#66537C",
     defaultDurationMinutes: 180,
     defaultPriceCents: null,
-    defaultCapacity: null,
-    requiresApproval: true,
     bookingNoun: "demande",
-    bookingRules: {},
+    modules: { approval: {} },
     fields: [
       {
         key: "occasion",
@@ -205,10 +210,8 @@ export const EVENT_TYPE_TEMPLATES: readonly EventTypeTemplate[] = [
     color: "#111111",
     defaultDurationMinutes: 180,
     defaultPriceCents: null,
-    defaultCapacity: 60,
-    requiresApproval: false,
     bookingNoun: "inscription",
-    bookingRules: { waitlistEnabled: true },
+    modules: { places: { capacity: 60 }, waitlist: {} },
     fields: [
       { key: "programme", label: "Programme", type: "long_text", scope: "event", required: false },
     ],
@@ -220,10 +223,8 @@ export const EVENT_TYPE_TEMPLATES: readonly EventTypeTemplate[] = [
     color: "#528D74",
     defaultDurationMinutes: null,
     defaultPriceCents: null,
-    defaultCapacity: null,
-    requiresApproval: false,
     bookingNoun: "reservation",
-    bookingRules: {},
+    modules: {},
     fields: [],
   },
 ];

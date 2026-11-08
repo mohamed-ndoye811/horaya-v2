@@ -1,5 +1,6 @@
 import { promoteWaitlist } from "../bookings/waitlist";
 import { fieldsOfScope, validateFieldValues } from "../fields/values";
+import { minimumState, withModuleFields } from "../modules/rules";
 import { recreditPassForBooking } from "../passes/use-cases";
 import { type Actor, actorRef, assertMemberCan } from "../shared/actor";
 import { NotFoundError } from "../shared/errors";
@@ -8,7 +9,7 @@ import type { Deps, Repositories } from "../shared/unit-of-work";
 import { validate } from "../shared/validate";
 import { slugify } from "../tenants/workspace";
 import type { Event, EventType } from "./model";
-import type { EventPatch } from "./ports";
+import type { EventPatch, EventTypePatch } from "./ports";
 import { generateOccurrences, toRRule } from "./recurrence";
 import {
   assertCanCancel,
@@ -36,13 +37,15 @@ export async function createEventType(
   assertMemberCan(actor, "event", "create");
   const data = validate(createEventTypeSchema, input);
 
+  const fields = withModuleFields(data.fields, data.modules);
+
   return deps.uow.run(async (repositories) => {
     const eventType = await repositories.eventTypes.insert({
       organizationId: actor.organizationId,
       ...data,
+      fields,
       defaultDurationMinutes: data.defaultDurationMinutes ?? null,
       defaultPriceCents: data.defaultPriceCents ?? null,
-      defaultCapacity: data.defaultCapacity ?? null,
     });
     await repositories.activity.record({
       organizationId: actor.organizationId,
@@ -62,19 +65,29 @@ export async function updateEventType(
   input: UpdateEventTypeInput,
 ): Promise<EventType> {
   assertMemberCan(actor, "event", "update");
-  const { applyToUpcoming, ...patch } = validate(updateEventTypeSchema, input);
+  const { applyToUpcoming, ...patch }: { applyToUpcoming?: boolean } & EventTypePatch = validate(
+    updateEventTypeSchema,
+    input,
+  );
 
   return deps.uow.run(async (repositories) => {
     const existing = await repositories.eventTypes.find(actor.organizationId, eventTypeId);
     if (!existing || existing.archivedAt) throw new NotFoundError("Type d'événement", eventTypeId);
+    // Une condition d'âge demande l'âge de chaque participant (question ajoutée au besoin).
+    if (patch.fields || patch.modules) {
+      patch.fields = withModuleFields(
+        patch.fields ?? existing.fields,
+        patch.modules ?? existing.modules,
+      );
+    }
     const updated = await repositories.eventTypes.update(actor.organizationId, eventTypeId, patch);
     // Les événements gardent leur version du type ; les passés et ceux qui ont des inscrits, toujours.
     const appliedTo =
-      applyToUpcoming && patch.fields
-        ? await repositories.events.applyTypeFields(
+      applyToUpcoming && (patch.fields || patch.modules)
+        ? await repositories.events.applyTypeConfig(
             actor.organizationId,
             eventTypeId,
-            updated.fields,
+            { fields: updated.fields, modules: updated.modules },
             deps.clock.now(),
           )
         : 0;
@@ -175,14 +188,28 @@ export async function createEvent(
       "fieldValues",
     );
 
+    // Module « Inscription à la série » : les nouvelles séries du type partent avec son réglage.
+    const preset = eventType.modules.series;
     const series = recurrence
       ? await repositories.events.insertSeries({
           organizationId: actor.organizationId,
           rrule: toRRule(recurrence),
           until: starts.at(-1) ?? null,
           timezone: details.timezone,
+          ...(preset && {
+            enrollmentEnabled: true,
+            enrollmentPriceCents: preset.priceCents ?? details.priceCents * starts.length,
+            dropInAllowed: preset.dropInAllowed ?? true,
+            enrollmentProrata: preset.prorata ?? true,
+            makeupAllowed: preset.makeupAllowed ?? true,
+          }),
         })
       : null;
+    // Module « Conditions d'accès » sur invitation : jamais d'événement public de ce type.
+    const visibility =
+      eventType.modules.access?.inviteOnly && details.visibility === "public"
+        ? "invite_only"
+        : details.visibility;
 
     const created: Event[] = [];
     for (const startsAt of starts) {
@@ -198,11 +225,13 @@ export async function createEvent(
         seriesId: series?.id ?? null,
         slug,
         ...details,
+        visibility,
         startsAt,
         endsAt: new Date(startsAt.getTime() + duration),
         currency: settings.currency,
-        requiresApproval: requiresApproval ?? eventType.requiresApproval,
+        requiresApproval: requiresApproval ?? Boolean(eventType.modules.approval),
         fields: eventType.fields,
+        modules: eventType.modules,
         fieldValues,
       });
       await repositories.activity.record({
@@ -325,9 +354,53 @@ export async function setEventCover(
 }
 
 /**
- * Annule un événement et toutes ses réservations actives.
- * (Les remboursements et e-mails aux participants arrivent avec les paiements.)
+ * Annule un événement et toutes ses réservations actives (sous le verrou de l'événement) :
+ * le matériel est libéré, les séances des cartes sont toujours rendues, chaque inscrit est
+ * prévenu par l'e-mail d'annulation (journal `booking.cancelled`).
  */
+async function cancelLockedEvent(
+  repositories: Repositories,
+  actor: Actor,
+  locked: Event,
+  now: Date,
+  reason: string | null,
+): Promise<{ event: Event; cancelledBookings: number }> {
+  assertCanCancel(locked);
+  const event = await repositories.events.update(actor.organizationId, locked.id, {
+    status: "cancelled",
+    cancelledAt: now,
+  });
+  await repositories.inventory.cancelAllocations(actor.organizationId, { eventId: locked.id }, now);
+  const active = await repositories.bookings.listActive(locked.id);
+  const bookingReason = reason === "minimum_not_reached" ? reason : "event_cancelled";
+  for (const booking of active) {
+    await repositories.bookings.updateStatus(actor.organizationId, booking.id, {
+      status: "cancelled",
+      cancelledAt: now,
+    });
+    await repositories.activity.record({
+      organizationId: actor.organizationId,
+      entityType: "booking",
+      entityId: booking.id,
+      action: "booking.cancelled",
+      ...actorRef(actor),
+      data: { reason: bookingReason },
+    });
+    // L'atelier annule tout l'événement : les séances des cartes sont toujours rendues.
+    await recreditPassForBooking(repositories, actor, booking, locked.startsAt, now, "always");
+  }
+  await repositories.activity.record({
+    organizationId: actor.organizationId,
+    entityType: "event",
+    entityId: locked.id,
+    action: "event.cancelled",
+    ...actorRef(actor),
+    data: { reason, cancelledBookings: active.length },
+  });
+  return { event, cancelledBookings: active.length };
+}
+
+/** Annule un événement et toutes ses réservations actives. */
 export async function cancelEvent(
   deps: Deps,
   actor: Actor,
@@ -339,46 +412,66 @@ export async function cancelEvent(
   return deps.uow.run(async (repositories) => {
     const locked = await repositories.events.lockForBooking(actor.organizationId, eventId);
     if (!locked) throw new NotFoundError("Événement", eventId);
-    assertCanCancel(locked.event);
-    const now = deps.clock.now();
+    return cancelLockedEvent(repositories, actor, locked.event, deps.clock.now(), reason ?? null);
+  });
+}
 
-    const event = await repositories.events.update(actor.organizationId, eventId, {
-      status: "cancelled",
-      cancelledAt: now,
+/**
+ * « Maintenir quand même » : l'équipe retire le seuil de maintien de cet événement (sa copie
+ * des modules), la tâche planifiée ne l'annulera pas.
+ */
+export async function keepEventDespiteMinimum(
+  deps: Deps,
+  actor: Actor,
+  eventId: string,
+): Promise<Event> {
+  assertMemberCan(actor, "event", "update");
+  return deps.uow.run(async (repositories) => {
+    const locked = await repositories.events.lockForBooking(actor.organizationId, eventId);
+    if (!locked) throw new NotFoundError("Événement", eventId);
+    const { places, ...modules } = locked.event.modules;
+    if (!places?.minimum) return locked.event;
+    const { minimum: _minimum, ...rest } = places;
+    const updated = await repositories.events.update(actor.organizationId, eventId, {
+      modules: { ...modules, places: rest },
     });
-    await repositories.inventory.cancelAllocations(actor.organizationId, { eventId }, now);
-    const active = await repositories.bookings.listActive(eventId);
-    for (const booking of active) {
-      await repositories.bookings.updateStatus(actor.organizationId, booking.id, {
-        status: "cancelled",
-        cancelledAt: now,
-      });
-      await repositories.activity.record({
-        organizationId: actor.organizationId,
-        entityType: "booking",
-        entityId: booking.id,
-        action: "booking.cancelled",
-        ...actorRef(actor),
-        data: { reason: "event_cancelled" },
-      });
-      // L'atelier annule tout l'événement : les séances des cartes sont toujours rendues.
-      await recreditPassForBooking(
-        repositories,
-        actor,
-        booking,
-        locked.event.startsAt,
-        now,
-        "always",
-      );
-    }
     await repositories.activity.record({
       organizationId: actor.organizationId,
       entityType: "event",
       entityId: eventId,
-      action: "event.cancelled",
+      action: "event.updated",
       ...actorRef(actor),
-      data: { reason: reason ?? null, cancelledBookings: active.length },
+      data: { fields: ["minimum"] },
     });
-    return { event, cancelledBookings: active.length };
+    return updated;
+  });
+}
+
+/**
+ * Seuil de maintien (module Places), appelé par la tâche planifiée à J-x : si l'événement
+ * publié n'a toujours pas assez d'inscrits, il est annulé par le système, avec le parcours
+ * d'annulation habituel. Revérifié sous le verrou ; renvoie null s'il est maintenu.
+ */
+export async function cancelEventBelowMinimum(
+  deps: Deps,
+  organizationId: string,
+  eventId: string,
+): Promise<{ event: Event; cancelledBookings: number; seats: number } | null> {
+  const actor: Actor = { type: "system", organizationId };
+  return deps.uow.run(async (repositories) => {
+    const locked = await repositories.events.lockForBooking(organizationId, eventId);
+    if (locked?.event.status !== "published") return null;
+    const now = deps.clock.now();
+    const seats = await repositories.bookings.seatsHeld(eventId);
+    if (minimumState(locked.event.startsAt, locked.event.modules.places, seats, now) !== "cancel")
+      return null;
+    const result = await cancelLockedEvent(
+      repositories,
+      actor,
+      locked.event,
+      now,
+      "minimum_not_reached",
+    );
+    return { ...result, seats };
   });
 }

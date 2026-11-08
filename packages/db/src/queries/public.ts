@@ -1,13 +1,14 @@
 import {
   type BookingNoun,
-  type BookingRules,
   type CalendarLink,
   calendarLinkAllows,
+  type EventModules,
   type EventTypeField,
   type EventVisibility,
   type FieldValues,
   type PaymentMode,
   publicFieldsView,
+  publicModules,
 } from "@horaya/core";
 import { and, asc, eq, gte, type SQL, sql } from "drizzle-orm";
 import type { Executor } from "../client";
@@ -88,7 +89,7 @@ const publicEventColumns = {
   typeId: eventType.id,
   typeName: eventType.name,
   typeColor: eventType.color,
-  bookingRules: eventType.bookingRules,
+  modules: event.modules,
   bookingNoun: eventType.bookingNoun,
   visibility: event.visibility,
   fields: event.fields,
@@ -96,9 +97,15 @@ const publicEventColumns = {
   seatsHeld,
 };
 
-/** Les champs internes de « Ce que tu décris » ne quittent jamais le serveur. */
-function toPublic<R extends { fields: EventTypeField[]; fieldValues: FieldValues }>(row: R): R {
-  return { ...row, ...publicFieldsView(row.fields, row.fieldValues) };
+/** Les champs internes de « Ce que tu décris », les documents et messages ne quittent jamais le serveur. */
+function toPublic<
+  R extends { fields: EventTypeField[]; fieldValues: FieldValues; modules: EventModules },
+>(row: R): R {
+  return {
+    ...row,
+    ...publicFieldsView(row.fields, row.fieldValues),
+    modules: publicModules(row.modules),
+  };
 }
 
 export interface PublicEventRow {
@@ -122,7 +129,8 @@ export interface PublicEventRow {
   typeId: string;
   typeName: string;
   typeColor: string;
-  bookingRules: BookingRules;
+  /** Modules de l'événement, vus par un visiteur (voir publicModules). */
+  modules: EventModules;
   bookingNoun: BookingNoun;
   visibility: EventVisibility;
   /** Champs de l'événement (sans les champs internes) et valeurs visibles. */
@@ -256,6 +264,8 @@ async function findManagedBooking(db: Executor, where: SQL | undefined) {
       locationAddress: event.locationAddress,
       onlineUrl: event.onlineUrl,
       eventPaymentLinkUrl: event.paymentLinkUrl,
+      /** Modules de l'événement (annulation, messages, documents) : c'est la réservation du client. */
+      eventModules: event.modules,
       typeColor: eventType.color,
       eventId: event.id,
       eventTypeId: event.eventTypeId,

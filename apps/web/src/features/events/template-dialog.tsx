@@ -1,4 +1,4 @@
-import { EVENT_TYPE_TEMPLATES, type EventTypeTemplate } from "@horaya/core";
+import { EVENT_TYPE_TEMPLATES, type EventTypeTemplate, MODULE_CATALOG } from "@horaya/core";
 import { useState } from "react";
 import { Swap } from "@/components/motion/swap";
 import { ButtonLink, textLinkClasses } from "@/components/ui/button";
@@ -11,10 +11,13 @@ import { plural } from "@/lib/format";
 function templateChips(template: EventTypeTemplate): string[] {
   const asked = template.fields.filter((field) => field.scope !== "event").length;
   const described = template.fields.length - asked;
+  const capacity = template.modules.places?.capacity;
   return [
-    template.defaultCapacity ? plural(template.defaultCapacity, "place") : null,
-    template.requiresApproval ? "Validation" : null,
-    template.bookingRules.waitlistEnabled ? "Liste d'attente" : null,
+    capacity ? plural(capacity, "place") : null,
+    // Les autres modules du modèle, par leur nom (Liste d'attente, Annulation…).
+    ...MODULE_CATALOG.filter(
+      (module) => module.key !== "places" && module.key in template.modules,
+    ).map((module) => module.name),
     described ? plural(described, "info") : null,
     asked ? plural(asked, "question") : null,
   ].filter((chip): chip is string => chip !== null);

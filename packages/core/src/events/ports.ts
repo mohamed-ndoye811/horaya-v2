@@ -1,4 +1,5 @@
 import type { EventTypeField } from "../fields/model";
+import type { EventModules } from "../modules/registry";
 import type { Event, EventSeries, EventType } from "./model";
 
 export type NewEventType = Omit<EventType, "id" | "archivedAt">;
@@ -13,6 +14,15 @@ export type EventPatch = Partial<
   >
 >;
 
+export type SeriesEnrollmentSettings = Pick<
+  EventSeries,
+  | "enrollmentEnabled"
+  | "enrollmentPriceCents"
+  | "dropInAllowed"
+  | "enrollmentProrata"
+  | "makeupAllowed"
+>;
+
 export type EventTypePatch = Partial<Omit<EventType, "id" | "organizationId">>;
 
 export interface EventTypeRepository {
@@ -22,26 +32,19 @@ export interface EventTypeRepository {
 }
 
 export interface EventRepository {
-  insertSeries(series: {
-    organizationId: string;
-    rrule: string;
-    until: Date | null;
-    timezone: string;
-  }): Promise<{ id: string }>;
+  insertSeries(
+    series: {
+      organizationId: string;
+      rrule: string;
+      until: Date | null;
+      timezone: string;
+    } & Partial<SeriesEnrollmentSettings>,
+  ): Promise<{ id: string }>;
   findSeries(organizationId: string, seriesId: string): Promise<EventSeries | null>;
   updateSeries(
     organizationId: string,
     seriesId: string,
-    patch: Partial<
-      Pick<
-        EventSeries,
-        | "enrollmentEnabled"
-        | "enrollmentPriceCents"
-        | "dropInAllowed"
-        | "enrollmentProrata"
-        | "makeupAllowed"
-      >
-    >,
+    patch: Partial<SeriesEnrollmentSettings>,
   ): Promise<EventSeries>;
   /** Occurrences d'une série, la plus proche d'abord (tous statuts). */
   listSeriesEvents(organizationId: string, seriesId: string): Promise<Event[]>;
@@ -58,13 +61,14 @@ export interface EventRepository {
   update(organizationId: string, eventId: string, patch: EventPatch): Promise<Event>;
   slugExists(organizationId: string, slug: string): Promise<boolean>;
   /**
-   * « Appliquer aussi aux événements à venir » : remplace les champs des événements du type
-   * qui n'ont pas commencé, ne sont pas annulés et n'ont aucune réservation. Renvoie leur nombre.
+   * « Appliquer aussi aux événements à venir » : remplace les champs et les modules des
+   * événements du type qui n'ont pas commencé, ne sont pas annulés et n'ont aucune réservation.
+   * Renvoie leur nombre.
    */
-  applyTypeFields(
+  applyTypeConfig(
     organizationId: string,
     eventTypeId: string,
-    fields: EventTypeField[],
+    config: { fields?: EventTypeField[]; modules?: EventModules },
     now: Date,
   ): Promise<number>;
 }

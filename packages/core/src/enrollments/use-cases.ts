@@ -12,6 +12,7 @@ import { assertCustomerCanBook, insertEventBooking, SOURCE_BY_ACTOR } from "../b
 import { promoteWaitlist } from "../bookings/waitlist";
 import type { EventSeries } from "../events/model";
 import { rawFieldValuesSchema } from "../fields/schemas";
+import { cancellationPolicyOf } from "../modules/rules";
 import { type Actor, actorRef, assertMemberCan } from "../shared/actor";
 import { ConflictError, ForbiddenError, NotFoundError } from "../shared/errors";
 import { generateToken, hashToken } from "../shared/tokens";
@@ -312,7 +313,10 @@ async function reportAbsence(
     throw new ConflictError("La séance a commencé : préviens directement l'atelier");
   }
   const series = await repositories.events.findSeries(organizationId, enrollment.seriesId);
-  const { freeCancellationHours } = await repositories.settings.get(organizationId);
+  const { freeCancellationHours } = cancellationPolicyOf(
+    event.modules,
+    await repositories.settings.get(organizationId),
+  );
   await releaseSession(repositories, actor, booking, now, {
     action: "booking.absent",
     absentAt: now,
@@ -452,7 +456,7 @@ async function createMakeup(
   });
   if (issue) throw new ConflictError(issue);
   if (actor.type === "customer") {
-    assertCustomerCanBook(locked.event, locked.eventType.bookingRules, 1, now, null);
+    assertCustomerCanBook(locked.event, 1, now, null);
   }
   const active = await repositories.bookings.listActive(locked.event.id);
   if (active.some((entry) => entry.customerId === enrollment.customerId)) {
