@@ -17,7 +17,7 @@ import { eventStatusBadge } from "@/components/ui/status";
 import type { getEvents } from "@/functions/events";
 import { cn } from "@/lib/cn";
 import { mondayOf, startOfDay, todayIn } from "@/lib/dates";
-import { formatTimeRange } from "@/lib/format";
+import { formatTimeRange, plural } from "@/lib/format";
 import { Link, useRouter } from "@/lib/navigation";
 import { withParams } from "@/lib/search-params";
 
@@ -120,7 +120,7 @@ export function EventsPage({
           value={row.seatsHeld}
           max={row.capacity}
           tone={badgeTone === "danger" ? "danger" : "ink"}
-          label={`${row.seatsHeld} places réservées sur ${row.capacity}`}
+          label={`${plural(row.seatsHeld, "place réservée", "places réservées")} sur ${row.capacity}`}
           className="flex-1"
         />
       )}

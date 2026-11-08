@@ -20,25 +20,27 @@ describe("code", () => {
     expect(giftCardPrefix("42")).toBe("BON");
   });
 
-  it("suffixe de 4 caractères sans caractères ambigus", () => {
+  it("suffixe de 8 caractères sans caractères ambigus", () => {
     for (let index = 0; index < 200; index++) {
       const code = generateGiftCardCode("Terre & Feu");
-      expect(code).toMatch(/^TERRE-[A-Z2-9]{4}$/);
+      expect(code).toMatch(/^TERRE-[A-Z2-9]{8}$/);
       expect(code.slice(6)).not.toMatch(/[ILO01]/);
     }
     expect(GIFT_CARD_ALPHABET).toHaveLength(31);
   });
 
   it("rejette les octets qui biaiseraient le tirage", () => {
-    const bytes = [255, 250, 0, 1, 2, 3];
+    const bytes = [255, 250, 0, 1, 2, 3, 4, 5, 6, 7];
     const code = generateGiftCardCode("Terre", () => bytes.shift() ?? 0);
-    expect(code).toBe("TERRE-ABCD");
+    expect(code).toBe("TERRE-ABCDEFGH");
   });
 
   it("normalise la saisie du client", () => {
     expect(normalizeGiftCardCode(" terre 8k2f ")).toBe("TERRE-8K2F");
     expect(normalizeGiftCardCode("TERRE8K2F")).toBe("TERRE-8K2F");
     expect(normalizeGiftCardCode("TERRE-8K2F")).toBe("TERRE-8K2F");
+    expect(normalizeGiftCardCode("terre 8k2f 7m3p")).toBe("TERRE-8K2F7M3P");
+    expect(normalizeGiftCardCode("BON-8K2F")).toBe("BON-8K2F");
   });
 });
 

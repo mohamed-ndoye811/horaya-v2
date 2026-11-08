@@ -306,7 +306,7 @@ export function TodayCard({
                     {entry.checkedIn > 0
                       ? `sur ${plural(entry.seatsHeld, "inscrit")}`
                       : entry.capacity !== null
-                        ? `sur ${entry.capacity} places`
+                        ? `sur ${plural(entry.capacity, "place")}`
                         : "places illimitées"}
                   </p>
                 </div>

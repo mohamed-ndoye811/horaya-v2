@@ -1,11 +1,15 @@
+import type { Event } from "../events/model";
 import type { EventStatus, EventVisibility, PaymentMode } from "../events/types";
+import { amountDueOnline } from "../payments/rules";
 import { remainingSeats } from "./capacity";
-import type { BookingStatus } from "./types";
+import type { Booking } from "./model";
+import { priceBooking } from "./pricing";
+import type { BookingPaymentStatus, BookingStatus } from "./types";
 
 /**
  * Changer de date (espace client, maquette 8.3) : vers une autre date du même type
- * d'événement, au même prix, qui a assez de places, et seulement dans le délai d'annulation
- * gratuite de l'espace.
+ * d'événement qui a assez de places, et seulement dans le délai d'annulation gratuite de
+ * l'espace. Le prix peut différer : voir `reschedulePricing`.
  */
 
 /** Dernier moment pour changer de date : le délai d'annulation gratuite avant le début. */
@@ -59,9 +63,6 @@ export function rescheduleTargetIssue(input: {
     to.visibility !== "public"
   )
     return "Cette date n'est pas proposée";
-  // Même prix et même mode de paiement : ce qui a été payé reste juste.
-  if (to.priceCents !== from.priceCents || to.paymentMode !== from.paymentMode)
-    return "Cette date n'a pas le même tarif";
   if (now.getTime() >= to.startsAt.getTime() - (to.minAdvanceHours ?? 0) * 3_600_000)
     return "Les réservations sont closes pour cette date";
   const remaining = remainingSeats(to.capacity, to.seatsHeld);
@@ -70,4 +71,49 @@ export function rescheduleTargetIssue(input: {
       ? "Cette date est complète"
       : `Il ne reste que ${remaining} place${remaining > 1 ? "s" : ""} à cette date`;
   return null;
+}
+
+/**
+ * Prix de la réservation une fois sur la nouvelle date. Plus cher : ce qui manque apparaît en
+ * reste à payer (`dueCents`, la réservation repasse « à payer » si elle était réglée). Moins
+ * cher : rien n'est remboursé tout seul, le trop-perçu (`overpaidCents`) est signalé à l'équipe.
+ * Payée avec une carte de séances : une séance vaut une séance, rien ne change.
+ */
+export function reschedulePricing(input: {
+  booking: Pick<
+    Booking,
+    "seats" | "amountCents" | "depositCents" | "paymentMode" | "paymentStatus"
+  >;
+  to: Pick<Event, "priceCents" | "paymentMode" | "depositPercent">;
+  /** Encaissé sur la réservation, remboursements déduits. */
+  paidCents: number;
+}): {
+  amountCents: number;
+  depositCents: number | null;
+  paymentMode: PaymentMode;
+  paymentStatus: BookingPaymentStatus;
+  dueCents: number;
+  overpaidCents: number;
+} {
+  const { booking, to, paidCents } = input;
+  if (booking.paymentStatus === "paid_with_pass") {
+    return {
+      amountCents: booking.amountCents,
+      depositCents: booking.depositCents,
+      paymentMode: booking.paymentMode,
+      paymentStatus: booking.paymentStatus,
+      dueCents: 0,
+      overpaidCents: 0,
+    };
+  }
+  const { amountCents, depositCents } = priceBooking(to, booking.seats);
+  const priced = { amountCents, depositCents, paymentMode: to.paymentMode };
+  const dueCents = amountDueOnline(priced, paidCents);
+  return {
+    ...priced,
+    paymentStatus:
+      booking.paymentStatus === "paid" && dueCents > 0 ? "none" : booking.paymentStatus,
+    dueCents,
+    overpaidCents: Math.max(0, paidCents - amountCents),
+  };
 }

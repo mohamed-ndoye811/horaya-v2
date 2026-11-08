@@ -4,7 +4,14 @@ import { z } from "zod";
 export const NOTIFICATION_TYPES = [
   { value: "booking_created", label: "Nouvelle réservation", email: true, inApp: true },
   { value: "booking_cancelled", label: "Réservation annulée", email: true, inApp: true },
+  {
+    value: "booking_rescheduled",
+    label: "Changement de date avec écart de prix",
+    email: true,
+    inApp: true,
+  },
   { value: "payment_received", label: "Paiement reçu", email: false, inApp: true },
+  { value: "gift_card_purchased", label: "Bon cadeau acheté", email: true, inApp: true },
   { value: "event_almost_full", label: "Événement presque complet", email: true, inApp: false },
   { value: "event_reminder", label: "Rappel la veille d'un événement", email: true, inApp: true },
   { value: "weekly_digest", label: "Récap hebdomadaire", email: true, inApp: false },

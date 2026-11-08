@@ -28,7 +28,7 @@ import { Switch } from "@/components/ui/switch";
 import { saveEvent } from "@/functions/events";
 import { cn } from "@/lib/cn";
 import { parseCivilDate } from "@/lib/dates";
-import { formatHour, formatWeekdayShort } from "@/lib/format";
+import { formatHour, formatWeekdayShort, plural } from "@/lib/format";
 import { parseEuroToCents } from "@/lib/money";
 import { useFormAction } from "@/lib/use-form-action";
 import { useInvalidMessage } from "@/lib/use-invalid-message";
@@ -606,7 +606,7 @@ export function EventForm({
             <p className="text-[13px] text-ink-muted">
               {[
                 values.locationName || (values.onlineUrl ? "En ligne" : null),
-                values.capacity ? `${values.capacity} places` : "Places illimitées",
+                values.capacity ? plural(Number(values.capacity), "place") : "Places illimitées",
                 values.paymentMode === "free"
                   ? "Gratuit"
                   : priceCents > 0

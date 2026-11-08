@@ -51,3 +51,33 @@ export function giftCardEmail(mail: GiftCardMail): EmailContent {
     }),
   };
 }
+
+/** Préférence « Bon cadeau acheté » : un visiteur vient de commander un bon sur la page publique. */
+export function teamGiftCardEmail(input: {
+  workspaceName: string;
+  purchaserName: string;
+  recipientName: string;
+  amount: string;
+  code: string;
+  /** « en attente de paiement » ou « payé ». */
+  status: string;
+  url: string;
+}): EmailContent {
+  return {
+    subject: `Bon cadeau acheté : ${input.purchaserName} · ${input.amount}`,
+    ...renderEmail({
+      preheader: `${input.purchaserName} offre un bon de ${input.amount} à ${input.recipientName}.`,
+      title: "Bon cadeau acheté",
+      paragraphs: [
+        `${input.purchaserName} vient d'acheter un bon cadeau de ${input.amount} pour ${input.recipientName} (${input.status}).`,
+      ],
+      details: [
+        ["Code", input.code],
+        ["Montant", input.amount],
+        ["Pour", input.recipientName],
+      ],
+      action: { label: "Voir le bon", url: input.url },
+      footnote: `Tu reçois cet e-mail en tant que membre de ${input.workspaceName}. Règle tes notifications dans Paramètres › Paiements & notifications.`,
+    }),
+  };
+}

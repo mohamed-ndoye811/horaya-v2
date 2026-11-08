@@ -1,14 +1,19 @@
 import type { ActivityEntry } from "@horaya/core";
 import { getGiftCardDetail, getGiftCardSettings, getWorkspaceSettings } from "@horaya/db";
-import { giftCardEmail } from "@horaya/mail";
+import { giftCardEmail, teamGiftCardEmail } from "@horaya/mail";
 import { textOn } from "@/lib/colors";
 import { formatMoney } from "@/lib/format";
+import { notifyTeam } from "./booking-emails";
 import { db } from "./db";
 import { absoluteUrl, mailer } from "./mailer";
 
 /** Bon payé : e-mail à l'acheteur, et au bénéficiaire s'il est renseigné (branché sur la fin des transactions). */
 export async function notifyGiftCardActivity(entries: ActivityEntry[]) {
   for (const entry of entries) {
+    if (entry.entityType === "gift_card" && entry.action === "gift_card.purchased") {
+      if (entry.actorType === "customer") await notifyTeamOfPurchase(entry);
+      continue;
+    }
     if (entry.entityType !== "gift_card" || entry.action !== "gift_card.activated") continue;
     const [detail, workspace, settings] = await Promise.all([
       getGiftCardDetail(db, entry.organizationId, entry.entityId, new Date()),
@@ -60,4 +65,34 @@ export async function notifyGiftCardActivity(entries: ActivityEntry[]) {
       }
     }
   }
+}
+
+/** Achat en ligne : l'équipe est prévenue (e-mail et cloche) selon « Bon cadeau acheté ». */
+async function notifyTeamOfPurchase(entry: ActivityEntry) {
+  const [detail, workspace] = await Promise.all([
+    getGiftCardDetail(db, entry.organizationId, entry.entityId, new Date()),
+    getWorkspaceSettings(db, entry.organizationId),
+  ]);
+  const card = detail?.card;
+  if (!card || !workspace) return;
+  const amount = formatMoney(card.initialCents);
+  const link = `/app/bons-cadeaux/${card.id}`;
+  await notifyTeam(
+    entry.organizationId,
+    "gift_card_purchased",
+    teamGiftCardEmail({
+      workspaceName: workspace.name,
+      purchaserName: card.purchaserName,
+      recipientName: card.recipientName,
+      amount,
+      code: card.code,
+      status: card.status === "pending" ? "en attente de paiement" : "payé",
+      url: absoluteUrl(link),
+    }),
+    {
+      title: `Bon cadeau acheté · ${amount}`,
+      body: `${card.purchaserName} · pour ${card.recipientName}`,
+      link,
+    },
+  );
 }

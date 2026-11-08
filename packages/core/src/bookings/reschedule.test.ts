@@ -3,6 +3,7 @@ import {
   type RescheduleTarget,
   rescheduleClosedReason,
   rescheduleDeadline,
+  reschedulePricing,
   rescheduleTargetIssue,
 } from "./reschedule";
 
@@ -60,9 +61,9 @@ describe("dates proposées", () => {
     expect(issue({ visibility: "invite_only" })).not.toBeNull();
   });
 
-  it("écarte une date à un autre tarif", () => {
-    expect(issue({ priceCents: 9000 })).toMatch(/tarif/);
-    expect(issue({ paymentMode: "on_site" })).toMatch(/tarif/);
+  it("accepte une date à un autre tarif (la différence se règle à part)", () => {
+    expect(issue({ priceCents: 9000 })).toBeNull();
+    expect(issue({ paymentMode: "on_site" })).toBeNull();
   });
 
   it("écarte une date passée, close ou sans assez de places", () => {
@@ -72,5 +73,64 @@ describe("dates proposées", () => {
     );
     expect(issue({ seatsHeld: 8 })).toMatch(/complète/);
     expect(issue({}, 5)).toMatch(/que 4 places/);
+  });
+});
+
+describe("prix après changement de date", () => {
+  const booking = {
+    seats: 2,
+    amountCents: 17000,
+    depositCents: null,
+    paymentMode: "online" as const,
+    paymentStatus: "paid" as const,
+  };
+  const target = (priceCents: number) => ({
+    priceCents,
+    paymentMode: "online" as const,
+    depositPercent: null,
+  });
+
+  it("plus cher : la réservation payée repasse à payer, la différence reste due", () => {
+    const result = reschedulePricing({ booking, to: target(9500), paidCents: 17000 });
+    expect(result).toMatchObject({ amountCents: 19000, paymentStatus: "none", dueCents: 2000 });
+    expect(result.overpaidCents).toBe(0);
+  });
+
+  it("moins cher : pas de remboursement automatique, le trop-perçu est signalé", () => {
+    const result = reschedulePricing({ booking, to: target(8000), paidCents: 17000 });
+    expect(result).toMatchObject({ amountCents: 16000, paymentStatus: "paid", dueCents: 0 });
+    expect(result.overpaidCents).toBe(1000);
+  });
+
+  it("même prix : rien ne change", () => {
+    expect(reschedulePricing({ booking, to: target(8500), paidCents: 17000 })).toMatchObject({
+      paymentStatus: "paid",
+      dueCents: 0,
+      overpaidCents: 0,
+    });
+  });
+
+  it("acompte : le reste est calculé sur le nouvel acompte", () => {
+    const result = reschedulePricing({
+      booking: { ...booking, paymentMode: "deposit", depositCents: 5100, amountCents: 17000 },
+      to: { priceCents: 10000, paymentMode: "deposit", depositPercent: 30 },
+      paidCents: 5100,
+    });
+    expect(result).toMatchObject({ amountCents: 20000, depositCents: 6000, dueCents: 900 });
+    expect(result.paymentStatus).toBe("none");
+  });
+
+  it("carte de séances : une séance vaut une séance", () => {
+    const result = reschedulePricing({
+      booking: { ...booking, paymentStatus: "paid_with_pass" },
+      to: target(12000),
+      paidCents: 0,
+    });
+    expect(result).toMatchObject({
+      amountCents: 17000,
+      paymentStatus: "paid_with_pass",
+      dueCents: 0,
+      overpaidCents: 0,
+    });
   });
 });

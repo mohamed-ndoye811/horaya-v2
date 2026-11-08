@@ -2,7 +2,8 @@ import type { GiftCard, GiftCardMovement, GiftCardSettings } from "./model";
 
 /** Sans I, L, O, 0 ni 1 : un code se lit au téléphone et se recopie sans erreur. */
 export const GIFT_CARD_ALPHABET = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
-const SUFFIX_LENGTH = 4;
+/** 8 caractères depuis le lot 34 ; les bons existants gardent leur code de 4. */
+const SUFFIX_LENGTH = 8;
 
 /** Préfixe tiré du nom de l'espace : majuscules sans accents, 5 lettres au plus (« Terre & Feu » donne TERRE). */
 export function giftCardPrefix(name: string): string {
@@ -17,7 +18,7 @@ export function giftCardPrefix(name: string): string {
   return (letters ?? "BON").slice(0, 5);
 }
 
-/** `TERRE-8K2F` ; `random` rend un octet (0-255), injectable pour les tests. */
+/** `TERRE-8K2F7M3P` ; `random` rend un octet (0-255), injectable pour les tests. */
 export function generateGiftCardCode(
   name: string,
   random: () => number = () => globalThis.crypto.getRandomValues(new Uint8Array(1))[0] ?? 0,
@@ -35,7 +36,7 @@ export function generateGiftCardCode(
 /** Code saisi par un client : espaces, minuscules et tirets oubliés ne comptent pas. */
 export function normalizeGiftCardCode(input: string): string {
   const compact = input.toUpperCase().replace(/[\s_–—-]+/g, "");
-  const match = /^([A-Z]{3,5})([A-Z0-9]{4})$/.exec(compact);
+  const match = /^([A-Z]{3,5})([A-Z0-9]{8}|[A-Z0-9]{4})$/.exec(compact);
   return match ? `${match[1]}-${match[2]}` : compact;
 }
 

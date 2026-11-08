@@ -54,6 +54,14 @@ export function describeBookingActivity(
         title: `Réservation annulée${by(entry)}${reason ? ` · ${reason}` : ""}`,
         tone: "danger",
       };
+    case "booking.rescheduled": {
+      const due = Number(entry.data?.dueCents ?? 0);
+      const overpaid = Number(entry.data?.overpaidCents ?? 0);
+      return {
+        title: `Changement de date${by(entry)}${due > 0 ? ` · reste ${formatMoney(due)} à payer` : ""}${overpaid > 0 ? ` · trop-perçu de ${formatMoney(overpaid)} à rembourser` : ""}`,
+        tone: overpaid > 0 || due > 0 ? "warning" : "ink",
+      };
+    }
     case "booking.promoted":
       return {
         title:

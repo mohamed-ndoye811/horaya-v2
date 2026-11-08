@@ -9,7 +9,7 @@ import {
   teamAlmostFullEmail,
   weeklyDigestEmail,
 } from "./booking-templates";
-import { giftCardEmail } from "./gift-card-templates";
+import { giftCardEmail, teamGiftCardEmail } from "./gift-card-templates";
 import { mixColors } from "./layout";
 import { inlineImages } from "./mailer";
 import { notchFlankPng } from "./notch";
@@ -27,6 +27,12 @@ const mail: BookingMail = {
 };
 
 describe("e-mails aux participants", () => {
+  it("récapitule les réponses aux questions du type", () => {
+    const email = bookingConfirmedEmail({ ...mail, answers: [["Niveau", "Débutant"]] });
+    expect(email.text).toContain("Niveau : Débutant");
+    expect(bookingConfirmedEmail(mail).text).not.toContain("Niveau");
+  });
+
   it("porte la marque de l'espace, le récapitulatif et le lien de gestion", () => {
     const email = bookingConfirmedEmail(mail);
     expect(email.subject).toBe("C'est réservé : Séminaire annuel");
@@ -192,5 +198,34 @@ describe("e-mail du bon cadeau", () => {
     expect(giftCardEmail({ ...gift, audience: "purchaser", firstName: "Camille" }).subject).toBe(
       "Ton bon cadeau Cabinet Vidal pour Léa Fontaine",
     );
+  });
+});
+
+describe("e-mail à l'équipe : bon cadeau acheté", () => {
+  it("annonce l'acheteur, le montant et le code", () => {
+    const email = teamGiftCardEmail({
+      workspaceName: "Terre & Feu",
+      purchaserName: "Camille Roy",
+      recipientName: "Léa",
+      amount: "50 €",
+      code: "TERRE-8K2F7M3P",
+      status: "en attente de paiement",
+      url: "https://horaya.app/app/bons-cadeaux/x",
+    });
+    expect(email.subject).toBe("Bon cadeau acheté : Camille Roy · 50 €");
+    expect(email.text).toContain("Code : TERRE-8K2F7M3P");
+  });
+});
+
+describe("changement de date", () => {
+  it("date plus chère : la différence et le lien de paiement", () => {
+    const email = bookingRescheduledEmail({
+      ...mail,
+      due: "20 €",
+      payUrl: "https://pay.example/atelier",
+    });
+    expect(email.text).toContain("il reste 20 € à régler");
+    expect(email.text).toContain("Payer 20 € : https://pay.example/atelier");
+    expect(bookingRescheduledEmail(mail).text).not.toContain("plus élevé");
   });
 });

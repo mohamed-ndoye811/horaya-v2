@@ -5,17 +5,18 @@ import { ButtonLink, textLinkClasses } from "@/components/ui/button";
 import { Dialog } from "@/components/ui/dialog";
 import { Select } from "@/components/ui/select";
 import { cn } from "@/lib/cn";
+import { plural } from "@/lib/format";
 
 /** Ce qu'un modèle règle déjà (pastilles de la carte). */
 function templateChips(template: EventTypeTemplate): string[] {
   const asked = template.fields.filter((field) => field.scope !== "event").length;
   const described = template.fields.length - asked;
   return [
-    template.defaultCapacity ? `${template.defaultCapacity} places` : null,
+    template.defaultCapacity ? plural(template.defaultCapacity, "place") : null,
     template.requiresApproval ? "Validation" : null,
     template.bookingRules.waitlistEnabled ? "Liste d'attente" : null,
-    described ? `${described} info${described > 1 ? "s" : ""}` : null,
-    asked ? `${asked} question${asked > 1 ? "s" : ""}` : null,
+    described ? plural(described, "info") : null,
+    asked ? plural(asked, "question") : null,
   ].filter((chip): chip is string => chip !== null);
 }
 

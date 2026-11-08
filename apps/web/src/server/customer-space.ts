@@ -353,6 +353,11 @@ export async function customerBookingPage(slug: string, bookingId: string) {
             startsAt: to.startsAt,
             endsAt: to.endsAt,
             remaining: to.capacity === null ? null : to.capacity - to.seatsHeld,
+            // Écart de prix pour ces places (une carte de séances ne change rien).
+            deltaCents:
+              booking.paymentStatus === "paid_with_pass"
+                ? 0
+                : (to.priceCents - from.priceCents) * booking.seats,
           }))
       : [];
   // Lot 31 : « Payer avec ma carte » si la réservation reste à régler et qu'une carte du client

@@ -18,7 +18,7 @@ export {
   teamReminderEmail,
   weeklyDigestEmail,
 } from "./booking-templates";
-export { type GiftCardMail, giftCardEmail } from "./gift-card-templates";
+export { type GiftCardMail, giftCardEmail, teamGiftCardEmail } from "./gift-card-templates";
 export { escapeHtml } from "./layout";
 export { createConsoleMailer, createSmtpMailer, type EmailContent, type Mailer } from "./mailer";
 export {

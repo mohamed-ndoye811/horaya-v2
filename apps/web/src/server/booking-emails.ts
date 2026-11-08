@@ -40,6 +40,7 @@ import {
 } from "@horaya/mail";
 import { textOn } from "@/lib/colors";
 import { enrollmentPayment } from "@/lib/enrollment";
+import { answerGroups } from "@/lib/fields";
 import {
   formatDateTimeShort,
   formatDayNumber,
@@ -108,6 +109,20 @@ async function loadBooking(organizationId: string, bookingId: string) {
             : "à régler auprès de l'organisateur";
   const amount =
     booking.amountCents > 0 ? `${formatMoney(booking.amountCents)} · ${paymentNote}` : null;
+  // Récapitulatif des réponses du client : jamais les champs de description (internes compris).
+  const answers = answerGroups(
+    {
+      fields: booking.event?.fields ?? [],
+      answers: booking.answers,
+      participants: detail.participants,
+    },
+    settings.timezone,
+  ).flatMap((group) =>
+    group.rows.map((row): [string, string] => [
+      group.title ? `${group.title} · ${row.label}` : row.label,
+      row.value,
+    ]),
+  );
   const mail = (url: string): BookingMail => ({
     workspace: {
       name: workspace.name,
@@ -130,6 +145,7 @@ async function loadBooking(organizationId: string, bookingId: string) {
     workspace,
     title,
     mail,
+    answers,
     onlinePayments,
     channel,
     eventsUrl: absoluteUrl(`/${workspace.slug}`),
@@ -160,7 +176,10 @@ export async function sendBookingCreatedEmail(
 ) {
   const loaded = await loadBooking(organizationId, bookingId);
   if (!loaded || !["pending", "confirmed", "waitlisted"].includes(loaded.booking.status)) return;
-  const mail = loaded.mail(manageUrl(loaded.workspace.slug, manageToken));
+  const mail = {
+    ...loaded.mail(manageUrl(loaded.workspace.slug, manageToken)),
+    answers: loaded.answers,
+  };
   if (loaded.channel && awaitsOnlinePayment(loaded.booking, loaded.paid)) {
     await send(
       loaded.booking.customer.email,
@@ -353,7 +372,7 @@ export async function sendWeeklyDigest(organizationId: string, now = new Date())
 }
 
 /** Prévient l'équipe par e-mail et dans l'app (cloche du notch), selon les préférences de chacun. */
-async function notifyTeam(
+export async function notifyTeam(
   organizationId: string,
   type: NotificationType,
   content: EmailContent,
@@ -433,6 +452,7 @@ export async function notifyFromActivity(entries: ActivityEntry[]) {
               seats: booking.seats,
               status: STATUS_LABELS[booking.status] ?? booking.status,
               url: adminUrl,
+              answers: loaded.answers,
             }),
             {
               title:
@@ -498,15 +518,66 @@ export async function notifyFromActivity(entries: ActivityEntry[]) {
             }),
           );
         } else {
-          await send(to, bookingConfirmedEmail(mail(linkRequestUrl)));
+          await send(
+            to,
+            bookingConfirmedEmail({ ...mail(linkRequestUrl), answers: loaded.answers }),
+          );
         }
         break;
       case "booking.refused":
         await send(to, bookingRefusedEmail({ ...mail(linkRequestUrl), reason, eventsUrl }));
         break;
-      case "booking.rescheduled":
-        await send(to, bookingRescheduledEmail(mail(linkRequestUrl)));
+      case "booking.rescheduled": {
+        // Date plus chère : la différence est à payer (même lien que pour une réservation normale).
+        const due = Number(entry.data?.dueCents ?? 0);
+        const overpaid = Number(entry.data?.overpaidCents ?? 0);
+        const increased =
+          Number(entry.data?.toAmountCents ?? 0) > Number(entry.data?.fromAmountCents ?? 0);
+        const payUrl =
+          loaded.channel && increased && due > 0 && awaitsOnlinePayment(booking, loaded.paid)
+            ? loaded.channel.kind === "stripe"
+              ? linkRequestUrl
+              : loaded.channel.url
+            : null;
+        await send(
+          to,
+          bookingRescheduledEmail({
+            ...mail(linkRequestUrl),
+            due: payUrl ? formatMoney(due) : null,
+            payUrl,
+          }),
+        );
+        // Plus cher ou moins cher : l'équipe le sait (moins cher : rien n'est remboursé tout seul).
+        const repriced = entry.data?.fromAmountCents !== entry.data?.toAmountCents;
+        const difference = !repriced
+          ? null
+          : overpaid > 0
+            ? `trop-perçu de ${formatMoney(overpaid)} à rembourser`
+            : due > 0
+              ? `${formatMoney(due)} restent à payer`
+              : null;
+        if (difference && entry.actorType === "customer") {
+          await notifyTeam(
+            entry.organizationId,
+            "booking_rescheduled",
+            teamBookingEmail({
+              workspaceName: workspace.name,
+              kind: "rescheduled",
+              customerName,
+              title,
+              seats: booking.seats,
+              status: difference,
+              url: adminUrl,
+            }),
+            {
+              title: `Changement de date · ${difference}`,
+              body: summary,
+              link: adminPath,
+            },
+          );
+        }
         break;
+      }
       case "booking.promoted":
         await send(
           to,
