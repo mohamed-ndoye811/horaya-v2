@@ -1,6 +1,7 @@
 import { and, asc, desc, eq, isNull, sql } from "drizzle-orm";
 import type { Executor } from "../client";
 import { booking, customer, event, pass, passMovement, passPlan, tenantSettings } from "../schema";
+import { freeCancellationHoursSql } from "./cancellation";
 
 const iso = (date: Date) => sql`${date.toISOString()}::timestamptz`;
 
@@ -210,7 +211,7 @@ export async function getCancelRecreditInfo(
       passName: sql<
         string | null
       >`(select p.name from pass_movement m join pass p on p.id = m.pass_id where m.booking_id = ${booking.id} and m.kind = 'use' limit 1)`,
-      freeCancellationHours: tenantSettings.freeCancellationHours,
+      freeCancellationHours: freeCancellationHoursSql,
     })
     .from(booking)
     .leftJoin(event, eq(event.id, booking.eventId))

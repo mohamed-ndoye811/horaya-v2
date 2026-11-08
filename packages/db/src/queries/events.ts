@@ -1,7 +1,7 @@
 import type {
   BookingNoun,
-  BookingRules,
   BookingStatus,
+  EventModules,
   EventStatus,
   EventTypeField,
   EventVisibility,
@@ -185,11 +185,9 @@ export interface EventTypeRow {
   description: string | null;
   defaultDurationMinutes: number | null;
   defaultPriceCents: number | null;
-  defaultCapacity: number | null;
-  requiresApproval: boolean;
+  modules: EventModules;
   fields: EventTypeField[];
   bookingNoun: BookingNoun;
-  bookingRules: BookingRules;
   eventCount: number;
   /** Événements à venir sans inscription : ceux que « Appliquer aussi » mettrait à jour. */
   upcomingUnbooked: number;
@@ -208,13 +206,11 @@ export async function listEventTypes(
       description: eventType.description,
       defaultDurationMinutes: eventType.defaultDurationMinutes,
       defaultPriceCents: eventType.defaultPriceCents,
-      defaultCapacity: eventType.defaultCapacity,
-      requiresApproval: eventType.requiresApproval,
+      modules: eventType.modules,
       fields: eventType.fields,
       bookingNoun: eventType.bookingNoun,
-      bookingRules: eventType.bookingRules,
       eventCount: sql<number>`(select count(*) from event e where e.event_type_id = "event_type"."id")::int`,
-      // Même sélection que EventRepository.applyTypeFields.
+      // Même sélection que EventRepository.applyTypeConfig.
       upcomingUnbooked: sql<number>`(select count(*) from event e
         where e.event_type_id = "event_type"."id" and e.starts_at > now() and e.status <> 'cancelled'
         and not exists (select 1 from booking b where b.event_id = e.id))::int`,

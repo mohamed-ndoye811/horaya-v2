@@ -274,7 +274,7 @@ export async function listCounterEvents(
       enrollmentProrata: sql<boolean>`coalesce((select s.enrollment_prorata from event_series s where s.id = ${event.seriesId}), false)`,
       seriesTotal: sql<number>`coalesce((select count(*) from event e where e.series_id = ${event.seriesId} and e.status = 'published'), 0)::int`,
       seriesRemaining: sql<number>`coalesce((select count(*) from event e where e.series_id = ${event.seriesId} and e.status = 'published' and e.starts_at > ${options.now.toISOString()}::timestamptz), 0)::int`,
-      waitlistEnabled: sql<boolean>`coalesce((${eventType.bookingRules}->>'waitlistEnabled')::boolean, false)`,
+      waitlistEnabled: sql<boolean>`(${event.modules}->'waitlist') is not null`,
       seatsHeld: sql<number>`coalesce((select sum(b.seats) from booking b where b.event_id = "event"."id" and b.status in ('pending', 'confirmed')), 0)::int`,
     })
     .from(event)

@@ -128,10 +128,10 @@ export function eventRepository(db: Executor): EventRepository {
       return Boolean(found);
     },
 
-    async applyTypeFields(organizationId, eventTypeId, fields, now) {
+    async applyTypeConfig(organizationId, eventTypeId, config, now) {
       const updated = await db
         .update(event)
-        .set({ fields })
+        .set(config)
         .where(
           and(
             eq(event.organizationId, organizationId),

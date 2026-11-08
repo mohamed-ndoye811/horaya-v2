@@ -11,6 +11,7 @@ import {
   createEventType,
   type Deps,
   ForbiddenError,
+  legacyModules,
   publishEvent,
   refuseBooking,
   setBookingCheckIn,
@@ -54,10 +55,14 @@ async function publishedEvent(
   const type = await createEventType(deps, owner, {
     name: `Séminaire ${Math.random().toString(36).slice(2, 7)}`,
     color: "#528D74",
-    bookingRules: {
-      waitlistEnabled: options.waitlist ?? false,
-      minAdvanceHours: options.minAdvanceHours,
-    },
+    modules: legacyModules({
+      defaultCapacity: null,
+      requiresApproval: false,
+      bookingRules: {
+        waitlistEnabled: options.waitlist ?? false,
+        minAdvanceHours: options.minAdvanceHours,
+      },
+    }),
   });
   const [created] = await createEvent(deps, owner, {
     eventTypeId: type.id,
@@ -403,13 +408,13 @@ describe("événements", () => {
           required: true,
         },
       ],
-      bookingRules: { waitlistEnabled: true },
+      modules: { waitlist: {} },
     });
     expect(type.color).toBe("#528D74");
     const updated = await updateEventType(deps, owner, type.id, { defaultPriceCents: 12000 });
     expect(updated.defaultPriceCents).toBe(12000);
     expect(updated.fields).toHaveLength(1);
-    expect(updated.bookingRules.waitlistEnabled).toBe(true);
+    expect(updated.modules.waitlist).toEqual({});
   });
 
   it("n'utilise plus un type archivé pour créer des événements", async () => {

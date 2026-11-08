@@ -180,8 +180,7 @@ const types = Object.fromEntries(
         color: "#528D74",
         defaultDurationMinutes: 60 * 24,
         defaultPriceCents: 12000,
-        requiresApproval: true,
-        bookingRules: { waitlistEnabled: true },
+        modules: { approval: {}, waitlist: {} },
         fields: [
           {
             key: "regime",
@@ -200,9 +199,20 @@ const types = Object.fromEntries(
         color: "#A9663F",
         defaultDurationMinutes: 120,
         defaultPriceCents: 4500,
-        defaultCapacity: 12,
         bookingNoun: "inscription" as const,
-        bookingRules: { waitlistEnabled: true },
+        // Lot 34 : seuil de maintien, annulation propre, 12 ans minimum, « À apporter ».
+        modules: {
+          places: { capacity: 12, maxPerBooking: 4, minimum: { seats: 4, daysBefore: 2 } },
+          waitlist: {},
+          cancellation: { freeHours: 48, lateRefundPercent: 0 },
+          access: { minAge: 12 },
+          messages: {
+            bring: "Une tenue qui ne craint rien et les cheveux attachés",
+            reminder: { kind: "eve" as const, hour: 18 },
+            after:
+              "Merci d'être venu·e ! Tes pièces sèchent une semaine avant la cuisson : on te prévient quand elles sont prêtes.",
+          },
+        },
         fields: [
           {
             key: "niveau",
@@ -275,7 +285,7 @@ const types = Object.fromEntries(
         name: "Meetup",
         color: "#66537C",
         defaultDurationMinutes: 150,
-        bookingRules: { waitlistEnabled: true },
+        modules: { waitlist: {} },
       },
       {
         key: "formation",

@@ -54,7 +54,7 @@ async function seed() {
   const type = await createEventType(deps, owner, {
     name: "Atelier",
     color: "#D8BC66",
-    requiresApproval: true,
+    modules: { approval: {} },
   });
   const [workshop] = await createEvent(deps, owner, {
     eventTypeId: type.id,
