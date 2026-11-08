@@ -216,3 +216,16 @@ describe("e-mail à l'équipe : bon cadeau acheté", () => {
     expect(email.text).toContain("Code : TERRE-8K2F7M3P");
   });
 });
+
+describe("changement de date", () => {
+  it("date plus chère : la différence et le lien de paiement", () => {
+    const email = bookingRescheduledEmail({
+      ...mail,
+      due: "20 €",
+      payUrl: "https://pay.example/atelier",
+    });
+    expect(email.text).toContain("il reste 20 € à régler");
+    expect(email.text).toContain("Payer 20 € : https://pay.example/atelier");
+    expect(bookingRescheduledEmail(mail).text).not.toContain("plus élevé");
+  });
+});

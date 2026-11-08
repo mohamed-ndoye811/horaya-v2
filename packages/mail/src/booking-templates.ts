@@ -248,20 +248,30 @@ export function weeklyDigestEmail(input: {
   };
 }
 
-/** Espace client : la réservation a changé de date (maquette 8.3). */
-export function bookingRescheduledEmail(mail: BookingMail): EmailContent {
+/**
+ * Espace client : la réservation a changé de date (maquette 8.3). Nouvelle date plus chère :
+ * `due` est la différence à régler et `payUrl` le lien de paiement (comme une réservation normale).
+ */
+export function bookingRescheduledEmail(
+  mail: BookingMail & { due?: string | null; payUrl?: string | null },
+): EmailContent {
+  const pay = mail.due && mail.payUrl ? { due: mail.due, url: mail.payUrl } : null;
   return bookingEmail(mail, {
     subject: `Nouvelle date : ${mail.title}`,
     title: "Nouvelle date",
     preheader: `Ta réservation passe au ${mail.when}.`,
-    paragraphs: ["Ta réservation a bien changé de date. Voici le nouveau récapitulatif."],
+    paragraphs: [
+      "Ta réservation a bien changé de date. Voici le nouveau récapitulatif.",
+      ...(pay ? [`Le tarif de cette date est plus élevé : il reste ${pay.due} à régler.`] : []),
+    ],
+    ...(pay ? { action: { label: `Payer ${pay.due}`, url: pay.url } } : {}),
   });
 }
 
 /** Prévient l'équipe d'une nouvelle réservation ou d'une annulation (préférences de notification). */
 export function teamBookingEmail(input: {
   workspaceName: string;
-  kind: "created" | "cancelled" | "paid";
+  kind: "created" | "cancelled" | "paid" | "rescheduled";
   customerName: string;
   title: string;
   seats: number;
@@ -280,6 +290,11 @@ export function teamBookingEmail(input: {
       subject: `Annulation : ${input.customerName} · ${input.title}`,
       title: "Réservation annulée",
       text: `${input.customerName} a annulé sa réservation de ${places(input.seats)} pour « ${input.title} ».`,
+    },
+    rescheduled: {
+      subject: `Changement de date : ${input.customerName} · ${input.title}`,
+      title: "Changement de date",
+      text: `${input.customerName} a changé de date pour « ${input.title} » (${places(input.seats)}) : ${input.status}.`,
     },
     paid: {
       subject: `Paiement reçu : ${input.customerName} · ${input.title}`,

@@ -5,6 +5,7 @@ import type { RawFieldValues } from "../fields/model";
 import { validateBookingAnswers } from "../fields/values";
 import { applyGiftCardToBooking, restoreGiftCardForBooking } from "../gift-cards/use-cases";
 import { recreditPassForBooking } from "../passes/use-cases";
+import { paidCents } from "../payments/rules";
 import { type Actor, actorRef, assertMemberCan } from "../shared/actor";
 import { ConflictError, ForbiddenError, NotFoundError, ValidationError } from "../shared/errors";
 import { generateToken, hashToken } from "../shared/tokens";
@@ -15,7 +16,7 @@ import { CHECK_IN_OPENS_BEFORE_HOURS, isCheckInOpen } from "./check-in";
 import type { Booking } from "./model";
 import { priceBooking } from "./pricing";
 import { formatBookingReference, referencePeriod } from "./reference";
-import { rescheduleClosedReason, rescheduleTargetIssue } from "./reschedule";
+import { rescheduleClosedReason, reschedulePricing, rescheduleTargetIssue } from "./reschedule";
 import { type CreateEventBookingInput, createEventBookingSchema } from "./schemas";
 import type { BookingSource } from "./types";
 import { promoteWaitlist } from "./waitlist";
@@ -526,7 +527,8 @@ export async function cancelBookingAsCustomer(
 
 /**
  * Changer de date depuis l'espace client (maquette 8.3) : la réservation passe sur une autre
- * date du même type, au même prix, qui a assez de places, dans le délai d'annulation gratuite.
+ * date du même type qui a assez de places, dans le délai d'annulation gratuite. Le prix suit la
+ * nouvelle date (reste à payer ou trop-perçu, voir `reschedulePricing`).
  * La place quittée est libérée et profite à la liste d'attente. Les deux événements sont
  * verrouillés dans un ordre fixe (pas d'interblocage entre deux échanges croisés).
  */
@@ -574,10 +576,17 @@ export async function rescheduleBookingAsCustomer(
     if (issue) throw new ConflictError(issue);
 
     const status = to.event.requiresApproval ? "pending" : "confirmed";
+    const pricing = reschedulePricing({
+      booking,
+      to: to.event,
+      paidCents: paidCents(await repositories.payments.listForBooking(booking.id)),
+    });
+    const { dueCents, overpaidCents, ...newPrice } = pricing;
     const moved = await repositories.bookings.moveToEvent(organizationId, booking.id, {
       eventId: to.event.id,
       status,
       confirmedAt: status === "confirmed" ? (booking.confirmedAt ?? now) : null,
+      ...newPrice,
     });
     // Le matériel attribué au comptoir pour l'ancienne date y retourne.
     await repositories.inventory.releaseBookingAllocations(organizationId, booking.id);
@@ -587,7 +596,15 @@ export async function rescheduleBookingAsCustomer(
       entityId: booking.id,
       action: "booking.rescheduled",
       ...actorRef(actor),
-      data: { fromEventId: from.id, toEventId: to.event.id, status },
+      data: {
+        fromEventId: from.id,
+        toEventId: to.event.id,
+        status,
+        fromAmountCents: booking.amountCents,
+        toAmountCents: pricing.amountCents,
+        dueCents,
+        overpaidCents,
+      },
     });
     await promoteWaitlist(repositories, from, actor, now);
     return moved;

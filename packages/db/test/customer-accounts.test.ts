@@ -212,7 +212,7 @@ describe("changer de date", () => {
     expect(promoted?.status).toBe("confirmed");
   });
 
-  it("refuse un autre type, un autre tarif, une date complète ou un délai dépassé", async () => {
+  it("refuse un autre type, une date complète ou un délai dépassé", async () => {
     const email = uniqueEmail();
     const type = await stageType();
     const current = await stage(type.id, "2026-11-22T09:00:00Z");
@@ -222,8 +222,6 @@ describe("changer de date", () => {
 
     const otherType = await stage((await stageType()).id, "2026-12-13T09:00:00Z");
     await expect(move(otherType.id)).rejects.toThrow(/pas proposée/);
-    const pricier = await stage(type.id, "2026-12-14T09:00:00Z", { priceCents: 9500 });
-    await expect(move(pricier.id)).rejects.toThrow(/tarif/);
     const small = await stage(type.id, "2026-12-15T09:00:00Z", { capacity: 1 });
     await expect(move(small.id)).rejects.toThrow(/que 1 place/);
 
@@ -231,6 +229,24 @@ describe("changer de date", () => {
     // Délai d'annulation gratuite par défaut : 72 h avant le 22 novembre à 9 h.
     clock.set(new Date("2026-11-19T09:00:00Z"));
     await expect(move(open.id)).rejects.toThrow(/délai/);
+  });
+});
+
+describe("changer de date vers un autre prix", () => {
+  it("plus cher : le prix suit la date ; moins cher : le prix baisse sans rien rembourser", async () => {
+    const email = uniqueEmail();
+    const type = await stageType();
+    const current = await stage(type.id, "2026-11-22T09:00:00Z");
+    const mine = await book(current.id, email, 2);
+    const before = mine.booking.amountCents;
+    const pricier = await stage(type.id, "2026-12-14T09:00:00Z", { priceCents: 9500 });
+    const cheaper = await stage(type.id, "2026-12-15T09:00:00Z", { priceCents: 5000 });
+    const move = (eventId: string) =>
+      rescheduleBookingAsCustomer(deps, organizationId, mine.booking.id, email, eventId);
+
+    expect(await move(pricier.id)).toMatchObject({ eventId: pricier.id, amountCents: 19000 });
+    expect(before).not.toBe(19000);
+    expect(await move(cheaper.id)).toMatchObject({ eventId: cheaper.id, amountCents: 10000 });
   });
 });
 

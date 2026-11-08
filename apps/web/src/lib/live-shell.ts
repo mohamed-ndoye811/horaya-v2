@@ -8,6 +8,7 @@ const TONES: Record<string, ToastTone> = {
   payment_received: "success",
   gift_card_purchased: "success",
   booking_cancelled: "warning",
+  booking_rescheduled: "warning",
 };
 
 /** Toutes les 20 s, onglet visible (et à chaque retour sur l'onglet). */

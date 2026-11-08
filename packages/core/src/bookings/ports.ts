@@ -1,4 +1,5 @@
 import type { Customer, CustomerNote } from "../customers/model";
+import type { PaymentMode } from "../events/types";
 import type { ActorType } from "../tenants/types";
 import type { Booking, CustomerContact, ParticipantInput } from "./model";
 import type { BookingPaymentStatus, BookingStatus } from "./types";
@@ -54,7 +55,16 @@ export interface BookingRepository {
   moveToEvent(
     organizationId: string,
     bookingId: string,
-    change: { eventId: string; status: BookingStatus; confirmedAt: Date | null },
+    change: {
+      eventId: string;
+      status: BookingStatus;
+      confirmedAt: Date | null;
+      /** Nouveau prix, quand la date change de tarif. */
+      amountCents?: number;
+      depositCents?: number | null;
+      paymentMode?: PaymentMode;
+      paymentStatus?: BookingPaymentStatus;
+    },
   ): Promise<Booking>;
   updatePaymentStatus(
     organizationId: string,

@@ -49,6 +49,9 @@ function paymentSummary(
   paid: number,
 ): string {
   if (booking.paymentStatus === "paid_with_pass") return "Payée avec la carte";
+  // Changement de date vers une séance moins chère : rien n'est remboursé tout seul.
+  if (paid > booking.amountCents)
+    return `Trop-perçu de ${formatMoney(paid - booking.amountCents)} à rembourser`;
   if (booking.paymentMode === "free") return "Rien à régler";
   if (booking.paymentStatus === "refunded") return "Remboursé";
   if (booking.paymentStatus === "partially_refunded")
@@ -201,9 +204,11 @@ export function BookingDetailPage({ data }: { data: Awaited<ReturnType<typeof ge
   const paymentTone =
     booking.paymentMode === "free" || booking.paymentStatus === "refunded"
       ? undefined
-      : booking.paymentStatus === "paid" || booking.paymentStatus === "paid_with_pass"
-        ? ("success" as const)
-        : ("warning" as const);
+      : paid > booking.amountCents
+        ? ("warning" as const)
+        : booking.paymentStatus === "paid" || booking.paymentStatus === "paid_with_pass"
+          ? ("success" as const)
+          : ("warning" as const);
   const amountCaption = booking.depositCents
     ? `Acompte ${formatMoney(booking.depositCents)}`
     : booking.seats > 1 && booking.amountCents > 0

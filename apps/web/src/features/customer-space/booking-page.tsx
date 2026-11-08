@@ -365,6 +365,8 @@ function Reschedule({
         <p className="text-sm leading-5 text-ink-muted">
           Possible jusqu'au {until}, sans frais. Ta place actuelle est libérée pour quelqu'un
           d'autre.
+          {options.some((entry) => entry.deltaCents !== 0) &&
+            " Si le tarif change, la différence reste à payer ; en cas de trop-perçu, l'organisateur te rembourse."}
         </p>
       </div>
       {message && <FormAlert tone={message.tone}>{message.text}</FormAlert>}
@@ -391,6 +393,13 @@ function Reschedule({
               className="sr-only"
             />
             <span className="text-[15px] font-semibold leading-5 text-ink">{label(entry)}</span>
+            {entry.deltaCents !== 0 && (
+              <span className="text-[13px] leading-[18px] text-ink-muted">
+                {entry.deltaCents > 0
+                  ? `${formatMoney(entry.deltaCents)} de plus`
+                  : `${formatMoney(-entry.deltaCents)} de moins`}
+              </span>
+            )}
             <span
               className={cn(
                 "text-[13px] leading-[18px]",

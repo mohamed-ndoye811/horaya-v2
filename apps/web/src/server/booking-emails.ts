@@ -527,9 +527,57 @@ export async function notifyFromActivity(entries: ActivityEntry[]) {
       case "booking.refused":
         await send(to, bookingRefusedEmail({ ...mail(linkRequestUrl), reason, eventsUrl }));
         break;
-      case "booking.rescheduled":
-        await send(to, bookingRescheduledEmail(mail(linkRequestUrl)));
+      case "booking.rescheduled": {
+        // Date plus chère : la différence est à payer (même lien que pour une réservation normale).
+        const due = Number(entry.data?.dueCents ?? 0);
+        const overpaid = Number(entry.data?.overpaidCents ?? 0);
+        const increased =
+          Number(entry.data?.toAmountCents ?? 0) > Number(entry.data?.fromAmountCents ?? 0);
+        const payUrl =
+          loaded.channel && increased && due > 0 && awaitsOnlinePayment(booking, loaded.paid)
+            ? loaded.channel.kind === "stripe"
+              ? linkRequestUrl
+              : loaded.channel.url
+            : null;
+        await send(
+          to,
+          bookingRescheduledEmail({
+            ...mail(linkRequestUrl),
+            due: payUrl ? formatMoney(due) : null,
+            payUrl,
+          }),
+        );
+        // Plus cher ou moins cher : l'équipe le sait (moins cher : rien n'est remboursé tout seul).
+        const repriced = entry.data?.fromAmountCents !== entry.data?.toAmountCents;
+        const difference = !repriced
+          ? null
+          : overpaid > 0
+            ? `trop-perçu de ${formatMoney(overpaid)} à rembourser`
+            : due > 0
+              ? `${formatMoney(due)} restent à payer`
+              : null;
+        if (difference && entry.actorType === "customer") {
+          await notifyTeam(
+            entry.organizationId,
+            "booking_rescheduled",
+            teamBookingEmail({
+              workspaceName: workspace.name,
+              kind: "rescheduled",
+              customerName,
+              title,
+              seats: booking.seats,
+              status: difference,
+              url: adminUrl,
+            }),
+            {
+              title: `Changement de date · ${difference}`,
+              body: summary,
+              link: adminPath,
+            },
+          );
+        }
         break;
+      }
       case "booking.promoted":
         await send(
           to,
