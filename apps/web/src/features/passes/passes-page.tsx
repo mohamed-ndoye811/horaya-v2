@@ -1,7 +1,7 @@
 import { PageHeader } from "@/components/app/page-header";
 import { PresenceItem, PresenceList } from "@/components/motion/presence";
 import { StatusBadge } from "@/components/ui/badge";
-import { Button, ButtonLink } from "@/components/ui/button";
+import { ButtonLink } from "@/components/ui/button";
 import { DataTable } from "@/components/ui/data-table";
 import { EmptyState } from "@/components/ui/empty-state";
 import { ExternalIcon, PlusIcon } from "@/components/ui/icons";
@@ -12,7 +12,6 @@ import type { getPassesPage } from "@/functions/passes";
 import { cn } from "@/lib/cn";
 import { formatMoney, plural } from "@/lib/format";
 import { Link } from "@/lib/navigation";
-import { toast } from "@/lib/toast";
 import { PassPaymentActions } from "./pending-pass-row";
 import { PlanDialog, type PlanFormValues } from "./plan-form";
 import { formatValidity } from "./validity";
@@ -71,9 +70,21 @@ export function PassesPage({
         title="Cartes de séances"
         subtitle="Des forfaits payés d'avance : ton élève achète plusieurs séances d'un coup, puis chaque réservation en décompte une."
         actions={
-          <ButtonLink href="/app/cartes?formule=nouvelle" icon={<PlusIcon />}>
-            Nouvelle formule
-          </ButtonLink>
+          <>
+            {onSale && (
+              <ButtonLink
+                href={`/${slug}/cartes`}
+                target="_blank"
+                variant="secondary"
+                icon={<ExternalIcon size={14} />}
+              >
+                Page de vente
+              </ButtonLink>
+            )}
+            <ButtonLink href="/app/cartes?formule=nouvelle" icon={<PlusIcon />}>
+              Nouvelle formule
+            </ButtonLink>
+          </>
         }
       />
       {plans.length === 0 ? (
@@ -93,7 +104,7 @@ export function PassesPage({
         />
       ) : (
         <div className="flex flex-col pb-4">
-          <div className="grid grid-cols-2 gap-3 px-4 xl:grid-cols-[repeat(4,minmax(0,1fr))_minmax(0,1.15fr)]">
+          <div className="grid grid-cols-2 gap-3 px-4 xl:grid-cols-4">
             <MiniStat
               label="Cartes en cours"
               value={active.length}
@@ -112,7 +123,6 @@ export function PassesPage({
               value={pending.length}
               aside={pending.length > 0 ? "à confirmer" : "tout est réglé"}
             />
-            {onSale && <SalesPageCard slug={slug} />}
           </div>
 
           <SectionHeading title="Formules" meta={plural(plans.length, "formule")} />
@@ -299,43 +309,6 @@ export function PassesPage({
       {dialog && (
         <PlanDialog key={dialog.id ?? "nouvelle"} initial={dialog} eventTypes={eventTypes} />
       )}
-    </div>
-  );
-}
-
-/**
- * La page où les élèves achètent leur carte, dans la ligne des chiffres : à partager (bio,
- * messages) ou à ouvrir. Sur mobile, elle prend toute la largeur sous les chiffres.
- */
-function SalesPageCard({ slug }: { slug: string }) {
-  const path = `/${slug}/cartes`;
-  const copy = () =>
-    navigator.clipboard
-      .writeText(`${window.location.origin}${path}`)
-      .then(() => toast("Lien de ta page de vente copié."))
-      .catch(() =>
-        toast("Copie impossible : ouvre la page et copie l'adresse.", { tone: "error" }),
-      );
-  return (
-    <div className="col-span-2 flex min-w-0 flex-col justify-between gap-3 rounded-[20px] border-[1.5px] border-dashed border-line-strong px-5 py-4 xl:col-span-1">
-      <div className="flex min-w-0 flex-col gap-1">
-        <p className="text-[13px] font-semibold leading-[17px] text-ink-subtle">Page de vente</p>
-        <p className="truncate font-mono text-[13px] leading-[18px] text-ink">horaya.app{path}</p>
-      </div>
-      <div className="flex flex-wrap gap-2">
-        <Button size="xs" onClick={copy}>
-          Copier le lien
-        </Button>
-        <ButtonLink
-          href={path}
-          target="_blank"
-          size="xs"
-          variant="secondary"
-          icon={<ExternalIcon size={12} />}
-        >
-          Ouvrir
-        </ButtonLink>
-      </div>
     </div>
   );
 }
