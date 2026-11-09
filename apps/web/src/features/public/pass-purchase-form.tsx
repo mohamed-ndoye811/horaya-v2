@@ -30,7 +30,7 @@ export function PassPurchaseForm({
     <form onSubmit={onSubmit} className="reveal-group auth-fields flex flex-col gap-[22px]">
       {state.error && !state.fieldErrors && <FormAlert>{state.error}</FormAlert>}
       <fieldset className="flex flex-col gap-2">
-        <legend className="mb-2 text-[13px] font-semibold text-ink">Ta carte</legend>
+        <legend className="mb-2 text-meta font-semibold text-ink">Ta carte</legend>
         {plans.map((plan, index) => (
           <label
             key={plan.id}
@@ -48,8 +48,8 @@ export function PassPurchaseForm({
               className="sr-only"
             />
             <span className="flex flex-col gap-0.5">
-              <span className="text-[15px] font-bold text-ink">{plan.name}</span>
-              <span className="text-[13px] text-ink-muted">
+              <span className="text-ui font-bold text-ink">{plan.name}</span>
+              <span className="text-meta text-ink-muted">
                 {plural(plan.sessions, "séance")} · valable {plan.validityDays} jours
               </span>
             </span>
@@ -58,7 +58,7 @@ export function PassPurchaseForm({
             </span>
           </label>
         ))}
-        {errors.planId && <p className="text-[13px] text-danger">{errors.planId}</p>}
+        {errors.planId && <p className="text-meta text-danger">{errors.planId}</p>}
       </fieldset>
       <div className="grid gap-4 sm:grid-cols-2">
         <Field label="Prénom" required error={errors.firstName}>

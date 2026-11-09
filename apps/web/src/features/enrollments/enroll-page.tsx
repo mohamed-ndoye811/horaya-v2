@@ -135,7 +135,7 @@ export function EnrollPage({
                 </p>
               )}
               <p className="flex items-baseline justify-between gap-4 border-t border-bg pt-3.5">
-                <span className="text-[15px] font-bold leading-5 text-ink">Total TTC</span>
+                <span className="text-ui font-bold leading-5 text-ink">Total TTC</span>
                 <span className="text-xl font-semibold leading-6 text-ink">
                   {price > 0 ? formatMoney(price) : "Gratuit"}
                 </span>

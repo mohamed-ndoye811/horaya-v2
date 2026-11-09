@@ -69,7 +69,7 @@ export function EventTypesPage({
         <div className="min-w-0 flex-1">
           {types.length === 0 ? (
             <EmptyState
-              title="Aucun type pour l'instant."
+              title="Crée ton premier type d'événement."
               description="Commence par les formats que tu proposes le plus : séminaire, atelier, réunion… Chacun a sa couleur dans le calendrier."
               actions={
                 <ButtonLink href="/app/evenements/types?type=nouveau" arrow>
@@ -96,7 +96,7 @@ export function EventTypesPage({
                       />
                       <span className="flex min-w-0 flex-1 flex-col gap-1">
                         <span className="truncate text-base font-bold leading-5">{type.name}</span>
-                        <span className="truncate text-[13px] font-medium leading-[17px] text-ink-muted">
+                        <span className="truncate text-meta font-medium leading-[17px] text-ink-muted">
                           {[formatDuration(type.defaultDurationMinutes), summary(type)]
                             .filter((part) => part && part !== "—")
                             .join(" · ")}
@@ -156,16 +156,16 @@ export function EventTypesPage({
                                 />
                                 <Link
                                   href={`/app/evenements/types?type=${type.id}`}
-                                  className="truncate text-[15px] font-semibold text-ink after:absolute after:inset-0"
+                                  className="truncate text-ui font-semibold text-ink after:absolute after:inset-0"
                                 >
                                   {type.name}
                                 </Link>
                               </div>
                             </td>
-                            <td className="px-3 text-[13px] text-ink-soft">
+                            <td className="px-3 text-meta text-ink-soft">
                               {formatDuration(type.defaultDurationMinutes)}
                             </td>
-                            <td className="px-3 text-[13px] text-ink-soft">
+                            <td className="px-3 text-meta text-ink-soft">
                               {type.defaultPriceCents
                                 ? formatMoney(type.defaultPriceCents)
                                 : "Gratuit"}

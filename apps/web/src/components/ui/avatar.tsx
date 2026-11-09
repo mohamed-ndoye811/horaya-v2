@@ -17,7 +17,7 @@ const sizes = {
   /** En-tête de fiche client (DA v4). */
   header: "size-[72px] text-2xl",
   /** En-tête de fiche client (96 px). */
-  xl: "size-24 font-headline text-[40px]",
+  xl: "size-24 font-headline text-title",
 };
 
 /** Avatar rond à initiales ; la couleur est stable pour un même nom. */

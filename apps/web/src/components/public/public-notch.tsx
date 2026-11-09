@@ -68,7 +68,7 @@ export function PublicNotch({
     { label: "Mon espace", href: space, active: inSpace },
   ];
 
-  const mobileLink = "tap-area text-[13px] font-semibold leading-4 text-ink-muted hover:text-ink";
+  const mobileLink = "tap-area text-meta font-semibold leading-4 text-ink-muted hover:text-ink";
 
   return (
     <>
@@ -77,7 +77,7 @@ export function PublicNotch({
         brand={
           <Link href={home} className="flex min-w-0 items-center gap-2 pr-1.5 text-on-ink">
             <WorkspaceMark name={workspace.name} logo={workspace.logo} />
-            <span className="max-w-[170px] truncate text-[15px] font-semibold leading-[18px]">
+            <span className="max-w-[170px] truncate text-ui font-semibold leading-[18px]">
               {workspace.name}
             </span>
           </Link>
@@ -103,9 +103,7 @@ export function PublicNotch({
       <header className="flex items-center justify-between gap-3 px-4 pt-3 lg:hidden">
         <Link href={home} className="flex min-w-0 items-center gap-2 text-ink">
           <WorkspaceMark name={workspace.name} logo={workspace.logo} />
-          <span className="truncate text-[15px] font-semibold leading-[18px]">
-            {workspace.name}
-          </span>
+          <span className="truncate text-ui font-semibold leading-[18px]">{workspace.name}</span>
         </Link>
         <div className="flex shrink-0 items-center gap-4">
           {contact && !inSpace && (

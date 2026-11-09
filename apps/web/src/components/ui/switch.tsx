@@ -30,11 +30,9 @@ export function Switch({
         />
       </span>
       <span className={hideLabel ? "sr-only" : "flex flex-col gap-0.5"}>
-        <span className="text-[15px] font-semibold leading-5 text-ink">{label}</span>
+        <span className="text-ui font-semibold leading-5 text-ink">{label}</span>
         {description && (
-          <span className="text-[13px] font-medium leading-[18px] text-ink-muted">
-            {description}
-          </span>
+          <span className="text-meta font-medium leading-[18px] text-ink-muted">{description}</span>
         )}
       </span>
     </label>

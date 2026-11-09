@@ -214,7 +214,7 @@ export function ItemDetailPage({ data }: { data: Awaited<ReturnType<typeof getIt
                     index > 0 && "border-t border-line-faint",
                   )}
                 >
-                  <dt className="text-[13px] leading-[17px] text-ink-subtle">{label}</dt>
+                  <dt className="text-meta leading-[17px] text-ink-subtle">{label}</dt>
                   <dd
                     className={cn(
                       "text-right text-sm font-semibold leading-[18px]",
@@ -227,7 +227,7 @@ export function ItemDetailPage({ data }: { data: Awaited<ReturnType<typeof getIt
               ))}
             </dl>
             {item.description && (
-              <p className="whitespace-pre-line border-t border-line-faint py-3 text-[13px] leading-5 text-ink-muted">
+              <p className="whitespace-pre-line border-t border-line-faint py-3 text-meta leading-5 text-ink-muted">
                 {item.description}
               </p>
             )}
@@ -299,7 +299,7 @@ export function ItemDetailPage({ data }: { data: Awaited<ReturnType<typeof getIt
                 ))}
               </ul>
             ) : (
-              <p className="border-t border-line-faint pt-3.5 text-[13px] text-ink-subtle">
+              <p className="border-t border-line-faint pt-3.5 text-meta text-ink-subtle">
                 Aucune sortie sur ces deux semaines : tous les exemplaires sont libres.
               </p>
             )}
@@ -315,7 +315,7 @@ export function ItemDetailPage({ data }: { data: Awaited<ReturnType<typeof getIt
               )}
             </div>
             {interventions.length === 0 ? (
-              <p className="border-t border-line-faint py-4 text-[13px] text-ink-subtle">
+              <p className="border-t border-line-faint py-4 text-meta text-ink-subtle">
                 Aucune intervention pour l'instant.
               </p>
             ) : (
@@ -341,7 +341,7 @@ export function ItemDetailPage({ data }: { data: Awaited<ReturnType<typeof getIt
                         intervention.cancelled && "opacity-60",
                       )}
                     >
-                      <span className="w-[72px] shrink-0 text-[13px] font-semibold leading-[17px] text-ink">
+                      <span className="w-[72px] shrink-0 text-meta font-semibold leading-[17px] text-ink">
                         {civil(start, start.year !== today.year)}
                       </span>
                       <div className="flex min-w-0 flex-1 flex-col gap-px">

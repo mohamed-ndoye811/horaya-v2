@@ -108,7 +108,7 @@ export function OrganizationForm({
                 ) : (
                   <span
                     aria-hidden="true"
-                    className="flex size-[72px] shrink-0 items-center justify-center rounded-2xl font-headline text-[34px] leading-10"
+                    className="flex size-[72px] shrink-0 items-center justify-center rounded-2xl font-headline text-title-sm"
                     style={{ backgroundColor: color, color: onColor }}
                   >
                     {initial0}
@@ -174,7 +174,7 @@ export function OrganizationForm({
               label="Présentation"
               error={errors.description}
               hint={
-                <p className="text-[13px] font-medium text-ink-muted">
+                <p className="text-meta font-medium text-ink-muted">
                   Une phrase en haut de ta page publique.
                 </p>
               }
@@ -196,9 +196,7 @@ export function OrganizationForm({
 
           <FormSection number={2} title="Marque">
             <fieldset className="flex flex-col gap-2.5">
-              <legend className="mb-2.5 text-[13px] font-semibold text-ink">
-                Couleur de marque
-              </legend>
+              <legend className="mb-2.5 text-meta font-semibold text-ink">Couleur de marque</legend>
               <div className="flex flex-wrap items-center gap-3">
                 {BRAND_COLOR_PRESETS.map((preset) => {
                   const selected = preset.toUpperCase() === color.toUpperCase();
@@ -244,7 +242,7 @@ export function OrganizationForm({
               {errors.brandColor && <FieldError>{errors.brandColor}</FieldError>}
             </fieldset>
             <fieldset className="flex flex-col gap-2.5">
-              <legend className="mb-2.5 text-[13px] font-semibold text-ink">
+              <legend className="mb-2.5 text-meta font-semibold text-ink">
                 Police d'affichage
               </legend>
               <div className="grid gap-3 sm:grid-cols-3">
@@ -271,7 +269,7 @@ export function OrganizationForm({
                       <span className={cn("text-[26px] leading-8", FONT_CLASSES[option.value])}>
                         Aa
                       </span>
-                      <span className="text-[13px] font-medium">
+                      <span className="text-meta font-medium">
                         {option.label} · {option.tone}
                       </span>
                     </label>
@@ -282,7 +280,7 @@ export function OrganizationForm({
           </FormSection>
 
           <FormSection number={3} title="Coordonnées & mentions légales">
-            <p className="-mt-1 text-[13px] font-medium leading-[18px] text-ink-muted">
+            <p className="-mt-1 text-meta font-medium leading-[18px] text-ink-muted">
               Affichées en bas de ta page publique (« Contact », « Mentions légales »). Laisse vide
               ce que tu ne veux pas montrer.
             </p>
@@ -357,7 +355,7 @@ export function OrganizationForm({
 
       <aside className="flex w-full shrink-0 flex-col gap-3 xl:sticky xl:top-4 xl:w-[300px]">
         <div className="flex items-center justify-between px-1">
-          <p className="text-[13px] font-semibold leading-[17px] text-ink">Aperçu en direct</p>
+          <p className="text-meta font-semibold leading-[17px] text-ink">Aperçu en direct</p>
           <span className="flex items-center gap-1.5 text-xs font-semibold text-success">
             <span aria-hidden="true" className="size-1.5 rounded-full bg-success" />
             Live
@@ -375,7 +373,7 @@ export function OrganizationForm({
                 {initial0}
               </span>
             )}
-            <span className="truncate text-[15px] font-semibold">{name || "Ton espace"}</span>
+            <span className="truncate text-ui font-semibold">{name || "Ton espace"}</span>
           </div>
           <div className="flex flex-col gap-1 px-4 pt-4 pb-3">
             <p className={cn("text-2xl leading-7 text-ink", FONT_CLASSES[font])}>Nos événements</p>
@@ -401,7 +399,7 @@ export function OrganizationForm({
                     </span>
                     <span className="text-sm font-semibold leading-4 text-ink">{entry.day}</span>
                   </span>
-                  <span className="min-w-0 flex-1 truncate text-[13px] font-semibold text-ink">
+                  <span className="min-w-0 flex-1 truncate text-meta font-semibold text-ink">
                     {entry.title}
                   </span>
                   <span className="shrink-0 pr-1 text-xs font-semibold text-ink">
@@ -427,14 +425,14 @@ export function OrganizationForm({
 
 function SlugStatus({ check }: { check: SlugCheck | null }) {
   if (!check)
-    return <span className="shrink-0 text-[13px] font-semibold text-ink-muted">Vérification…</span>;
+    return <span className="shrink-0 text-meta font-semibold text-ink-muted">Vérification…</span>;
   if ("message" in check)
-    return <span className="shrink-0 text-[13px] font-bold text-danger">{check.message}</span>;
+    return <span className="shrink-0 text-meta font-bold text-danger">{check.message}</span>;
   if (check.state === "current")
     return (
-      <span className="shrink-0 text-[13px] font-semibold text-ink-muted">Adresse actuelle</span>
+      <span className="shrink-0 text-meta font-semibold text-ink-muted">Adresse actuelle</span>
     );
-  return <span className="shrink-0 text-[13px] font-bold text-success">✓ Disponible</span>;
+  return <span className="shrink-0 text-meta font-bold text-success">✓ Disponible</span>;
 }
 
 /** Logo (512 px suffisent) ou couverture de l'espace : ajout, remplacement, retrait. */

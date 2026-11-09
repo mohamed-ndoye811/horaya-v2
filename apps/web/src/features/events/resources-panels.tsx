@@ -139,7 +139,7 @@ export function EquipmentPanel({
             },
           ])
         }
-        className={cn(textLinkClasses, "flex items-center gap-1.5 self-start text-[13px]")}
+        className={cn(textLinkClasses, "flex items-center gap-1.5 self-start text-meta")}
       >
         <PlusIcon size={11} />
         Ajouter du matériel
@@ -185,7 +185,7 @@ export function LocationPanel({ modules, set }: { modules: EventModules; set: Se
           <Field
             label="Autre adresse"
             hint={
-              <p className="text-[13px] text-ink-muted">
+              <p className="text-meta text-ink-muted">
                 Laisse vide pour l'adresse de l'espace (réglages).
               </p>
             }
@@ -207,7 +207,7 @@ export function LocationPanel({ modules, set }: { modules: EventModules; set: Se
           <Field
             label="Lien de la visio"
             hint={
-              <p className="text-[13px] text-ink-muted">
+              <p className="text-meta text-ink-muted">
                 Envoyé dans la confirmation et le rappel, jamais affiché avant l'inscription. Tu
                 peux le changer sur chaque événement.
               </p>
@@ -277,7 +277,7 @@ export function StaffPanel({
           </div>
         )}
       </Field>
-      <p className="text-[13px] leading-[18px] text-ink-muted">
+      <p className="text-meta leading-[18px] text-ink-muted">
         {chosen.length === 0
           ? "Aucun membre coché : toute l'équipe peut être choisie."
           : "L'intervenant se choisit sur chaque événement, parmi ces membres."}{" "}

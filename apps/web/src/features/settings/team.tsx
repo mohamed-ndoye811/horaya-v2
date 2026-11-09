@@ -118,11 +118,11 @@ export function TeamTable({ rows, manageable }: { rows: TeamRow[]; manageable: b
 
   const roleCell = (row: TeamRow) =>
     row.role === "owner" ? (
-      <span className="inline-flex h-[30px] items-center rounded-full bg-ink px-3 text-[13px] font-semibold text-on-ink">
+      <span className="inline-flex h-[30px] items-center rounded-full bg-ink px-3 text-meta font-semibold text-on-ink">
         {ROLE_LABELS[row.role]}
       </span>
     ) : !manageable || row.isMe || row.kind === "invitation" ? (
-      <span className="inline-flex h-[30px] items-center rounded-[10px] bg-field px-3 text-[13px] text-ink-muted">
+      <span className="inline-flex h-[30px] items-center rounded-[10px] bg-field px-3 text-meta text-ink-muted">
         {ROLE_LABELS[row.role]}
       </span>
     ) : (
@@ -300,7 +300,7 @@ function JoinLinkDialog({ link, onClose }: { link: JoinLinkView | null; onClose:
           label="Rôle des personnes qui rejoignent"
           hint={
             link && role !== link.role ? (
-              <p className="text-[13px] font-medium text-ink-muted">
+              <p className="text-meta font-medium text-ink-muted">
                 Régénère le lien pour appliquer ce rôle.
               </p>
             ) : undefined
@@ -334,7 +334,7 @@ function JoinLinkDialog({ link, onClose }: { link: JoinLinkView | null; onClose:
                 Copier
               </Button>
             </div>
-            <p className="text-[13px] font-medium text-ink-muted">
+            <p className="text-meta font-medium text-ink-muted">
               {ROLE_LABELS[link.role]} · valable {link.validUntil}
             </p>
           </div>

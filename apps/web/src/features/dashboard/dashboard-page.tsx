@@ -266,7 +266,7 @@ export function DashboardPage({ data }: { data: Awaited<ReturnType<typeof getDas
       <Link
         href="/app/plus"
         aria-label="Compte et paramètres"
-        className="absolute top-[30px] right-4 flex size-[38px] items-center justify-center rounded-full bg-accent-gradient text-[13px] font-bold text-white lg:hidden"
+        className="absolute top-[30px] right-4 flex size-[38px] items-center justify-center rounded-full bg-accent-gradient text-meta font-bold text-white lg:hidden"
       >
         {user.image ? (
           <img src={user.image} alt="" className="size-full rounded-full object-cover" />

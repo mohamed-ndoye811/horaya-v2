@@ -35,7 +35,7 @@ export function BookingCard({ card }: { card: CustomerBookingCard }) {
   return (
     <article className="flex min-w-0 flex-col gap-3.5 rounded-[20px] border border-line p-5">
       <div className="flex items-center justify-between gap-2">
-        <p className="text-[13px] font-bold leading-4 text-[var(--brand-text)]">
+        <p className="text-meta font-bold leading-4 text-[var(--brand-text)]">
           {card.startsAt && card.endsAt ? cardDate(card.startsAt, card.endsAt, card.timezone) : ""}
         </p>
         <StatusBadge tone={badge.tone}>{badge.label}</StatusBadge>
@@ -44,7 +44,7 @@ export function BookingCard({ card }: { card: CustomerBookingCard }) {
         <h3 className="text-lg font-semibold leading-6 text-ink">{card.title}</h3>
         <p className="text-sm leading-5 text-ink-muted">{bookingDetails(card)}</p>
         {series && (
-          <p className="text-[13px] leading-4 text-ink-muted">
+          <p className="text-meta leading-4 text-ink-muted">
             Trimestre · séance {series.progress.current} sur {series.progress.total}
           </p>
         )}
@@ -97,9 +97,9 @@ export function BookingRow({ card }: { card: CustomerSessionCard }) {
         </span>
       </span>
       <span className="flex min-w-0 flex-1 flex-col gap-1">
-        <span className="truncate text-[15px] font-semibold leading-5 text-ink">{card.title}</span>
+        <span className="truncate text-ui font-semibold leading-5 text-ink">{card.title}</span>
         <span className="flex min-w-0 items-center gap-1.5">
-          <span className="truncate text-[13px] leading-[18px] text-ink-muted">
+          <span className="truncate text-meta leading-[18px] text-ink-muted">
             {bookingDetails(card)}
           </span>
           <StatusBadge tone={badge.tone} size="sm">

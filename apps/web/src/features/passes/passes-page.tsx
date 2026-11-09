@@ -59,9 +59,7 @@ export function PassesPage({
             <section className={cn(cardClasses, "gap-3")}>
               <h2 className="text-base font-semibold leading-5 text-ink">
                 À encaisser
-                <span className="ml-2 text-[13px] font-normal text-ink-subtle">
-                  {pending.length}
-                </span>
+                <span className="ml-2 text-meta font-normal text-ink-subtle">{pending.length}</span>
               </h2>
               <ul className="relative flex flex-col">
                 <PresenceList>
@@ -94,7 +92,7 @@ export function PassesPage({
           )}
           {plans.length === 0 && !panel ? (
             <EmptyState
-              title="Aucune formule pour l'instant."
+              title="Aucune formule à proposer pour l'instant."
               description="Crée ta première carte : nombre de séances, prix, durée de validité et types d'événements acceptés."
               actions={
                 <ButtonLink href="/app/cartes?formule=nouvelle" arrow>
@@ -122,7 +120,7 @@ export function PassesPage({
                         <span className="truncate text-base font-bold leading-5">{plan.name}</span>
                         {plan.archivedAt && <StatusBadge tone="draft">Archivée</StatusBadge>}
                       </span>
-                      <span className="truncate text-[13px] font-medium leading-[17px] text-ink-muted">
+                      <span className="truncate text-meta font-medium leading-[17px] text-ink-muted">
                         {plural(plan.sessions, "séance")} · valable {plan.validityDays} jours ·{" "}
                         {plan.eventTypeIds.length === 0
                           ? "tous les types"

@@ -128,7 +128,7 @@ export function ManagedEnrollmentPage({
         <div className="flex h-14 items-center justify-between gap-4">
           <h2 className="text-lg font-semibold leading-[22px] text-ink">Tes séances</h2>
           {payment && (
-            <p className="flex items-center gap-2.5 text-[15px] font-semibold text-ink">
+            <p className="flex items-center gap-2.5 text-ui font-semibold text-ink">
               {formatMoney(enrollment.amountCents)}
               <StatusBadge tone={payment.tone}>{payment.label}</StatusBadge>
             </p>
@@ -140,7 +140,7 @@ export function ManagedEnrollmentPage({
               key={session.bookingId}
               className="flex min-h-[52px] flex-wrap items-center justify-between gap-x-4 gap-y-2 border-t border-bg py-2.5"
             >
-              <p className="flex items-baseline gap-3 text-[15px] leading-5">
+              <p className="flex items-baseline gap-3 text-ui leading-5">
                 <span className="w-6 shrink-0 font-mono text-xs text-ink-subtle">{index + 1}</span>
                 <span
                   className={cn(
@@ -185,7 +185,7 @@ export function ManagedEnrollmentPage({
                 ) : session.status === "cancelled" ? (
                   <StatusBadge tone="draft">Libérée</StatusBadge>
                 ) : session.startsAt <= now ? (
-                  <span className="text-[13px] font-semibold text-ink-subtle">
+                  <span className="text-meta font-semibold text-ink-subtle">
                     {session.state === "done" ? "Passée" : "En cours"}
                   </span>
                 ) : (
@@ -201,7 +201,7 @@ export function ManagedEnrollmentPage({
 
       {!cancelled && toCatchUp > 0 && (
         <p
-          className="reveal rounded-3xl bg-surface px-6 py-5 text-[15px] leading-[22px] text-ink-muted"
+          className="reveal rounded-3xl bg-surface px-6 py-5 text-ui leading-[22px] text-ink-muted"
           style={stagger(6)}
         >
           Tu as {toCatchUp} séance{toCatchUp > 1 ? "s" : ""} à rattraper avant la fin du trimestre.

@@ -20,7 +20,7 @@ export function FieldAnswers({
           key={row.key}
           className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-0.5"
         >
-          <dt className="text-[13px] leading-[18px] text-ink-muted">{row.label}</dt>
+          <dt className="text-meta leading-[18px] text-ink-muted">{row.label}</dt>
           <dd className="text-sm font-semibold leading-[18px] text-ink">{row.value}</dd>
         </div>
       ))}
@@ -53,7 +53,7 @@ export function BookingAnswers({
       <FieldAnswers fields={fields} values={answers} timeZone={timeZone} />
       {answered.map(({ participant, index }) => (
         <div key={index} className="flex flex-col gap-2 border-t border-line-faint pt-3">
-          <p className="text-[13px] font-bold leading-4 text-ink">
+          <p className="text-meta font-bold leading-4 text-ink">
             {`${participant.firstName} ${participant.lastName}`.trim() ||
               `Participant ${index + 1}`}
           </p>

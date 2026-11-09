@@ -48,7 +48,7 @@ export function PublicHero({
       }}
     >
       {eyebrow && (
-        <p className="reveal text-[13px] font-semibold leading-4 text-[var(--brand-light)]">
+        <p className="reveal text-meta font-semibold leading-4 text-[var(--brand-light)]">
           {eyebrow}
         </p>
       )}
@@ -244,7 +244,7 @@ export function PublicEvents({
           })}
         </nav>
         <div className="hidden h-[38px] shrink-0 items-center gap-2 rounded-full bg-surface px-3.5 sm:flex">
-          <span className="text-[13px] text-ink-subtle">Trier par</span>
+          <span className="text-meta text-ink-subtle">Trier par</span>
           <Link
             href={href({ tri: undefined })}
             aria-current={sort === "date" ? "true" : undefined}
@@ -268,7 +268,7 @@ export function PublicEvents({
           aria-label={`Filtrer par ${filter.label.toLowerCase()}`}
           className="-mx-1 flex min-w-0 items-center gap-1.5 overflow-x-auto px-1 py-1"
         >
-          <span className="shrink-0 pr-1 text-[13px] font-semibold text-ink-subtle">
+          <span className="shrink-0 pr-1 text-meta font-semibold text-ink-subtle">
             {filter.label}
           </span>
           {[undefined, ...filter.options].map((option) => {
@@ -390,7 +390,7 @@ function EventCard({
           {event.title}
         </p>
         {seats.ratio === null ? (
-          <p className="text-[13px] text-ink-subtle">{seats.label}</p>
+          <p className="text-meta text-ink-subtle">{seats.label}</p>
         ) : (
           <div className="flex items-center gap-2.5">
             <span aria-hidden="true" className="flex h-1 flex-1 rounded-full bg-line-soft">
@@ -405,7 +405,7 @@ function EventCard({
           </div>
         )}
         <div className="mt-auto flex items-center justify-between pt-0.5">
-          <span className="text-[15px] font-semibold leading-5 text-ink">
+          <span className="text-ui font-semibold leading-5 text-ink">
             {event.stagePriceCents ? (
               <>
                 {formatMoney(event.stagePriceCents)}{" "}
@@ -461,13 +461,13 @@ function EventRow({
       </span>
       <span
         className={cn(
-          "hidden w-[150px] shrink-0 text-[13px] leading-4 md:block",
+          "hidden w-[150px] shrink-0 text-meta leading-4 md:block",
           seats.tone === "warning" ? "font-semibold text-warning" : "text-ink-subtle",
         )}
       >
         {seats.label}
       </span>
-      <span className="w-[72px] shrink-0 text-right text-[15px] font-semibold leading-5 text-ink lg:w-[90px]">
+      <span className="w-[72px] shrink-0 text-right text-ui font-semibold leading-5 text-ink lg:w-[90px]">
         {event.stagePriceCents
           ? formatMoney(event.stagePriceCents)
           : event.priceCents > 0

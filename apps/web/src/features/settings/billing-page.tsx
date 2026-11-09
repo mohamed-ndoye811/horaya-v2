@@ -213,7 +213,7 @@ export function BillingSettingsPage({ data, paid }: { data: Data; paid: boolean 
                   <div className="flex flex-col gap-1">
                     <p className="font-section text-base">{plan.name}</p>
                     <p className="flex items-baseline gap-1">
-                      <span className="font-headline text-3xl">
+                      <span className="font-headline text-subtitle">
                         <Swap value={String(price)}>
                           {price === 0 ? "0 €" : formatMoney(price)}
                         </Swap>
@@ -349,9 +349,7 @@ function PlanAction({
   onPortal: () => void;
 }) {
   const note = (text: string) => (
-    <p
-      className={cn("text-[13px] font-medium", isCurrent ? "text-on-ink-muted" : "text-ink-muted")}
-    >
+    <p className={cn("text-meta font-medium", isCurrent ? "text-on-ink-muted" : "text-ink-muted")}>
       {text}
     </p>
   );
@@ -400,7 +398,7 @@ function PreviewSwitcher() {
       aria-label="Voir en tant que"
       className="flex flex-col gap-3 rounded-3xl border-[1.5px] border-dashed border-warning-line bg-warning-bg p-4"
     >
-      <p className="text-[13px] font-semibold text-warning-strong">
+      <p className="text-meta font-semibold text-warning-strong">
         Voir en tant que · développement seulement
       </p>
       <div className="flex flex-wrap gap-2">

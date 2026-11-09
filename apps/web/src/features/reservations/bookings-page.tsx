@@ -181,7 +181,7 @@ export function BookingsPage({
 
       {counts.all === 0 ? (
         <EmptyState
-          title="Pas encore de réservation."
+          title="Ta première réservation t'attend."
           description="Dès qu'un client réserve sur ta page publique, ou que tu inscris quelqu'un toi-même, ça apparaît ici."
           actions={
             <ButtonLink href="/app/reservations/nouvelle" arrow>
@@ -293,7 +293,7 @@ export function BookingsPage({
                 // Entre 1024 et 1279 px, le tableau tient sans défiler.
                 hideBelow: "xl",
                 cell: (row) => (
-                  <span className="text-[13px] leading-[17px] text-ink-soft">
+                  <span className="text-meta leading-[17px] text-ink-soft">
                     {formatRelativeDateTime(row.createdAt, timeZone)}
                   </span>
                 ),

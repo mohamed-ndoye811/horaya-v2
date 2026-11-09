@@ -26,7 +26,7 @@ function TestOnboardingPage() {
           Activation de test : avec les clés Stripe, c'est ici que Stripe demande l'identité, l'IBAN
           et les documents de l'organisateur.
         </p>
-        <h1 className="font-headline text-[36px] leading-9 text-ink">Compte de paiement</h1>
+        <h1 className="font-headline text-title-sm text-ink">Compte de paiement</h1>
         <p className="text-base font-medium text-ink-muted">
           Compte de test <span className="font-mono text-sm">{query.compte}</span> : il est activé
           tout de suite.

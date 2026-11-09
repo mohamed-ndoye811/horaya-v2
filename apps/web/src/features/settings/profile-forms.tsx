@@ -55,7 +55,7 @@ export function ProfileForm({
         <Field
           label="Adresse e-mail"
           hint={
-            <p className="text-[13px] font-medium text-ink-muted">
+            <p className="text-meta font-medium text-ink-muted">
               C'est ton identifiant de connexion.
             </p>
           }
@@ -144,7 +144,7 @@ function ProfilePhoto({ name, image }: { name: string; image: string | null }) {
     <div className="flex items-center gap-4">
       <Avatar name={name} image={image} size="header" />
       <div className="flex flex-col gap-2">
-        <p className="text-[15px] font-semibold leading-5 text-ink">Photo de profil</p>
+        <p className="text-ui font-semibold leading-5 text-ink">Photo de profil</p>
         <div className="flex flex-wrap gap-2">
           <Button variant="secondary" size="xs" pending={pending} onClick={pick}>
             {image ? "Changer" : "Ajouter une photo"}

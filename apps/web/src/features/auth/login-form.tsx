@@ -97,7 +97,7 @@ export function LoginForm({
       <div className="flex items-center justify-between gap-3 rounded-xl border border-line-soft bg-surface px-3.5 py-3">
         <div className="flex min-w-0 items-center gap-3">
           <Avatar name={email.charAt(0)} size="sm" />
-          <span className="truncate text-[15px] font-semibold leading-5 text-ink">{email}</span>
+          <span className="truncate text-ui font-semibold leading-5 text-ink">{email}</span>
         </div>
         <button
           type="button"

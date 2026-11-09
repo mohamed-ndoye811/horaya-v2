@@ -74,7 +74,7 @@ export function Dialog({
               <p
                 className={cn(
                   "font-medium text-ink-muted",
-                  compact ? "text-[13px] leading-[18px]" : "text-sm leading-5",
+                  compact ? "text-meta leading-[18px]" : "text-sm leading-5",
                 )}
               >
                 {description}

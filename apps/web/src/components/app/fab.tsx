@@ -13,7 +13,7 @@ export function FabLink({ href, children }: { href: string; children: ReactNode 
     <Link
       href={href}
       data-fab
-      className="absolute top-4 right-4 z-20 inline-flex h-11 items-center gap-2 rounded-full bg-ink px-4 text-[15px] font-semibold leading-5 text-on-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink lg:hidden"
+      className="absolute top-4 right-4 z-20 inline-flex h-11 items-center gap-2 rounded-full bg-ink px-4 text-ui font-semibold leading-5 text-on-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink lg:hidden"
     >
       <PlusIcon size={14} />
       {children}

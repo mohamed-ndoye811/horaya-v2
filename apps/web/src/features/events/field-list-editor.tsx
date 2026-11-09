@@ -75,7 +75,7 @@ function FieldRow({
         {field.label}
       </span>
       {detail && (
-        <span className="hidden min-w-0 truncate text-[13px] leading-4 text-ink-muted md:block md:max-w-[40%]">
+        <span className="hidden min-w-0 truncate text-meta leading-4 text-ink-muted md:block md:max-w-[40%]">
           {detail}
         </span>
       )}
@@ -337,7 +337,7 @@ function FieldEditor({
 }
 
 function Hint({ children }: { children: ReactNode }) {
-  return <p className="text-[13px] font-medium leading-[18px] text-ink-muted">{children}</p>;
+  return <p className="text-meta font-medium leading-[18px] text-ink-muted">{children}</p>;
 }
 
 /**
@@ -474,7 +474,7 @@ export function FieldListEditor({
                 <PlusIcon size={10} />
                 {addLabel}
               </span>
-              <span className="text-[13px] leading-[17px] text-ink-subtle">{addHint}</span>
+              <span className="text-meta leading-[17px] text-ink-subtle">{addHint}</span>
             </button>
           </PresenceItem>
         )}

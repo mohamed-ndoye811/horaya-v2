@@ -70,7 +70,7 @@ export function FieldInput({
 }) {
   const required = field.required && enforceRequired;
   const hint = field.help ? (
-    <p className="text-[13px] font-medium leading-[18px] text-ink-muted">{field.help}</p>
+    <p className="text-meta font-medium leading-[18px] text-ink-muted">{field.help}</p>
   ) : undefined;
 
   if (field.type === "acceptance") {
@@ -83,11 +83,7 @@ export function FieldInput({
           label={field.label}
           aria-invalid={error ? true : undefined}
         />
-        {error ? (
-          <p className="animate-drop text-[13px] font-semibold text-danger">{error}</p>
-        ) : (
-          hint
-        )}
+        {error ? <p className="animate-drop text-meta font-semibold text-danger">{error}</p> : hint}
       </div>
     );
   }

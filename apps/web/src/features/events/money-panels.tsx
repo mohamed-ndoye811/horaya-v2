@@ -56,7 +56,7 @@ function PriceInput({
   );
 }
 
-const removeClasses = cn(textLinkClasses, "shrink-0 text-[13px] text-ink-muted");
+const removeClasses = cn(textLinkClasses, "shrink-0 text-meta text-ink-muted");
 
 export function PricingPanel({
   modules,
@@ -89,7 +89,7 @@ export function PricingPanel({
   return (
     <>
       <div className="flex flex-col gap-2">
-        <p className="text-[13px] font-semibold leading-[17px] text-ink">Tarifs</p>
+        <p className="text-meta font-semibold leading-[17px] text-ink">Tarifs</p>
         <ul className="relative flex flex-col gap-2.5">
           <PresenceList>
             {pricing.rates.map((rate) => (
@@ -122,7 +122,7 @@ export function PricingPanel({
                   className={inputClasses("sm")}
                 />
                 <span className="flex items-center justify-between gap-3 sm:justify-end">
-                  <label className="flex items-center gap-1.5 text-[13px] font-semibold text-ink">
+                  <label className="flex items-center gap-1.5 text-meta font-semibold text-ink">
                     <input
                       type="radio"
                       name="tarif-par-defaut"
@@ -163,9 +163,9 @@ export function PricingPanel({
       </div>
 
       <div className="flex flex-col gap-2">
-        <p className="text-[13px] font-semibold leading-[17px] text-ink">Options payantes</p>
+        <p className="text-meta font-semibold leading-[17px] text-ink">Options payantes</p>
         {options.length === 0 && (
-          <p className="text-[13px] leading-[18px] text-ink-muted">
+          <p className="text-meta leading-[18px] text-ink-muted">
             Cuisson et émaillage, déjeuner, location d'un tablier : le client les coche en
             s'inscrivant.
           </p>
@@ -266,7 +266,7 @@ export function PricingPanel({
           />
         )}
       </div>
-      <p className="text-[13px] leading-[18px] text-ink-muted">
+      <p className="text-meta leading-[18px] text-ink-muted">
         Chaque participant choisit son tarif. Chaque événement reprend ces tarifs et peut en changer
         les prix.
         {optionalNeeds.length > 0 &&
@@ -357,7 +357,7 @@ export function DepositPanel({ modules, set }: { modules: EventModules; set: Set
           )}
         </Field>
       </div>
-      <p className="text-[13px] leading-[18px] text-ink-muted">
+      <p className="text-meta leading-[18px] text-ink-muted">
         Les nouveaux événements de ce type partent en mode « Acompte », payé en ligne à
         l'inscription avec ton lien de paiement.
       </p>
@@ -426,7 +426,7 @@ export function PaymentMethodsPanel({
           <Collapse open={chosen !== undefined}>
             <div className="flex flex-col gap-2">
               {passPlans.length === 0 ? (
-                <p className="text-[13px] text-ink-muted">
+                <p className="text-meta text-ink-muted">
                   Aucune formule de carte pour l'instant (Clients › Cartes de séances).
                 </p>
               ) : (

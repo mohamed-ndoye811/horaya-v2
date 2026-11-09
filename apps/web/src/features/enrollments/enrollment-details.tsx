@@ -144,7 +144,7 @@ export function EnrollmentDetails({
                       <Collapse open={choosing === makeup.absentBookingId}>
                         <ul className="flex flex-col rounded-2xl bg-field px-4 py-1">
                           {options.length === 0 && (
-                            <li className="py-3 text-[13px] leading-[18px] text-ink-muted">
+                            <li className="py-3 text-meta leading-[18px] text-ink-muted">
                               Aucune séance du même type avec une place libre avant la fin du
                               trimestre.
                             </li>

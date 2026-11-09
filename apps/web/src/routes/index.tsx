@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { HorayaWordmark } from "@/components/app/logo";
 import { buttonClasses } from "@/components/ui/button";
 import { Link } from "@/lib/navigation";
 
@@ -10,7 +11,9 @@ function Home() {
       <span className="font-mono text-label uppercase tracking-[0.06em] opacity-75">
         Refonte v2 · aperçu
       </span>
-      <h1 className="font-headline text-[96px] leading-[0.85] sm:text-[160px]">Horaya</h1>
+      <h1>
+        <HorayaWordmark height={64} className="h-16 w-auto sm:h-28" />
+      </h1>
       <p className="max-w-xl text-lg font-medium opacity-90">
         Réservations, événements et matériel dans un seul agenda, sous ta marque.
       </p>

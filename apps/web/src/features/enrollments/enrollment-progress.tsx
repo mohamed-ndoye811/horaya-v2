@@ -69,7 +69,7 @@ export function EnrollmentProgress({
           <span className="text-sm font-semibold leading-[18px] text-ink">
             {progress.stage ? "Ton stage" : "Ton trimestre"}
           </span>
-          <span className="text-[13px] leading-4 text-ink-muted">
+          <span className="text-meta leading-4 text-ink-muted">
             <Swap value={`${progress.finished}${progress.current}`}>
               {progress.finished ? "terminé" : `séance ${progress.current} sur ${progress.total}`}
             </Swap>
@@ -99,7 +99,7 @@ export function EnrollmentProgress({
           ))}
         </span>
       </div>
-      <div className="flex flex-col gap-1.5 text-[13px] leading-[18px] text-ink-muted">
+      <div className="flex flex-col gap-1.5 text-meta leading-[18px] text-ink-muted">
         <p>
           <Swap value={absences}>{absences}</Swap>
         </p>
@@ -262,7 +262,7 @@ export function EnrollmentNextSession({
   if (!next) {
     return (
       <div className="flex flex-col gap-6 rounded-[20px] bg-surface p-6 sm:flex-row sm:items-center">
-        <p className="flex-1 text-[15px] leading-[22px] text-ink-muted">
+        <p className="flex-1 text-ui leading-[22px] text-ink-muted">
           {progress.finished
             ? `Ton ${progress.stage ? "stage" : "trimestre"} est terminé. Merci d'être venu·e !`
             : `Pas d'autre séance prévue pour toi dans ce ${progress.stage ? "stage" : "trimestre"}.`}
@@ -281,14 +281,14 @@ export function EnrollmentNextSession({
           <span className="text-[40px] font-medium leading-[44px] tracking-[-0.03em] text-ink">
             {day(next.startsAt, timeZone, { day: "numeric" })}
           </span>
-          <span className="text-[13px] leading-4 text-ink-muted">
+          <span className="text-meta leading-4 text-ink-muted">
             {day(next.startsAt, timeZone, { month: "long" })}
           </span>
         </div>
         <div className="flex min-w-0 flex-1 flex-col justify-between gap-4">
           <div className="flex flex-col gap-1.5">
             <p className="flex flex-wrap items-center gap-2">
-              <span className="text-[13px] font-semibold leading-4 text-ink-muted">
+              <span className="text-meta font-semibold leading-4 text-ink-muted">
                 Ton prochain cours
               </span>
               <StatusBadge tone="info">
@@ -298,7 +298,7 @@ export function EnrollmentNextSession({
             <p className="text-[26px] font-semibold leading-8 tracking-[-0.02em] text-ink">
               {next.title}
             </p>
-            <p className="text-[15px] leading-[22px] text-ink-muted">
+            <p className="text-ui leading-[22px] text-ink-muted">
               {[
                 formatTimeRange(next.startsAt, next.endsAt, timeZone),
                 next.sessionTopic,
@@ -366,9 +366,7 @@ export function CancelStageButton({ onCancel }: { onCancel: () => Promise<FormSt
           }
         >
           {result?.error ? <FormAlert>{result.error}</FormAlert> : null}
-          {result?.success ? (
-            <p className="text-[15px] leading-6 text-ink">{result.success}</p>
-          ) : null}
+          {result?.success ? <p className="text-ui leading-6 text-ink">{result.success}</p> : null}
         </Dialog>
       )}
     </>

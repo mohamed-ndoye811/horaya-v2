@@ -55,7 +55,7 @@ export function PlanForm({
   return (
     <form onSubmit={onSubmit} className="flex flex-col">
       <div className="flex items-center justify-between px-6 pt-6 pb-2">
-        <h2 className="font-headline text-2xl leading-7 text-ink">
+        <h2 className="font-headline text-subtitle text-ink">
           {initial.id ? initial.name || "Modifier la formule" : "Nouvelle formule"}
         </h2>
         <Link
@@ -123,10 +123,10 @@ export function PlanForm({
           )}
         </Field>
         <fieldset className="flex flex-col gap-2.5">
-          <legend className="mb-1 text-[13px] font-semibold text-ink">
+          <legend className="mb-1 text-meta font-semibold text-ink">
             Types d'événements acceptés
           </legend>
-          <p className="text-[13px] text-ink-subtle">Aucun coché : la carte vaut pour tous.</p>
+          <p className="text-meta text-ink-subtle">Aucun coché : la carte vaut pour tous.</p>
           {eventTypes.map((type) => (
             <Checkbox
               key={type.id}
@@ -137,7 +137,7 @@ export function PlanForm({
             />
           ))}
         </fieldset>
-        <p className="text-[13px] text-ink-subtle">
+        <p className="text-meta text-ink-subtle">
           Les cartes déjà vendues gardent les conditions du jour de la vente.
         </p>
       </div>
@@ -158,7 +158,7 @@ export function PlanForm({
           {initial.id ? "Enregistrer" : "Créer la formule"}
         </Button>
         {archiveError && (
-          <p className="w-full animate-drop pb-2 text-[13px] font-semibold text-danger-on-ink">
+          <p className="w-full animate-drop pb-2 text-meta font-semibold text-danger-on-ink">
             {archiveError}
           </p>
         )}

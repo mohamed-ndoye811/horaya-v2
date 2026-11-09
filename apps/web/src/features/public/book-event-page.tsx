@@ -150,7 +150,7 @@ export function BookEventPage({
                       ` × ${formatMoney(event.priceCents)}`}
                     <Link
                       href={`${eventHref}#reserver`}
-                      className="ml-2 text-[13px] font-semibold text-ink-subtle underline underline-offset-2 hover:text-ink"
+                      className="ml-2 text-meta font-semibold text-ink-subtle underline underline-offset-2 hover:text-ink"
                     >
                       Modifier
                     </Link>
@@ -163,7 +163,7 @@ export function BookEventPage({
                 </p>
                 {price.visible && <PriceLines lines={price.quote.lines} />}
                 <p className="flex items-baseline justify-between gap-4">
-                  <span className="text-[15px] font-bold leading-5 text-ink">Total TTC</span>
+                  <span className="text-ui font-bold leading-5 text-ink">Total TTC</span>
                   <span className="text-xl font-semibold leading-6 text-ink">
                     {total > 0 ? <CountUp value={formatMoney(total)} /> : "Gratuit"}
                   </span>

@@ -184,7 +184,7 @@ export function CustomerBookingPage({
             <div className="flex flex-col gap-3.5 border-t border-line pt-7">
               <h2 className="text-lg font-semibold leading-6 text-ink">À savoir</h2>
               {booking.onlineUrl && (
-                <p className="text-[15px] leading-[22px] text-ink">
+                <p className="text-ui leading-[22px] text-ink">
                   <span className="font-semibold">Lien de la visio :</span>{" "}
                   <a
                     href={booking.onlineUrl}
@@ -197,13 +197,13 @@ export function CustomerBookingPage({
                 </p>
               )}
               {booking.equipment.length > 0 && (
-                <p className="text-[15px] leading-[22px] text-ink">
+                <p className="text-ui leading-[22px] text-ink">
                   <span className="font-semibold">Ton matériel :</span>{" "}
                   {booking.equipment.join(", ")}
                 </p>
               )}
               {booking.eventModules?.messages?.bring && (
-                <p className="text-[15px] leading-[22px] text-ink">
+                <p className="text-ui leading-[22px] text-ink">
                   <span className="font-semibold">À apporter :</span>{" "}
                   {booking.eventModules.messages.bring}
                 </p>
@@ -215,7 +215,7 @@ export function CustomerBookingPage({
                       href={file.url}
                       target="_blank"
                       rel="noreferrer"
-                      className="text-[15px] font-semibold leading-5 text-ink underline underline-offset-2 hover:text-link"
+                      className="text-ui font-semibold leading-5 text-ink underline underline-offset-2 hover:text-link"
                     >
                       {file.name}
                     </a>
@@ -316,7 +316,7 @@ function Enrollment({
         <EnrollmentProgress progress={enrollment.progress} timeZone={timezone} />
         <div className="flex flex-1 flex-col items-start justify-between gap-3">
           {payment && (
-            <p className="flex items-center gap-2.5 text-[15px] font-semibold text-ink">
+            <p className="flex items-center gap-2.5 text-ui font-semibold text-ink">
               {formatMoney(enrollment.amountCents)}
               <StatusBadge tone={payment.tone}>{payment.label}</StatusBadge>
             </p>
@@ -458,9 +458,9 @@ function Reschedule({
               onChange={() => setChosen(entry.id)}
               className="sr-only"
             />
-            <span className="text-[15px] font-semibold leading-5 text-ink">{label(entry)}</span>
+            <span className="text-ui font-semibold leading-5 text-ink">{label(entry)}</span>
             {entry.deltaCents !== 0 && (
-              <span className="text-[13px] leading-[18px] text-ink-muted">
+              <span className="text-meta leading-[18px] text-ink-muted">
                 {entry.deltaCents > 0
                   ? `${formatMoney(entry.deltaCents)} de plus`
                   : `${formatMoney(-entry.deltaCents)} de moins`}
@@ -468,7 +468,7 @@ function Reschedule({
             )}
             <span
               className={cn(
-                "text-[13px] leading-[18px]",
+                "text-meta leading-[18px]",
                 entry.remaining !== null && entry.remaining <= 1 ? "text-warning" : "text-success",
               )}
             >

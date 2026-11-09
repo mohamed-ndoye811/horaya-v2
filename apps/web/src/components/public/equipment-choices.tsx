@@ -82,7 +82,7 @@ function EquipmentOfferRow({
             {offer.name}
             {quantity > 1 ? ` · ${quantity} exemplaires` : ""}
           </p>
-          <p className="text-[13px] leading-[18px] text-ink-muted">
+          <p className="text-meta leading-[18px] text-ink-muted">
             {`Avec l'option « ${optionName ?? offer.name} » : `}
             {offer.chooser === "student"
               ? `choisis ${quantity > 1 ? "tes exemplaires" : "ton exemplaire"}.`
@@ -95,7 +95,7 @@ function EquipmentOfferRow({
             {offer.name}
             {quantity > 1 ? ` · ${quantity} exemplaires` : ""}
           </p>
-          <p className="text-[13px] leading-[18px] text-ink-muted">
+          <p className="text-meta leading-[18px] text-ink-muted">
             {offer.chooser === "student"
               ? `Inclus avec ${seats > 1 ? "tes places" : "ta place"} : choisis ${quantity > 1 ? "tes exemplaires" : "ton exemplaire"}.`
               : `Inclus avec ${seats > 1 ? "tes places" : "ta place"} : l'atelier te l'attribue.`}
@@ -115,7 +115,7 @@ function EquipmentOfferRow({
         />
       )}
       {soldOut && (offer.required || linkedSeats !== undefined) && (
-        <p className="text-[13px] leading-[18px] text-danger">
+        <p className="text-meta leading-[18px] text-danger">
           Plus assez de matériel pour {seats > 1 ? `${seats} places` : "cette place"} : contacte
           l'atelier.
         </p>

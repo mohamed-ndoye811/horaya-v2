@@ -181,7 +181,7 @@ function PillContent({ name, dot, icon }: { name: string; dot: boolean; icon: Re
           <span className="absolute -top-1 -right-1.5 size-[9px] rounded-full border-2 border-ink bg-accent" />
         )}
       </span>
-      <span className="max-w-[180px] truncate text-[15px] font-semibold leading-5">{name}</span>
+      <span className="max-w-[180px] truncate text-ui font-semibold leading-5">{name}</span>
       <span className="flex size-5 shrink-0 items-center justify-center text-notch-idle">
         {icon}
       </span>
@@ -309,7 +309,7 @@ function Panel({
                           <span className="absolute -top-0.5 -right-0.5 size-[9px] rounded-full border-2 border-ink bg-accent" />
                         )}
                       </span>
-                      <span className="flex-1 text-[15px] font-semibold leading-[19px]">
+                      <span className="flex-1 text-ui font-semibold leading-[19px]">
                         Notifications
                       </span>
                       {unread > 0 && (
@@ -376,7 +376,7 @@ function Screens({ slug, onClose }: { slug: string; onClose: () => void }) {
     (a, b) => b.href.length - a.href.length,
   )[0]?.href;
   const tile =
-    "flex min-h-14 items-center gap-3 rounded-[14px] px-3.5 py-2.5 text-[15px] font-semibold leading-[19px] transition-colors";
+    "flex min-h-14 items-center gap-3 rounded-[14px] px-3.5 py-2.5 text-ui font-semibold leading-[19px] transition-colors";
   return (
     <nav aria-label="Navigation complète" className="flex flex-col gap-1">
       <GroupLabel>Aller à</GroupLabel>

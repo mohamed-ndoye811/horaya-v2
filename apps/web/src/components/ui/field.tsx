@@ -6,8 +6,8 @@ import { useInvalidMessage } from "@/lib/use-invalid-message";
 
 // DA v4 : champ gris clair arrondi, qui blanchit et prend un contour noir au focus.
 const inputBase =
-  "min-w-0 rounded-xl border border-line-soft bg-field font-medium text-ink outline-none " +
-  "placeholder:text-ink-subtle transition-[border-color,background-color,box-shadow] " +
+  "min-w-0 rounded-field border border-line-soft bg-field font-medium text-ink outline-none " +
+  "placeholder:text-ink-placeholder transition-[border-color,background-color,box-shadow] " +
   "focus:border-ink focus:bg-surface " +
   "aria-invalid:border-danger aria-invalid:focus:shadow-[0_0_0_0.5px_var(--color-danger)] " +
   "data-[valid=true]:border-success";
@@ -18,10 +18,10 @@ const inputBase =
  */
 const sizes = {
   /** 36 px : champ d'une ligne dense (constructeur de règle, fenêtre compacte). */
-  xs: "h-9 pl-3 text-base lg:text-[13px]",
+  xs: "h-9 pl-3 text-base lg:text-meta",
   /** 40 px : champ dans une ligne ou à côté d'une pastille (code couleur). */
   sm: "h-10 pl-3.5 text-base lg:text-sm",
-  md: "h-11 pl-3.5 text-base lg:text-[15px]",
+  md: "h-11 pl-3.5 text-base lg:text-ui",
   lg: "h-[52px] pl-4 text-base",
 };
 
@@ -63,7 +63,7 @@ interface FieldProps {
 /** Message d'erreur sous un champ (13 px, rouge, gras). `id` : à relier par `aria-describedby`. */
 export function FieldError({ id, children }: { id?: string; children: ReactNode }) {
   return (
-    <p id={id} className="animate-drop text-[13px] font-semibold leading-4 text-danger">
+    <p id={id} className="animate-drop text-meta font-semibold leading-4 text-danger">
       {children}
     </p>
   );
@@ -100,7 +100,7 @@ export function Field({
               )}
             </>
           );
-          const className = "text-[13px] font-semibold leading-[17px] text-ink";
+          const className = "text-meta font-semibold leading-[17px] text-ink";
           return group ? (
             <span className={className}>{content}</span>
           ) : (
@@ -145,7 +145,7 @@ export function AffixInput({ prefix, leading, suffix, mono = false, ...props }: 
   return (
     <div
       className={cn(
-        "flex h-11 min-w-0 items-center gap-2.5 overflow-hidden rounded-xl border border-line-soft bg-field px-3.5 transition-[border-color,background-color]",
+        "flex h-11 min-w-0 items-center gap-2.5 overflow-hidden rounded-field border border-line-soft bg-field px-3.5 transition-[border-color,background-color]",
         "focus-within:border-ink focus-within:bg-surface",
         "has-aria-invalid:border-danger",
       )}
@@ -158,8 +158,8 @@ export function AffixInput({ prefix, leading, suffix, mono = false, ...props }: 
       {leading && <span className="flex shrink-0 text-ink-muted">{leading}</span>}
       <input
         className={cn(
-          "h-full min-w-0 grow bg-transparent text-ink outline-none placeholder:text-ink-subtle",
-          mono ? "font-mono text-base font-semibold lg:text-[15px]" : "text-base font-medium",
+          "h-full min-w-0 grow bg-transparent text-ink outline-none placeholder:text-ink-placeholder",
+          mono ? "font-mono text-base font-semibold lg:text-ui" : "text-base font-medium",
         )}
         {...props}
       />
@@ -185,7 +185,7 @@ export function PasswordInput({ inputSize = "md", ...props }: PasswordInputProps
       <button
         type="button"
         onClick={() => setVisible((current) => !current)}
-        className="absolute inset-y-0 right-0 px-3.5 text-[13px] font-bold text-ink underline decoration-1 underline-offset-[3px] hover:text-link"
+        className="absolute inset-y-0 right-0 px-3.5 text-meta font-bold text-ink underline decoration-1 underline-offset-[3px] hover:text-link"
         aria-label={visible ? "Masquer le mot de passe" : "Afficher le mot de passe"}
       >
         {visible ? "Masquer" : "Afficher"}

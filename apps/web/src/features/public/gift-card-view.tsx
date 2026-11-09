@@ -28,7 +28,7 @@ export function GiftCardView({
           <h1 className="text-xl font-semibold leading-[26px] text-ink">
             {justPurchased ? "Ton bon est réservé, il reste à le payer" : "En attente de paiement"}
           </h1>
-          <p className="text-[15px] leading-[23px] text-ink-muted">
+          <p className="text-ui leading-[23px] text-ink-muted">
             {link
               ? `Règle ${formatMoney(card.initialCents)} via le lien de paiement de ${workspace.name}. Le bon devient actif dès que ${workspace.name} a confirmé la réception, et tu reçois alors son e-mail.`
               : `${workspace.name} va te contacter pour le paiement. Le bon devient actif dès que la réception est confirmée.`}
@@ -51,7 +51,7 @@ export function GiftCardView({
         }}
       >
         <div className="flex items-start justify-between gap-4">
-          <p className="text-[13px] font-semibold leading-4 text-[var(--brand-light)] print:text-black">
+          <p className="text-meta font-semibold leading-4 text-[var(--brand-light)] print:text-black">
             Bon cadeau · {workspace.name}
           </p>
           <span className="print:hidden">
@@ -78,7 +78,7 @@ export function GiftCardView({
         )}
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div className="flex flex-col gap-1.5">
-            <p className="text-[13px] leading-4 text-on-ink-muted print:text-black">Code</p>
+            <p className="text-meta leading-4 text-on-ink-muted print:text-black">Code</p>
             <span className="rounded-lg border border-dashed border-[var(--brand-light)] px-3 py-2 font-mono text-xl font-medium leading-6 tracking-[0.04em] print:border-black">
               {card.code}
             </span>
@@ -90,13 +90,13 @@ export function GiftCardView({
           )}
         </div>
         {workspaceMessage && (
-          <p className="whitespace-pre-line border-t border-ink-line pt-4 text-[13px] leading-5 text-on-ink-muted print:border-black print:text-black">
+          <p className="whitespace-pre-line border-t border-ink-line pt-4 text-meta leading-5 text-on-ink-muted print:border-black print:text-black">
             {workspaceMessage}
           </p>
         )}
       </article>
       <section className="flex flex-col gap-3 rounded-3xl bg-surface p-6 print:hidden">
-        <p className="text-[15px] leading-[23px] text-ink">
+        <p className="text-ui leading-[23px] text-ink">
           Pour l'utiliser, saisis le code dans le champ « J'ai un bon cadeau » en réservant un
           atelier. Le reste du solde est conservé pour la fois suivante.
         </p>

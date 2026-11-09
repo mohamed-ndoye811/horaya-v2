@@ -98,7 +98,7 @@ export function MonthCalendar({
                       <div className="flex min-w-0 flex-col gap-1">
                         {isToday ? (
                           <div className="flex items-center gap-2">
-                            <span className="flex size-[26px] items-center justify-center rounded-full bg-ink text-sm font-bold leading-[18px] text-on-ink">
+                            <span className="flex size-[26px] items-center justify-center rounded-full bg-accent text-sm font-bold leading-[18px] text-ink">
                               {day.day}
                             </span>
                             <span className="text-xs font-bold leading-4 text-ink">
@@ -108,7 +108,7 @@ export function MonthCalendar({
                         ) : (
                           <span
                             className={cn(
-                              "flex h-[26px] items-center px-1 text-[15px] font-semibold leading-[18px]",
+                              "flex h-[26px] items-center px-1 text-ui font-semibold leading-[18px]",
                               day.inMonth ? "text-ink" : "text-ink-subtle",
                             )}
                           >

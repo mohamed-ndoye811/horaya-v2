@@ -67,7 +67,7 @@ export function ResetPasswordForm({ token, maskedEmail }: { token: string; maske
         error={mismatch ? "Les deux mots de passe ne correspondent pas." : undefined}
         hint={
           matches ? (
-            <p className="flex items-center gap-1.5 text-[13px] font-semibold leading-4 text-success">
+            <p className="flex items-center gap-1.5 text-meta font-semibold leading-4 text-success">
               <Check />
               Les deux mots de passe correspondent.
             </p>

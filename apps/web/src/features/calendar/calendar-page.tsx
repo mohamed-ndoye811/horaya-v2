@@ -354,10 +354,8 @@ export function CalendarPage({
                       <CategorySwatch color={selected.event.typeColor} size={10} />
                       {selected.event.typeName} · {workspaceName}
                     </p>
-                    <h2 className="font-headline text-[32px] leading-9 text-ink">
-                      {selected.event.title}
-                    </h2>
-                    <p className="text-[15px] font-medium text-ink-muted">
+                    <h2 className="font-headline text-title-sm text-ink">{selected.event.title}</h2>
+                    <p className="text-ui font-medium text-ink-muted">
                       {formatEventRange(selected.event.startsAt, selected.event.endsAt, timeZone)}
                     </p>
                   </div>

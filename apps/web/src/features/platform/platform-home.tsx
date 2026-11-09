@@ -121,7 +121,7 @@ export function PlatformHomePage({ data }: { data: Data }) {
           card={(row) => (
             <div className="flex items-center gap-3">
               <div className="flex min-w-0 flex-1 flex-col">
-                <span className="truncate text-[15px] font-semibold text-ink">{row.name}</span>
+                <span className="truncate text-ui font-semibold text-ink">{row.name}</span>
                 <span className="truncate text-xs text-ink-subtle">
                   {row.ownerEmail ?? `/${row.slug}`} · {row.recentBookings} résa. en 30 j
                 </span>

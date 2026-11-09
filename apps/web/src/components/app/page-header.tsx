@@ -71,26 +71,26 @@ export function PageHeader({
             data-tour="breadcrumb"
             data-corner="breadcrumb"
             className={cn(
-              "reveal hidden text-[13px] font-semibold leading-4 text-ink-muted lg:block",
+              "reveal hidden text-meta font-semibold leading-4 text-ink-muted lg:block",
               cornerLeft,
             )}
           >
             {eyebrow}
           </p>
           {mobileEyebrow && (
-            <p className="reveal text-[13px] font-semibold leading-4 text-ink-muted lg:hidden">
+            <p className="reveal text-meta font-semibold leading-4 text-ink-muted lg:hidden">
               {mobileEyebrow}
             </p>
           )}
           <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
-            <h1 className="font-headline text-[32px] leading-9 text-ink sm:text-[40px] sm:leading-[44px]">
+            <h1 className="font-headline text-title-sm text-ink sm:text-title">
               <WordsReveal delay={1}>{title}</WordsReveal>
             </h1>
             {titleAside}
           </div>
           {subtitle && (
             <div
-              className="reveal text-[15px] font-medium leading-[22px] text-ink-muted"
+              className="reveal text-ui font-medium leading-[22px] text-ink-muted"
               style={stagger(3)}
             >
               {subtitle}

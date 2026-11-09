@@ -263,7 +263,7 @@ export function EventDetailPage({
               : []),
           ]}
         />
-        <p className="text-[13px] text-ink-muted">
+        <p className="text-meta text-ink-muted">
           {[
             event.requiresApproval ? "Validation manuelle" : "Réservation automatique",
             event.paymentMode === "free"
@@ -408,7 +408,7 @@ export function EventDetailPage({
                             arrivedAt={row.checkedInAt ? clock.format(row.checkedInAt) : null}
                           />
                         ) : (
-                          <span className="text-[13px] font-semibold text-ink-muted">—</span>
+                          <span className="text-meta font-semibold text-ink-muted">—</span>
                         ),
                     },
                   ]
@@ -485,7 +485,7 @@ export function EventDetailPage({
                     </li>
                   ))}
                 </ul>
-                <p className="text-[13px] font-semibold leading-4 text-ink-muted">
+                <p className="text-meta font-semibold leading-4 text-ink-muted">
                   Ce que les règles ont fait
                 </p>
                 {ruleRuns.length === 0 ? (
@@ -547,7 +547,7 @@ export function EventDetailPage({
                 className="flex flex-col gap-1 border-b border-line-soft px-5 py-3.5 last:border-b-0"
               >
                 <dt className="text-xs font-semibold leading-4 text-ink-muted">{label}</dt>
-                <dd className="break-words text-[15px] font-semibold text-ink">{value}</dd>
+                <dd className="break-words text-ui font-semibold text-ink">{value}</dd>
               </div>
             ))}
           </dl>

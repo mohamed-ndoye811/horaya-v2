@@ -25,7 +25,7 @@ export function SeatPicker({
   return (
     <>
       <div className="flex items-center justify-between gap-4 border-y border-bg py-3.5">
-        <span aria-hidden="true" className="text-[15px] font-semibold leading-5 text-ink">
+        <span aria-hidden="true" className="text-ui font-semibold leading-5 text-ink">
           Nombre de places
         </span>
         <Stepper
@@ -44,7 +44,7 @@ export function SeatPicker({
           {priceCents > 0 ? formatMoney(priceCents * seats) : "Gratuit"}
         </span>
       </div>
-      {note && <p className="-mt-2 text-[13px] leading-[18px] text-ink-muted">{note}</p>}
+      {note && <p className="-mt-2 text-meta leading-[18px] text-ink-muted">{note}</p>}
       <ButtonLink
         href={`${bookHref}${bookHref.includes("?") ? "&" : "?"}places=${seats}`}
         variant="brand"

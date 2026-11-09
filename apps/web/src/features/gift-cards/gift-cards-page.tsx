@@ -76,7 +76,7 @@ export function GiftCardsPage({
       />
       {cards.length === 0 && !search ? (
         <EmptyState
-          title="Pas encore de bon cadeau."
+          title="Pas encore de bon cadeau à offrir."
           description={
             enabled
               ? "Les bons achetés sur ta page publique arrivent ici, à marquer payés. Tu peux aussi en vendre au comptoir."
@@ -107,7 +107,7 @@ export function GiftCardsPage({
             <div className="flex items-center justify-between gap-3">
               <div className="flex min-w-0 flex-col gap-0.5">
                 <span className="font-mono text-sm font-medium text-ink">{row.code}</span>
-                <span className="truncate text-[13px] text-ink-muted">
+                <span className="truncate text-meta text-ink-muted">
                   {row.purchaserName} → {row.recipientName}
                 </span>
               </div>
@@ -157,7 +157,7 @@ export function GiftCardsPage({
               header: "Échéance",
               width: 130,
               cell: (row) => (
-                <span className="text-[13px] text-ink-soft">
+                <span className="text-meta text-ink-soft">
                   {row.expiresAt ? formatGiftCardDate(row.expiresAt, timeZone) : "—"}
                 </span>
               ),

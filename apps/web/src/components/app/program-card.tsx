@@ -19,7 +19,7 @@ export function ProgramCard({
   return (
     <section className="flex flex-col overflow-hidden rounded-[22px] bg-surface">
       <h2 className="flex h-11 items-center justify-between gap-3 bg-band px-4">
-        <span className="text-[13px] font-bold leading-4 text-ink">{title}</span>
+        <span className="text-meta font-bold leading-4 text-ink">{title}</span>
         {count && <span className="shrink-0 text-xs leading-4 text-ink-subtle">{count}</span>}
       </h2>
       {empty ? (
@@ -61,7 +61,7 @@ export function ProgramRow({
         style={{ backgroundColor: color }}
       />
       <span className="flex min-w-0 flex-1 flex-col gap-0.5">
-        <span className="truncate text-[15px] font-semibold leading-5 text-ink">{title}</span>
+        <span className="truncate text-ui font-semibold leading-5 text-ink">{title}</span>
         {detail && <span className="truncate text-xs leading-4 text-ink-subtle">{detail}</span>}
       </span>
       {trailing}

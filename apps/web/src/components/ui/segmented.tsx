@@ -36,7 +36,7 @@ const groupClasses = (size: SegmentedSize, fill: boolean) =>
 const segmentClasses = (active: boolean, fill: boolean, size: SegmentedSize) =>
   cn(
     "relative isolate flex items-center justify-center gap-[7px] whitespace-nowrap rounded-full font-semibold transition-colors",
-    size === "xs" ? "tap-area text-[13px] leading-4" : "text-sm leading-[18px]",
+    size === "xs" ? "tap-area text-meta leading-4" : "text-sm leading-[18px]",
     // Pleine largeur : segments égaux, marge réduite pour tenir sur un petit écran.
     fill ? "flex-1 basis-0 px-2" : size === "xs" ? "px-3" : "px-4",
     active

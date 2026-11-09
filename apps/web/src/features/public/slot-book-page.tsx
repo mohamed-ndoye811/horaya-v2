@@ -97,7 +97,7 @@ export function SlotBookPage({
                 </p>
               )}
               <p className="flex items-baseline justify-between gap-4">
-                <span className="text-[15px] font-bold leading-5 text-ink">Total TTC</span>
+                <span className="text-ui font-bold leading-5 text-ink">Total TTC</span>
                 <span className="text-xl font-semibold leading-6 text-ink">
                   {total > 0 ? <CountUp value={formatMoney(total)} /> : "Gratuit"}
                 </span>

@@ -25,7 +25,7 @@ export function MobileTopBar() {
       {/* Zone de toucher de 44 px de haut, sans décaler la page. */}
       <Link
         href={back.href}
-        className="-mx-2 -my-3.5 flex w-fit items-center gap-1.5 px-2 py-3.5 text-[13px] font-semibold leading-4 text-ink-muted transition-colors hover:text-ink"
+        className="-mx-2 -my-3.5 flex w-fit items-center gap-1.5 px-2 py-3.5 text-meta font-semibold leading-4 text-ink-muted transition-colors hover:text-ink"
       >
         <ArrowLeft className="size-3" />
         {back.label}

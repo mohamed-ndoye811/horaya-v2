@@ -148,7 +148,7 @@ export function CalendarLinksTable({
                 <span className="truncate font-mono text-xs text-ink-subtle">
                   {row.url.replace(/^https?:\/\//, "")}
                 </span>
-                <span className="text-[13px] leading-5 text-ink-soft">
+                <span className="text-meta leading-5 text-ink-soft">
                   {row.summary} · {row.upcomingEvents} à venir
                 </span>
               </div>
@@ -195,7 +195,7 @@ export function CalendarLinksTable({
             header: "Montre",
             width: 260,
             cell: (row) => (
-              <span className="line-clamp-2 text-[13px] text-ink-soft">{row.summary}</span>
+              <span className="line-clamp-2 text-meta text-ink-soft">{row.summary}</span>
             ),
           },
           {
@@ -399,7 +399,7 @@ function LinkDialog({
         {mode !== "all" && (
           <fieldset className="flex flex-col gap-2.5">
             <div className="flex items-center justify-between gap-3">
-              <legend className="text-[13px] font-semibold text-ink">
+              <legend className="text-meta font-semibold text-ink">
                 {mode === "event_types" ? "Types d'événements" : "Événements à venir"} ·{" "}
                 {selected.size} choisi{selected.size > 1 ? "s" : ""}
               </legend>
@@ -418,7 +418,7 @@ function LinkDialog({
               )}
             </div>
             {options.length === 0 ? (
-              <p className="text-[13px] text-ink-subtle">
+              <p className="text-meta text-ink-subtle">
                 {mode === "event_types"
                   ? "Aucun type d'événement pour l'instant."
                   : "Aucun événement à venir pour l'instant."}

@@ -44,7 +44,7 @@ function TestCheckoutPage() {
             className="flex flex-col gap-1 px-6 py-5 text-on-ink"
             style={{ backgroundColor: summary.brandColor }}
           >
-            <p className="text-[15px] font-extrabold uppercase tracking-[0.02em]">
+            <p className="text-ui font-extrabold uppercase tracking-[0.02em]">
               {summary.organizationName}
             </p>
             <p className="text-sm font-medium opacity-90">
@@ -53,10 +53,10 @@ function TestCheckoutPage() {
           </div>
           <div className="flex flex-col gap-4 px-6 py-6">
             <p className="flex items-baseline justify-between">
-              <span className="text-[15px] font-semibold text-ink-muted">
+              <span className="text-ui font-semibold text-ink-muted">
                 {summary.kind === "deposit" ? "Acompte à payer" : "À payer"}
               </span>
-              <span className="font-headline text-[44px] leading-[44px] text-ink">
+              <span className="font-headline text-kpi leading-[44px] text-ink">
                 {formatMoney(summary.amountCents)}
               </span>
             </p>

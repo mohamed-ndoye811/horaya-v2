@@ -50,7 +50,7 @@ export function CalendarLinksPage({
             <li key={row.id} className="flex flex-col gap-1 border-b border-line-soft py-4">
               <span className="text-sm font-semibold text-ink">{row.name}</span>
               <span className="font-mono text-xs text-ink-subtle">{row.url}</span>
-              <span className="text-[13px] text-ink-soft">{row.summary}</span>
+              <span className="text-meta text-ink-soft">{row.summary}</span>
             </li>
           ))}
         </ul>
