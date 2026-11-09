@@ -142,7 +142,7 @@ describe("formules et licences", () => {
     await book("2026-11-10");
 
     const overview = await getBillingOverview(deps, owner);
-    expect(overview.bookings).toMatchObject({ limit: 50, thisMonth: 1, lastMonth: 0 });
+    expect(overview.bookings).toMatchObject({ limit: 100, thisMonth: 1, lastMonth: 0 });
   });
 
   it("arrête l'abonnement passé sur un produit hors Horaya, pas un autre", async () => {

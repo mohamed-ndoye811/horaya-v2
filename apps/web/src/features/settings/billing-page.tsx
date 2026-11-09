@@ -26,7 +26,7 @@ type Data = Awaited<ReturnType<typeof getBillingSettings>>;
 const PERKS: Record<PlanId, string[]> = {
   libre: [
     "1 membre",
-    "50 réservations par mois",
+    "100 réservations par mois",
     "Événements et clients illimités",
     "Comptoir, cartes de séances, bons cadeaux",
     "Matériel : 5 exemplaires",

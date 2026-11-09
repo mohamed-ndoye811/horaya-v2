@@ -91,9 +91,9 @@ describe("limites", () => {
   });
 
   it("prévient au-delà du quota, propose la formule supérieure au deuxième mois", () => {
-    expect(bookingUsage("libre", 40, 80)).toMatchObject({ over: false, suggestUpgrade: false });
-    expect(bookingUsage("libre", 60, 20)).toMatchObject({ over: true, suggestUpgrade: false });
-    expect(bookingUsage("libre", 60, 51)).toMatchObject({ over: true, suggestUpgrade: true });
+    expect(bookingUsage("libre", 90, 150)).toMatchObject({ over: false, suggestUpgrade: false });
+    expect(bookingUsage("libre", 120, 40)).toMatchObject({ over: true, suggestUpgrade: false });
+    expect(bookingUsage("libre", 120, 101)).toMatchObject({ over: true, suggestUpgrade: true });
     expect(bookingUsage("equipe", 9999, 9999)).toMatchObject({ limit: null, over: false });
   });
 });

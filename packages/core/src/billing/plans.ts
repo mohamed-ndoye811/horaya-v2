@@ -36,7 +36,7 @@ export const PLANS: Record<PlanId, Plan> = {
     id: "libre",
     name: "Libre",
     priceCents: { month: 0, year: 0 },
-    limits: { members: 1, bookingsPerMonth: 50, inventoryUnits: 5 },
+    limits: { members: 1, bookingsPerMonth: 100, inventoryUnits: 5 },
     features: [],
   },
   pro: {
