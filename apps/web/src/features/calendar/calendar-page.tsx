@@ -1,5 +1,6 @@
 import { addDays } from "@horaya/core";
 import type { EventRow } from "@horaya/db";
+import { useEffect, useRef } from "react";
 import { FabLink } from "@/components/app/fab";
 import { FilterSelect } from "@/components/app/filter-select";
 import { PageHeader } from "@/components/app/page-header";
@@ -8,6 +9,7 @@ import { DayAgenda, MonthCompact, WeekAgenda, WeekStrip } from "@/components/cal
 import { MonthCalendar } from "@/components/calendar/month-calendar";
 import { TimeGridCalendar } from "@/components/calendar/time-grid";
 import type { CalendarEvent } from "@/components/calendar/types";
+import { Swap } from "@/components/motion/swap";
 import { Avatar, CategorySwatch } from "@/components/ui/avatar";
 import { ButtonLink } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight, CloseIcon, PlusIcon } from "@/components/ui/icons";
@@ -67,6 +69,20 @@ export function CalendarPage({
 
   // Période affichée et navigation.
   const { days, previous, next } = calendarPeriod(view, date);
+  // Sens de la navigation (comparé à l'affichage précédent) : les textes glissent de ce côté.
+  const key = civilKey(date);
+  const shown = useRef({ view, key });
+  const slide =
+    shown.current.view !== view
+      ? 0
+      : key > shown.current.key
+        ? 1
+        : key < shown.current.key
+          ? -1
+          : 0;
+  useEffect(() => {
+    shown.current = { view, key };
+  }, [view, key]);
   const first = days[0] ?? date;
   const last = days.at(-1) ?? date;
   const from = startOfDay(first, timeZone);
@@ -176,6 +192,16 @@ export function CalendarPage({
     ),
   });
 
+  // Retour à la période en cours, nommée selon la vue ; grisé quand on y est déjà.
+  const isCurrent =
+    view === "mois"
+      ? date.year === today.year && date.month === today.month
+      : view === "semaine"
+        ? showsToday
+        : key === civilKey(today);
+  const currentLabel =
+    view === "mois" ? "Ce mois-ci" : view === "semaine" ? "Cette semaine" : "Aujourd'hui";
+
   const periodNav = (
     <nav
       aria-label="Période"
@@ -188,12 +214,25 @@ export function CalendarPage({
       >
         <ChevronLeft />
       </Link>
-      <Link
-        href={href({ date: today })}
-        className="flex h-[34px] items-center rounded-full px-3 text-sm font-semibold leading-[18px] text-ink hover:bg-field"
-      >
-        Aujourd'hui
-      </Link>
+      {isCurrent ? (
+        <span
+          aria-current="date"
+          className="flex h-[34px] min-w-[104px] items-center justify-center px-3 text-sm font-semibold leading-[18px] text-ink-subtle"
+        >
+          <Swap value={currentLabel} slide={0}>
+            {currentLabel}
+          </Swap>
+        </span>
+      ) : (
+        <Link
+          href={href({ date: today })}
+          className="flex h-[34px] min-w-[104px] items-center justify-center rounded-full px-3 text-sm font-semibold leading-[18px] text-ink hover:bg-field"
+        >
+          <Swap value={currentLabel} slide={0}>
+            {currentLabel}
+          </Swap>
+        </Link>
+      )}
       <Link
         href={href({ date: next })}
         aria-label="Période suivante"
@@ -204,10 +243,13 @@ export function CalendarPage({
     </nav>
   );
 
+  // Changer de vue depuis le mois en cours : on part d'aujourd'hui, pas du 1er du mois.
+  const anchor =
+    view === "mois" && date.year === today.year && date.month === today.month ? today : date;
   const views = [
-    { value: "mois", label: "Mois", href: href({ vue: "mois" }) },
-    { value: "semaine", label: "Semaine", href: href({ vue: "semaine" }) },
-    { value: "jour", label: "Jour", href: href({ vue: "jour" }) },
+    { value: "mois", label: "Mois", href: href({ vue: "mois", date: anchor }) },
+    { value: "semaine", label: "Semaine", href: href({ vue: "semaine", date: anchor }) },
+    { value: "jour", label: "Jour", href: href({ vue: "jour", date: anchor }) },
   ];
 
   return (
@@ -215,21 +257,37 @@ export function CalendarPage({
       <PageHeader
         eyebrow={
           <>
-            <span className="lg:hidden">{mobileEyebrow}</span>
-            <span className="hidden lg:inline">{eyebrow}</span>
+            <span className="lg:hidden">
+              <Swap value={mobileEyebrow} slide={slide}>
+                {mobileEyebrow}
+              </Swap>
+            </span>
+            <span className="hidden lg:inline">
+              <Swap value={eyebrow} slide={slide}>
+                {eyebrow}
+              </Swap>
+            </span>
           </>
         }
         title={
           <>
-            <span className="lg:hidden">{mobileTitle}</span>
-            <span className="hidden lg:inline">{title}</span>
+            <span className="lg:hidden">
+              <Swap value={mobileTitle} slide={slide}>
+                {mobileTitle}
+              </Swap>
+            </span>
+            <span className="hidden lg:inline">
+              <Swap value={title} slide={slide}>
+                {title}
+              </Swap>
+            </span>
           </>
         }
         subtitle={
-          <>
+          <Swap value={`${view}${monthLabel}${summary}`} slide={slide}>
             {view !== "mois" && `${monthLabel} `}
             <span className="text-ink">{summary}</span>
-          </>
+          </Swap>
         }
         toolbar={
           <>
