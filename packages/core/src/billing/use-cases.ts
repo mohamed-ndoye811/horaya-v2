@@ -49,13 +49,17 @@ export function getCurrentPlan(deps: Deps, organizationId: string): Promise<Curr
 }
 
 /** Début du mois civil de `date` dans le fuseau de l'espace, et du mois précédent. */
-function monthStarts(date: Date, timeZone: string): { thisMonth: Date; lastMonth: Date } {
+function monthStarts(
+  date: Date,
+  timeZone: string,
+): { thisMonth: Date; lastMonth: Date; nextMonth: Date } {
   const { year, month } = toZonedParts(date, timeZone);
   const start = (y: number, m: number) =>
     fromZonedParts({ year: y, month: m, day: 1, hour: 0, minute: 0 }, timeZone);
   return {
     thisMonth: start(year, month),
     lastMonth: month === 1 ? start(year - 1, 12) : start(year, month - 1),
+    nextMonth: month === 12 ? start(year + 1, 1) : start(year, month + 1),
   };
 }
 
@@ -82,9 +86,9 @@ async function overviewOf(
     repositories.billing.countSeats(organizationId),
   ]);
   const current = currentPlanOf(account, grants, now);
-  const { thisMonth, lastMonth } = monthStarts(now, settings.timezone);
+  const { thisMonth, lastMonth, nextMonth } = monthStarts(now, settings.timezone);
   const [usedThisMonth, usedLastMonth] = await Promise.all([
-    repositories.billing.countBookings(organizationId, thisMonth, now),
+    repositories.billing.countBookings(organizationId, thisMonth, nextMonth),
     repositories.billing.countBookings(organizationId, lastMonth, thisMonth),
   ]);
   return {

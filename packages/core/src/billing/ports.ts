@@ -20,6 +20,9 @@ export interface BillingRepository {
   countSeats(organizationId: string): Promise<number>;
   /** Exemplaires de matériel, hors retirés (les postes en réparation comptent). */
   countInventoryUnits(organizationId: string): Promise<number>;
-  /** Réservations reçues (hors refusées) créées dans [from, to). */
+  /**
+   * Réservations en attente ou confirmées dont la séance (ou la location) commence dans
+   * [from, to) : une inscription au trimestre compte chaque mois pour ses séances du mois.
+   */
   countBookings(organizationId: string, from: Date, to: Date): Promise<number>;
 }
