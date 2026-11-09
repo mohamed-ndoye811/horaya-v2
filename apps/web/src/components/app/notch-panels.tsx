@@ -19,6 +19,7 @@ import {
 import {
   type NotificationItem,
   openNotifications,
+  readNotifications,
   type SearchHit,
   type SearchResults,
   searchWorkspace,
@@ -265,11 +266,14 @@ export function SearchPanel({
   onClose,
   wide,
   sheet = false,
+  focus = !sheet,
   idle,
 }: {
   onClose: () => void;
   wide: boolean;
   sheet?: boolean;
+  /** Le champ prend le curseur à l'ouverture. */
+  focus?: boolean;
   idle?: ReactNode;
 }) {
   const router = useRouter();
@@ -454,7 +458,7 @@ export function SearchPanel({
         <SearchIcon size={18} />
         <input
           // biome-ignore lint/a11y/noAutofocus: la recherche s'ouvre pour qu'on y tape aussitôt
-          autoFocus={!sheet}
+          autoFocus={focus}
           type="search"
           value={query}
           onChange={(event) => setQuery(event.target.value)}
@@ -616,7 +620,9 @@ function SearchRow({
   );
 }
 
-/** Dernières notifications ; les charger les passe en lu (`onLoaded`). */
+/** Dernières notifications ; une seconde à l'écran les passe en lu (`onLoaded`). */
+const SEEN_AFTER = 1000;
+
 export function NotificationsPanel({
   onClose,
   onLoaded,
@@ -628,15 +634,19 @@ export function NotificationsPanel({
 }) {
   const [items, setItems] = useState<NotificationItem[] | null>(null);
 
+  // Elles passent en lu après une seconde à l'écran : un simple survol de la cloche n'y touche pas.
   useEffect(() => {
     let stale = false;
+    let timer: ReturnType<typeof setTimeout> | undefined;
     openNotifications().then((loaded) => {
       if (stale) return;
       setItems(loaded);
-      onLoaded();
+      if (!loaded.some((item) => item.unread)) return;
+      timer = setTimeout(() => readNotifications().then(onLoaded), SEEN_AFTER);
     });
     return () => {
       stale = true;
+      clearTimeout(timer);
     };
   }, [onLoaded]);
 
@@ -874,7 +884,9 @@ export function AccountPanel({
     <div className={wide ? "grid grid-cols-[minmax(0,1fr)_280px] gap-6" : "flex flex-col gap-3.5"}>
       {!compact && (
         <div className="flex min-w-0 flex-col gap-1">
-          <GroupLabel>Paramètres</GroupLabel>
+          <h2 className="px-2 pt-1 pb-2 font-headline text-2xl leading-7 text-on-ink">
+            Paramètres
+          </h2>
           <div className={cn("grid gap-2", wide ? "grid-cols-3" : "grid-cols-2")}>
             {(user.platformAdmin ? [...ACCOUNT_LINKS, COCKPIT_LINK] : ACCOUNT_LINKS).map((link) => (
               <Link key={link.href} href={link.href} onClick={onClose} className={CARD}>

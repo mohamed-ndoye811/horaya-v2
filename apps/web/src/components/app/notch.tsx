@@ -43,8 +43,9 @@ interface Hint {
   visible: boolean;
   slide: boolean;
 }
-/** Menu d'une section (son adresse) ou du bouton Créer : il s'ouvre au survol. */
+/** Menu d'une section (son adresse) ou du bouton Créer. */
 type MenuPanel = "create" | `/app/${string}`;
+/** Chaque icône à panneau l'ouvre au survol (`data-notch-menu`), ou au clic. */
 type Panel = "search" | "notifications" | "account" | MenuPanel | null;
 const isMenu = (panel: Panel): panel is MenuPanel =>
   panel === "create" || Boolean(panel?.startsWith("/app"));
@@ -57,15 +58,13 @@ const FOLLOW = { type: "spring", visualDuration: 0.24, bounce: 0 } as const;
 const HINT = { type: "spring", visualDuration: 0.22, bounce: 0 } as const;
 /** Rangée d'icônes du notch replié (mesurée au montage ; valeur du premier rendu). */
 const BAR_INNER = 488;
-/** Pause sur une icône avant que son menu ne s'ouvre ; délai avant de le fermer en sortant. */
+/** Pause sur une icône avant que son panneau ne s'ouvre (un simple passage n'ouvre rien). */
 const HOVER_DELAY = 120;
-const LEAVE_DELAY = 250;
-/** Largeur minimale du notch agrandi (maquette : panneau de 624 px). */
+/** Largeur du notch agrandi (maquette : panneau de 624 px). */
 const PANEL_MIN_INNER = 624;
-/** Libellés à droite des icônes dans le notch agrandi, si l'écran a la place. */
-const LABELS_MIN_WIDTH = 1280;
-/** Espace entre une icône et son libellé. */
-const LABEL_GAP = 8;
+/** Sur grand écran, panneau large (deux colonnes) ; les icônes, elles, ne bougent pas. */
+const WIDE_INNER = 880;
+const WIDE_MIN_WIDTH = 1280;
 
 const clamp01 = (x: number) => Math.min(1, Math.max(0, x));
 
@@ -88,7 +87,7 @@ export function Notch({ user, workspace, pendingBookings, unreadNotifications }:
   const pathname = usePathname();
   const [hint, setHint] = useState<Hint | null>(null);
   const [panel, setPanel] = useState<Panel>(null);
-  const [labels, setLabels] = useState(false);
+  const [wide, setWide] = useState(false);
   /** Le notch reprend sa taille ; le panneau disparaît à la fin. */
   const [closing, setClosing] = useState(false);
   const [unread, setUnread] = useState(unreadNotifications);
@@ -100,29 +99,28 @@ export function Notch({ user, workspace, pendingBookings, unreadNotifications }:
   const rowRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
   const veilRef = useRef<HTMLButtonElement>(null);
-  /** Mesures : rangée repliée, notch agrandi, libellés (éléments et largeurs), hauteur du contenu. */
-  const dims = useRef({
-    bar: BAR_INNER,
-    wide: PANEL_MIN_INNER,
-    texts: [] as HTMLElement[],
-    labels: [] as number[],
-    content: 0,
-  });
+  /** Mesures : rangée repliée, notch agrandi, hauteur du contenu. */
+  const dims = useRef({ bar: BAR_INNER, wide: PANEL_MIN_INNER, content: 0 });
   /** Ouverture (0 replié, 1 agrandi) et hauteur du contenu affichée, animées par Motion. */
   const progress = useMotionValue(0);
   const shown = useMotionValue(0);
   /** Où va le notch : 1 s'il s'ouvre, 0 s'il se referme. */
   const target = useRef(0);
   const reduced = useReducedMotion();
-  const state = useRef({ panel, labels });
-  state.current = { panel, labels };
+  const state = useRef({ panel });
+  state.current = { panel };
+  /**
+   * Panneau tenu : ouvert au clic ou au clavier, ou touché (clic, frappe) après une ouverture au
+   * survol. Il ne se referme plus quand la souris sort, ni ne change au survol d'une autre icône.
+   */
+  const pinned = useRef(false);
+  const editing = useRef(false);
   const pendingOpen = useRef(false);
   /** Menu ouvert au clavier (flèche bas) : le focus va à sa première carte. */
   const focusFirst = useRef(false);
   const hoverTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
-  const leaveTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
   /** Menu de l'icône sous la souris. */
-  const hovered = useRef<MenuPanel | undefined>(undefined);
+  const hovered = useRef<Panel | undefined>(undefined);
 
   /** Dessine le notch à son ouverture courante. */
   const draw = useCallback(() => {
@@ -144,13 +142,6 @@ export function Notch({ user, workspace, pendingBookings, unreadNotifications }:
       svg.setAttribute("viewBox", `0 0 ${width} ${height}`);
     }
     pathRef.current?.setAttribute("d", shape.d);
-    const withLabels = state.current.labels ? open : 0;
-    for (let index = 0; index < d.texts.length; index++) {
-      const text = d.texts[index] as HTMLElement;
-      text.style.width = `${(d.labels[index] ?? 0) * withLabels}px`;
-      text.style.marginLeft = `${LABEL_GAP * withLabels}px`;
-      text.style.opacity = `${withLabels}`;
-    }
     const content = contentRef.current;
     if (content) {
       const side = Math.max(0, (d.wide - (width - 2 * shape.side)) / 2);
@@ -206,23 +197,22 @@ export function Notch({ user, workspace, pendingBookings, unreadNotifications }:
   };
 
   const open = useCallback(
-    (next: Exclude<Panel, null>) => {
+    (next: Exclude<Panel, null>, byHover = false) => {
+      pinned.current = !byHover;
+      // Ouverte au survol pendant une saisie, la recherche ne prend pas le curseur.
+      editing.current =
+        byHover &&
+        Boolean(document.activeElement?.matches("input, textarea, select, [contenteditable]"));
       setClosing(false);
       setPanel(next);
       if (state.current.panel && target.current === 1) return;
-      // Mesures du notch replié : rangée d'icônes et largeur naturelle de chaque libellé.
+      // Mesure du notch replié : rangée d'icônes.
       const d = dims.current;
       const row = rowRef.current;
-      // Pas de libellés pour un menu ouvert au survol : ils décaleraient les icônes sous la souris.
-      const withLabels = window.innerWidth >= LABELS_MIN_WIDTH && !isMenu(next);
-      if (row && progress.get() === 0) {
-        d.bar = row.offsetWidth;
-        d.labels = d.texts.map((text) => text.scrollWidth);
-      }
-      const extra = withLabels ? d.labels.reduce((sum, width) => sum + width + LABEL_GAP, 0) : 0;
-      d.wide = Math.max(d.bar + extra + 32, PANEL_MIN_INNER);
-      state.current.labels = withLabels;
-      setLabels(withLabels);
+      if (row && progress.get() === 0) d.bar = row.offsetWidth;
+      const large = window.innerWidth >= WIDE_MIN_WIDTH;
+      d.wide = Math.max(d.bar + 32, large ? WIDE_INNER : PANEL_MIN_INNER);
+      setWide(large);
       pendingOpen.current = true;
     },
     [progress],
@@ -261,7 +251,7 @@ export function Notch({ user, workspace, pendingBookings, unreadNotifications }:
     animateTo(0);
   }, [animateTo]);
 
-  /** Un bouton du notch ouvre son panneau, ou le referme s'il est déjà ouvert. */
+  /** ⌘K ouvre la recherche, ou la referme si elle est déjà ouverte. */
   const toggle = useCallback(
     (next: Exclude<Panel, null>) => {
       if (state.current.panel === next && target.current === 1) close();
@@ -282,13 +272,10 @@ export function Notch({ user, workspace, pendingBookings, unreadNotifications }:
     return () => window.removeEventListener("keydown", onKey);
   }, [toggle]);
 
-  // Premier dessin à la taille réelle de la rangée ; les libellés sont gardés pour le dessin.
+  // Premier dessin à la taille réelle de la rangée.
   useLayoutEffect(() => {
     const row = rowRef.current;
-    if (row) {
-      dims.current.bar = row.offsetWidth;
-      dims.current.texts = [...row.querySelectorAll<HTMLElement>("[data-notch-text]")];
-    }
+    if (row) dims.current.bar = row.offsetWidth;
     draw();
     return () => {
       progress.stop();
@@ -351,30 +338,24 @@ export function Notch({ user, workspace, pendingBookings, unreadNotifications }:
   const markRead = useCallback(() => setUnread(0), []);
 
   /**
-   * Survol (seulement quand la souris bouge vraiment : en s'agrandissant, le notch déplace ses
-   * icônes sous un curseur immobile). Après une pause sur une section, son menu s'ouvre ; si un
-   * menu est déjà ouvert, on passe à l'autre aussitôt, comme dans une barre de menus.
+   * Survol (seulement quand la souris bouge vraiment). Après une courte pause sur une icône, son
+   * panneau s'ouvre ; si un panneau est déjà ouvert, on passe à l'autre aussitôt, comme dans une
+   * barre de menus. Un panneau tenu ne change pas.
    */
   function hover(element: EventTarget) {
     if (!(element instanceof Element) || contentRef.current?.contains(element)) return;
     const menu = element.closest<HTMLElement>("[data-notch-menu]")?.dataset.notchMenu as
-      | MenuPanel
+      | Exclude<Panel, null>
       | undefined;
     if (menu === hovered.current) return;
     hovered.current = menu;
     clearTimeout(hoverTimer.current);
     const current = state.current.panel;
-    if (!menu || (current && !isMenu(current))) return;
-    if (current && target.current === 1) open(menu);
-    else hoverTimer.current = setTimeout(() => open(menu), HOVER_DELAY);
+    if (!menu || (current && pinned.current)) return;
+    if (current && target.current === 1) open(menu, true);
+    else hoverTimer.current = setTimeout(() => open(menu, true), HOVER_DELAY);
   }
-  useEffect(
-    () => () => {
-      clearTimeout(hoverTimer.current);
-      clearTimeout(leaveTimer.current);
-    },
-    [],
-  );
+  useEffect(() => () => clearTimeout(hoverTimer.current), []);
   const closedWidth = BAR_INNER + 88;
   const activeHref = activeSection(pathname);
   const closed = notchShape(closedWidth, NOTCH_BAR_HEIGHT, 0);
@@ -415,7 +396,6 @@ export function Notch({ user, workspace, pendingBookings, unreadNotifications }:
           muted.current = false;
           pointAt(event.target, event.currentTarget);
         }}
-        onMouseEnter={() => clearTimeout(leaveTimer.current)}
         onClickCapture={() => {
           muted.current = true;
           hideHint();
@@ -425,8 +405,8 @@ export function Notch({ user, workspace, pendingBookings, unreadNotifications }:
           hideHint();
           hovered.current = undefined;
           clearTimeout(hoverTimer.current);
-          // Un menu ouvert au survol se referme quand la souris s'en va.
-          if (isMenu(state.current.panel)) leaveTimer.current = setTimeout(close, LEAVE_DELAY);
+          // Ouvert au survol et pas touché : il se referme dès que la souris s'en va.
+          if (!pinned.current) close();
         }}
         onKeyDown={(event) => {
           const item =
@@ -435,7 +415,7 @@ export function Notch({ user, workspace, pendingBookings, unreadNotifications }:
           if (event.key !== "ArrowDown" || !item) return;
           event.preventDefault();
           focusFirst.current = true;
-          open(item.dataset.notchMenu as MenuPanel);
+          open(item.dataset.notchMenu as Exclude<Panel, null>);
         }}
         onFocus={(event) => {
           // Focus rendu par le code (fermeture d'un panneau) : pas de libellé ; au clavier, si.
@@ -508,14 +488,6 @@ export function Notch({ user, workspace, pendingBookings, unreadNotifications }:
                     <ActiveIndicator id="notch" className="inset-0 -z-10 rounded-xl bg-on-ink/16" />
                   )}
                   <Icon size={20} />
-                  <span
-                    aria-hidden="true"
-                    data-notch-text
-                    className="overflow-hidden whitespace-nowrap text-sm font-semibold leading-[18px]"
-                    style={{ width: 0, opacity: 0 }}
-                  >
-                    {item.label}
-                  </span>
                   {pending && (
                     <span
                       aria-hidden="true"
@@ -533,7 +505,6 @@ export function Notch({ user, workspace, pendingBookings, unreadNotifications }:
             label="Créer"
             hint="Créer"
             menu="create"
-            // Souvent déjà ouvert par le survol : le clic l'ouvre, sans le refermer.
             onClick={() => open("create")}
             expanded={panel === "create"}
           >
@@ -544,7 +515,8 @@ export function Notch({ user, workspace, pendingBookings, unreadNotifications }:
             hint="Rechercher"
             badge="⌘K"
             badgeTone="key"
-            onClick={() => toggle("search")}
+            menu="search"
+            onClick={() => open("search")}
             expanded={panel === "search"}
           >
             <SearchIcon size={20} />
@@ -553,7 +525,8 @@ export function Notch({ user, workspace, pendingBookings, unreadNotifications }:
             label={unread > 0 ? `Notifications, ${unread} non lues` : "Notifications"}
             hint="Notifications"
             badge={unread > 0 ? `${unread} non lue${unread > 1 ? "s" : ""}` : undefined}
-            onClick={() => toggle("notifications")}
+            menu="notifications"
+            onClick={() => open("notifications")}
             expanded={panel === "notifications"}
           >
             <BellIcon size={20} />
@@ -566,10 +539,11 @@ export function Notch({ user, workspace, pendingBookings, unreadNotifications }:
           </NotchButton>
           <button
             type="button"
-            onClick={() => toggle("account")}
+            onClick={() => open("account")}
             aria-expanded={panel === "account"}
             aria-label={`Compte de ${user.name}`}
             data-notch-label="Mon compte"
+            data-notch-menu="account"
             className={cn(
               "ml-1 flex size-8 shrink-0 items-center justify-center rounded-full bg-accent-gradient text-xs font-bold text-on-ink transition-shadow focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-on-ink",
               (panel === "account" || isActive(pathname, "/app/parametres")) &&
@@ -587,22 +561,29 @@ export function Notch({ user, workspace, pendingBookings, unreadNotifications }:
         {panel && (
           <div
             ref={contentRef}
+            // Toucher le panneau (clic, frappe) le tient ouvert.
+            onPointerDownCapture={() => {
+              pinned.current = true;
+            }}
+            onKeyDownCapture={() => {
+              pinned.current = true;
+            }}
             className="absolute top-14 left-1/2 -translate-x-1/2"
             style={{ opacity: 0, clipPath: "inset(0 50% 100% 50%)" }}
           >
             {panel === "search" && (
               <NotchPanel label="Recherche" onClose={close}>
-                <SearchPanel onClose={close} wide={labels} />
+                <SearchPanel onClose={close} wide={wide} focus={!editing.current} />
               </NotchPanel>
             )}
             {panel === "notifications" && (
               <NotchPanel label="Notifications" onClose={close}>
-                <NotificationsPanel onClose={close} onLoaded={markRead} wide={labels} />
+                <NotificationsPanel onClose={close} onLoaded={markRead} wide={wide} />
               </NotchPanel>
             )}
             {panel === "account" && (
               <NotchPanel label="Mon compte" onClose={close}>
-                <AccountPanel user={user} workspace={workspace} onClose={close} wide={labels} />
+                <AccountPanel user={user} workspace={workspace} onClose={close} wide={wide} />
               </NotchPanel>
             )}
             {isMenu(panel) && (
@@ -610,12 +591,7 @@ export function Notch({ user, workspace, pendingBookings, unreadNotifications }:
                 label={NAV.find((item) => item.href === panel)?.label ?? "Créer"}
                 onClose={close}
               >
-                <SectionPanel
-                  menu={panel}
-                  pending={pendingBookings}
-                  onClose={close}
-                  wide={labels}
-                />
+                <SectionPanel menu={panel} pending={pendingBookings} onClose={close} wide={wide} />
               </NotchPanel>
             )}
           </div>
