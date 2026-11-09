@@ -367,7 +367,8 @@ export function Notch({ user, workspace, pendingBookings, unreadNotifications }:
         aria-hidden="true"
         className="pointer-events-none fixed inset-x-1.5 top-1.5 z-40 hidden h-[72px] rounded-t-[10px] bg-linear-to-t from-bg/0 via-bg via-50% to-bg [view-transition-name:notch-fade] lg:block"
       />
-      {/* Voile de la maquette : seulement le contenu dans le cadre ; son opacité suit le notch. */}
+      {/* Voile : seulement le contenu dans le cadre ; son opacité suit le notch. Sans flou : sur
+          WebKit, un flou plein écran se recalcule à chaque image et l'animation saccade. */}
       {panel && (
         <button
           ref={veilRef}
@@ -377,7 +378,7 @@ export function Notch({ user, workspace, pendingBookings, unreadNotifications }:
           onClick={close}
           style={{ opacity: 0 }}
           className={cn(
-            "fixed inset-1.5 z-[45] hidden cursor-default rounded-[10px] bg-ink/22 backdrop-blur-[3px] lg:block",
+            "fixed inset-1.5 z-[45] hidden cursor-default rounded-[10px] bg-ink/35 lg:block",
             closing && "pointer-events-none",
           )}
         />
