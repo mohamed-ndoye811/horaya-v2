@@ -59,6 +59,31 @@ export async function listPendingPasses(db: Executor, organizationId: string) {
     .orderBy(desc(pass.createdAt));
 }
 
+/** Cartes en cours (payées, avec des séances, pas expirées), la plus proche de l'échéance d'abord. */
+export async function listActivePasses(db: Executor, organizationId: string, now: Date) {
+  return db
+    .select({
+      id: pass.id,
+      name: pass.name,
+      sessionsTotal: pass.sessionsTotal,
+      expiresAt: pass.expiresAt,
+      customerId: customer.id,
+      customerName: sql<string>`${customer.firstName} || ' ' || ${customer.lastName}`,
+      balance,
+    })
+    .from(pass)
+    .innerJoin(customer, eq(customer.id, pass.customerId))
+    .where(
+      and(
+        eq(pass.organizationId, organizationId),
+        eq(pass.status, "active"),
+        sql`(${pass.expiresAt} is null or ${pass.expiresAt} > ${iso(now)})`,
+        sql`${balance} > 0`,
+      ),
+    )
+    .orderBy(sql`${pass.expiresAt} asc nulls last`);
+}
+
 /** Cartes d'un client avec solde et journal (fiche client côté organisateur). */
 export async function listCustomerPasses(db: Executor, organizationId: string, customerId: string) {
   const passes = await db

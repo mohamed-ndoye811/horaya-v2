@@ -138,14 +138,24 @@ interface AffixInputProps extends Omit<ComponentProps<"input">, "size" | "classN
   suffix?: ReactNode;
   /** Chiffres en mono, comme les maquettes (places, prix, heures). */
   mono?: boolean;
+  /** `xs` : 36 px de haut, pour les fenêtres compactes. */
+  size?: "xs" | "md";
 }
 
 /** Champ avec préfixe, icône et/ou unité intégrés ; le cadre réagit au focus du champ. */
-export function AffixInput({ prefix, leading, suffix, mono = false, ...props }: AffixInputProps) {
+export function AffixInput({
+  prefix,
+  leading,
+  suffix,
+  mono = false,
+  size = "md",
+  ...props
+}: AffixInputProps) {
   return (
     <div
       className={cn(
-        "flex h-11 min-w-0 items-center gap-2.5 overflow-hidden rounded-xl border border-line-soft bg-field px-3.5 transition-[border-color,background-color]",
+        "flex min-w-0 items-center gap-2.5 overflow-hidden rounded-xl border border-line-soft bg-field transition-[border-color,background-color]",
+        size === "xs" ? "h-9 px-3" : "h-11 px-3.5",
         "focus-within:border-ink focus-within:bg-surface",
         "has-aria-invalid:border-danger",
       )}
