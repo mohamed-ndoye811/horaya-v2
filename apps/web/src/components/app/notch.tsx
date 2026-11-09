@@ -58,7 +58,7 @@ const HINT = { type: "spring", visualDuration: 0.22, bounce: 0 } as const;
 /** Rangée d'icônes du notch replié (mesurée au montage ; valeur du premier rendu). */
 const BAR_INNER = 488;
 /** Pause sur une icône avant que son menu ne s'ouvre ; délai avant de le fermer en sortant. */
-const HOVER_DELAY = 300;
+const HOVER_DELAY = 120;
 const LEAVE_DELAY = 250;
 /** Largeur minimale du notch agrandi (maquette : panneau de 624 px). */
 const PANEL_MIN_INNER = 624;
@@ -324,10 +324,11 @@ export function Notch({ user, workspace, pendingBookings, unreadNotifications }:
    * Libellé sous le notch (« sous-notch ») pour l'icône survolée ou focalisée : les icônes ne
    * bougent pas, la languette glisse de l'une à l'autre. Les espaces entre icônes la gardent.
    */
-  function pointAt(target: EventTarget, root: HTMLElement) {
+  function pointAt(target: EventTarget, root: HTMLElement, pointer = true) {
     if (!(target instanceof Element) || panel || toastShown || muted.current) return;
     const item = target.closest<HTMLElement>("[data-notch-label]");
-    if (!item) {
+    // À la souris, une icône à menu n'a pas de libellé : son menu s'ouvre, avec son titre.
+    if (!item || (pointer && item.dataset.notchMenu)) {
       if (target.closest("a, button")) hideHint();
       return;
     }
@@ -440,7 +441,7 @@ export function Notch({ user, workspace, pendingBookings, unreadNotifications }:
           // Focus rendu par le code (fermeture d'un panneau) : pas de libellé ; au clavier, si.
           if (!(event.target instanceof Element) || !event.target.matches(":focus-visible")) return;
           muted.current = false;
-          pointAt(event.target, event.currentTarget);
+          pointAt(event.target, event.currentTarget, false);
         }}
         onBlur={(event) => {
           if (!event.currentTarget.contains(event.relatedTarget)) hideHint();

@@ -767,8 +767,10 @@ export function SectionPanel({
       ]
     : CREATE_LINKS.map((link) => ({ ...link, create: true }));
   return (
-    <div className="flex flex-col gap-1">
-      <GroupLabel>{section?.label ?? "Créer"}</GroupLabel>
+    <div className="flex flex-col gap-3">
+      <h2 className="px-2 pt-1 font-headline text-2xl leading-7 text-on-ink">
+        {section?.label ?? "Créer"}
+      </h2>
       <div className={cn("grid gap-2", wide ? "grid-cols-3" : "grid-cols-2")}>
         {cards.map((card) => (
           <Link key={card.href} href={card.href} onClick={onClose} className={CARD}>
