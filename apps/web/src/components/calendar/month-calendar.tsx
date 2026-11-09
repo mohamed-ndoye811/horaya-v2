@@ -1,7 +1,9 @@
 import { rowLinkClasses } from "@/components/ui/button";
+import { PlusIcon } from "@/components/ui/icons";
 import { type CivilDate, civilKey, groupByDay, isAllDay, monthGrid } from "@/lib/calendar";
 import { cn } from "@/lib/cn";
 import { formatHour } from "@/lib/format";
+import { Link } from "@/lib/navigation";
 import { EventChip } from "./event-chip";
 import { calendarCard } from "./time-grid";
 import { type CalendarEvent, WEEKDAY_LABELS } from "./types";
@@ -30,6 +32,8 @@ export function MonthCalendar({
   today,
   maxPerDay = 3,
   moreHref,
+  dayHref,
+  createHref,
 }: {
   year: number;
   month: number;
@@ -39,6 +43,10 @@ export function MonthCalendar({
   maxPerDay?: number;
   /** Lien « + N autres » (vers la vue Jour). */
   moreHref?: (day: CivilDate) => string;
+  /** Numéro du jour cliquable (vers la vue Jour). */
+  dayHref?: (day: CivilDate) => string;
+  /** « + » au survol d'un jour : créer un événement ce jour-là. */
+  createHref?: (day: CivilDate) => string;
 }) {
   const weeks = monthGrid(year, month);
   const byDay = groupByDay(events, timeZone);
@@ -91,29 +99,45 @@ export function MonthCalendar({
                       key={key}
                       aria-current={isToday ? "date" : undefined}
                       className={cn(
-                        "h-[124px] border-r border-line-faint px-2 py-2 align-top last:border-r-0",
+                        "group/day relative h-[124px] border-r border-line-faint px-2 py-2 align-top last:border-r-0",
                         index >= 5 && "bg-band",
                       )}
                     >
+                      {createHref && (
+                        <Link
+                          href={createHref(day)}
+                          tabIndex={-1}
+                          aria-label={`Créer un événement le ${day.day}/${day.month}`}
+                          className="absolute top-2 right-2 flex size-[26px] items-center justify-center rounded-full text-ink-muted opacity-0 transition-opacity group-hover/day:opacity-100 hover:bg-field hover:text-ink"
+                        >
+                          <PlusIcon size={14} />
+                        </Link>
+                      )}
                       <div className="flex min-w-0 flex-col gap-1">
                         {isToday ? (
-                          <div className="flex items-center gap-2">
+                          <DayLink
+                            href={dayHref?.(day)}
+                            label={`Voir le ${day.day}/${day.month}`}
+                            className="flex w-fit items-center gap-2 rounded-full pr-2"
+                          >
                             <span className="flex size-[26px] items-center justify-center rounded-full bg-accent text-sm font-bold leading-[18px] text-ink">
                               {day.day}
                             </span>
                             <span className="text-xs font-bold leading-4 text-ink">
                               Aujourd'hui
                             </span>
-                          </div>
+                          </DayLink>
                         ) : (
-                          <span
+                          <DayLink
+                            href={dayHref?.(day)}
+                            label={`Voir le ${day.day}/${day.month}`}
                             className={cn(
-                              "flex h-[26px] items-center px-1 text-ui font-semibold leading-[18px]",
+                              "flex h-[26px] w-fit items-center rounded-full px-2 text-ui font-semibold leading-[18px]",
                               day.inMonth ? "text-ink" : "text-ink-subtle",
                             )}
                           >
                             {label}
-                          </span>
+                          </DayLink>
                         )}
                         {visible.map((event) => (
                           <EventChip
@@ -149,5 +173,31 @@ export function MonthCalendar({
         </table>
       </div>
     </div>
+  );
+}
+
+/** Numéro du jour : lien vers la vue Jour quand il y en a un, simple texte sinon. */
+function DayLink({
+  href,
+  label,
+  className,
+  children,
+}: {
+  href: string | undefined;
+  /** Nom du lien pour les lecteurs d'écran (« Voir le 18/11 »). */
+  label: string;
+  className: string;
+  children: React.ReactNode;
+}) {
+  return href ? (
+    <Link
+      href={href}
+      aria-label={label}
+      className={cn(className, "transition-colors hover:bg-field")}
+    >
+      {children}
+    </Link>
+  ) : (
+    <span className={className}>{children}</span>
   );
 }

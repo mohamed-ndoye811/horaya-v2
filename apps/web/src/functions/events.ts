@@ -167,7 +167,16 @@ async function resourceChoices(workspaceId: string, modulesList: EventModules[])
   };
 }
 
-export const newEventSearch = z.object({ date: searchText, titre: searchText });
+export const newEventSearch = z.object({
+  date: searchText,
+  titre: searchText,
+  /** Heure de début (« 14:00 »), choisie en cliquant un créneau du calendrier. */
+  heure: z
+    .string()
+    .regex(/^([01]\d|2[0-3]):[0-5]\d$/)
+    .optional()
+    .catch(undefined),
+});
 
 /** Écran 09 (création) : types et valeurs de départ (jour choisi dans le calendrier). */
 export const getNewEvent = createServerFn({ method: "GET" })
@@ -183,7 +192,15 @@ export const getNewEvent = createServerFn({ method: "GET" })
         workspace.id,
         types.map((type) => type.modules),
       ),
-      initial: { ...emptyEventValues(timeZone, day), title: data.titre ?? "" },
+      initial: {
+        ...emptyEventValues(timeZone, day),
+        title: data.titre ?? "",
+        // Créneau cliqué : début à cette heure, fin deux heures plus tard (23 h au plus).
+        ...(data.heure && {
+          startTime: data.heure,
+          endTime: `${String(Math.min(Number(data.heure.slice(0, 2)) + 2, 23)).padStart(2, "0")}${data.heure.slice(2)}`,
+        }),
+      },
     };
   });
 
