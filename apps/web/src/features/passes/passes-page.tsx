@@ -1,10 +1,10 @@
 import { PageHeader } from "@/components/app/page-header";
 import { PresenceItem, PresenceList } from "@/components/motion/presence";
 import { StatusBadge } from "@/components/ui/badge";
-import { ButtonLink } from "@/components/ui/button";
+import { Button, ButtonLink } from "@/components/ui/button";
 import { DataTable } from "@/components/ui/data-table";
 import { EmptyState } from "@/components/ui/empty-state";
-import { PlusIcon } from "@/components/ui/icons";
+import { ExternalIcon, PlusIcon } from "@/components/ui/icons";
 import { ProgressBar } from "@/components/ui/progress";
 import { cardClasses, SectionHeading } from "@/components/ui/section";
 import { MiniStat } from "@/components/ui/stat";
@@ -12,6 +12,7 @@ import type { getPassesPage } from "@/functions/passes";
 import { cn } from "@/lib/cn";
 import { formatMoney, plural } from "@/lib/format";
 import { Link } from "@/lib/navigation";
+import { toast } from "@/lib/toast";
 import { PassPaymentActions } from "./pending-pass-row";
 import { PlanDialog, type PlanFormValues } from "./plan-form";
 import { formatValidity } from "./validity";
@@ -70,9 +71,21 @@ export function PassesPage({
         title="Cartes de séances"
         subtitle="Des forfaits payés d'avance : ton élève achète plusieurs séances d'un coup, puis chaque réservation en décompte une."
         actions={
-          <ButtonLink href="/app/cartes?formule=nouvelle" icon={<PlusIcon />}>
-            Nouvelle formule
-          </ButtonLink>
+          <>
+            {onSale && (
+              <ButtonLink
+                href={`/${slug}/cartes`}
+                target="_blank"
+                variant="secondary"
+                icon={<ExternalIcon size={14} />}
+              >
+                Page de vente
+              </ButtonLink>
+            )}
+            <ButtonLink href="/app/cartes?formule=nouvelle" icon={<PlusIcon />}>
+              Nouvelle formule
+            </ButtonLink>
+          </>
         }
       />
       {plans.length === 0 ? (
@@ -92,6 +105,7 @@ export function PassesPage({
         />
       ) : (
         <div className="flex flex-col pb-4">
+          {onSale && <ShareSalesPage slug={slug} />}
           <div className="grid grid-cols-2 gap-3 px-4 xl:grid-cols-4">
             <MiniStat
               label="Cartes en cours"
@@ -102,28 +116,18 @@ export function PassesPage({
               dark
               label="Séances à honorer"
               value={owed}
-              aside={<span className="text-on-ink-muted">payées, pas encore faites</span>}
+              aside={<span className="text-on-ink-muted">déjà payées</span>}
             />
-            <MiniStat
-              label={`Expirent sous ${SOON_DAYS} jours`}
-              value={soon}
-              aside={soon > 0 ? "pense à relancer" : "rien d'urgent"}
-            />
+            <MiniStat label="Expirent bientôt" value={soon} aside={`sous ${SOON_DAYS} jours`} />
             <MiniStat
               warning={pending.length > 0}
               label="À encaisser"
               value={pending.length}
-              aside={pending.length > 0 ? "demandées sur ta page" : "tout est réglé"}
+              aside={pending.length > 0 ? "à confirmer" : "tout est réglé"}
             />
           </div>
 
-          <SectionHeading
-            title="Formules"
-            meta={plural(plans.length, "formule")}
-            action={
-              onSale ? { label: "Voir ma page de vente", href: `/${slug}/cartes` } : undefined
-            }
-          />
+          <SectionHeading title="Formules" meta={plural(plans.length, "formule")} />
           <ul aria-label="Formules" className="grid gap-3 px-4 sm:grid-cols-2 xl:grid-cols-3">
             {plans.map((plan) => {
               const types =
@@ -308,5 +312,52 @@ export function PassesPage({
         <PlanDialog key={dialog.id ?? "nouvelle"} initial={dialog} eventTypes={eventTypes} />
       )}
     </div>
+  );
+}
+
+/**
+ * Encart sous l'en-tête : où partager la page de vente (bio, newsletter, signature), son lien et
+ * de quoi le copier ou l'ouvrir.
+ */
+function ShareSalesPage({ slug }: { slug: string }) {
+  const path = `/${slug}/cartes`;
+  const copy = () =>
+    navigator.clipboard
+      .writeText(`${window.location.origin}${path}`)
+      .then(() => toast("Lien de ta page de vente copié."))
+      .catch(() =>
+        toast("Copie impossible : ouvre la page et copie l'adresse.", { tone: "error" }),
+      );
+  return (
+    <section className="mx-4 mb-4 flex flex-col gap-4 rounded-3xl bg-surface px-5 py-4 lg:flex-row lg:items-center lg:gap-6">
+      <div className="flex min-w-0 flex-1 flex-col gap-1">
+        <h2 className="text-lg font-semibold leading-6 text-ink">
+          Fais connaître ta page de vente
+        </h2>
+        <p className="text-[15px] font-medium leading-[22px] text-ink-soft">
+          Ajoute le lien dans ta bio Instagram, ta newsletter, ta signature d'e-mail ou tes messages
+          : tes élèves achètent leur carte en ligne, sans passer par toi.
+        </p>
+      </div>
+      <div className="flex min-w-0 flex-wrap items-center gap-2 lg:w-[500px] lg:shrink-0 lg:flex-nowrap">
+        <div className="flex min-w-0 flex-1 basis-64 items-center gap-2 rounded-full bg-field py-1 pr-1 pl-4">
+          <span className="min-w-0 flex-1 truncate font-mono text-[13px] text-ink">
+            horaya.app{path}
+          </span>
+          <Button size="xs" onClick={copy}>
+            Copier le lien
+          </Button>
+        </div>
+        <ButtonLink
+          href={path}
+          target="_blank"
+          size="xs"
+          variant="secondary"
+          icon={<ExternalIcon size={12} />}
+        >
+          Voir ma page
+        </ButtonLink>
+      </div>
+    </section>
   );
 }

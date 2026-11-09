@@ -1,3 +1,4 @@
+import { FabLink } from "@/components/app/fab";
 import { PageHeader } from "@/components/app/page-header";
 import { StatusBadge } from "@/components/ui/badge";
 import { Banner } from "@/components/ui/banner";
@@ -71,14 +72,15 @@ export function GiftCardsPage({
         title="Bons cadeaux"
         subtitle="Un montant à offrir, que le bénéficiaire dépense sur tes réservations. Vendus sur ta page publique ou au comptoir."
         actions={
-          <>
+          // Sur mobile : bouton flottant « Vendre » (les réglages sont dans le menu).
+          <div className="hidden gap-2 lg:flex">
             <ButtonLink href="/app/parametres/bons-cadeaux" variant="secondary">
               Réglages
             </ButtonLink>
             <ButtonLink href={sellHref} icon={<PlusIcon />}>
               Vendre un bon
             </ButtonLink>
-          </>
+          </div>
         }
         toolbar={
           !nothing && (
@@ -249,6 +251,7 @@ export function GiftCardsPage({
           />
         </div>
       )}
+      {!nothing && <FabLink href={sellHref}>Vendre</FabLink>}
       {search.vendre && (
         <SellGiftCardDialog
           amountsCents={amountsCents}

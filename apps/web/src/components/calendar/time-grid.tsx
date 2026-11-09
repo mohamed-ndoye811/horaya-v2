@@ -29,6 +29,8 @@ export function TimeGridCalendar({
   now,
   startHour = 8,
   endHour = 20,
+  dayHref,
+  slotHref,
 }: {
   days: CivilDate[];
   events: CalendarEvent[];
@@ -37,6 +39,10 @@ export function TimeGridCalendar({
   now: Date;
   startHour?: number;
   endHour?: number;
+  /** En-tête d'un jour cliquable (vers la vue Jour). */
+  dayHref?: (day: CivilDate) => string;
+  /** Créneau vide cliquable : créer un événement ce jour, à cette heure. */
+  slotHref?: (day: CivilDate, hour: number) => string;
 }) {
   const allDay = events.filter((event) => isAllDay(event, timeZone));
   const timed = events.filter((event) => !isAllDay(event, timeZone));
@@ -63,12 +69,8 @@ export function TimeGridCalendar({
             {days.map((day) => {
               const isToday = civilKey(day) === todayKey;
               const weekend = isWeekend(day);
-              return (
-                <div
-                  key={civilKey(day)}
-                  aria-current={isToday ? "date" : undefined}
-                  className={cn("flex items-center justify-center gap-2", weekend && "bg-band")}
-                >
+              const content = (
+                <>
                   <span
                     className={cn(
                       "text-xs uppercase leading-4",
@@ -91,6 +93,29 @@ export function TimeGridCalendar({
                       {day.day}
                     </span>
                   )}
+                </>
+              );
+              const className = cn(
+                "flex items-center justify-center gap-2",
+                weekend && "bg-band",
+                dayHref && "transition-colors hover:bg-field",
+              );
+              return dayHref ? (
+                <Link
+                  key={civilKey(day)}
+                  href={dayHref(day)}
+                  aria-current={isToday ? "date" : undefined}
+                  className={className}
+                >
+                  {content}
+                </Link>
+              ) : (
+                <div
+                  key={civilKey(day)}
+                  aria-current={isToday ? "date" : undefined}
+                  className={className}
+                >
+                  {content}
                 </div>
               );
             })}
@@ -157,6 +182,26 @@ export function TimeGridCalendar({
                     backgroundImage: `repeating-linear-gradient(to bottom, ${GRID_LINE} 0 1px, transparent 1px ${100 / hours.length}%)`,
                   }}
                 >
+                  {/* Créneaux vides : un clic crée un événement à cette heure (souris ; au clavier,
+                      le bouton « Nouvel événement »). */}
+                  {slotHref &&
+                    hours.map((hour, slot) => (
+                      <Link
+                        key={hour}
+                        href={slotHref(day, hour)}
+                        tabIndex={-1}
+                        aria-label={`Créer un événement le ${day.day}/${day.month} à ${hour}h`}
+                        className="group absolute inset-x-0 flex justify-end px-2 pt-1 transition-colors hover:bg-ink/[0.035]"
+                        style={{
+                          top: `${(slot / hours.length) * 100}%`,
+                          height: `${100 / hours.length}%`,
+                        }}
+                      >
+                        <span className="text-[11px] font-semibold leading-[14px] text-ink-muted opacity-0 transition-opacity group-hover:opacity-100">
+                          + {hour}h
+                        </span>
+                      </Link>
+                    ))}
                   {placed.map(({ item, top, height, column, columns: count }) => (
                     <EventBlock
                       key={item.id}

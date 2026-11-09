@@ -14,6 +14,8 @@ export const calendarSearch = z.object({
   date: searchText,
   evenement: z.uuid().optional().catch(undefined),
   intervenant: z.uuid().optional().catch(undefined),
+  /** Filtre par type d'événement (puces sous l'en-tête). */
+  type: z.uuid().optional().catch(undefined),
 });
 
 /** Écrans 06 à 08 : événements de la période affichée, types (légende), événement ouvert. */
@@ -42,7 +44,8 @@ export const getCalendar = createServerFn({ method: "GET" })
       rows,
       staff,
       staffFilter: data.intervenant,
-      types: types.map((type) => ({ name: type.name, color: type.color })),
+      types: types.map((type) => ({ id: type.id, name: type.name, color: type.color })),
+      typeFilter: data.type,
       selected: selected && {
         event: selected.event,
         bookings: selected.bookings.map((entry) => ({
