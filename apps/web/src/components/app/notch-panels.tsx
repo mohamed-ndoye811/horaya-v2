@@ -3,15 +3,16 @@
 import { type ComponentType, type ReactNode, useEffect, useId, useRef, useState } from "react";
 import { Avatar } from "@/components/ui/avatar";
 import {
+  ArrowRight,
   BellIcon,
   BoxIcon,
   CalendarIcon,
   DashboardIcon,
   EnterIcon,
+  ExternalIcon,
   PlusIcon,
   ReceiptIcon,
   SearchIcon,
-  SettingsIcon,
   TicketIcon,
   UsersIcon,
 } from "@/components/ui/icons";
@@ -38,20 +39,168 @@ export interface NavItem {
   icon: ComponentType<{ className?: string; size?: number }>;
 }
 
-export const NAV: NavItem[] = [
-  { href: "/app", label: "Accueil", icon: DashboardIcon },
-  { href: "/app/calendrier", label: "Calendrier", icon: CalendarIcon },
-  { href: "/app/evenements", label: "Événements", icon: TicketIcon },
-  { href: "/app/reservations", label: "Réservations", icon: ReceiptIcon },
-  { href: "/app/materiel", label: "Matériel", icon: BoxIcon },
-  { href: "/app/clients", label: "Clients", icon: UsersIcon },
-  { href: "/app/parametres", label: "Réglages", icon: SettingsIcon },
+export interface NavLink {
+  href: string;
+  label: string;
+  /** Sous le titre de sa carte, dans le menu du notch. */
+  detail: string;
+  /** Libellé de la puce dans le menu mobile ; sans lui, le lien n'y figure pas. */
+  chip?: string;
+  /** Lien vers les réservations à valider : il porte leur nombre. */
+  pending?: boolean;
+}
+
+export interface NavSection extends NavItem {
+  /** Menu de la section : la languette du notch au survol, les puces du menu mobile. */
+  links: NavLink[];
+  create?: NavLink;
+}
+
+/** L'accueil : le logo du notch, une ligne du menu mobile. */
+export const HOME: NavSection = { href: "/app", label: "Accueil", icon: DashboardIcon, links: [] };
+
+/** Les sections du notch ; les réglages sont dans le compte (l'avatar). */
+export const NAV: NavSection[] = [
+  {
+    href: "/app/calendrier",
+    label: "Calendrier",
+    icon: CalendarIcon,
+    links: [
+      { href: "/app/calendrier?vue=mois", label: "Mois", detail: "Le mois d'un coup d'œil" },
+      {
+        href: "/app/calendrier?vue=semaine",
+        label: "Semaine",
+        detail: "Tes créneaux, heure par heure",
+      },
+      { href: "/app/calendrier?vue=jour", label: "Jour", detail: "Le programme de la journée" },
+      {
+        href: "/app/evenements/liens",
+        label: "Liens calendrier",
+        detail: "Google, Apple, Outlook",
+        chip: "Liens",
+      },
+    ],
+  },
+  {
+    href: "/app/evenements",
+    label: "Événements",
+    icon: TicketIcon,
+    links: [
+      {
+        href: "/app/evenements",
+        label: "Tous les événements",
+        detail: "À venir, brouillons, passés",
+      },
+      { href: "/app/evenements?onglet=draft", label: "Brouillons", detail: "Pas encore publiés" },
+      {
+        href: "/app/evenements/types",
+        label: "Types d'événements",
+        detail: "Modèles, questions, règles",
+        chip: "Types",
+      },
+      {
+        href: "/app/cartes",
+        label: "Cartes de séances",
+        detail: "Formules à plusieurs séances",
+        chip: "Cartes",
+      },
+    ],
+    create: {
+      href: "/app/evenements/nouveau",
+      label: "Nouvel événement",
+      detail: "Une séance, un stage, un atelier",
+    },
+  },
+  {
+    href: "/app/reservations",
+    label: "Réservations",
+    icon: ReceiptIcon,
+    links: [
+      { href: "/app/reservations", label: "Toutes", detail: "Confirmées, en attente, annulées" },
+      {
+        href: "/app/reservations?statut=pending",
+        label: "À valider",
+        detail: "Les demandes à accepter",
+        pending: true,
+      },
+    ],
+    create: {
+      href: "/app/reservations/nouvelle",
+      label: "Nouvelle réservation",
+      detail: "Au comptoir ou par téléphone",
+    },
+  },
+  {
+    href: "/app/materiel",
+    label: "Matériel",
+    icon: BoxIcon,
+    links: [
+      { href: "/app/materiel", label: "Tous les articles", detail: "Stock, prix, disponibilité" },
+      {
+        href: "/app/materiel?filtre=maintenance",
+        label: "En maintenance",
+        detail: "Les articles indisponibles",
+      },
+    ],
+    create: {
+      href: "/app/materiel/nouveau",
+      label: "Nouvel article",
+      detail: "Du matériel à louer",
+    },
+  },
+  {
+    href: "/app/clients",
+    label: "Clients",
+    icon: UsersIcon,
+    links: [
+      { href: "/app/clients", label: "Tous les clients", detail: "Fiches, historique, notes" },
+      {
+        href: "/app/bons-cadeaux",
+        label: "Bons cadeaux",
+        detail: "Vendus, utilisés, en cours",
+        chip: "Bons cadeaux",
+      },
+    ],
+    create: { href: "/app/clients/nouveau", label: "Nouveau client", detail: "Une nouvelle fiche" },
+  },
+];
+
+/** Menu du bouton « Créer » : la réservation au comptoir d'abord. */
+export const CREATE_LINKS: NavLink[] = [
+  {
+    href: "/app/reservations/nouvelle",
+    label: "Réservation",
+    detail: "Au comptoir ou par téléphone",
+  },
+  {
+    href: "/app/evenements/nouveau",
+    label: "Événement",
+    detail: "Une séance, un stage, un atelier",
+  },
+  { href: "/app/clients/nouveau", label: "Client", detail: "Une nouvelle fiche" },
+  { href: "/app/bons-cadeaux/nouveau", label: "Bon cadeau", detail: "À offrir ou à vendre" },
+  { href: "/app/materiel/nouveau", label: "Article", detail: "Du matériel à louer" },
 ];
 
 export function isActive(pathname: string, href: string) {
   return href === "/app"
     ? pathname === "/app"
     : pathname === href || pathname.startsWith(`${href}/`);
+}
+
+/**
+ * Section de la page ouverte : la correspondance la plus précise parmi les sections et les pages
+ * de leurs menus (« Liens calendrier » est sous /app/evenements mais range au Calendrier).
+ */
+export function activeSection(pathname: string): string | undefined {
+  let best: { section: string; length: number } | undefined;
+  for (const section of NAV) {
+    for (const href of [section.href, ...section.links.map((link) => link.href.split("?")[0])]) {
+      if (href && isActive(pathname, href) && href.length > (best?.length ?? 0))
+        best = { section: section.href, length: href.length };
+    }
+  }
+  return best?.section;
 }
 
 export function GroupLabel({ children }: { children: ReactNode }) {
@@ -99,7 +248,7 @@ interface Choice {
   href: string;
   group: string;
   hit?: SearchHit;
-  kind: "event" | "item" | "customer" | "booking" | "action";
+  kind: "event" | "item" | "customer" | "booking" | "page" | "action";
   label: ReactNode;
 }
 
@@ -163,6 +312,18 @@ export function SearchPanel({
   }, [request, skip]);
 
   const choices: Choice[] = [
+    // Les pages d'abord : elles s'affichent aussitôt, sans attendre le serveur.
+    ...(searching
+      ? PAGES.filter((page) => fold(page.label).includes(fold(trimmed)))
+          .slice(0, 4)
+          .map((page) => ({
+            key: `page-${page.href}`,
+            href: page.href,
+            group: "Pages",
+            kind: "page" as const,
+            label: <Highlight text={page.label} query={trimmed} />,
+          }))
+      : []),
     ...(searching
       ? []
       : results.bookings.map((hit) => ({
@@ -335,7 +496,8 @@ export function SearchPanel({
         )}
         {/* Créer et raccourcis clavier à droite. */}
         <div className={cn("flex flex-col gap-3.5", wide && "border-l border-white/8 pl-6")}>
-          {renderGroup(CREATE_GROUP)}
+          {/* Menu mobile sans recherche : les créations sont des puces, sous la recherche. */}
+          {!(sheet && !searching) && renderGroup(CREATE_GROUP)}
           {!sheet && (
             <div
               className={cn(
@@ -399,12 +561,16 @@ function SearchRow({
       onClick={onPick}
       className={cn(
         "flex shrink-0 cursor-pointer items-center gap-3 rounded-[14px] px-2",
-        kind === "action" ? "h-11" : kind === "customer" ? "h-[52px]" : "h-14",
+        kind === "action" || kind === "page" ? "h-11" : kind === "customer" ? "h-[52px]" : "h-14",
         active && "bg-white/8",
       )}
     >
       {kind === "customer" && hit ? (
         <Avatar name={hit.title} size="lg" />
+      ) : kind === "page" ? (
+        <span className="flex h-8 w-10 shrink-0 items-center justify-center text-notch-idle">
+          <ArrowRight className="size-3.5" />
+        </span>
       ) : kind === "action" ? (
         <span className="flex h-8 w-10 shrink-0 items-center justify-center text-accent">
           <PlusIcon size={18} />
@@ -572,6 +738,57 @@ function NotificationList({
   );
 }
 
+/** Carte d'un panneau du notch : titre et ligne de détail (réglages, menus des sections). */
+const CARD =
+  "flex flex-col gap-1 rounded-[14px] bg-white/6 px-3.5 py-3 transition-colors hover:bg-white/12";
+
+/**
+ * Menu d'une section (ou du bouton Créer), ouvert au survol de son icône : ses pages en cartes,
+ * comme les réglages du compte ; la création de la section en premier.
+ */
+export function SectionPanel({
+  menu,
+  pending,
+  onClose,
+  wide,
+}: {
+  /** Adresse de la section, ou « create ». */
+  menu: string;
+  /** Réservations à valider, sur la carte « À valider ». */
+  pending: number;
+  onClose: () => void;
+  wide: boolean;
+}) {
+  const section = NAV.find((item) => item.href === menu);
+  const cards = section
+    ? [
+        ...(section.create ? [{ ...section.create, create: true }] : []),
+        ...section.links.map((link) => ({ ...link, create: false })),
+      ]
+    : CREATE_LINKS.map((link) => ({ ...link, create: true }));
+  return (
+    <div className="flex flex-col gap-1">
+      <GroupLabel>{section?.label ?? "Créer"}</GroupLabel>
+      <div className={cn("grid gap-2", wide ? "grid-cols-3" : "grid-cols-2")}>
+        {cards.map((card) => (
+          <Link key={card.href} href={card.href} onClick={onClose} className={CARD}>
+            <span className="flex items-center gap-1.5 text-[15px] font-semibold leading-[19px] text-on-ink">
+              {card.create && <PlusIcon size={14} className="shrink-0 text-accent" />}
+              <span className="truncate">{card.label}</span>
+              {card.pending && pending > 0 && (
+                <span className="flex h-5 shrink-0 items-center rounded-full bg-accent px-2 text-xs font-bold leading-4 text-ink">
+                  {pending}
+                </span>
+              )}
+            </span>
+            <span className="truncate text-[13px] leading-4 text-on-ink-subtle">{card.detail}</span>
+          </Link>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 const COCKPIT_LINK = {
   href: "/app/plateforme",
   label: "Cockpit",
@@ -604,6 +821,19 @@ const ACCOUNT_LINKS = [
   },
 ];
 
+/** Pages que la recherche trouve par leur nom (« types », « abonnement »). */
+const PAGES = [
+  HOME,
+  ...NAV.flatMap((section) => [
+    section,
+    ...section.links.filter((link) => !link.href.includes("?") && link.href !== section.href),
+  ]),
+  ...ACCOUNT_LINKS.map((link) => ({ href: link.href, label: `Réglages · ${link.label}` })),
+];
+
+/** Minuscules sans accents : « evenement » trouve « Événements ». */
+const fold = (text: string) => text.normalize("NFD").replace(/\p{M}/gu, "").toLowerCase();
+
 export interface AccountUser {
   name: string;
   image: string | null;
@@ -617,11 +847,14 @@ export function AccountPanel({
   workspace,
   onClose,
   wide,
+  compact = false,
 }: {
   user: AccountUser;
-  workspace: { name: string };
+  workspace: { name: string; slug: string };
   onClose: () => void;
   wide: boolean;
+  /** Menu mobile : pas de grille des réglages, un lien vers leur page ; la page publique est plus haut. */
+  compact?: boolean;
 }) {
   const router = useRouter();
   const [pending, setPending] = useState(false);
@@ -637,31 +870,28 @@ export function AccountPanel({
     "flex h-11 w-full items-center rounded-[14px] px-2 text-left text-[15px] font-semibold leading-[19px] transition-colors hover:bg-white/8";
   return (
     <div className={wide ? "grid grid-cols-[minmax(0,1fr)_280px] gap-6" : "flex flex-col gap-3.5"}>
-      <div className="flex min-w-0 flex-col gap-1">
-        <GroupLabel>Paramètres</GroupLabel>
-        <div className={cn("grid gap-2", wide ? "grid-cols-3" : "grid-cols-2")}>
-          {(user.platformAdmin ? [...ACCOUNT_LINKS, COCKPIT_LINK] : ACCOUNT_LINKS).map((link) => (
-            <Link
-              key={link.href}
-              href={link.href}
-              onClick={onClose}
-              className="flex flex-col gap-1 rounded-[14px] bg-white/6 px-3.5 py-3 transition-colors hover:bg-white/12"
-            >
-              <span className="truncate text-[15px] font-semibold leading-[19px] text-on-ink">
-                {link.label}
-              </span>
-              <span className="truncate text-[13px] leading-4 text-on-ink-subtle">
-                {link.detail}
-              </span>
-            </Link>
-          ))}
+      {!compact && (
+        <div className="flex min-w-0 flex-col gap-1">
+          <GroupLabel>Paramètres</GroupLabel>
+          <div className={cn("grid gap-2", wide ? "grid-cols-3" : "grid-cols-2")}>
+            {(user.platformAdmin ? [...ACCOUNT_LINKS, COCKPIT_LINK] : ACCOUNT_LINKS).map((link) => (
+              <Link key={link.href} href={link.href} onClick={onClose} className={CARD}>
+                <span className="truncate text-[15px] font-semibold leading-[19px] text-on-ink">
+                  {link.label}
+                </span>
+                <span className="truncate text-[13px] leading-4 text-on-ink-subtle">
+                  {link.detail}
+                </span>
+              </Link>
+            ))}
+          </div>
         </div>
-      </div>
+      )}
       {/* Qui est connecté, et la sortie. */}
       <div
         className={cn(
           "flex flex-col gap-3",
-          wide ? "border-l border-white/8 pt-2 pl-6" : "border-t border-white/8 pt-3",
+          wide ? "border-l border-white/8 pt-2 pl-6" : !compact && "border-t border-white/8 pt-3",
         )}
       >
         <div className="flex items-center gap-3 px-2">
@@ -674,12 +904,33 @@ export function AccountPanel({
               {workspace.name}
             </span>
           </span>
+          {compact && (
+            <Link
+              href="/app/plus"
+              onClick={onClose}
+              className="ml-auto flex h-9 shrink-0 items-center rounded-full bg-white/8 px-3.5 text-[13px] font-semibold leading-4 text-on-ink transition-colors hover:bg-white/12"
+            >
+              Réglages
+            </Link>
+          )}
         </div>
+        {!compact && (
+          <a
+            href={`/${workspace.slug}`}
+            target="_blank"
+            rel="noopener"
+            onClick={onClose}
+            className={cn(row, "gap-2 text-on-ink", wide && "mt-auto")}
+          >
+            Ma page publique
+            <ExternalIcon size={14} className="text-notch-idle" />
+          </a>
+        )}
         <button
           type="button"
           onClick={signOut}
           disabled={pending}
-          className={cn(row, "text-danger-on-ink", wide && "mt-auto")}
+          className={cn(row, "text-danger-on-ink")}
         >
           {pending ? "Déconnexion…" : "Se déconnecter"}
         </button>

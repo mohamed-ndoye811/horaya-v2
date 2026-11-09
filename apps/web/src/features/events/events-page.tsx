@@ -135,25 +135,8 @@ export function EventsPage({
         title="Événements"
         subtitle={`${counts.all} événement${counts.all > 1 ? "s" : ""} · ${counts.published} à venir · ${counts.draft} brouillon${counts.draft > 1 ? "s" : ""}`}
         actions={
-          <>
-            {/* Sur mobile, ces pages sont dans l'onglet « Plus ». */}
-            <div className="hidden gap-2 lg:flex">
-              <ButtonLink href="/app/evenements/liens" variant="secondary" title="Liens calendrier">
-                Calendriers
-              </ButtonLink>
-              <ButtonLink
-                href="/app/evenements/types"
-                variant="secondary"
-                title="Types d'événements"
-              >
-                Types
-              </ButtonLink>
-              <ButtonLink href="/app/cartes" variant="secondary" title="Cartes de séances">
-                Cartes
-              </ButtonLink>
-            </div>
-            <div className="hidden lg:flex">{newEventButton}</div>
-          </>
+          // Types, liens et cartes : dans le menu Événements du notch (et du menu mobile).
+          <div className="hidden lg:flex">{newEventButton}</div>
         }
         toolbar={
           <>
