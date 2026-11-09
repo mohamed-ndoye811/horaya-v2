@@ -35,6 +35,7 @@ export async function listPublicPassPlans(db: Executor, organizationId: string) 
       sessions: passPlan.sessions,
       priceCents: passPlan.priceCents,
       validityDays: passPlan.validityDays,
+      eventTypeIds: passPlan.eventTypeIds,
     })
     .from(passPlan)
     .where(and(eq(passPlan.organizationId, organizationId), isNull(passPlan.archivedAt)))

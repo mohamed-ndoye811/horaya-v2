@@ -118,7 +118,19 @@ export const getPublicPassesPage = createServerFn({ method: "GET" })
   .validator(slug)
   .handler(async ({ data }) => {
     const workspace = await publicWorkspace(data);
-    return { workspace, plans: await listPublicPassPlans(db, workspace.id) };
+    const [plans, types] = await Promise.all([
+      listPublicPassPlans(db, workspace.id),
+      listEventTypes(db, workspace.id),
+    ]);
+    const names = new Map(types.map((type) => [type.id, type.name]));
+    return {
+      workspace,
+      // Ce que la carte permet de réserver, en clair (aucun type : tout).
+      plans: plans.map(({ eventTypeIds, ...plan }) => ({
+        ...plan,
+        types: eventTypeIds.flatMap((id) => names.get(id) ?? []),
+      })),
+    };
   });
 
 export const getPassThanksPage = createServerFn({ method: "GET" })
