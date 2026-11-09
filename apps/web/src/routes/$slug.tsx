@@ -1,9 +1,11 @@
 import { createFileRoute, Outlet } from "@tanstack/react-router";
+import { useRef } from "react";
 import { RouteTransition } from "@/components/motion/route-transition";
 import { ScrollZone } from "@/components/motion/scroll-zone";
 import { brandStyle, contactHref, PublicFooter } from "@/components/public/public-chrome";
 import { PublicNotch } from "@/components/public/public-notch";
 import { getPublicWorkspace } from "@/functions/public";
+import { useFrameThemeColor } from "@/lib/theme-color";
 
 /**
  * Pages publiques d'un espace : horaya.app/<adresse>. Sur grand écran, cadre sombre et notch
@@ -16,8 +18,11 @@ export const Route = createFileRoute("/$slug")({
 
 function PublicLayout() {
   const workspace = Route.useLoaderData();
+  const frame = useRef<HTMLDivElement>(null);
+  useFrameThemeColor(frame);
   return (
     <div
+      ref={frame}
       style={brandStyle(workspace.brandColor)}
       className="flex min-h-dvh flex-col bg-bg lg:h-dvh lg:bg-ink lg:p-1.5 print:h-auto print:bg-white print:p-0"
     >

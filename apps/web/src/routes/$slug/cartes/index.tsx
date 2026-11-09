@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { PassPurchaseForm } from "@/features/public/pass-purchase-form";
+import { PassesShowcase } from "@/features/public/pass-purchase-form";
 import { getPublicPassesPage } from "@/functions/passes";
 
 /** Page publique « Les cartes de séances » : formules de l'organisateur et coordonnées. */
@@ -20,5 +20,5 @@ function PassesPublicPage() {
         </p>
       </section>
     );
-  return <PassPurchaseForm workspace={workspace} plans={plans} />;
+  return <PassesShowcase workspace={workspace} plans={plans} />;
 }
