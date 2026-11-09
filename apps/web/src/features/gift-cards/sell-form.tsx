@@ -77,6 +77,7 @@ export function SellGiftCardDialog({
                   inputMode="decimal"
                   required
                   placeholder={amountsCents.length > 0 ? "Autre" : "50"}
+                  autoFocus
                   onChange={(event) => setPicked(event.target.value)}
                   suffix="€"
                   mono
@@ -151,7 +152,7 @@ export function SellGiftCardDialog({
         <Checkbox
           name="paid"
           defaultChecked
-          label="Déjà encaissé : le bon est actif tout de suite et l'acheteur le reçoit par e-mail"
+          label="Déjà encaissé : le bon part tout de suite par e-mail"
         />
       </form>
     </Dialog>

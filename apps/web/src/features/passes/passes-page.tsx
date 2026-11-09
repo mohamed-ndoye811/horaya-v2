@@ -4,7 +4,7 @@ import { StatusBadge } from "@/components/ui/badge";
 import { ButtonLink } from "@/components/ui/button";
 import { DataTable } from "@/components/ui/data-table";
 import { EmptyState } from "@/components/ui/empty-state";
-import { ExternalIcon, PlusIcon } from "@/components/ui/icons";
+import { PlusIcon } from "@/components/ui/icons";
 import { ProgressBar } from "@/components/ui/progress";
 import { cardClasses, SectionHeading } from "@/components/ui/section";
 import { MiniStat } from "@/components/ui/stat";
@@ -70,21 +70,9 @@ export function PassesPage({
         title="Cartes de séances"
         subtitle="Des forfaits payés d'avance : ton élève achète plusieurs séances d'un coup, puis chaque réservation en décompte une."
         actions={
-          <>
-            {onSale && (
-              <ButtonLink
-                href={`/${slug}/cartes`}
-                target="_blank"
-                variant="secondary"
-                icon={<ExternalIcon size={14} />}
-              >
-                Voir ma page de vente
-              </ButtonLink>
-            )}
-            <ButtonLink href="/app/cartes?formule=nouvelle" icon={<PlusIcon />}>
-              Nouvelle formule
-            </ButtonLink>
-          </>
+          <ButtonLink href="/app/cartes?formule=nouvelle" icon={<PlusIcon />}>
+            Nouvelle formule
+          </ButtonLink>
         }
       />
       {plans.length === 0 ? (
@@ -129,7 +117,13 @@ export function PassesPage({
             />
           </div>
 
-          <SectionHeading title="Formules" meta={plural(plans.length, "formule")} />
+          <SectionHeading
+            title="Formules"
+            meta={plural(plans.length, "formule")}
+            action={
+              onSale ? { label: "Voir ma page de vente", href: `/${slug}/cartes` } : undefined
+            }
+          />
           <ul aria-label="Formules" className="grid gap-3 px-4 sm:grid-cols-2 xl:grid-cols-3">
             {plans.map((plan) => {
               const types =
@@ -281,6 +275,7 @@ export function PassesPage({
                       value={row.balance}
                       max={row.sessionsTotal}
                       label={`${row.balance} séances restantes sur ${row.sessionsTotal}`}
+                      className="w-36"
                     />
                   </span>
                 ),

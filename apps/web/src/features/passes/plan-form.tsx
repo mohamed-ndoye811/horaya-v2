@@ -128,6 +128,10 @@ export function PlanDialog({
               maxLength={80}
               defaultValue={initial.name}
               placeholder="Carte 10 séances"
+              autoFocus
+              // Nom d'une formule, pas d'une personne : pas de suggestion des gestionnaires de mots de passe.
+              autoComplete="off"
+              data-1p-ignore
               className={inputClasses("xs")}
             />
           )}

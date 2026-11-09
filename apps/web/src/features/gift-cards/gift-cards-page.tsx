@@ -102,7 +102,11 @@ export function GiftCardsPage({
                 collapse
                 label="Filtrer par statut"
                 value={etat ?? "all"}
-                segments={FILTERS.map((filter) => ({
+                // Statuts vides masqués (sauf le filtre en cours) : la barre reste courte.
+                segments={FILTERS.filter(
+                  (filter) =>
+                    filter.value === "all" || filter.value === etat || count(filter.value) > 0,
+                ).map((filter) => ({
                   ...filter,
                   count: filter.value === "all" ? cards.length : count(filter.value),
                   alert: filter.value === "pending",
@@ -267,6 +271,7 @@ function Balance({ balance, initial }: { balance: number; initial: number }) {
         value={balance}
         max={initial}
         label={`${formatMoney(balance)} restants sur ${formatMoney(initial)}`}
+        className="w-36"
       />
     </span>
   );
