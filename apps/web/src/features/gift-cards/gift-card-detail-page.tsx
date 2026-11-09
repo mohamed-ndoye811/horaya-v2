@@ -67,7 +67,7 @@ export function GiftCardDetailPage({ data }: { data: Awaited<ReturnType<typeof g
             <p className="text-[40px] font-semibold leading-[44px] tracking-[-0.03em]">
               <CountUp value={formatMoney(card.balanceCents)} />
             </p>
-            <p className="text-[13px] leading-[18px] text-on-ink-muted">
+            <p className="text-meta leading-[18px] text-on-ink-muted">
               sur {formatMoney(card.initialCents)}
               {card.expiresAt && ` · jusqu'au ${formatGiftCardDate(card.expiresAt, timeZone)}`}
             </p>

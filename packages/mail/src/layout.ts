@@ -57,7 +57,7 @@ function palette(brand: LayoutInput["brand"]) {
       bg: "#EDEDEB",
       ink: "#111111",
       text: "#4A4A4A",
-      muted: "#8A8A8A",
+      muted: "#767676",
       line: "#EEEEEC",
       button: "#111111",
       onButton: "#F7F5F3",

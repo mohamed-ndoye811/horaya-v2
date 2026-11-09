@@ -8,7 +8,7 @@ type SelectVariant = "field" | "filter" | "compact" | "dense" | "pill";
 const variants: Record<SelectVariant, string> = {
   /** Dans un formulaire : comme un champ texte. */
   field:
-    "h-11 rounded-xl border border-line-soft bg-field pl-3.5 pr-10 text-base font-medium focus:border-ink focus:bg-surface lg:text-[15px]",
+    "h-11 rounded-xl border border-line-soft bg-field pl-3.5 pr-10 text-base font-medium focus:border-ink focus:bg-surface lg:text-ui",
   /** Filtre de liste : pilule blanche, texte gras. */
   filter:
     "h-10 rounded-full bg-surface pl-4 pr-10 text-base font-semibold hover:bg-field lg:text-sm",
@@ -17,9 +17,9 @@ const variants: Record<SelectVariant, string> = {
     "h-10 rounded-xl border border-line-soft bg-field pl-3.5 pr-10 text-base font-semibold focus:border-ink focus:bg-surface lg:text-sm",
   /** 36 px, dans une ligne dense (constructeur de règle) : va avec `inputClasses("xs")`. */
   dense:
-    "h-9 rounded-xl border border-line-soft bg-field pl-3 pr-8 text-base font-semibold focus:border-ink focus:bg-surface lg:text-[13px]",
+    "h-9 rounded-xl border border-line-soft bg-field pl-3 pr-8 text-base font-semibold focus:border-ink focus:bg-surface lg:text-meta",
   /** 32 px, pastille d'une ligne de réglage (« toutes les 30 min ⌄ ») : va avec `SettingRow`. */
-  pill: "h-8 rounded-lg border border-bg bg-field pl-2.5 pr-7 text-base font-semibold focus:border-ink lg:text-[13px]",
+  pill: "h-8 rounded-lg border border-bg bg-field pl-2.5 pr-7 text-base font-semibold focus:border-ink lg:text-meta",
 };
 
 /**

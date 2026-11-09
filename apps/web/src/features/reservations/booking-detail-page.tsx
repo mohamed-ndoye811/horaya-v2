@@ -85,7 +85,7 @@ function CardTitle({ children, count }: { children: ReactNode; count?: number })
     <h2 className="flex items-baseline gap-2 text-base font-semibold leading-5 text-ink">
       {children}
       {count !== undefined && (
-        <span className="text-[13px] font-normal leading-[17px] text-ink-subtle">{count}</span>
+        <span className="text-meta font-normal leading-[17px] text-ink-subtle">{count}</span>
       )}
     </h2>
   );
@@ -118,7 +118,7 @@ function Tile({
       >
         {label}
       </dt>
-      <dd className="font-headline text-[28px] leading-8 tracking-[-0.03em] text-ink">{value}</dd>
+      <dd className="font-headline text-subtitle tracking-[-0.03em] text-ink">{value}</dd>
       <dd
         className={cn(
           "text-xs leading-4",
@@ -299,10 +299,10 @@ export function BookingDetailPage({ data }: { data: Awaited<ReturnType<typeof ge
                 </svg>
               </span>
               <div className="flex min-w-0 flex-1 basis-60 flex-col gap-0.5">
-                <h2 className="text-[15px] font-bold leading-[19px] text-warning-strong">
+                <h2 className="text-ui font-bold leading-[19px] text-warning-strong">
                   {booking.customer.firstName} attend ta réponse depuis {waiting}
                 </h2>
-                <p className="text-[13px] leading-[17px] text-warning-strong">
+                <p className="text-meta leading-[17px] text-warning-strong">
                   {paysOnline && booking.amountCents > 0
                     ? `Le lien de paiement en ligne (${formatMoney(booking.amountCents)}) part dès que tu valides.`
                     : "Un e-mail de confirmation part dès que tu valides."}
@@ -341,7 +341,7 @@ export function BookingDetailPage({ data }: { data: Awaited<ReturnType<typeof ge
                         {booking.event.title}
                       </span>
                     </div>
-                    <p className="text-[13px] leading-[17px] text-ink-subtle">
+                    <p className="text-meta leading-[17px] text-ink-subtle">
                       {formatEventRange(booking.event.startsAt, booking.event.endsAt, timeZone)}
                       {booking.event.locationName ? ` · ${booking.event.locationName}` : ""}
                     </p>
@@ -413,7 +413,7 @@ export function BookingDetailPage({ data }: { data: Awaited<ReturnType<typeof ge
                 <h2 className="text-lg font-semibold leading-[22px] text-ink">
                   Location de matériel
                 </h2>
-                <p className="text-[13px] leading-[17px] text-ink-subtle">
+                <p className="text-meta leading-[17px] text-ink-subtle">
                   {formatEventRange(booking.rentalStartsAt, booking.rentalEndsAt, timeZone)}
                 </p>
               </div>
@@ -473,7 +473,7 @@ export function BookingDetailPage({ data }: { data: Awaited<ReturnType<typeof ge
           {booking.customerMessage && (
             <section className={cn(card, "gap-2.5")}>
               <CardTitle>Message du client</CardTitle>
-              <blockquote className="rounded-2xl border-l-[3px] border-line-strong bg-field px-4 py-3.5 text-[15px] leading-[22px] text-ink-soft">
+              <blockquote className="rounded-2xl border-l-[3px] border-line-strong bg-field px-4 py-3.5 text-ui leading-[22px] text-ink-soft">
                 « {booking.customerMessage} »
               </blockquote>
             </section>
@@ -519,7 +519,7 @@ export function BookingDetailPage({ data }: { data: Awaited<ReturnType<typeof ge
                         )}
                       </span>
                       {rows.length > 0 && (
-                        <span className="text-[13px] leading-[17px] text-ink-subtle">
+                        <span className="text-meta leading-[17px] text-ink-subtle">
                           {rows.map((row) => `${row.label} : ${row.value}`).join(" · ")}
                         </span>
                       )}
@@ -618,7 +618,7 @@ export function BookingDetailPage({ data }: { data: Awaited<ReturnType<typeof ge
                 <span className="truncate text-[17px] font-semibold leading-[22px] text-ink">
                   {name}
                 </span>
-                <span className="truncate text-[13px] leading-[17px] text-ink-subtle">
+                <span className="truncate text-meta leading-[17px] text-ink-subtle">
                   {/* Un toucher écrit ou appelle le client. */}
                   {booking.customer.email && (
                     <a href={`mailto:${booking.customer.email}`} className={contactLinkClasses}>
@@ -648,7 +648,7 @@ export function BookingDetailPage({ data }: { data: Awaited<ReturnType<typeof ge
                   className="flex min-w-0 flex-1 basis-0 flex-col gap-0.5 rounded-[14px] bg-field p-3"
                 >
                   <dt className="order-2 text-xs leading-4 text-ink-subtle">{label}</dt>
-                  <dd className="font-headline text-[22px] leading-[26px] tracking-[-0.02em] text-ink">
+                  <dd className="font-headline text-section leading-[26px] tracking-[-0.02em] text-ink">
                     {value}
                   </dd>
                 </div>

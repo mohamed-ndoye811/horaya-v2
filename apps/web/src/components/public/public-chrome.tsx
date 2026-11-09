@@ -78,7 +78,7 @@ export function PublicFooter({
   return (
     // Mobile : coordonnées, puis mentions légales et logo aux deux bouts d'une même ligne.
     // Grand écran : tout sur une ligne, le logo à droite.
-    <footer className="flex flex-col gap-2 px-5 pt-2 pb-5 text-[13px] leading-4 text-ink-subtle sm:flex-row sm:items-center sm:gap-1">
+    <footer className="flex flex-col gap-2 px-5 pt-2 pb-5 text-meta leading-4 text-ink-subtle sm:flex-row sm:items-center sm:gap-1">
       <p>
         {details.join(" · ")}
         <span className="max-sm:hidden"> ·</span>

@@ -37,7 +37,7 @@ export function PaymentLinkForm() {
         )}
       </Field>
       <div className="flex flex-col gap-3 rounded-[20px] bg-surface px-[18px] py-4">
-        <p className="text-[13px] font-semibold text-ink-subtle">Comment ça marche</p>
+        <p className="text-meta font-semibold text-ink-subtle">Comment ça marche</p>
         <ol className="flex flex-col gap-2.5">
           {HOW_IT_WORKS.map((line, index) => (
             <li key={line} className="flex items-center gap-3 text-sm leading-5 text-ink">

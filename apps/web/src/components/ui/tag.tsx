@@ -32,7 +32,7 @@ export function Tag({
       className={cn(
         "inline-flex shrink-0 items-center rounded-full",
         size === "lg"
-          ? "h-[26px] px-[11px] text-[13px] leading-4"
+          ? "h-[26px] px-[11px] text-meta leading-4"
           : "h-[22px] px-2.5 text-xs leading-4",
         tones[tone],
       )}

@@ -168,7 +168,7 @@ export function InventoryPage({
             stats.maintenanceUnits > 0 ? (
               <Link
                 href={href({ filtre: "maintenance" })}
-                className="text-[13px] font-semibold leading-[17px] hover:underline"
+                className="text-meta font-semibold leading-[17px] hover:underline"
               >
                 Planifier la maintenance →
               </Link>
@@ -181,7 +181,7 @@ export function InventoryPage({
 
       {counts.all === 0 ? (
         <EmptyState
-          title="Pas encore de matériel."
+          title="L'établi est vide : ajoute ton matériel."
           description="Ajoute ton matériel (vidéoprojecteurs, micros, mobilier…) : tu pourras le réserver pour tes événements ou le louer, sans jamais prêter deux fois le même exemplaire."
           actions={
             <ButtonLink href="/app/materiel/nouveau" arrow>
@@ -280,7 +280,7 @@ export function InventoryPage({
                 // Entre 1024 et 1280 px : la catégorie est la colonne la moins utile.
                 hideBelow: "xl",
                 cell: (row) => (
-                  <span className="truncate text-[13px] leading-[17px] text-ink-soft">
+                  <span className="truncate text-meta leading-[17px] text-ink-soft">
                     {row.typeName ?? "—"}
                   </span>
                 ),
@@ -329,7 +329,7 @@ type ItemListRow = Awaited<ReturnType<typeof getInventory>>["rows"][number];
 function Availability({ row }: { row: ItemListRow }) {
   return (
     <div className="flex w-full items-center gap-2.5">
-      <span className="w-12 shrink-0 text-[13px] font-semibold leading-[17px] text-ink">
+      <span className="w-12 shrink-0 text-meta font-semibold leading-[17px] text-ink">
         {row.availableNow} <span className="font-normal text-ink-subtle">/ {row.units}</span>
       </span>
       <ProgressBar
@@ -372,7 +372,7 @@ function NextOuting({ row, now, timeZone }: { row: ItemListRow; now: Date; timeZ
     <div className="flex min-w-0 flex-col gap-px pl-6">
       <span
         className={cn(
-          "truncate text-[13px] font-semibold leading-[17px]",
+          "truncate text-meta font-semibold leading-[17px]",
           maintenance ? "text-warning" : current ? "text-info" : "text-ink",
         )}
       >

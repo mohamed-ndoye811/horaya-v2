@@ -175,7 +175,7 @@ export function PlatformUsersPage({ data }: { data: Data }) {
           card={(row) => (
             <div className="flex items-start gap-3">
               <div className="flex min-w-0 flex-1 flex-col gap-1">
-                <span className="truncate text-[15px] font-semibold text-ink">{row.name}</span>
+                <span className="truncate text-ui font-semibold text-ink">{row.name}</span>
                 <span className="truncate text-xs text-ink-subtle">
                   {row.email}
                   {row.emailVerified ? "" : " · à confirmer"}

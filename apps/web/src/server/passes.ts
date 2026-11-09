@@ -40,16 +40,14 @@ export async function savePassPlanImpl(planId: string | null, form: FormData): P
     validityDays: Number(text(form, "validityDays")),
     eventTypeIds: form.getAll("eventTypeIds").map(String),
   };
-  let savedId: string;
   try {
-    const saved = planId
-      ? await updatePassPlan(deps, actor, planId, input)
-      : await createPassPlan(deps, actor, input);
-    savedId = saved.id;
+    if (planId) await updatePassPlan(deps, actor, planId, input);
+    else await createPassPlan(deps, actor, input);
   } catch (error) {
     return toFormState(error);
   }
-  throw redirect({ href: `/app/cartes?formule=${savedId}` });
+  // La fenêtre se ferme : retour à la liste, à jour.
+  throw redirect({ href: "/app/cartes" });
 }
 
 export async function archivePassPlanImpl(planId: string, archived: boolean): Promise<FormState> {

@@ -90,10 +90,10 @@ function MakeupRow({
     <div className="flex flex-col gap-3">
       <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
         <p className="flex flex-col gap-0.5">
-          <span className="text-[15px] font-semibold leading-5 text-ink">
+          <span className="text-ui font-semibold leading-5 text-ink">
             {formatDateTimeShort(makeup.absentStartsAt, timeZone)}
           </span>
-          <span className="text-[13px] leading-4 text-ink-muted">{makeup.absentTitle}</span>
+          <span className="text-meta leading-4 text-ink-muted">{makeup.absentTitle}</span>
         </p>
         <Swap value={makeup.state}>
           <StatusBadge
@@ -110,7 +110,7 @@ function MakeupRow({
         </Swap>
       </div>
       {makeup.state === "used" && makeup.usedStartsAt && (
-        <p className="text-[13px] leading-[18px] text-ink-muted">
+        <p className="text-meta leading-[18px] text-ink-muted">
           Rattrapée le {formatDateTimeShort(makeup.usedStartsAt, timeZone)}
           {makeup.usedBookingId && (
             <>
@@ -157,7 +157,7 @@ function MakeupRow({
             <div className="flex flex-col gap-2 rounded-2xl bg-bg px-4 py-3">
               {error && <FormAlert>{error}</FormAlert>}
               {makeup.targets.length === 0 ? (
-                <p className="text-[13px] leading-[18px] text-ink-muted">
+                <p className="text-meta leading-[18px] text-ink-muted">
                   Aucune séance avec une place libre pour l'instant. Reviens voir plus tard.
                 </p>
               ) : (
@@ -171,7 +171,7 @@ function MakeupRow({
                         <span className="text-sm font-semibold leading-[18px] text-ink">
                           {formatDateTimeShort(target.startsAt, timeZone)}
                         </span>
-                        <span className="text-[13px] leading-4 text-ink-muted">
+                        <span className="text-meta leading-4 text-ink-muted">
                           {target.capacity === null
                             ? target.title
                             : `${target.title} · ${target.capacity - target.seatsHeld} place${target.capacity - target.seatsHeld > 1 ? "s" : ""}`}

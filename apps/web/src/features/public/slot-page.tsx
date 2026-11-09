@@ -64,7 +64,7 @@ export function SlotPage({ slug, data }: { slug: string; data: Data }) {
       <div className="flex flex-col gap-1.5">
         <Link
           href={`/${slug}`}
-          className="flex w-fit items-center gap-1.5 text-[13px] leading-4 text-ink-muted hover:text-ink"
+          className="flex w-fit items-center gap-1.5 text-meta leading-4 text-ink-muted hover:text-ink"
         >
           <ArrowLeft className="size-3" />
           Tous les cours
@@ -77,7 +77,7 @@ export function SlotPage({ slug, data }: { slug: string; data: Data }) {
         >
           {type.name}
         </h1>
-        <p className="text-[15px] leading-5 text-ink-muted">
+        <p className="text-ui leading-5 text-ink-muted">
           {type.description ||
             (type.duration
               ? "Tu choisis la durée, le jour et l'heure."
@@ -92,7 +92,7 @@ export function SlotPage({ slug, data }: { slug: string; data: Data }) {
               <div className="flex items-baseline justify-between gap-4">
                 <h2 className="text-base font-semibold leading-5 text-ink">Durée</h2>
                 {duration && (
-                  <p className="text-[13px] leading-4 text-ink-muted">
+                  <p className="text-meta leading-4 text-ink-muted">
                     {durationLabel(duration.minutes)} · {formatMoney(duration.priceCents)}
                   </p>
                 )}
@@ -108,7 +108,7 @@ export function SlotPage({ slug, data }: { slug: string; data: Data }) {
                       "flex grow basis-0 flex-col gap-0.5 px-3.5 py-2.5",
                     )}
                   >
-                    <span className="flex justify-between gap-3 text-[15px] leading-5">
+                    <span className="flex justify-between gap-3 text-ui leading-5">
                       <span className="font-semibold">{option.label}</span>
                       <span>{formatMoney(option.priceCents)}</span>
                     </span>
@@ -138,7 +138,7 @@ export function SlotPage({ slug, data }: { slug: string; data: Data }) {
           <section className="flex flex-col gap-3 border-b border-bg py-[18px]">
             <div className="flex items-baseline justify-between gap-4">
               <h2 className="text-base font-semibold leading-5 text-ink">Jour</h2>
-              <div className="flex items-center gap-3.5 text-[13px] font-semibold leading-4">
+              <div className="flex items-center gap-3.5 text-meta font-semibold leading-4">
                 {data.previous ? (
                   <Link
                     href={withParams(base, {
@@ -238,7 +238,7 @@ export function SlotPage({ slug, data }: { slug: string; data: Data }) {
               <div className="flex min-w-0 flex-col gap-3">
                 <h2 className="flex items-baseline gap-2">
                   <span className="text-base font-semibold leading-5 text-ink">Heure</span>
-                  <span className="text-[13px] leading-4 text-ink-muted">
+                  <span className="text-meta leading-4 text-ink-muted">
                     {dayPart(shown, { weekday: "long", day: "numeric", month: "long" })}
                   </span>
                 </h2>
@@ -339,12 +339,12 @@ export function SlotPage({ slug, data }: { slug: string; data: Data }) {
                   )
                 : "Choisis un créneau"}
             </p>
-            <p className="text-[15px] leading-5 text-ink">
+            <p className="text-ui leading-5 text-ink">
               {chosen
                 ? `${hour(chosen.startsAt, tz)} – ${hour(chosen.endsAt, tz)} · ${durationLabel(minutes)}`
                 : durationLabel(minutes)}
             </p>
-            <p className="text-[13px] leading-[17px] text-ink-muted">
+            <p className="text-meta leading-[17px] text-ink-muted">
               {[workspace.name, withWhom ? `avec ${withWhom}` : null].filter(Boolean).join(" · ")}
             </p>
           </div>

@@ -123,7 +123,6 @@ export async function openNotifications(): Promise<NotificationItem[]> {
     tenantSettingsReader(db).get(organizationId),
     listNotifications(db, memberId, 20),
   ]);
-  if (rows.some((row) => row.readAt === null)) await markNotificationsRead(db, memberId);
   return rows.map((row) => ({
     id: row.id,
     title: row.title,
@@ -132,6 +131,12 @@ export async function openNotifications(): Promise<NotificationItem[]> {
     when: formatRelativeDateTime(row.createdAt, settings.timezone),
     unread: row.readAt === null,
   }));
+}
+
+/** Notifications restées affichées un moment : tout passe en lu. */
+export async function readNotifications(): Promise<void> {
+  const { memberId } = await requireMember();
+  await markNotificationsRead(db, memberId);
 }
 
 export interface LiveShell {

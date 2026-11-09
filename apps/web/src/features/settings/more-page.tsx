@@ -50,7 +50,7 @@ export function MorePage({ data }: { data: Awaited<ReturnType<typeof getMoreMenu
         <Row href="/app/cartes">Cartes de séances</Row>
         <Row
           href={`/${workspace.slug}`}
-          aside={<span className="text-[13px] font-semibold text-ink-subtle">↗</span>}
+          aside={<span className="text-meta font-semibold text-ink-subtle">↗</span>}
           chevron={false}
         >
           Ma page publique
@@ -111,7 +111,7 @@ function Row({
   return (
     <li className="border-t border-line-faint first:border-t-0">
       <Link href={href} className="flex h-12 items-center justify-between gap-3 text-ink">
-        <span className="text-[15px] font-medium leading-5">{children}</span>
+        <span className="text-ui font-medium leading-5">{children}</span>
         <span className="flex items-center gap-2">
           {aside}
           {chevron && (

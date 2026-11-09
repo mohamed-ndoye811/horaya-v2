@@ -69,7 +69,7 @@ export function OnboardingSteps({
                 </span>
                 <span
                   className={cn(
-                    "text-[13px] leading-4",
+                    "text-meta leading-4",
                     active
                       ? "font-semibold text-on-ink"
                       : done

@@ -2,17 +2,29 @@ import { PageHeader } from "@/components/app/page-header";
 import { PresenceItem, PresenceList } from "@/components/motion/presence";
 import { StatusBadge } from "@/components/ui/badge";
 import { ButtonLink } from "@/components/ui/button";
+import { DataTable } from "@/components/ui/data-table";
 import { EmptyState } from "@/components/ui/empty-state";
-import { ChevronRight, PlusIcon } from "@/components/ui/icons";
-import { cardClasses, cardShellClasses } from "@/components/ui/section";
+import { PlusIcon } from "@/components/ui/icons";
+import { ProgressBar } from "@/components/ui/progress";
+import { cardClasses, SectionHeading } from "@/components/ui/section";
+import { MiniStat } from "@/components/ui/stat";
 import type { getPassesPage } from "@/functions/passes";
 import { cn } from "@/lib/cn";
 import { formatMoney, plural } from "@/lib/format";
 import { Link } from "@/lib/navigation";
 import { PassPaymentActions } from "./pending-pass-row";
-import { PlanForm, type PlanFormValues } from "./plan-form";
+import { PlanDialog, type PlanFormValues } from "./plan-form";
+import { formatValidity } from "./validity";
 
-/** Cartes de séances : formules à vendre (panneau d'édition à droite) et cartes à encaisser. */
+/** Une carte expire « bientôt » dans les 30 jours : de quoi relancer l'élève. */
+const SOON_DAYS = 30;
+const DAY = 86_400_000;
+
+/**
+ * Cartes de séances : à quoi elles servent, les chiffres (cartes en cours, séances à honorer,
+ * échéances, à encaisser), les formules en vente, puis qui a une carte et ce qu'il lui reste.
+ * Une formule se crée et se modifie dans une fenêtre (`?formule=`).
+ */
 export function PassesPage({
   data,
   selected,
@@ -20,9 +32,10 @@ export function PassesPage({
   data: Awaited<ReturnType<typeof getPassesPage>>;
   selected: string | undefined;
 }) {
-  const { plans, pending, eventTypes, timeZone } = data;
+  const { plans, pending, active, eventTypes, timeZone, slug } = data;
+  const now = new Date(data.now).getTime();
   const editing = plans.find((plan) => plan.id === selected);
-  const panel: PlanFormValues | null = editing
+  const dialog: PlanFormValues | null = editing
     ? { ...editing, archived: editing.archivedAt !== null }
     : selected === "nouvelle"
       ? {
@@ -40,124 +53,260 @@ export function PassesPage({
     new Intl.DateTimeFormat("fr-FR", { day: "numeric", month: "short", timeZone })
       .format(new Date(iso))
       .replace(".", "");
+  const daysLeft = (iso: string | null) =>
+    iso === null ? null : Math.ceil((new Date(iso).getTime() - now) / DAY);
+  const soon = active.filter((entry) => {
+    const left = daysLeft(entry.expiresAt);
+    return left !== null && left <= SOON_DAYS;
+  }).length;
+  const owed = active.reduce((sum, entry) => sum + entry.balance, 0);
+  const holders = new Set(active.map((entry) => entry.customerId)).size;
+  const onSale = plans.some((plan) => plan.archivedAt === null);
 
   return (
     <div className="flex flex-1 flex-col">
       <PageHeader
-        eyebrow="Tableau de bord / Cartes"
+        eyebrow="Tableau de bord / Cartes de séances"
         title="Cartes de séances"
-        subtitle="Vends des cartes de 5 ou 10 séances : tes élèves réservent ensuite avec une séance de leur carte."
+        subtitle="Des forfaits payés d'avance : ton élève achète plusieurs séances d'un coup, puis chaque réservation en décompte une."
         actions={
           <ButtonLink href="/app/cartes?formule=nouvelle" icon={<PlusIcon />}>
             Nouvelle formule
           </ButtonLink>
         }
       />
-      <div className="flex flex-1 flex-col gap-4 px-4 pb-4 lg:flex-row lg:items-start">
-        <div className={cn("flex min-w-0 flex-1 flex-col gap-4", panel && "hidden lg:flex")}>
-          {pending.length > 0 && (
-            <section className={cn(cardClasses, "gap-3")}>
-              <h2 className="text-base font-semibold leading-5 text-ink">
-                À encaisser
-                <span className="ml-2 text-[13px] font-normal text-ink-subtle">
-                  {pending.length}
-                </span>
-              </h2>
-              <ul className="relative flex flex-col">
-                <PresenceList>
-                  {pending.map((entry) => (
-                    <PresenceItem
-                      as="li"
-                      key={entry.id}
-                      className="flex flex-col gap-2 border-t border-line-faint py-3 first:border-t-0"
-                    >
-                      <div className="flex items-baseline justify-between gap-3">
-                        <Link
-                          href={`/app/clients/${entry.customerId}`}
-                          className="text-sm font-semibold text-ink hover:underline"
-                        >
-                          {entry.customerName}
-                        </Link>
-                        <span className="text-sm font-semibold text-ink">
-                          {formatMoney(entry.priceCents)}
-                        </span>
-                      </div>
-                      <p className="text-xs text-ink-subtle">
-                        {entry.name} · demandée le {day(entry.createdAt)}
-                      </p>
-                      <PassPaymentActions passId={entry.id} />
-                    </PresenceItem>
-                  ))}
-                </PresenceList>
-              </ul>
-            </section>
-          )}
-          {plans.length === 0 && !panel ? (
-            <EmptyState
-              title="Aucune formule pour l'instant."
-              description="Crée ta première carte : nombre de séances, prix, durée de validité et types d'événements acceptés."
-              actions={
-                <ButtonLink href="/app/cartes?formule=nouvelle" arrow>
-                  Créer ma première formule
-                </ButtonLink>
-              }
+      {plans.length === 0 ? (
+        <EmptyState
+          title="Pas encore de carte de séances."
+          description="Une carte, c'est un forfait : par exemple 10 séances payées d'avance, valables 6 mois. Ton élève réserve ensuite sans repayer, et chaque réservation décompte une séance."
+          steps={[
+            "Crée une formule : séances, prix, validité",
+            "Ton élève l'achète sur ta page, ou tu la vends au comptoir",
+            "Chaque réservation décompte une séance",
+          ]}
+          actions={
+            <ButtonLink href="/app/cartes?formule=nouvelle" arrow>
+              Créer ma première formule
+            </ButtonLink>
+          }
+        />
+      ) : (
+        <div className="flex flex-col pb-4">
+          <div className="grid grid-cols-2 gap-3 px-4 xl:grid-cols-4">
+            <MiniStat
+              label="Cartes en cours"
+              value={active.length}
+              aside={holders > 0 && `chez ${plural(holders, "élève")}`}
             />
-          ) : (
-            <ul
-              aria-label="Formules de carte"
-              className={cn(cardShellClasses, "reveal-group overflow-hidden")}
-            >
-              {plans.map((plan) => (
-                <li key={plan.id} className="border-b border-line-soft last:border-b-0">
+            <MiniStat
+              dark
+              label="Séances à honorer"
+              value={owed}
+              aside={<span className="text-on-ink-muted">payées, pas encore faites</span>}
+            />
+            <MiniStat
+              label={`Expirent sous ${SOON_DAYS} jours`}
+              value={soon}
+              aside={soon > 0 ? "pense à relancer" : "rien d'urgent"}
+            />
+            <MiniStat
+              warning={pending.length > 0}
+              label="À encaisser"
+              value={pending.length}
+              aside={pending.length > 0 ? "demandées sur ta page" : "tout est réglé"}
+            />
+          </div>
+
+          <SectionHeading
+            title="Formules"
+            meta={plural(plans.length, "formule")}
+            action={
+              onSale ? { label: "Voir ma page de vente", href: `/${slug}/cartes` } : undefined
+            }
+          />
+          <ul aria-label="Formules" className="grid gap-3 px-4 sm:grid-cols-2 xl:grid-cols-3">
+            {plans.map((plan) => {
+              const types =
+                plan.eventTypeIds.length === 0
+                  ? "Tous les types"
+                  : plan.eventTypeIds
+                      .map((id) => typeNames.get(id))
+                      .filter(Boolean)
+                      .join(", ") || "Types supprimés";
+              return (
+                <li key={plan.id} className="flex">
                   <Link
                     href={`/app/cartes?formule=${plan.id}`}
-                    aria-current={plan.id === selected ? "page" : undefined}
                     className={cn(
-                      "flex items-center gap-3.5 px-5 py-4 text-ink transition-colors hover:bg-band",
-                      plan.id === selected && "bg-band",
+                      cardClasses,
+                      "flex flex-1 flex-col gap-3 transition-shadow hover:shadow-[0_16px_40px_rgba(0,0,0,0.08)]",
+                      plan.archivedAt && "opacity-60",
                     )}
                   >
-                    <span className="flex min-w-0 flex-1 flex-col gap-1">
-                      <span className="flex items-center gap-2">
-                        <span className="truncate text-base font-bold leading-5">{plan.name}</span>
-                        {plan.archivedAt && <StatusBadge tone="draft">Archivée</StatusBadge>}
+                    <span className="flex items-start justify-between gap-3">
+                      <span className="flex min-w-0 flex-col gap-1">
+                        <span className="truncate text-base font-bold leading-5 text-ink">
+                          {plan.name}
+                        </span>
+                        <span className="truncate text-meta leading-[17px] text-ink-muted">
+                          {types}
+                        </span>
                       </span>
-                      <span className="truncate text-[13px] font-medium leading-[17px] text-ink-muted">
-                        {plural(plan.sessions, "séance")} · valable {plan.validityDays} jours ·{" "}
-                        {plan.eventTypeIds.length === 0
-                          ? "tous les types"
-                          : plan.eventTypeIds
-                              .map((id) => typeNames.get(id))
-                              .filter(Boolean)
-                              .join(", ") || "types supprimés"}
-                      </span>
+                      {plan.archivedAt ? (
+                        <StatusBadge tone="draft">Archivée</StatusBadge>
+                      ) : (
+                        <StatusBadge tone="success">En vente</StatusBadge>
+                      )}
                     </span>
-                    <span className="flex shrink-0 flex-col items-end gap-1">
-                      <span className="text-base font-extrabold leading-5">
+                    <span className="flex items-baseline gap-2">
+                      <span className="font-headline text-subtitle text-ink">
                         {formatMoney(plan.priceCents)}
                       </span>
-                      <span className="text-xs leading-4 text-ink-subtle">
-                        {plan.sold} active{plan.sold > 1 ? "s" : ""}
+                      <span className="text-meta leading-4 text-ink-muted">
+                        {formatMoney(Math.round(plan.priceCents / plan.sessions))} la séance
                       </span>
                     </span>
-                    <ChevronRight />
+                    <span className="flex flex-wrap gap-x-3 gap-y-1 border-t border-line-faint pt-3 text-meta font-medium leading-4 text-ink-soft">
+                      <span>{plural(plan.sessions, "séance")}</span>
+                      <span>valable {formatValidity(plan.validityDays)}</span>
+                      <span className="ml-auto text-ink-subtle">
+                        {plan.sold > 0 ? `${plural(plan.sold, "carte")} en cours` : "aucune vendue"}
+                      </span>
+                    </span>
                   </Link>
                 </li>
-              ))}
-            </ul>
+              );
+            })}
+          </ul>
+
+          {pending.length > 0 && (
+            <>
+              <SectionHeading title="À encaisser" meta={plural(pending.length, "carte")} />
+              <section className={cn(cardClasses, "mx-4 gap-0 py-2")}>
+                <ul className="relative flex flex-col">
+                  <PresenceList>
+                    {pending.map((entry) => (
+                      <PresenceItem
+                        as="li"
+                        key={entry.id}
+                        className="flex flex-wrap items-center gap-x-4 gap-y-2 border-t border-line-faint py-3 first:border-t-0"
+                      >
+                        <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+                          <Link
+                            href={`/app/clients/${entry.customerId}`}
+                            className="truncate text-sm font-semibold text-ink hover:underline"
+                          >
+                            {entry.customerName}
+                          </Link>
+                          <span className="text-xs text-ink-subtle">
+                            {entry.name} · {formatMoney(entry.priceCents)} · demandée le{" "}
+                            {day(entry.createdAt)}
+                          </span>
+                        </span>
+                        <PassPaymentActions passId={entry.id} />
+                      </PresenceItem>
+                    ))}
+                  </PresenceList>
+                </ul>
+              </section>
+            </>
           )}
-        </div>
-        {panel && (
-          <aside
-            className={cn(
-              cardShellClasses,
-              "animate-rise overflow-hidden lg:sticky lg:top-4 lg:w-[460px] lg:shrink-0",
+
+          <SectionHeading
+            title="Cartes en cours"
+            meta={active.length > 0 ? plural(active.length, "carte") : undefined}
+          />
+          <DataTable
+            label="Cartes en cours"
+            rows={active}
+            rowKey={(row) => row.id}
+            rowHref={(row) => `/app/clients/${row.customerId}`}
+            minWidth={720}
+            empty={
+              <p className="px-4 py-10 text-center text-sm font-medium text-ink-muted">
+                Aucune carte en cours. Elles arrivent ici dès qu'un élève en achète une, ou que tu
+                en vends une depuis sa fiche.
+              </p>
+            }
+            card={(row) => (
+              <div className="flex flex-col gap-2">
+                <div className="flex items-baseline justify-between gap-3">
+                  <span className="truncate text-sm font-semibold text-ink">
+                    {row.customerName}
+                  </span>
+                  <span className="shrink-0 text-sm font-semibold text-ink">
+                    {row.balance}
+                    <span className="font-normal text-ink-subtle"> / {row.sessionsTotal}</span>
+                  </span>
+                </div>
+                <ProgressBar
+                  value={row.balance}
+                  max={row.sessionsTotal}
+                  label={`${row.balance} séances restantes sur ${row.sessionsTotal}`}
+                />
+                <span className="text-meta text-ink-muted">
+                  {row.name}
+                  {row.expiresAt && ` · jusqu'au ${day(row.expiresAt)}`}
+                </span>
+              </div>
             )}
-          >
-            <PlanForm key={panel.id ?? "nouvelle"} initial={panel} eventTypes={eventTypes} />
-          </aside>
-        )}
-      </div>
+            columns={[
+              {
+                key: "customer",
+                header: "Élève",
+                cell: (row) => (
+                  <span className="flex flex-col gap-0.5">
+                    <span className="text-sm font-semibold text-ink">{row.customerName}</span>
+                    <span className="text-meta text-ink-muted">{row.name}</span>
+                  </span>
+                ),
+              },
+              {
+                key: "left",
+                header: "Séances restantes",
+                width: 220,
+                cell: (row) => (
+                  <span className="flex flex-col gap-1.5">
+                    <span className="text-sm font-semibold text-ink">
+                      {row.balance}
+                      <span className="font-normal text-ink-subtle"> / {row.sessionsTotal}</span>
+                    </span>
+                    <ProgressBar
+                      value={row.balance}
+                      max={row.sessionsTotal}
+                      label={`${row.balance} séances restantes sur ${row.sessionsTotal}`}
+                      className="w-36"
+                    />
+                  </span>
+                ),
+              },
+              {
+                key: "expires",
+                header: "Valable jusqu'au",
+                width: 200,
+                cell: (row) => {
+                  const left = daysLeft(row.expiresAt);
+                  if (row.expiresAt === null || left === null)
+                    return <span className="text-meta text-ink-subtle">Sans limite</span>;
+                  return (
+                    <span className="flex items-center gap-2">
+                      <span className="text-meta text-ink-soft">{day(row.expiresAt)}</span>
+                      {left <= SOON_DAYS && (
+                        <StatusBadge tone="warning" size="sm">
+                          {`dans ${plural(left, "jour")}`}
+                        </StatusBadge>
+                      )}
+                    </span>
+                  );
+                },
+              },
+            ]}
+          />
+        </div>
+      )}
+      {dialog && (
+        <PlanDialog key={dialog.id ?? "nouvelle"} initial={dialog} eventTypes={eventTypes} />
+      )}
     </div>
   );
 }

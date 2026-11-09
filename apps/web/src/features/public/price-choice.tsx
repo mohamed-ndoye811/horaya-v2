@@ -109,7 +109,7 @@ export function RateTiles({
               onChange={() => onChange(rate.id)}
               className="sr-only"
             />
-            <span className="text-[13px] font-semibold leading-4">{rate.name}</span>
+            <span className="text-meta font-semibold leading-4">{rate.name}</span>
             <span
               className={cn("text-label leading-[15px]", choiceTileMutedClasses(value === rate.id))}
             >
@@ -153,7 +153,7 @@ export function OptionRows({
               />
             )}
             <span className="flex shrink-0 items-center gap-3">
-              <span className="text-[13px] leading-4 text-ink-muted">
+              <span className="text-meta leading-4 text-ink-muted">
                 + {formatMoney(option.priceCents)}
               </span>
               {limit > 1 && (

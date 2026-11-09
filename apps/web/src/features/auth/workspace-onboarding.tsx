@@ -100,7 +100,7 @@ export function WorkspaceOnboarding() {
                 slugError ? "border-danger" : "border-line",
               )}
             >
-              <span className="flex shrink-0 items-center pl-4 text-[15px] text-ink-subtle">
+              <span className="flex shrink-0 items-center pl-4 text-ui text-ink-subtle">
                 horaya.app/
               </span>
               <input
@@ -114,7 +114,7 @@ export function WorkspaceOnboarding() {
                   setSlugEdited(true);
                   setSlug(event.target.value.toLowerCase().replace(/\s+/g, "-"));
                 }}
-                className="min-w-0 grow bg-transparent pr-3 text-[15px] font-semibold text-ink outline-none"
+                className="min-w-0 grow bg-transparent pr-3 text-ui font-semibold text-ink outline-none"
               />
               <SlugBadge status={slugStatus} />
             </div>
@@ -122,14 +122,14 @@ export function WorkspaceOnboarding() {
         </Field>
 
         <fieldset className="flex flex-col gap-2">
-          <legend className="mb-2 text-[13px] font-semibold leading-[17px] text-ink">
+          <legend className="mb-2 text-meta font-semibold leading-[17px] text-ink">
             Secteur d'activité
           </legend>
           <div className="flex flex-wrap gap-2">
             {TENANT_SECTORS.map((sector) => (
               <label
                 key={sector.value}
-                className="flex h-9 items-center rounded-full border border-line bg-surface px-3.5 text-[13px] font-medium text-ink transition-colors hover:bg-field has-checked:border-ink has-checked:bg-ink has-checked:text-on-ink has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-ink"
+                className="flex h-9 items-center rounded-full border border-line bg-surface px-3.5 text-meta font-medium text-ink transition-colors hover:bg-field has-checked:border-ink has-checked:bg-ink has-checked:text-on-ink has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-ink"
               >
                 <input
                   type="radio"
@@ -146,7 +146,7 @@ export function WorkspaceOnboarding() {
         </fieldset>
 
         <fieldset className="flex flex-col gap-2">
-          <legend className="mb-2 text-[13px] font-semibold leading-[17px] text-ink">
+          <legend className="mb-2 text-meta font-semibold leading-[17px] text-ink">
             Couleur de ta marque
           </legend>
           <div className="flex items-center gap-2.5">
@@ -179,7 +179,7 @@ export function WorkspaceOnboarding() {
                 </label>
               );
             })}
-            <span className="pl-1 text-[13px] text-ink-muted">{COLOR_NAMES[brandColor]}</span>
+            <span className="pl-1 text-meta text-ink-muted">{COLOR_NAMES[brandColor]}</span>
           </div>
         </fieldset>
 
@@ -203,7 +203,7 @@ export function WorkspaceOnboarding() {
 function SlugBadge({ status }: { status: SlugStatus | "checking" | null }) {
   if (status === "checking") {
     return (
-      <span className="flex shrink-0 items-center px-3 text-[13px] font-semibold text-ink-subtle">
+      <span className="flex shrink-0 items-center px-3 text-meta font-semibold text-ink-subtle">
         Vérification…
       </span>
     );
@@ -228,7 +228,7 @@ function PublicPagePreview({ name, slug, color }: { name: string; slug: string; 
     .toUpperCase();
   return (
     <div className="flex flex-1 flex-col gap-5">
-      <div className="flex items-center justify-between gap-3 text-[13px]">
+      <div className="flex items-center justify-between gap-3 text-meta">
         <span className="font-medium text-on-ink-muted">Aperçu en direct</span>
         <span className="flex min-w-0 items-center gap-2 font-mono text-xs text-on-ink-muted">
           <span className="size-1.5 shrink-0 rounded-full bg-success" />
@@ -252,8 +252,8 @@ function PublicPagePreview({ name, slug, color }: { name: string; slug: string; 
             </span>
             <span className="truncate text-base font-semibold">{displayName}</span>
           </div>
-          <p className="font-headline text-[34px] leading-10">Nos événements</p>
-          <p className="text-[13px] opacity-85">Réserve ta place en ligne</p>
+          <p className="font-headline text-title-sm">Nos événements</p>
+          <p className="text-meta opacity-85">Réserve ta place en ligne</p>
         </div>
         <div className="flex flex-col gap-3 p-6">
           <div className="flex items-center gap-3.5 rounded-2xl bg-surface p-3">

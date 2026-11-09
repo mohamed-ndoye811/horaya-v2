@@ -136,7 +136,7 @@ export function GuidedTour({ onClose }: { onClose: () => void }) {
           <button
             type="button"
             onClick={close}
-            className="text-[13px] font-medium text-ink-subtle hover:text-ink"
+            className="text-meta font-medium text-ink-subtle hover:text-ink"
           >
             Passer la visite
           </button>
@@ -173,7 +173,7 @@ export function GuidedTour({ onClose }: { onClose: () => void }) {
       <ol
         className={cn(
           inkCardClasses,
-          "absolute bottom-4 left-4 flex flex-col gap-2 rounded-[20px] px-5 py-4 text-[13px] leading-[18px]",
+          "absolute bottom-4 left-4 flex flex-col gap-2 rounded-[20px] px-5 py-4 text-meta leading-[18px]",
         )}
       >
         <li className="pb-0.5 text-xs font-semibold text-on-ink-muted">La visite</li>

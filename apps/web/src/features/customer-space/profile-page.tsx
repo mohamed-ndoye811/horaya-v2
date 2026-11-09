@@ -80,7 +80,7 @@ export function CustomerProfilePage({
         <Field
           label="Adresse e-mail"
           hint={
-            <p className="text-[13px] leading-[18px] text-ink-muted">
+            <p className="text-meta leading-[18px] text-ink-muted">
               C'est elle qui te connecte. Pour une autre adresse, connecte-toi avec elle : elle aura
               son propre espace.
             </p>
@@ -115,7 +115,7 @@ export function CustomerProfilePage({
       </form>
       <div className="flex items-center justify-between gap-4 border-t border-line pt-[22px]">
         <div className="flex flex-col gap-0.5">
-          <p className="text-[15px] font-semibold leading-5 text-ink">Supprimer mon espace</p>
+          <p className="text-ui font-semibold leading-5 text-ink">Supprimer mon espace</p>
           <p className="text-sm leading-5 text-ink-muted">
             Tes réservations à venir restent valables.
           </p>

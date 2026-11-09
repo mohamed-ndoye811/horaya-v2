@@ -157,7 +157,7 @@ function ReasonDialog({
               onChange={(event) => setRecredit(event.target.checked)}
               label="Recréditer la séance sur la carte"
             />
-            <p className="pl-[30px] text-[13px] leading-[18px] text-ink-muted">
+            <p className="pl-[30px] text-meta leading-[18px] text-ink-muted">
               {recreditInfo?.passName ? `Carte « ${recreditInfo.passName} ». ` : ""}
               {recreditInfo?.defaultChecked
                 ? "Dans le délai d'annulation gratuite : cochée d'office."
@@ -327,7 +327,7 @@ export function CheckInToggle({
     <>
       <label
         className={cn(
-          "flex items-center text-[13px] leading-4",
+          "flex items-center text-meta leading-4",
           size === "lg" ? "w-16 shrink-0 flex-col gap-1" : "gap-2",
         )}
       >

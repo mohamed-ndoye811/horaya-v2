@@ -135,7 +135,7 @@ function ToastBody({ toast, className }: { toast: Toast; className: string }) {
   );
   // `isolate` : le halo (-z-10) reste sous le texte mais au-dessus du fond noir.
   const classes = cn(
-    "relative isolate flex items-center gap-3 overflow-hidden whitespace-nowrap bg-ink text-[15px] font-bold leading-5 text-on-ink",
+    "relative isolate flex items-center gap-3 overflow-hidden whitespace-nowrap bg-ink text-ui font-bold leading-5 text-on-ink",
     className,
   );
   if (toast.href) {

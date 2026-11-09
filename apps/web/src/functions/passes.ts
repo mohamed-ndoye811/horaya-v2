@@ -1,6 +1,7 @@
 import {
   getCustomerPassSummary,
   getPublicPassPlan,
+  listActivePasses,
   listEventTypes,
   listPassPlans,
   listPendingPasses,
@@ -36,16 +37,24 @@ const idOf = (form: FormData) => String(form.get(ID_FIELD) ?? "") || null;
 
 export const passesSearch = z.object({ formule: searchText });
 
-/** Page « Cartes » : formules, cartes à encaisser, types d'événements pour le formulaire. */
+/** Page « Cartes » : formules, cartes en cours et à encaisser, types pour le formulaire. */
 export const getPassesPage = createServerFn({ method: "GET" }).handler(async () => {
   const { workspace, timeZone } = await getWorkspaceContext();
-  const [plans, pending, eventTypes] = await Promise.all([
+  const now = new Date();
+  const [plans, pending, active, eventTypes] = await Promise.all([
     listPassPlans(db, workspace.id),
     listPendingPasses(db, workspace.id),
+    listActivePasses(db, workspace.id, now),
     listEventTypes(db, workspace.id),
   ]);
   return {
     timeZone,
+    slug: workspace.slug,
+    now: now.toISOString(),
+    active: active.map((entry) => ({
+      ...entry,
+      expiresAt: entry.expiresAt?.toISOString() ?? null,
+    })),
     plans: plans.map((plan) => ({ ...plan, archivedAt: plan.archivedAt?.toISOString() ?? null })),
     pending: pending.map((entry) => ({ ...entry, createdAt: entry.createdAt.toISOString() })),
     eventTypes: eventTypes.map((type) => ({ id: type.id, name: type.name })),
@@ -109,7 +118,19 @@ export const getPublicPassesPage = createServerFn({ method: "GET" })
   .validator(slug)
   .handler(async ({ data }) => {
     const workspace = await publicWorkspace(data);
-    return { workspace, plans: await listPublicPassPlans(db, workspace.id) };
+    const [plans, types] = await Promise.all([
+      listPublicPassPlans(db, workspace.id),
+      listEventTypes(db, workspace.id),
+    ]);
+    const names = new Map(types.map((type) => [type.id, type.name]));
+    return {
+      workspace,
+      // Ce que la carte permet de réserver, en clair (aucun type : tout).
+      plans: plans.map(({ eventTypeIds, ...plan }) => ({
+        ...plan,
+        types: eventTypeIds.flatMap((id) => names.get(id) ?? []),
+      })),
+    };
   });
 
 export const getPassThanksPage = createServerFn({ method: "GET" })

@@ -39,7 +39,7 @@ function PublicWorkspacePage() {
       />
       {hasPassPlans && (
         <div className="flex flex-wrap items-center justify-between gap-3 rounded-3xl bg-surface px-6 py-4">
-          <p className="text-[15px] font-medium text-ink">
+          <p className="text-ui font-medium text-ink">
             Tu viens régulièrement ? Une carte de séances revient moins cher à la séance.
           </p>
           <ButtonLink href={`/${workspace.slug}/cartes`} variant="brand" arrow>
@@ -73,7 +73,7 @@ function PublicWorkspacePage() {
                 href={`/${workspace.slug}/creneaux/${type.id}`}
                 className="flex flex-col gap-2 rounded-3xl bg-surface p-5 transition-colors hover:bg-field"
               >
-                <span className="flex items-center gap-2 text-[13px] font-semibold leading-4 text-ink-muted">
+                <span className="flex items-center gap-2 text-meta font-semibold leading-4 text-ink-muted">
                   <span
                     aria-hidden="true"
                     className="size-2 rounded-[3px]"
@@ -88,7 +88,7 @@ function PublicWorkspacePage() {
                   </span>
                 )}
                 <span className="flex items-baseline justify-between gap-3 pt-1">
-                  <span className="text-[15px] font-semibold text-ink">
+                  <span className="text-ui font-semibold text-ink">
                     {type.fromCents > 0
                       ? `${type.durations.length > 1 ? "Dès " : ""}${formatMoney(type.fromCents)}`
                       : "Gratuit"}

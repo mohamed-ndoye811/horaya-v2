@@ -51,14 +51,14 @@ function TodoCard({
       )}
     >
       <div className="flex items-start justify-between gap-3">
-        <span className="flex items-center gap-2 text-[13px] font-semibold leading-[17px]">
+        <span className="flex items-center gap-2 text-meta font-semibold leading-[17px]">
           <span aria-hidden="true" className={cn("size-2 rounded-full", dot)} />
           {label}
         </span>
         {aside && (
           <span
             className={cn(
-              "text-right text-[13px] font-bold leading-[17px]",
+              "text-right text-meta font-bold leading-[17px]",
               accent ? "text-white/90" : "text-ink-muted",
             )}
           >
@@ -67,7 +67,7 @@ function TodoCard({
         )}
       </div>
       <div className="flex items-end justify-between gap-3">
-        <span className="font-headline text-[48px] leading-[44px] tracking-[-0.04em]">{value}</span>
+        <span className="font-headline text-kpi leading-[44px] tracking-[-0.04em]">{value}</span>
         <div className="flex min-w-0 flex-col items-end gap-1.5 pb-1 text-right">{children}</div>
       </div>
     </Link>
@@ -229,8 +229,8 @@ export function TodayCard({
   if (entries.length === 0) {
     return (
       <div className="flex min-h-[244px] flex-1 flex-col items-center justify-center gap-1 rounded-[28px] bg-surface p-6 text-center">
-        <p className="text-[15px] font-semibold text-ink">Rien au programme aujourd'hui.</p>
-        <p className="text-[13px] text-ink-muted">Profites-en pour préparer la suite.</p>
+        <p className="text-ui font-semibold text-ink">Rien au programme aujourd'hui.</p>
+        <p className="text-meta text-ink-muted">Profites-en pour préparer la suite.</p>
       </div>
     );
   }
@@ -250,7 +250,7 @@ export function TodayCard({
               <p className="text-base font-semibold leading-5 text-ink">
                 {formatHour(entry.startsAt, timeZone)}
               </p>
-              <p className="text-[13px] leading-[17px] text-ink-muted">
+              <p className="text-meta leading-[17px] text-ink-muted">
                 {entry.kind === "event" ? formatHour(entry.endsAt, timeZone) : "retour"}
               </p>
             </div>
@@ -289,7 +289,7 @@ export function TodayCard({
               </Link>
               <div className="flex min-w-0 items-center gap-2">
                 <StatusBadge tone={state.tone}>{state.label}</StatusBadge>
-                <span className="truncate text-[13px] text-ink-muted">
+                <span className="truncate text-meta text-ink-muted">
                   {entry.kind === "event" ? entry.locationName : entry.customerName}
                 </span>
               </div>
@@ -297,7 +297,7 @@ export function TodayCard({
             {entry.kind === "event" && (
               <div className="hidden shrink-0 items-center gap-3 sm:flex">
                 <div className="text-right">
-                  <p className="text-[13px] font-semibold leading-4 text-ink">
+                  <p className="text-meta font-semibold leading-4 text-ink">
                     {entry.checkedIn > 0
                       ? `${entry.checkedIn} ${entry.checkedIn > 1 ? "arrivés" : "arrivé"}`
                       : plural(entry.seatsHeld, "inscrit")}
@@ -384,7 +384,7 @@ export function NextDaysCards({
             <div className="relative flex flex-col gap-2">
               <p className="truncate text-lg font-semibold leading-[22px]">{event.title}</p>
               <div className="flex items-center justify-between gap-3">
-                <span className="text-[13px] leading-[17px] text-white/75">
+                <span className="text-meta leading-[17px] text-white/75">
                   <span className="text-base font-semibold text-white">{event.seatsHeld}</span> /{" "}
                   {event.capacity ?? "∞"}
                 </span>
@@ -441,7 +441,7 @@ export function LatestBookings({ bookings, now }: { bookings: LatestBookingRow[]
             <span className="hidden min-w-0 flex-1 truncate text-sm leading-[18px] text-ink-muted md:block">
               {entry.eventTitle ?? "Location"}
             </span>
-            <span className="hidden w-20 shrink-0 text-[13px] leading-[17px] text-ink-muted lg:block">
+            <span className="hidden w-20 shrink-0 text-meta leading-[17px] text-ink-muted lg:block">
               {plural(entry.seats, "place")}
             </span>
             <span
@@ -455,7 +455,7 @@ export function LatestBookings({ bookings, now }: { bookings: LatestBookingRow[]
             <span className="hidden w-[120px] shrink-0 justify-end sm:flex">
               <StatusBadge tone={badge.tone}>{badge.label}</StatusBadge>
             </span>
-            <span className="hidden w-[90px] shrink-0 text-right text-[13px] leading-[17px] text-ink-muted lg:block">
+            <span className="hidden w-[90px] shrink-0 text-right text-meta leading-[17px] text-ink-muted lg:block">
               il y a {elapsed(entry.createdAt, now)}
             </span>
           </li>
@@ -528,13 +528,13 @@ function MonthStat({
 }) {
   return (
     <div className="flex min-w-0 flex-1 flex-col gap-1.5 md:border-l md:border-white/10 md:pl-6">
-      <p className="flex min-w-0 items-center gap-2 text-[13px] leading-5 text-on-ink-muted">
+      <p className="flex min-w-0 items-center gap-2 text-meta leading-5 text-on-ink-muted">
         <span className="shrink-0">{label}</span>
         <Delta value={delta ?? null} />
         <span className="truncate text-xs text-on-ink-subtle">{note}</span>
       </p>
       <div className="flex items-end gap-5">
-        <p className="shrink-0 font-headline text-[34px] leading-9 text-on-ink">
+        <p className="shrink-0 font-headline text-title-sm text-on-ink">
           {value}
           {suffix && <span className="ml-1 text-lg font-light">{suffix}</span>}
         </p>
@@ -588,7 +588,7 @@ export function MonthBand({
         className="absolute -top-6 right-0 hidden size-6 bg-[radial-gradient(circle_at_0_0,transparent_24px,var(--color-ink)_24.5px)] lg:block"
       />
       <div className="flex shrink-0 flex-col gap-1 md:w-40">
-        <p className="font-headline text-xl leading-6 text-on-ink">Ce mois-ci</p>
+        <p className="font-headline text-section leading-[26px] text-on-ink">Ce mois-ci</p>
         <p className="text-xs leading-4 text-on-ink-muted">{period}</p>
       </div>
       <MonthStat
@@ -735,7 +735,7 @@ export function MonthCard({
 }) {
   return (
     <section className={cn(inkCardClasses, "flex flex-col gap-3.5 rounded-[22px] p-[18px]")}>
-      <h2 className="text-[13px] font-semibold leading-4 text-on-ink-muted">Ce mois-ci</h2>
+      <h2 className="text-meta font-semibold leading-4 text-on-ink-muted">Ce mois-ci</h2>
       <dl className="flex justify-between gap-3">
         {[
           [String(month.bookings), "réservations", "text-on-ink"],

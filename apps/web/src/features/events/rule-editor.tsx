@@ -110,7 +110,7 @@ export function RuleList({
                 {ruleMomentLabel(rule.trigger)}
               </span>
               <span className="flex min-w-0 grow flex-col gap-0.5">
-                <span className="text-[13px] font-semibold leading-4 text-ink-muted">
+                <span className="text-meta font-semibold leading-4 text-ink-muted">
                   {rule.name}
                 </span>
                 <span className="text-sm leading-[19px] text-ink">
@@ -369,7 +369,7 @@ function ConditionRow({
       : undefined;
   return (
     <div className="flex flex-wrap items-center gap-1.5">
-      <span className="w-5 shrink-0 text-[13px] font-semibold text-ink-subtle">{prefix}</span>
+      <span className="w-5 shrink-0 text-meta font-semibold text-ink-subtle">{prefix}</span>
       <Select
         variant="dense"
         aria-label="Information testée"
@@ -838,13 +838,13 @@ function Possibilities() {
           Ce que tu peux combiner
         </>
       )}
-      summaryClassName="flex items-center gap-2 text-[13px] font-semibold leading-[18px] text-ink-muted hover:text-ink"
+      summaryClassName="flex items-center gap-2 text-meta font-semibold leading-[18px] text-ink-muted hover:text-ink"
     >
       <div className="grid gap-2 pt-2.5 sm:grid-cols-3">
         {boxes.map(([title, entries]) => (
           <div key={title} className="flex flex-col gap-1.5 rounded-xl bg-field p-3">
             <p className={labelClasses}>{title}</p>
-            <ul className="text-[13px] leading-[19px] text-ink-soft">
+            <ul className="text-meta leading-[19px] text-ink-soft">
               {entries.map((entry) => (
                 <li key={entry.label} className={cn(entry.soon && "text-ink-subtle")}>
                   {entry.label}
@@ -898,7 +898,7 @@ function RuleTest({ rule, context }: { rule: Rule; context: RuleEditorContext })
   return (
     <div className="flex flex-col gap-2.5 rounded-xl bg-field p-3">
       <div className="flex flex-wrap items-center gap-2">
-        <p className="text-[13px] font-semibold text-ink">Tester sur</p>
+        <p className="text-meta font-semibold text-ink">Tester sur</p>
         <Select
           variant="dense"
           aria-label="Inscription à tester"
@@ -956,7 +956,7 @@ function RuleTest({ rule, context }: { rule: Rule; context: RuleEditorContext })
         </div>
       )}
       {source === "fictif" && (
-        <p className="text-[13px] leading-[18px] text-ink-muted">
+        <p className="text-meta leading-[18px] text-ink-muted">
           Réponses fictives : places, matériel et client restent inconnus (comptés comme « non »).
         </p>
       )}
@@ -1110,7 +1110,7 @@ function RuleDialog({
               <button
                 type="button"
                 onClick={onDelete}
-                className="self-start text-[13px] font-semibold leading-[18px] text-danger hover:underline"
+                className="self-start text-meta font-semibold leading-[18px] text-danger hover:underline"
               >
                 Supprimer la règle
               </button>
@@ -1152,7 +1152,7 @@ function RuleDialog({
           )}
         </Field>
 
-        <p className="rounded-xl bg-warning-bg px-3.5 py-2.5 text-[15px] leading-[22px] text-warning-strong">
+        <p className="rounded-xl bg-warning-bg px-3.5 py-2.5 text-ui leading-[22px] text-warning-strong">
           {description.when},{" "}
           {description.condition && (
             <>
@@ -1179,7 +1179,7 @@ function RuleDialog({
 
           <BuilderRow label="Si">
             {draft.conditions.length === 0 && (
-              <p className="pt-2 text-[13px] text-ink-muted">Toujours (aucune condition).</p>
+              <p className="pt-2 text-meta text-ink-muted">Toujours (aucune condition).</p>
             )}
             {draft.conditions.map((group, groupIndex) =>
               group.map((condition, index) => (
@@ -1199,7 +1199,7 @@ function RuleDialog({
             <div className="flex items-center gap-3 pl-[26px]">
               <button
                 type="button"
-                className="text-[13px] font-semibold leading-[18px] text-link hover:underline"
+                className="text-meta font-semibold leading-[18px] text-link hover:underline"
                 onClick={() =>
                   set({
                     conditions:
@@ -1217,7 +1217,7 @@ function RuleDialog({
               </button>
               <button
                 type="button"
-                className="text-[13px] font-semibold leading-[18px] text-link hover:underline"
+                className="text-meta font-semibold leading-[18px] text-link hover:underline"
                 onClick={() => set({ conditions: [...draft.conditions, [newCondition()]] })}
               >
                 + Ou
@@ -1243,7 +1243,7 @@ function RuleDialog({
             {draft.actions.length < 6 && (
               <button
                 type="button"
-                className="self-start text-[13px] font-semibold leading-[18px] text-link hover:underline"
+                className="self-start text-meta font-semibold leading-[18px] text-link hover:underline"
                 onClick={() =>
                   set({
                     actions: [

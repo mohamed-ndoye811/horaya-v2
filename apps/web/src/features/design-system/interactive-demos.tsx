@@ -77,7 +77,7 @@ export function FormDemo() {
           label="Description"
           aside={`${description.length} / 2000`}
           hint={
-            <p className="text-[13px] font-medium text-ink-muted">
+            <p className="text-meta font-medium text-ink-muted">
               Visible sur la page publique de l'événement.
             </p>
           }
@@ -250,9 +250,7 @@ export function InteractionDemo() {
   return (
     <div className="grid gap-8 lg:grid-cols-2">
       <div className="flex flex-col gap-4 border-[1.5px] border-dashed border-danger bg-bg p-5">
-        <p className="text-[15px] font-bold text-danger">
-          Si tu refuses : motif envoyé à la cliente
-        </p>
+        <p className="text-ui font-bold text-danger">Si tu refuses : motif envoyé à la cliente</p>
         <ChoiceChips
           label="Motif du refus"
           name="refusalReason"
@@ -266,7 +264,7 @@ export function InteractionDemo() {
           className={textareaClasses()}
           rows={2}
         />
-        <p className="text-[13px] font-medium text-danger">
+        <p className="text-meta font-medium text-danger">
           La pré-autorisation de 35 € sera libérée immédiatement, aucun débit.
         </p>
       </div>
@@ -340,7 +338,7 @@ export function InteractionDemo() {
           </>
         }
       >
-        <p className="text-[15px] font-medium leading-6 text-ink">
+        <p className="text-ui font-medium leading-6 text-ink">
           Motif : <strong>{reason ?? "aucun"}</strong>. La pré-autorisation de 35 € est libérée
           immédiatement.
         </p>
@@ -404,7 +402,7 @@ export function MotionDemo() {
         </Collapse>
         <Disclosure
           summary={(isOpen) => (isOpen ? "Masquer le journal" : "Journal (3)")}
-          summaryClassName="w-fit text-[13px] font-semibold text-ink-muted hover:text-ink"
+          summaryClassName="w-fit text-meta font-semibold text-ink-muted hover:text-ink"
         >
           <p className="pt-2 text-sm text-ink-muted">
             Remplace les &lt;details&gt;, qui ne s'animent pas.
@@ -424,7 +422,7 @@ export function MotionDemo() {
                 {row}
                 <button
                   type="button"
-                  className="text-[13px] text-danger"
+                  className="text-meta text-danger"
                   onClick={() => setRows(rows.filter((entry) => entry !== row))}
                 >
                   Retirer

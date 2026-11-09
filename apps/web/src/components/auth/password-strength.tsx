@@ -25,7 +25,7 @@ export function PasswordMeter({ password }: { password: string }) {
           />
         ))}
       </div>
-      <span className={cn("shrink-0 text-[13px] font-bold leading-4", style.text)}>
+      <span className={cn("shrink-0 text-meta font-bold leading-4", style.text)}>
         {style.label}
       </span>
     </div>

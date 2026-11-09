@@ -157,9 +157,9 @@ Maquettes et tokens dans le fichier Paper **HORAYA** (pages 00 à 05). Les token
 
 Polices, toutes Google Fonts (libres de droits), auto-hébergées via Fontsource :
 
-- **Archivo** (variable, axe de largeur) pour les titres. Remplace Sztos des maquettes.
-  Utilitaires : `font-headline` (gros titres) et `font-section` (en-têtes de section).
-- **Urbanist** pour l'interface.
+- **Urbanist** pour toute l'interface, titres compris. Utilitaires : `font-headline`
+  (gros titres) et `font-section` (en-têtes de section). Échelle et règles : page Paper
+  « v4 · DS · Direction artistique ».
 - **Geist Mono** pour les labels et les données.
 
 ## Production

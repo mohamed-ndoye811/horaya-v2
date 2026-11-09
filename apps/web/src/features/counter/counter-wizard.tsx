@@ -430,7 +430,7 @@ export function CounterWizard({
                 // biome-ignore lint/suspicious/noArrayIndexKey: une place = un participant, dans l'ordre.
                 <div key={index} className="flex flex-col gap-2">
                   {seats > 1 && (
-                    <p className="text-[13px] font-semibold leading-4 text-ink-muted">
+                    <p className="text-meta font-semibold leading-4 text-ink-muted">
                       Participant {index + 1}
                     </p>
                   )}
@@ -622,7 +622,7 @@ export function CounterWizard({
               {chosenItems.map(([id, quantity]) => (
                 <PresenceItem
                   key={id}
-                  className="flex h-9 items-center gap-2 rounded-full bg-field pr-0.5 pl-3 text-[13px] font-semibold leading-4 text-ink"
+                  className="flex h-9 items-center gap-2 rounded-full bg-field pr-0.5 pl-3 text-meta font-semibold leading-4 text-ink"
                 >
                   {itemName(id)} ×{quantity}
                   {/* 32 px dans la pastille, zone de toucher agrandie à 48 px de haut. */}
@@ -710,7 +710,7 @@ export function CounterWizard({
           </Collapse>
           <Collapse open={total > 0 && passes.length > 0}>
             <fieldset className="flex flex-col gap-2">
-              <legend className="mb-1 text-[13px] font-semibold text-ink">
+              <legend className="mb-1 text-meta font-semibold text-ink">
                 Régler avec une carte de séances
               </legend>
               {passes.map((entry) => {
@@ -734,7 +734,7 @@ export function CounterWizard({
                     />
                     <span
                       className={cn(
-                        "text-[13px] font-semibold leading-4",
+                        "text-meta font-semibold leading-4",
                         passId === entry.id ? "text-on-ink" : "text-ink",
                       )}
                     >
@@ -799,7 +799,7 @@ export function CounterWizard({
                   <label
                     key={entry.value}
                     className={cn(
-                      "flex h-9 items-center rounded-full px-3.5 text-[13px] font-semibold leading-4",
+                      "flex h-9 items-center rounded-full px-3.5 text-meta font-semibold leading-4",
                       "has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-ink",
                       method === entry.value
                         ? "bg-ink text-on-ink"
@@ -851,7 +851,7 @@ export function CounterWizard({
               />
               <div className="flex flex-col gap-[3px]">
                 <p className="text-lg font-semibold leading-[22px] text-on-ink">{event.title}</p>
-                <p className="text-[13px] leading-[18px] text-on-ink-muted">
+                <p className="text-meta leading-[18px] text-on-ink-muted">
                   {event.date} · {event.range}
                   {event.location && (
                     <>
@@ -906,7 +906,7 @@ export function CounterWizard({
         </div>
         <div className="flex flex-col gap-3.5">
           <div className="flex items-end justify-between border-t border-ink-line pt-3.5">
-            <span className="text-[13px] leading-4 text-on-ink-muted">Total</span>
+            <span className="text-meta leading-4 text-on-ink-muted">Total</span>
             <span className="text-[40px] font-medium leading-[42px] tracking-[-0.03em] text-on-ink">
               {total > 0 ? (
                 <>
@@ -1019,7 +1019,7 @@ function OptionCards({
           />
           <span
             className={cn(
-              "text-[13px] font-semibold leading-4",
+              "text-meta font-semibold leading-4",
               value === option.value ? "text-on-ink" : "text-ink",
             )}
           >
@@ -1067,7 +1067,7 @@ function SessionRow({
     </span>
   );
   const date = (
-    <span className="w-[76px] shrink-0 text-[13px] font-semibold leading-4 text-ink">
+    <span className="w-[76px] shrink-0 text-meta font-semibold leading-4 text-ink">
       {event.label}
     </span>
   );
@@ -1105,7 +1105,7 @@ function SessionRow({
       <span className="min-w-0 flex-1 truncate">{title}</span>
       {full ? (
         <span className="flex items-center gap-1.5">
-          <span className="text-[13px] font-bold leading-4 text-danger">Complet</span>
+          <span className="text-meta font-bold leading-4 text-danger">Complet</span>
           {event.waitlist && (
             <StatusBadge tone="info" size="sm">
               attente
@@ -1115,7 +1115,7 @@ function SessionRow({
       ) : (
         <span
           className={cn(
-            "text-[13px] font-bold leading-4",
+            "text-meta font-bold leading-4",
             event.remaining !== null && event.remaining <= 2 ? "text-warning" : "text-ink-subtle",
           )}
         >
@@ -1139,7 +1139,7 @@ function SummaryLine({
 }) {
   return (
     <div className="flex h-10 items-center justify-between gap-4">
-      <dt className="truncate text-[13px] leading-4 text-on-ink-muted">{label}</dt>
+      <dt className="truncate text-meta leading-4 text-on-ink-muted">{label}</dt>
       <dd
         className={cn(
           "truncate text-sm font-semibold leading-[18px]",
@@ -1173,7 +1173,7 @@ function ContactInput({
       error={error}
       hint={
         hint ? (
-          <p className="text-[13px] font-medium leading-[18px] text-ink-muted">{hint}</p>
+          <p className="text-meta font-medium leading-[18px] text-ink-muted">{hint}</p>
         ) : undefined
       }
     >
@@ -1235,7 +1235,7 @@ function CounterDone({
         <p className="reveal font-mono text-xs font-semibold leading-4 text-success">
           {done.sessions ? "Inscription au trimestre" : `Réf. ${done.reference}`}
         </p>
-        <h2 className="font-headline text-[44px] leading-[42px] text-ink">
+        <h2 className="font-headline text-kpi leading-[42px] text-ink">
           <WordsReveal delay={1}>
             {done.status === "waitlisted" ? "En liste d'attente." : "C'est noté."}
           </WordsReveal>
@@ -1243,13 +1243,13 @@ function CounterDone({
       </div>
       <dl className="reveal-group flex flex-col rounded-3xl bg-surface px-2">
         <DoneRow label="Séance">
-          <span className="text-[15px] font-bold leading-5 text-ink">{event.title}</span>
-          <span className="text-[13px] font-medium leading-[18px] text-ink-muted">
+          <span className="text-ui font-bold leading-5 text-ink">{event.title}</span>
+          <span className="text-meta font-medium leading-[18px] text-ink-muted">
             {[`${event.date} · ${event.range}`, event.location].filter(Boolean).join(" · ")}
           </span>
         </DoneRow>
         <DoneRow label="Client">
-          <span className="text-[15px] font-bold leading-5 text-ink">
+          <span className="text-ui font-bold leading-5 text-ink">
             {customerName} ·{" "}
             {done.sessions
               ? `${done.sessions} séance${done.sessions > 1 ? "s" : ""}`
@@ -1264,12 +1264,12 @@ function CounterDone({
         {done.items.length + done.equipment.length > 0 && (
           <DoneRow label="Matériel">
             {done.equipment.map((label) => (
-              <span key={label} className="text-[15px] font-bold leading-5 text-ink">
+              <span key={label} className="text-ui font-bold leading-5 text-ink">
                 {label}
               </span>
             ))}
             {done.items.map((item) => (
-              <span key={item.name} className="text-[15px] font-bold leading-5 text-ink">
+              <span key={item.name} className="text-ui font-bold leading-5 text-ink">
                 {item.name} {item.labels.join(", ")}
               </span>
             ))}
@@ -1278,7 +1278,7 @@ function CounterDone({
         <DoneRow label="Paiement" last>
           <span className="flex items-center gap-2.5">
             {done.amountCents > 0 && (
-              <span className="text-[15px] font-semibold leading-5 text-ink">
+              <span className="text-ui font-semibold leading-5 text-ink">
                 {formatMoney(done.amountCents)}
               </span>
             )}

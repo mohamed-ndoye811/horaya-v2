@@ -119,7 +119,7 @@ export function PaymentsSettingsPage({
                   </Button>
                 </form>
               ) : (
-                <p className="text-[13px] font-medium text-ink-muted">
+                <p className="text-meta font-medium text-ink-muted">
                   Le propriétaire de l'espace connecte Stripe.
                 </p>
               )}
@@ -140,7 +140,7 @@ export function PaymentsSettingsPage({
                   className={`flex flex-col gap-2 px-5 py-4 ${index > 0 ? "border-t border-line-soft sm:border-t-0 sm:border-l" : ""}`}
                 >
                   <dt className="text-xs font-semibold text-ink-subtle">{label}</dt>
-                  <dd className="font-headline text-[36px] leading-9 text-ink">{value}</dd>
+                  <dd className="font-headline text-title-sm text-ink">{value}</dd>
                 </div>
               ))}
             </dl>
@@ -176,7 +176,7 @@ export function PaymentsSettingsPage({
                   Paiement en ligne par lien
                 </h2>
               </div>
-              <p className="text-[13px] leading-5 text-on-ink-muted">
+              <p className="text-meta leading-5 text-on-ink-muted">
                 Ton client reçoit un bouton « Payer » vers ton lien (Stripe, SumUp, PayPal,
                 HelloAsso…). Quand l'argent arrive, ton équipe clique « Marquer comme payé » sur la
                 réservation : les chiffres restent justes. Un événement peut avoir son propre lien.
@@ -198,7 +198,7 @@ export function PaymentsSettingsPage({
                   className="flex min-w-0 flex-col gap-1.5 rounded-[18px] bg-white/[0.06] px-4 py-3.5"
                 >
                   <dt className="text-xs font-semibold leading-4 text-on-ink-muted">{label}</dt>
-                  <dd className={`font-headline text-[28px] leading-8 tracking-[-0.03em] ${tone}`}>
+                  <dd className={`font-headline text-subtitle tracking-[-0.03em] ${tone}`}>
                     {value}
                   </dd>
                   <dd className="text-xs leading-4 text-on-ink-muted">{caption}</dd>

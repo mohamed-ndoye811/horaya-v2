@@ -247,8 +247,8 @@ function ModuleRow({
           <ModuleIcon moduleKey={moduleKey} />
         </span>
         <span className="flex min-w-0 grow flex-col gap-0.5">
-          <span className="text-[15px] font-semibold leading-5 text-ink">{name}</span>
-          <span className="text-[13px] leading-[17px] text-ink-muted">{summary}</span>
+          <span className="text-ui font-semibold leading-5 text-ink">{name}</span>
+          <span className="text-meta leading-[17px] text-ink-muted">{summary}</span>
         </span>
         {badge && (
           <span className="hidden shrink-0 rounded-full bg-success-bg px-2.5 py-1 text-label font-semibold leading-4 text-success sm:inline">
@@ -271,7 +271,7 @@ function ModuleRow({
           <button
             type="button"
             onClick={onRemove}
-            className={cn(textLinkClasses, "self-start text-[13px] text-ink-muted")}
+            className={cn(textLinkClasses, "self-start text-meta text-ink-muted")}
           >
             Retirer le module
           </button>
@@ -685,14 +685,14 @@ function AccessPanel({ modules, set }: { modules: EventModules; set: Setter }) {
         </Field>
       </div>
       {(access.minAge || access.maxAge) && (
-        <p className="-mt-2 text-[13px] leading-[18px] text-ink-muted">
+        <p className="-mt-2 text-meta leading-[18px] text-ink-muted">
           La question « Âge » est posée pour chaque participant et contrôlée à l'inscription.
         </p>
       )}
       <Field
         label="Réservé aux clients étiquetés"
         hint={
-          <p className="text-[13px] text-ink-muted">
+          <p className="text-meta text-ink-muted">
             Étiquettes de la fiche client, séparées par des virgules (« adhérent »). Vide : ouvert à
             tous.
           </p>
@@ -737,7 +737,7 @@ function SeriesPanel({ modules, set }: { modules: EventModules; set: Setter }) {
       <Field
         label="Prix de la série"
         hint={
-          <p className="text-[13px] text-ink-muted">
+          <p className="text-meta text-ink-muted">
             Vide : prix d'une séance × nombre de séances. Chaque série se règle ensuite dans son
             onglet « Série ».
           </p>
@@ -935,7 +935,7 @@ function DocumentsPanel({
                 <button
                   type="button"
                   onClick={() => onChange({ files: files.filter((entry) => entry !== file) })}
-                  className={cn(textLinkClasses, "shrink-0 text-[13px]")}
+                  className={cn(textLinkClasses, "shrink-0 text-meta")}
                 >
                   Retirer
                 </button>
@@ -1086,7 +1086,7 @@ function ModuleCatalog({
               Sur mesure
             </p>
             <p className="text-base font-semibold leading-5 text-white">Règles « si… alors… »</p>
-            <p className="text-[13px] leading-[18px] text-on-ink-soft">
+            <p className="text-meta leading-[18px] text-on-ink-soft">
               Pour tout ce qu'aucun module ne fait. Si l'âge est sous 16 ans, demander
               l'autorisation parentale. Si le tarif est réduit, demander un justificatif. Si moins
               de 4 inscrits à J-2, annuler et prévenir.

@@ -373,7 +373,7 @@ export function EventForm({
             aside={`${values.description.length} / 5000`}
             error={errors.description}
             hint={
-              <p className="text-[13px] font-medium text-ink-muted">
+              <p className="text-meta font-medium text-ink-muted">
                 Visible sur la page publique de l'événement.
               </p>
             }
@@ -393,7 +393,7 @@ export function EventForm({
             label="Points forts"
             error={errors.highlights}
             hint={
-              <p className="text-[13px] font-medium text-ink-muted">
+              <p className="text-meta font-medium text-ink-muted">
                 Séparés par des virgules, 6 au maximum : ils s'affichent en étiquettes sur la page
                 publique.
               </p>
@@ -708,7 +708,7 @@ export function EventForm({
             <Field
               label="Nombre de places"
               error={errors.capacity}
-              hint={<p className="text-[13px] font-medium text-ink-muted">Vide = illimité.</p>}
+              hint={<p className="text-meta font-medium text-ink-muted">Vide = illimité.</p>}
             >
               {(field) => (
                 <AffixInput
@@ -795,7 +795,7 @@ export function EventForm({
               label="Lien de paiement"
               error={errors.paymentLinkUrl}
               hint={
-                <p className="text-[13px] font-medium text-ink-muted">
+                <p className="text-meta font-medium text-ink-muted">
                   Facultatif : sans lien ici, celui de Paramètres › Paiements est proposé au client.
                 </p>
               }
@@ -872,17 +872,17 @@ export function EventForm({
             <span className="text-[11px] font-bold uppercase tracking-[0.06em] text-white/80">
               Aperçu public
             </span>
-            <p className="font-headline text-2xl leading-7 text-white">
+            <p className="font-headline text-subtitle text-white">
               {values.title || "Titre de l'événement"}
             </p>
           </div>
           <div className="flex flex-col gap-1 px-4 py-3.5">
-            <p className="text-[15px] font-semibold text-ink">
+            <p className="text-ui font-semibold text-ink">
               {start
                 ? `${formatWeekdayShort(start, "UTC")} ${start.getUTCDate()} ${start.toLocaleDateString("fr-FR", { month: "long", timeZone: "UTC" })} · ${formatHour(start, "UTC")}`
                 : "Date à choisir"}
             </p>
-            <p className="text-[13px] text-ink-muted">
+            <p className="text-meta text-ink-muted">
               {[
                 values.locationName || (values.onlineUrl ? "En ligne" : null),
                 values.capacity ? plural(Number(values.capacity), "place") : "Places illimitées",
@@ -900,7 +900,7 @@ export function EventForm({
 
         <div className="flex flex-col gap-3 rounded-3xl bg-surface p-5">
           <p className="flex items-baseline justify-between">
-            <span className="text-[15px] font-semibold text-ink">Prêt à publier</span>
+            <span className="text-ui font-semibold text-ink">Prêt à publier</span>
             <span className="text-sm font-semibold text-ink">
               <Swap value={String(ready)}>{ready}</Swap>
               <span className="font-normal text-ink-muted"> / {checklist.length}</span>
@@ -979,7 +979,7 @@ function PriceInputs({
   ];
   return (
     <fieldset className="flex flex-col gap-2">
-      <legend className="pb-2 text-[13px] font-semibold leading-[17px] text-ink">
+      <legend className="pb-2 text-meta font-semibold leading-[17px] text-ink">
         Tarifs et options
       </legend>
       {rows.map((row) => (
@@ -989,7 +989,7 @@ function PriceInputs({
               {row.name}
             </span>
             {row.hint && (
-              <span className="truncate text-[13px] leading-[17px] text-ink-muted">{row.hint}</span>
+              <span className="truncate text-meta leading-[17px] text-ink-muted">{row.hint}</span>
             )}
           </span>
           <div className="w-32 shrink-0">

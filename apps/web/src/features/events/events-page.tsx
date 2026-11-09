@@ -58,7 +58,7 @@ export function EventsPage({
           actions={newEventButton}
         />
         <EmptyState
-          title="Rien à l'agenda. Pour l'instant."
+          title="Ton premier atelier commence ici."
           description="Crée ton premier événement : il apparaîtra dans ton calendrier et sur ta page publique, prêt à recevoir des réservations."
           actions={
             <>
@@ -135,25 +135,8 @@ export function EventsPage({
         title="Événements"
         subtitle={`${counts.all} événement${counts.all > 1 ? "s" : ""} · ${counts.published} à venir · ${counts.draft} brouillon${counts.draft > 1 ? "s" : ""}`}
         actions={
-          <>
-            {/* Sur mobile, ces pages sont dans l'onglet « Plus ». */}
-            <div className="hidden gap-2 lg:flex">
-              <ButtonLink href="/app/evenements/liens" variant="secondary" title="Liens calendrier">
-                Calendriers
-              </ButtonLink>
-              <ButtonLink
-                href="/app/evenements/types"
-                variant="secondary"
-                title="Types d'événements"
-              >
-                Types
-              </ButtonLink>
-              <ButtonLink href="/app/cartes" variant="secondary" title="Cartes de séances">
-                Cartes
-              </ButtonLink>
-            </div>
-            <div className="hidden lg:flex">{newEventButton}</div>
-          </>
+          // Types, liens et cartes : dans le menu Événements du notch (et du menu mobile).
+          <div className="hidden lg:flex">{newEventButton}</div>
         }
         toolbar={
           <>
@@ -264,7 +247,7 @@ export function EventsPage({
                 <div className="flex min-w-0 flex-col gap-0.5">
                   <Link
                     href={`/app/evenements/${row.id}`}
-                    className={cn(rowLinkClasses, "truncate text-[15px] leading-5")}
+                    className={cn(rowLinkClasses, "truncate text-ui leading-5")}
                   >
                     {row.title}
                   </Link>

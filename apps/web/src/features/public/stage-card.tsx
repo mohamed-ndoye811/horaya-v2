@@ -35,7 +35,7 @@ export function StageSessionList({
   return (
     <ol className="flex flex-col gap-1.5">
       {sessions.map((session) => (
-        <li key={session.id} className="flex items-baseline gap-2.5 text-[13px] leading-[17px]">
+        <li key={session.id} className="flex items-baseline gap-2.5 text-meta leading-[17px]">
           <span className="w-[84px] shrink-0 font-semibold text-ink">
             {sessionDay(session.startsAt, timeZone)}
           </span>
@@ -106,7 +106,7 @@ export function StageCard({
         <StageSessionList sessions={sessions} timeZone={timeZone} />
         <div aria-hidden="true" className="h-px shrink-0 bg-line-soft" />
         <div className="flex items-baseline justify-between gap-3">
-          <p className="text-[13px] leading-[17px] text-ink-muted">
+          <p className="text-meta leading-[17px] text-ink-muted">
             {left === null
               ? "Toutes les séances"
               : `${Math.max(left, 0)} place${left > 1 ? "s" : ""} sur ${capacity} · toutes les séances`}

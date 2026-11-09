@@ -4,7 +4,7 @@ import { hexColorSchema } from "./workspace";
 
 /** Police des titres de la page publique (écran 24). */
 export const DISPLAY_FONTS = [
-  { value: "display", label: "Archivo", tone: "éditorial" },
+  { value: "display", label: "Urbanist serré", tone: "affirmé" },
   { value: "ui", label: "Urbanist", tone: "moderne" },
   { value: "mono", label: "Geist Mono", tone: "technique" },
 ] as const;

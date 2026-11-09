@@ -62,7 +62,7 @@ export function CustomerHomePage({
             <SpaceTitle displayFont={workspace.displayFont}>
               Bonjour{account.firstName ? ` ${account.firstName}` : ""}
             </SpaceTitle>
-            <p className="text-[15px] leading-[22px] text-ink-muted sm:text-base sm:leading-6">
+            <p className="text-ui leading-[22px] text-ink-muted sm:text-base sm:leading-6">
               {intro}
             </p>
           </div>
@@ -78,7 +78,7 @@ export function CustomerHomePage({
             <div className="flex items-baseline justify-between gap-4 max-lg:hidden">
               <h2 className="text-lg font-semibold leading-6 text-ink">À venir</h2>
               {freeCancellationHours > 0 && (
-                <p className="text-[13px] leading-4 text-ink-subtle">
+                <p className="text-meta leading-4 text-ink-subtle">
                   Annulation gratuite jusqu'à {freeCancellationHours} h avant
                 </p>
               )}
@@ -100,7 +100,7 @@ export function CustomerHomePage({
                   <span className="text-[40px] font-medium leading-[44px] tracking-[-0.03em] text-ink">
                     {formatDayNumber(next.startsAt, tz)}
                   </span>
-                  <span className="text-[13px] leading-4 text-ink-muted">
+                  <span className="text-meta leading-4 text-ink-muted">
                     {month(next.startsAt, tz)}
                   </span>
                 </div>
@@ -114,7 +114,7 @@ export function CustomerHomePage({
               >
                 <div className="flex min-w-0 flex-col gap-1.5">
                   <div className="flex flex-wrap items-center gap-2">
-                    <p className="text-[13px] font-semibold leading-4 text-ink-muted">
+                    <p className="text-meta font-semibold leading-4 text-ink-muted">
                       Ta prochaine réservation
                     </p>
                     {(() => {
@@ -127,7 +127,7 @@ export function CustomerHomePage({
                   <h3 className="text-[26px] font-semibold leading-8 tracking-[-0.02em] text-ink">
                     {next.title}
                   </h3>
-                  <p className="text-[15px] leading-[22px] text-ink-muted">
+                  <p className="text-ui leading-[22px] text-ink-muted">
                     {next.startsAt && next.endsAt
                       ? `${formatTimeRange(next.startsAt, next.endsAt, tz)} · ${next.seats} place${next.seats > 1 ? "s" : ""}`
                       : bookingDetails(next)}
@@ -157,7 +157,7 @@ export function CustomerHomePage({
           </div>
         ) : (
           <div className="flex flex-col items-start gap-4 rounded-[20px] bg-bg p-6">
-            <p className="text-[15px] leading-[22px] text-ink-muted">
+            <p className="text-ui leading-[22px] text-ink-muted">
               Tes prochaines réservations chez {workspace.name} apparaîtront ici.
             </p>
             <ButtonLink href={book} variant="brand" size="sm" arrow>
@@ -169,7 +169,7 @@ export function CustomerHomePage({
         <div className="flex flex-col gap-3 rounded-2xl bg-bg px-5 py-4 max-lg:bg-surface">
           <div className="flex items-center justify-between gap-4">
             <div className="flex flex-col gap-0.5">
-              <h2 className="text-[15px] font-semibold leading-5 text-ink">Historique</h2>
+              <h2 className="text-ui font-semibold leading-5 text-ink">Historique</h2>
               <p className="text-sm leading-5 text-ink-muted">{historySummary(history, tz)}</p>
             </div>
             {history.length > 0 && (
@@ -199,10 +199,8 @@ export function CustomerHomePage({
           <div className="flex items-center gap-3.5 border-b border-line py-4">
             <CalendarIcon className="shrink-0 text-ink" />
             <div className="flex min-w-0 flex-1 flex-col gap-0.5">
-              <p className="text-[15px] font-semibold leading-5 text-ink">
-                Mes cours dans mon agenda
-              </p>
-              <p className="text-[13px] leading-[18px] text-ink-muted">
+              <p className="text-ui font-semibold leading-5 text-ink">Mes cours dans mon agenda</p>
+              <p className="text-meta leading-[18px] text-ink-muted">
                 Google, Apple ou Outlook, mis à jour tout seul
               </p>
             </div>
@@ -211,8 +209,8 @@ export function CustomerHomePage({
           <div className="flex items-center gap-3.5 py-4">
             <UsersIcon className="shrink-0 text-ink" />
             <div className="flex min-w-0 flex-1 flex-col gap-0.5">
-              <p className="text-[15px] font-semibold leading-5 text-ink">Mon profil</p>
-              <p className="truncate text-[13px] leading-[18px] text-ink-muted">{account.email}</p>
+              <p className="text-ui font-semibold leading-5 text-ink">Mon profil</p>
+              <p className="truncate text-meta leading-[18px] text-ink-muted">{account.email}</p>
             </div>
             <ButtonLink href={`/${workspace.slug}/mon-espace/profil`} variant="soft" size="xs">
               Modifier

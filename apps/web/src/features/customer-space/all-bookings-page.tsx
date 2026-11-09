@@ -56,7 +56,7 @@ export function AllBookingsPage({
       <div className="flex flex-col gap-3 rounded-2xl bg-line-faint px-5 py-4">
         <div className="flex items-center justify-between gap-4">
           <div className="flex flex-col gap-0.5">
-            <h2 className="text-[15px] font-semibold leading-5 text-ink">
+            <h2 className="text-ui font-semibold leading-5 text-ink">
               Historique, tous ateliers confondus
             </h2>
             <p className="text-sm leading-5 text-ink-muted">

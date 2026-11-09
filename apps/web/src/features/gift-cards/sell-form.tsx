@@ -1,90 +1,160 @@
+import { useId, useRef, useState } from "react";
+import { Disclosure } from "@/components/motion/collapse";
 import { Button } from "@/components/ui/button";
+import { Dialog } from "@/components/ui/dialog";
 import { AffixInput, Checkbox, Field, inputClasses, textareaClasses } from "@/components/ui/field";
 import { FormAlert } from "@/components/ui/form-alert";
-import { FormSection } from "@/components/ui/section";
 import { sellGiftCardAction } from "@/functions/gift-cards";
+import { cn } from "@/lib/cn";
+import { centsToInput } from "@/lib/money";
 import { useFormAction } from "@/lib/use-form-action";
 import type { FormState } from "@/server/form-state";
 
-/** Vente d'un bon au comptoir : encaissé sur place, il est actif tout de suite. */
-export function SellGiftCardForm() {
+/**
+ * Fenêtre « Vendre un bon » (comptoir) : montant (raccourcis des montants proposés), qui offre,
+ * à qui, message replié. Encaissé sur place, le bon est actif tout de suite.
+ */
+export function SellGiftCardDialog({
+  amountsCents,
+  onClose,
+}: {
+  amountsCents: number[];
+  onClose: () => void;
+}) {
+  const formId = useId();
   const { state, onSubmit, pending } = useFormAction<FormState>(sellGiftCardAction, {});
   const errors = state.fieldErrors ?? {};
+  const amount = useRef<HTMLInputElement>(null);
+  const [picked, setPicked] = useState<string>("");
+  const pick = (value: string) => {
+    setPicked(value);
+    if (amount.current) amount.current.value = value;
+  };
+
   return (
-    <form onSubmit={onSubmit} className="flex max-w-[760px] flex-col gap-4 px-4 pb-4">
-      {state.error && <FormAlert>{state.error}</FormAlert>}
-      <FormSection number={1} title="Le bon">
-        <div className="grid gap-4 sm:grid-cols-2">
-          <Field label="Montant" required error={errors.amountCents}>
-            {(field) => (
-              <AffixInput {...field} name="amount" inputMode="decimal" required suffix="€" mono />
-            )}
-          </Field>
-        </div>
-        <Field label="Message pour le bénéficiaire" error={errors.message}>
+    <Dialog
+      open
+      onClose={onClose}
+      density="compact"
+      title="Vendre un bon cadeau"
+      description="Vente au comptoir : un montant à offrir, utilisable sur tes réservations."
+      footer={
+        <Button type="submit" form={formId} size="sm" pending={pending}>
+          Créer le bon
+        </Button>
+      }
+    >
+      <form id={formId} onSubmit={onSubmit} className="flex flex-col gap-3">
+        {state.error && !state.fieldErrors && <FormAlert>{state.error}</FormAlert>}
+        <Field label="Montant" required error={errors.amountCents}>
           {(field) => (
-            <textarea
-              {...field}
-              name="message"
-              rows={2}
-              maxLength={500}
-              className={textareaClasses()}
-            />
+            <div className="flex flex-wrap items-center gap-2">
+              {amountsCents.map((cents) => {
+                const value = centsToInput(cents).replace(",00", "");
+                return (
+                  <button
+                    key={cents}
+                    type="button"
+                    onClick={() => pick(value)}
+                    aria-pressed={picked === value}
+                    className={cn(
+                      "flex h-9 items-center rounded-full border px-3.5 text-meta font-semibold transition-colors",
+                      picked === value
+                        ? "border-ink bg-ink text-on-ink"
+                        : "border-line-soft bg-field text-ink hover:bg-line-soft",
+                    )}
+                  >
+                    {value} €
+                  </button>
+                );
+              })}
+              <div className="w-32">
+                <AffixInput
+                  {...field}
+                  ref={amount}
+                  size="xs"
+                  name="amount"
+                  inputMode="decimal"
+                  required
+                  placeholder={amountsCents.length > 0 ? "Autre" : "50"}
+                  autoFocus
+                  onChange={(event) => setPicked(event.target.value)}
+                  suffix="€"
+                  mono
+                />
+              </div>
+            </div>
           )}
         </Field>
-      </FormSection>
-      <FormSection number={2} title="Acheteur et bénéficiaire">
-        <div className="grid gap-4 sm:grid-cols-2">
-          <Field label="Nom de l'acheteur" required error={errors.purchaserName}>
+        <div className="grid gap-3 sm:grid-cols-2">
+          <Field label="Offert par" required error={errors.purchaserName}>
             {(field) => (
               <input
                 {...field}
                 name="purchaserName"
                 required
                 maxLength={120}
-                className={inputClasses()}
+                placeholder="Nom de l'acheteur"
+                className={inputClasses("xs")}
               />
             )}
           </Field>
-          <Field label="E-mail de l'acheteur" required error={errors.purchaserEmail}>
+          <Field label="Son e-mail" required error={errors.purchaserEmail}>
             {(field) => (
               <input
                 {...field}
                 type="email"
                 name="purchaserEmail"
                 required
-                className={inputClasses()}
+                placeholder="Il reçoit le bon"
+                className={inputClasses("xs")}
               />
             )}
           </Field>
-          <Field label="Nom du bénéficiaire" required error={errors.recipientName}>
+          <Field label="Pour" required error={errors.recipientName}>
             {(field) => (
               <input
                 {...field}
                 name="recipientName"
                 required
                 maxLength={120}
-                className={inputClasses()}
+                placeholder="Nom du bénéficiaire"
+                className={inputClasses("xs")}
               />
             )}
           </Field>
-          <Field label="E-mail du bénéficiaire" error={errors.recipientEmail}>
+          <Field label="Son e-mail" error={errors.recipientEmail}>
             {(field) => (
-              <input {...field} type="email" name="recipientEmail" className={inputClasses()} />
+              <input
+                {...field}
+                type="email"
+                name="recipientEmail"
+                placeholder="Facultatif"
+                className={inputClasses("xs")}
+              />
             )}
           </Field>
         </div>
+        <Disclosure
+          summary={(open) => (open ? "Message" : "+ Ajouter un message")}
+          summaryClassName="self-start text-meta font-semibold text-ink hover:underline"
+          className="flex flex-col gap-2"
+        >
+          <textarea
+            name="message"
+            rows={2}
+            maxLength={500}
+            aria-label="Message pour le bénéficiaire"
+            placeholder="Joyeux anniversaire ! Un moment de création rien que pour toi."
+            className={cn(textareaClasses(), "mt-2 min-h-20")}
+          />
+        </Disclosure>
         <Checkbox
           name="paid"
           defaultChecked
-          label="Déjà encaissé : activer le bon et envoyer l'e-mail"
+          label="Déjà encaissé : le bon part tout de suite par e-mail"
         />
-        <div className="flex justify-end border-t border-line-soft pt-5">
-          <Button type="submit" pending={pending}>
-            Créer le bon
-          </Button>
-        </div>
-      </FormSection>
-    </form>
+      </form>
+    </Dialog>
   );
 }

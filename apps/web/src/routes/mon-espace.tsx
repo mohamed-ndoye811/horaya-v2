@@ -3,7 +3,7 @@ import type { CSSProperties } from "react";
 import { HorayaWordmark } from "@/components/app/logo";
 import { RouteTransition } from "@/components/motion/route-transition";
 import { ScrollZone } from "@/components/motion/scroll-zone";
-import { NotchShell, notchLinkClasses } from "@/components/public/public-notch";
+import { NotchActive, NotchShell, notchLinkClasses } from "@/components/public/public-notch";
 import { SignOutButton } from "@/features/customer-space/actions";
 import { getCustomerSignedIn } from "@/functions/customer-space";
 import { Link } from "@/lib/navigation";
@@ -37,6 +37,7 @@ function NeutralLayout() {
         }
       >
         <Link href="/mon-espace" aria-current="page" className={notchLinkClasses(true)}>
+          <NotchActive />
           Mes réservations
         </Link>
         {signedIn && <SignOutButton slug={null} className={notchLinkClasses(false)} />}
@@ -48,7 +49,7 @@ function NeutralLayout() {
         {signedIn && (
           <SignOutButton
             slug={null}
-            className="tap-area text-[13px] font-semibold leading-4 text-ink-muted hover:text-ink"
+            className="tap-area text-meta font-semibold leading-4 text-ink-muted hover:text-ink"
           />
         )}
       </header>
@@ -58,7 +59,7 @@ function NeutralLayout() {
             <Outlet />
           </RouteTransition>
         </div>
-        <footer className="flex flex-col gap-2 px-5 pt-2 pb-5 text-[13px] leading-4 text-ink-subtle sm:flex-row sm:items-center sm:justify-between">
+        <footer className="flex flex-col gap-2 px-5 pt-2 pb-5 text-meta leading-4 text-ink-subtle sm:flex-row sm:items-center sm:justify-between">
           <p>Horaya</p>
           <p className="font-semibold">Chaque atelier ne voit que ses propres réservations</p>
         </footer>

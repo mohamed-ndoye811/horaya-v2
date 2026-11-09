@@ -68,12 +68,12 @@ export function MembersSettingsPage({
                 <h3 className="text-base font-semibold text-ink">{entry.role}</h3>
                 <ul className="flex flex-col gap-2">
                   {entry.can.map((line) => (
-                    <li key={line} className="text-[13px] leading-[18px] text-ink">
+                    <li key={line} className="text-meta leading-[18px] text-ink">
                       <span className="mr-1 font-bold text-success">✓</span>
                       {line}
                     </li>
                   ))}
-                  <li className="text-[13px] leading-[18px] text-ink-subtle">✕ {entry.cannot}</li>
+                  <li className="text-meta leading-[18px] text-ink-subtle">✕ {entry.cannot}</li>
                 </ul>
               </div>
             ))}

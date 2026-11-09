@@ -184,7 +184,7 @@ export function CustomersPage({
 
       {counts.all === 0 ? (
         <EmptyState
-          title="Pas encore de client."
+          title="Ton carnet de clients est encore vierge."
           description="Chaque personne qui réserve devient un client, avec son historique. Tu peux aussi en ajouter à la main."
           actions={
             <ButtonLink href="/app/clients/nouveau" arrow>
@@ -276,11 +276,11 @@ export function CustomersPage({
                 width: 170,
                 cell: (row) =>
                   row.nextVisit ? (
-                    <span className="text-[13px] font-medium leading-[17px] text-success">
+                    <span className="text-meta font-medium leading-[17px] text-success">
                       Prochaine le {dayMonth(row.nextVisit, timeZone)}
                     </span>
                   ) : (
-                    <span className="text-[13px] leading-[17px] text-ink-soft">
+                    <span className="text-meta leading-[17px] text-ink-soft">
                       {row.lastVisit ? visitLabel(row.lastVisit, timeZone) : "—"}
                     </span>
                   ),

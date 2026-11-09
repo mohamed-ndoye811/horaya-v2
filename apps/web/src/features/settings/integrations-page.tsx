@@ -73,7 +73,7 @@ export function IntegrationsSettingsPage() {
               Bientôt
             </StatusBadge>
           </h2>
-          <p className="text-[13px] leading-5 text-ink-muted">
+          <p className="text-meta leading-5 text-ink-muted">
             Elles arriveront avec l'API publique d'Horaya : tu pourras relier tes réservations à tes
             autres outils.
           </p>
@@ -94,8 +94,8 @@ export function IntegrationsSettingsPage() {
               </StatusBadge>
             </div>
             <div className="flex flex-col gap-1">
-              <h3 className="text-[15px] font-semibold leading-5 text-ink">{entry.title}</h3>
-              <p className="text-[13px] leading-[17px] text-ink-subtle">{entry.text}</p>
+              <h3 className="text-ui font-semibold leading-5 text-ink">{entry.title}</h3>
+              <p className="text-meta leading-[17px] text-ink-subtle">{entry.text}</p>
             </div>
           </section>
         ))}

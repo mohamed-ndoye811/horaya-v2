@@ -23,13 +23,12 @@ import { SOFT } from "@/components/motion/indicator";
 import { Button } from "@/components/ui/button";
 import {
   BellIcon,
-  CalendarIcon,
   ChevronLeft,
   ChevronRight,
   CloseIcon,
   ExternalIcon,
   MenuIcon,
-  TicketIcon,
+  PlusIcon,
 } from "@/components/ui/icons";
 import { cn } from "@/lib/cn";
 import { Link, usePathname } from "@/lib/navigation";
@@ -38,21 +37,15 @@ import { HorayaMark } from "./logo";
 import {
   AccountPanel,
   type AccountUser,
+  activeSection,
+  CREATE_LINKS,
   GroupLabel,
+  HOME,
   isActive,
   NAV,
-  type NavItem,
   NotificationsPanel,
   SearchPanel,
 } from "./notch-panels";
-
-/** Écrans du notch (sauf les réglages, dans « Compte »), plus ceux qui n'ont pas d'onglet. */
-const SCREENS: NavItem[] = [
-  ...NAV.filter((item) => item.href !== "/app/parametres"),
-  { href: "/app/evenements/types", label: "Types d'événements", icon: TicketIcon },
-  { href: "/app/evenements/liens", label: "Liens calendrier", icon: CalendarIcon },
-  { href: "/app/cartes", label: "Cartes de séances", icon: TicketIcon },
-];
 
 export interface MobileMenuProps {
   user: AccountUser;
@@ -160,6 +153,7 @@ export function MobileMenu({ user, workspace, unread: unreadAtLoad, pending }: M
               user={user}
               workspace={workspace}
               unread={unread}
+              pending={pending}
             />
           )}
         </AnimatePresence>
@@ -181,7 +175,7 @@ function PillContent({ name, dot, icon }: { name: string; dot: boolean; icon: Re
           <span className="absolute -top-1 -right-1.5 size-[9px] rounded-full border-2 border-ink bg-accent" />
         )}
       </span>
-      <span className="max-w-[180px] truncate text-[15px] font-semibold leading-5">{name}</span>
+      <span className="max-w-[180px] truncate text-ui font-semibold leading-5">{name}</span>
       <span className="flex size-5 shrink-0 items-center justify-center text-notch-idle">
         {icon}
       </span>
@@ -214,7 +208,8 @@ function Panel({
   user,
   workspace,
   unread,
-}: Omit<MobileMenuProps, "pending"> & {
+  pending,
+}: MobileMenuProps & {
   pill: RefObject<HTMLButtonElement | null>;
   dot: boolean;
   onClose: () => void;
@@ -293,23 +288,39 @@ function Panel({
                 onClose={onClose}
                 idle={
                   <>
+                    <div className="flex flex-col gap-1">
+                      <GroupLabel>Créer</GroupLabel>
+                      <div className="flex flex-wrap gap-2">
+                        {CREATE_LINKS.slice(0, 3).map((link) => (
+                          <Link
+                            key={link.href}
+                            href={link.href}
+                            onClick={onClose}
+                            className="flex h-10 items-center gap-1.5 rounded-full bg-white/8 pr-3.5 pl-3 text-sm font-semibold leading-[18px] text-on-ink transition-colors hover:bg-white/12"
+                          >
+                            <PlusIcon size={14} className="text-accent" />
+                            {link.label}
+                          </Link>
+                        ))}
+                      </div>
+                    </div>
                     <button
                       type="button"
                       onClick={() => setView("notifications")}
                       // biome-ignore lint/a11y/noAutofocus: retour des notifications
                       autoFocus={back}
-                      className="flex h-14 items-center gap-3 rounded-[14px] px-2 text-left transition-colors hover:bg-white/8"
+                      className="flex h-12 items-center gap-3 rounded-[14px] px-2 text-left transition-colors hover:bg-white/8"
                     >
                       <span
                         aria-hidden="true"
-                        className="relative flex size-10 shrink-0 items-center justify-center rounded-[10px] bg-white/8 text-notch-idle"
+                        className="relative flex size-9 shrink-0 items-center justify-center rounded-[10px] bg-white/8 text-notch-idle"
                       >
                         <BellIcon size={18} />
                         {unread > 0 && (
                           <span className="absolute -top-0.5 -right-0.5 size-[9px] rounded-full border-2 border-ink bg-accent" />
                         )}
                       </span>
-                      <span className="flex-1 text-[15px] font-semibold leading-[19px]">
+                      <span className="flex-1 text-ui font-semibold leading-[19px]">
                         Notifications
                       </span>
                       {unread > 0 && (
@@ -319,12 +330,13 @@ function Panel({
                       )}
                       <ChevronRight className="text-on-ink-subtle" />
                     </button>
-                    <Screens slug={workspace.slug} onClose={onClose} />
+                    <Screens slug={workspace.slug} pending={pending} onClose={onClose} />
                     <AccountPanel
                       user={user}
                       workspace={workspace}
                       onClose={onClose}
                       wide={false}
+                      compact
                     />
                   </>
                 }
@@ -369,42 +381,73 @@ function Panel({
 
 const PANEL_RADIUS = 28;
 
-/** Toute la navigation, en tuiles ; la plus précise des correspondances est allumée. */
-function Screens({ slug, onClose }: { slug: string; onClose: () => void }) {
+/**
+ * Toute la navigation : une ligne par section, avec à droite les pages de son menu (les mêmes
+ * que la languette du notch). La plus précise des correspondances est allumée.
+ */
+function Screens({
+  slug,
+  pending,
+  onClose,
+}: {
+  slug: string;
+  pending: number;
+  onClose: () => void;
+}) {
   const pathname = usePathname();
-  const current = SCREENS.filter((screen) => isActive(pathname, screen.href)).sort(
-    (a, b) => b.href.length - a.href.length,
-  )[0]?.href;
+  const section = pathname === "/app" ? "/app" : activeSection(pathname);
+  const sub = NAV.flatMap((item) => item.links)
+    .filter((link) => link.chip && isActive(pathname, link.href))
+    .map((link) => link.href)[0];
   const tile =
-    "flex min-h-14 items-center gap-3 rounded-[14px] px-3.5 py-2.5 text-[15px] font-semibold leading-[19px] transition-colors";
+    "flex h-11 items-center rounded-[14px] text-ui font-semibold leading-[19px] transition-colors";
+  const tone = (current: boolean) =>
+    current ? "bg-on-ink/16 text-on-ink" : "bg-white/6 text-on-ink hover:bg-white/12";
   return (
     <nav aria-label="Navigation complète" className="flex flex-col gap-1">
       <GroupLabel>Aller à</GroupLabel>
-      <ul className="grid grid-cols-2 gap-2">
-        {SCREENS.map(({ href, label, icon: Icon }) => (
-          <li key={href} className="flex">
-            <Link
-              href={href}
-              onClick={onClose}
-              aria-current={href === current ? "page" : undefined}
-              className={cn(
-                tile,
-                "flex-1",
-                href === current
-                  ? "bg-on-ink/16 text-on-ink"
-                  : "bg-white/6 text-on-ink hover:bg-white/12",
-              )}
-            >
-              <Icon size={20} className="shrink-0 text-notch-idle" />
-              {label}
-            </Link>
-          </li>
-        ))}
+      <ul className="flex flex-col gap-1.5">
+        {[HOME, ...NAV].map((item) => {
+          const Icon = item.icon;
+          const current = item.href === section && !sub;
+          return (
+            <li key={item.href} className="flex gap-1.5">
+              <Link
+                href={item.href}
+                onClick={onClose}
+                aria-current={current ? "page" : undefined}
+                className={cn(tile, "min-w-0 flex-1 gap-3 px-3.5", tone(current))}
+              >
+                <Icon size={20} className="shrink-0 text-notch-idle" />
+                <span className="truncate">{item.label}</span>
+                {item.href === "/app/reservations" && pending > 0 && (
+                  <span className="ml-auto flex h-5 items-center rounded-full bg-accent px-2 text-xs font-bold leading-4 text-ink">
+                    {pending} à valider
+                  </span>
+                )}
+              </Link>
+              {item.links
+                .filter((link) => link.chip)
+                .map((link) => (
+                  <Link
+                    key={link.href}
+                    href={link.href}
+                    onClick={onClose}
+                    aria-label={link.label}
+                    aria-current={link.href === sub ? "page" : undefined}
+                    className={cn(tile, "shrink-0 px-3.5 text-meta", tone(link.href === sub))}
+                  >
+                    {link.chip}
+                  </Link>
+                ))}
+            </li>
+          );
+        })}
         <li className="flex">
           <Link
             href={`/${slug}`}
             onClick={onClose}
-            className={cn(tile, "flex-1 bg-white/6 hover:bg-white/12")}
+            className={cn(tile, "flex-1 gap-3 bg-white/6 px-3.5 hover:bg-white/12")}
           >
             <ExternalIcon size={16} className="shrink-0 text-notch-idle" />
             Ma page publique

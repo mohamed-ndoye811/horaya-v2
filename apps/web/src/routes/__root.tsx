@@ -1,5 +1,4 @@
 /// <reference types="vite/client" />
-import "@fontsource-variable/archivo/wdth.css";
 import "@fontsource-variable/urbanist";
 import "@fontsource-variable/geist-mono";
 import { createRootRoute, HeadContent, Outlet, Scripts } from "@tanstack/react-router";

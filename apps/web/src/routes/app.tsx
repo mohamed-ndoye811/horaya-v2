@@ -1,4 +1,5 @@
 import { createFileRoute, Outlet } from "@tanstack/react-router";
+import { useRef } from "react";
 import { ImpersonationBar } from "@/components/app/impersonation-bar";
 import { MobileTabBar, MobileTopBar } from "@/components/app/mobile-nav";
 import { Notch } from "@/components/app/notch";
@@ -7,6 +8,7 @@ import { RouteTransition } from "@/components/motion/route-transition";
 import { ScrollZone } from "@/components/motion/scroll-zone";
 import { getAppShell } from "@/functions/app-shell";
 import { useLiveShell } from "@/lib/live-shell";
+import { useFrameThemeColor } from "@/lib/theme-color";
 
 /**
  * Coque de l'admin (DA v4) : sur grand écran, un cadre noir de 6 px autour de l'écran et le
@@ -23,9 +25,14 @@ function AppLayout() {
   const shell = Route.useLoaderData();
   const { user, workspace, impersonating } = shell;
   const { pendingBookings, unreadNotifications } = useLiveShell(shell);
+  const frame = useRef<HTMLDivElement>(null);
+  useFrameThemeColor(frame);
   return (
     // Mobile : le haut de l'écran (encoche, application installée) reste libre.
-    <div className="flex min-h-dvh flex-1 flex-col pt-[env(safe-area-inset-top)] lg:h-dvh lg:min-h-0 lg:flex-none lg:bg-ink lg:p-1.5">
+    <div
+      ref={frame}
+      className="flex min-h-dvh flex-1 flex-col pt-[env(safe-area-inset-top)] lg:h-dvh lg:min-h-0 lg:flex-none lg:bg-ink lg:p-1.5"
+    >
       <Notch
         user={user}
         workspace={workspace}

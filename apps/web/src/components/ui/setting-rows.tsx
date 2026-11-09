@@ -35,7 +35,7 @@ export function SettingRow({
       <div className="flex min-w-[180px] grow basis-0 flex-col gap-px">
         <span className="text-sm font-semibold leading-[18px] text-ink">{title}</span>
         {description && (
-          <span className="text-[13px] leading-[17px] text-ink-muted">{description}</span>
+          <span className="text-meta leading-[17px] text-ink-muted">{description}</span>
         )}
       </div>
       <div className="flex shrink-0 flex-wrap items-center gap-1.5">{children}</div>
@@ -71,7 +71,7 @@ export function InfoLine({ children }: { children: ReactNode }) {
  */
 export const pillClasses = (shape: "square" | "rounded" = "square") =>
   cn(
-    "flex h-8 shrink-0 items-center gap-1.5 border border-bg bg-field text-[13px] font-semibold leading-4 text-ink",
+    "flex h-8 shrink-0 items-center gap-1.5 border border-bg bg-field text-meta font-semibold leading-4 text-ink",
     shape === "rounded" ? "rounded-full pr-2.5 pl-1" : "rounded-lg px-2.5",
   );
 
@@ -88,7 +88,7 @@ export function PillInput({
         {...props}
         className="w-12 min-w-0 bg-transparent text-right text-base font-semibold text-ink outline-none lg:text-sm"
       />
-      <span className="text-[13px] font-normal text-ink-subtle">{suffix}</span>
+      <span className="text-meta font-normal text-ink-subtle">{suffix}</span>
     </label>
   );
 }

@@ -146,7 +146,7 @@ export function ItemForm({
               error={errors.quantity}
               hint={
                 itemId ? (
-                  <p className="text-[13px] font-medium text-ink-muted">
+                  <p className="text-meta font-medium text-ink-muted">
                     Ajoute ou retire des exemplaires.
                   </p>
                 ) : undefined
@@ -166,7 +166,7 @@ export function ItemForm({
             <Field
               label="Référence"
               error={errors.reference}
-              hint={<p className="text-[13px] font-medium text-ink-muted">Générée si vide.</p>}
+              hint={<p className="text-meta font-medium text-ink-muted">Générée si vide.</p>}
             >
               {(field) => (
                 <input
@@ -262,7 +262,7 @@ export function ItemForm({
 
         <Collapse open={Boolean(category)}>
           <FormSection number={3} title={`Champs de « ${category} »`}>
-            <p className="text-[13px] font-medium leading-[18px] text-ink-muted">
+            <p className="text-meta font-medium leading-[18px] text-ink-muted">
               Les mêmes pour tous les articles de la catégorie : chacun y met ses valeurs.
             </p>
             {edited[category] && (
@@ -327,7 +327,7 @@ export function ItemForm({
               "flex h-24 flex-col items-center justify-center gap-0.5 rounded-2xl text-center",
             )}
           >
-            <p className="text-[13px] font-semibold leading-[17px] text-ink-subtle">
+            <p className="text-meta font-semibold leading-[17px] text-ink-subtle">
               Glisse tes photos
             </p>
             <p className="text-[11px] leading-[14px] text-ink-faint">JPG ou PNG · 5 max</p>
@@ -347,7 +347,7 @@ export function ItemForm({
             <p className="truncate text-[17px] font-semibold leading-[22px] text-ink">
               {preview.name || "Nom de l'article"}
             </p>
-            <p className="text-[13px] leading-[17px] text-ink-subtle">
+            <p className="text-meta leading-[17px] text-ink-subtle">
               {[
                 preview.dailyRate ? `${preview.dailyRate} € / jour` : null,
                 preview.deposit ? `caution ${preview.deposit} €` : null,
