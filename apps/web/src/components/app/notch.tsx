@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  AnimatePresence,
   animate,
   cancelFrame,
   frame,
@@ -68,6 +69,22 @@ const WIDE_MIN_WIDTH = 1280;
 
 const clamp01 = (x: number) => Math.min(1, Math.max(0, x));
 
+/** Ordre des icônes, de gauche à droite : d'un panneau à l'autre, le contenu glisse dans ce sens. */
+const ORDER: string[] = [
+  ...NAV.map((item) => item.href),
+  "create",
+  "search",
+  "notifications",
+  "account",
+];
+/** Changement de panneau : l'ancien part d'un côté pendant que le nouveau arrive de l'autre. */
+const SWITCH = {
+  enter: (direction: number) => ({ opacity: 0, x: direction * 24 }),
+  center: { opacity: 1, x: 0 },
+  exit: (direction: number) => ({ opacity: 0, x: direction * -24 }),
+};
+const SWITCH_TRANSITION = { type: "spring", visualDuration: 0.24, bounce: 0 } as const;
+
 export interface NotchProps {
   user: { name: string; shortName: string; image: string | null; platformAdmin?: boolean };
   workspace: { name: string; slug: string };
@@ -114,6 +131,8 @@ export function Notch({ user, workspace, pendingBookings, unreadNotifications }:
    * survol. Il ne se referme plus quand la souris sort, ni ne change au survol d'une autre icône.
    */
   const pinned = useRef(false);
+  /** Sens du dernier changement de panneau : 1 vers la droite, -1 vers la gauche. */
+  const direction = useRef(0);
   const editing = useRef(false);
   const pendingOpen = useRef(false);
   /** Menu ouvert au clavier (flèche bas) : le focus va à sa première carte. */
@@ -199,6 +218,8 @@ export function Notch({ user, workspace, pendingBookings, unreadNotifications }:
   const open = useCallback(
     (next: Exclude<Panel, null>, byHover = false) => {
       pinned.current = !byHover;
+      const from = state.current.panel;
+      if (from) direction.current = Math.sign(ORDER.indexOf(next) - ORDER.indexOf(from));
       // Ouverte au survol pendant une saisie, la recherche ne prend pas le curseur.
       editing.current =
         byHover &&
@@ -572,29 +593,47 @@ export function Notch({ user, workspace, pendingBookings, unreadNotifications }:
             className="absolute top-14 left-1/2 -translate-x-1/2"
             style={{ opacity: 0, clipPath: "inset(0 50% 100% 50%)" }}
           >
-            {panel === "search" && (
-              <NotchPanel label="Recherche" onClose={close}>
-                <SearchPanel onClose={close} wide={wide} focus={!editing.current} />
-              </NotchPanel>
-            )}
-            {panel === "notifications" && (
-              <NotchPanel label="Notifications" onClose={close}>
-                <NotificationsPanel onClose={close} onLoaded={markRead} wide={wide} />
-              </NotchPanel>
-            )}
-            {panel === "account" && (
-              <NotchPanel label="Mon compte" onClose={close}>
-                <AccountPanel user={user} workspace={workspace} onClose={close} wide={wide} />
-              </NotchPanel>
-            )}
-            {isMenu(panel) && (
-              <NotchPanel
-                label={NAV.find((item) => item.href === panel)?.label ?? "Créer"}
-                onClose={close}
+            {/* `popLayout` : le panneau qui part sort du flux, le notch se mesure sur le nouveau. */}
+            <AnimatePresence initial={false} mode="popLayout" custom={direction.current}>
+              <motion.div
+                key={panel}
+                custom={direction.current}
+                variants={SWITCH}
+                initial="enter"
+                animate="center"
+                exit="exit"
+                transition={reduced ? { duration: 0 } : SWITCH_TRANSITION}
               >
-                <SectionPanel menu={panel} pending={pendingBookings} onClose={close} wide={wide} />
-              </NotchPanel>
-            )}
+                {panel === "search" && (
+                  <NotchPanel label="Recherche" onClose={close}>
+                    <SearchPanel onClose={close} wide={wide} focus={!editing.current} />
+                  </NotchPanel>
+                )}
+                {panel === "notifications" && (
+                  <NotchPanel label="Notifications" onClose={close}>
+                    <NotificationsPanel onClose={close} onLoaded={markRead} wide={wide} />
+                  </NotchPanel>
+                )}
+                {panel === "account" && (
+                  <NotchPanel label="Mon compte" onClose={close}>
+                    <AccountPanel user={user} workspace={workspace} onClose={close} wide={wide} />
+                  </NotchPanel>
+                )}
+                {isMenu(panel) && (
+                  <NotchPanel
+                    label={NAV.find((item) => item.href === panel)?.label ?? "Créer"}
+                    onClose={close}
+                  >
+                    <SectionPanel
+                      menu={panel}
+                      pending={pendingBookings}
+                      onClose={close}
+                      wide={wide}
+                    />
+                  </NotchPanel>
+                )}
+              </motion.div>
+            </AnimatePresence>
           </div>
         )}
       </div>
