@@ -57,7 +57,7 @@ export function PassPaymentActions({ passId }: { passId: string }) {
           Annuler
         </Button>
       </div>
-      {error && <p className="animate-drop text-[13px] font-semibold text-danger">{error}</p>}
+      {error && <p className="animate-drop text-meta font-semibold text-danger">{error}</p>}
     </div>
   );
 }

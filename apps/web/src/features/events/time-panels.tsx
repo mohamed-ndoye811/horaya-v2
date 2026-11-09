@@ -86,7 +86,7 @@ export function SlotsPanel({
       <div className="flex min-w-0 flex-col gap-3.5">
         <div className="flex flex-col gap-0.5">
           <p className="text-sm font-semibold leading-[18px] text-ink">Tes disponibilités</p>
-          <p className="text-[13px] leading-[17px] text-ink-muted">
+          <p className="text-meta leading-[17px] text-ink-muted">
             Chaque semaine, les créneaux sont découpés dans ces plages
           </p>
         </div>
@@ -95,14 +95,14 @@ export function SlotsPanel({
             <div key={WEEKDAYS[day]} className="flex min-h-[34px] flex-wrap items-center gap-1.5">
               <span
                 className={cn(
-                  "w-10 shrink-0 text-[13px] font-semibold leading-4",
+                  "w-10 shrink-0 text-meta font-semibold leading-4",
                   ranges.length ? "text-ink" : "text-ink-faint",
                 )}
               >
                 {WEEKDAYS[day]}
               </span>
               {ranges.length === 0 && (
-                <span className="text-[13px] leading-4 text-ink-faint">Fermé</span>
+                <span className="text-meta leading-4 text-ink-faint">Fermé</span>
               )}
               {ranges.map((range, index) => (
                 // biome-ignore lint/suspicious/noArrayIndexKey: la plage se modifie en place (clé stable pendant la saisie).
@@ -193,7 +193,7 @@ export function SlotsPanel({
             <button
               type="button"
               onClick={() => setClosing(true)}
-              className="text-[13px] font-semibold leading-4 text-link hover:underline"
+              className="text-meta font-semibold leading-4 text-link hover:underline"
             >
               + Ajouter
             </button>
@@ -509,7 +509,7 @@ export function DurationPanel({ modules, set }: { modules: EventModules; set: Se
                   )}
                 </span>
                 {option.description && (
-                  <span className="text-[13px] leading-[17px] text-ink-muted">
+                  <span className="text-meta leading-[17px] text-ink-muted">
                     {option.description}
                   </span>
                 )}
@@ -538,7 +538,7 @@ export function DurationPanel({ modules, set }: { modules: EventModules; set: Se
         <button
           type="button"
           onClick={() => setEditing("new")}
-          className="self-start px-0.5 pt-1 text-[13px] font-semibold leading-4 text-link hover:underline"
+          className="self-start px-0.5 pt-1 text-meta font-semibold leading-4 text-link hover:underline"
         >
           + Ajouter une durée
         </button>

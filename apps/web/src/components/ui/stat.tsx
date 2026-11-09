@@ -52,7 +52,7 @@ export function Stat({
       <div className="flex items-center justify-between gap-2">
         <p
           className={cn(
-            "text-[13px] font-semibold leading-4",
+            "text-meta font-semibold leading-4",
             dark
               ? "text-on-ink-muted"
               : highlight === "warning"
@@ -70,7 +70,7 @@ export function Stat({
       <p className="flex min-w-0 flex-wrap items-baseline gap-x-1.5">
         <span
           className={cn(
-            "min-w-0 font-headline text-[28px] leading-8 sm:text-[40px] sm:leading-[44px]",
+            "min-w-0 font-headline text-subtitle sm:text-title",
             dark
               ? "text-on-ink"
               : highlight === "warning"
@@ -162,7 +162,7 @@ export function MiniStat({
         <div className="flex items-center gap-2">
           <p
             className={cn(
-              "text-[13px] font-semibold leading-[17px]",
+              "text-meta font-semibold leading-[17px]",
               warning ? "text-warning" : "text-ink-subtle",
             )}
           >
@@ -172,7 +172,7 @@ export function MiniStat({
         </div>
         <p
           className={cn(
-            "truncate font-headline text-[28px] leading-8 tracking-[-0.03em] sm:text-[32px] sm:leading-9",
+            "truncate font-headline text-subtitle tracking-[-0.03em] sm:text-title-sm",
             dark ? "text-on-ink" : "text-ink",
           )}
         >

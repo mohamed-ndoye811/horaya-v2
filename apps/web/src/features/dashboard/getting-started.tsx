@@ -29,8 +29,8 @@ export function GettingStarted({ steps, slug }: { steps: StartStep[]; slug: stri
         >
           <div className="flex flex-wrap items-end justify-between gap-4">
             <div className="flex flex-col gap-1.5">
-              <p className="text-[13px] font-semibold leading-4 text-on-ink-muted">Bien démarrer</p>
-              <h2 className="font-headline text-[28px] leading-8 tracking-[-0.03em] text-on-ink">
+              <p className="text-meta font-semibold leading-4 text-on-ink-muted">Bien démarrer</p>
+              <h2 className="font-headline text-subtitle tracking-[-0.03em] text-on-ink">
                 {done} étape{done > 1 ? "s" : ""} sur {steps.length}
               </h2>
             </div>
@@ -88,7 +88,7 @@ export function GettingStarted({ steps, slug }: { steps: StartStep[]; slug: stri
                   <span className="flex min-w-0 flex-1 flex-col gap-0.5">
                     <span
                       className={cn(
-                        "text-[15px] leading-5",
+                        "text-ui leading-5",
                         step.done
                           ? "font-medium text-ink-subtle line-through"
                           : active
@@ -130,10 +130,10 @@ export function GettingStarted({ steps, slug }: { steps: StartStep[]; slug: stri
               </span>
             </div>
             <div className="flex h-11 items-center justify-between gap-3 rounded-xl border border-bg bg-field pr-1.5 pl-3.5">
-              <span className="truncate font-mono text-[13px] text-ink">horaya.app/{slug}</span>
+              <span className="truncate font-mono text-meta text-ink">horaya.app/{slug}</span>
               <CopyPublicLink slug={slug} />
             </div>
-            <p className="text-[13px] leading-[18px] text-ink-subtle">
+            <p className="text-meta leading-[18px] text-ink-subtle">
               Elle est vide pour l'instant : ton premier événement y apparaîtra.
             </p>
           </section>

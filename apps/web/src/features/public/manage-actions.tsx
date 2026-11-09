@@ -117,7 +117,7 @@ export function CancelBooking({
                     <StatusBadge tone={refund.tone}>{refund.label}</StatusBadge>
                     <span>{refund.amount}</span>
                   </p>
-                  <p className="text-[13px] leading-[19px] text-ink-muted">{refund.text}</p>
+                  <p className="text-meta leading-[19px] text-ink-muted">{refund.text}</p>
                 </div>
               )}
               {error && <FormAlert>{error}</FormAlert>}

@@ -150,7 +150,7 @@ export function PublicEventPage({
             </ButtonLink>
           </div>
           <div className="flex flex-col gap-3 px-1 pt-2 pb-1">
-            <p className="flex flex-wrap items-center gap-2 text-[13px] font-semibold leading-4 text-ink-muted">
+            <p className="flex flex-wrap items-center gap-2 text-meta font-semibold leading-4 text-ink-muted">
               <span
                 aria-hidden="true"
                 className="size-2 shrink-0 rounded-[3px]"
@@ -190,7 +190,7 @@ export function PublicEventPage({
                 key={label}
                 className="flex min-h-[46px] items-center justify-between gap-4 border-t border-bg py-2 first:border-t-0 sm:flex-col sm:items-start sm:justify-start sm:gap-1 sm:rounded-[18px] sm:border-0 sm:bg-surface sm:px-[18px] sm:py-4"
               >
-                <dt className="text-[13px] leading-4 text-ink-subtle sm:text-xs sm:font-semibold">
+                <dt className="text-meta leading-4 text-ink-subtle sm:text-xs sm:font-semibold">
                   {label}
                 </dt>
                 <dd className="text-right text-sm font-semibold leading-[18px] text-ink sm:text-left sm:text-base sm:leading-5">
@@ -200,7 +200,7 @@ export function PublicEventPage({
             ))}
             {seats.ratio !== null && (
               <div className="flex min-h-[46px] items-center justify-between gap-4 border-t border-bg sm:hidden">
-                <dt className="text-[13px] leading-4 text-ink-subtle">Places</dt>
+                <dt className="text-meta leading-4 text-ink-subtle">Places</dt>
                 <dd className="flex items-center gap-2">
                   <span aria-hidden="true" className="flex h-1 w-[70px] rounded-full bg-line-soft">
                     <span
@@ -263,7 +263,7 @@ export function PublicEventPage({
           >
             {bookable && (
               <div className="flex flex-col gap-3 border-t border-bg pt-4">
-                <p className="text-[13px] font-semibold leading-4 text-ink-subtle">
+                <p className="text-meta font-semibold leading-4 text-ink-subtle">
                   Ou cette séance seulement
                 </p>
                 {seatPicker}
@@ -280,13 +280,13 @@ export function PublicEventPage({
                 {price}
               </span>
               {priceCents > 0 && (
-                <span className="text-[15px] leading-5 text-ink-subtle">
+                <span className="text-ui leading-5 text-ink-subtle">
                   {seriesOnly ? "le trimestre" : "/ personne"}
                 </span>
               )}
             </p>
             <div className="flex flex-col gap-2">
-              <p className="flex justify-between gap-3 text-[13px] leading-4">
+              <p className="flex justify-between gap-3 text-meta leading-4">
                 <span className="font-semibold text-ink">
                   {event.capacity === null
                     ? `${event.seatsHeld} inscrit${event.seatsHeld > 1 ? "s" : ""}`
@@ -320,16 +320,16 @@ export function PublicEventPage({
             {offer && lastSession && (
               <div className="flex flex-col gap-3 border-t border-bg pt-4">
                 <div className="flex flex-col gap-1">
-                  <p className="text-[15px] font-semibold leading-5 text-ink">
+                  <p className="text-ui font-semibold leading-5 text-ink">
                     Inscris-toi pour tout le trimestre
                   </p>
-                  <p className="text-[13px] leading-[18px] text-ink-muted">
+                  <p className="text-meta leading-[18px] text-ink-muted">
                     {offer.sessions.length} séance{offer.sessions.length > 1 ? "s" : ""} ·{" "}
                     {formatMoney(offer.quote.priceCents)} · jusqu'au{" "}
                     {formatPublicSchedule(lastSession.startsAt, lastSession.endsAt, tz).date}
                   </p>
                   {offer.quote.prorated && (
-                    <p className="text-[13px] font-semibold leading-[18px] text-ink">
+                    <p className="text-meta font-semibold leading-[18px] text-ink">
                       {offer.quote.remaining} séance{offer.quote.remaining > 1 ? "s" : ""} restante
                       {offer.quote.remaining > 1 ? "s" : ""} sur {offer.quote.total} :{" "}
                       {formatMoney(offer.quote.priceCents)} au lieu de{" "}
@@ -338,7 +338,7 @@ export function PublicEventPage({
                   )}
                 </div>
                 {offer.fullSessions.length > 0 ? (
-                  <p className="text-[13px] font-semibold leading-[18px] text-ink-muted">
+                  <p className="text-meta font-semibold leading-[18px] text-ink-muted">
                     Complet pour le trimestre : il manque une place le{" "}
                     {offer.fullSessions
                       .map(
@@ -362,7 +362,7 @@ export function PublicEventPage({
             {bookable ? (
               <>
                 {offer && (
-                  <p className="-mb-2 text-[13px] font-semibold leading-4 text-ink-subtle">
+                  <p className="-mb-2 text-meta font-semibold leading-4 text-ink-subtle">
                     Ou à la séance
                   </p>
                 )}
@@ -370,7 +370,7 @@ export function PublicEventPage({
               </>
             ) : (
               !offer && (
-                <p className="border-t border-bg pt-4 text-[15px] font-semibold leading-[22px] text-ink-muted">
+                <p className="border-t border-bg pt-4 text-ui font-semibold leading-[22px] text-ink-muted">
                   {!dropIn
                     ? "Ce cours se réserve pour toute la série : les inscriptions sont closes."
                     : state.kind === "upcoming"
@@ -381,7 +381,7 @@ export function PublicEventPage({
                 </p>
               )
             )}
-            <ul className="flex flex-col gap-2 rounded-[14px] bg-field p-3.5 text-[13px] leading-[18px] text-ink/85">
+            <ul className="flex flex-col gap-2 rounded-[14px] bg-field p-3.5 text-meta leading-[18px] text-ink/85">
               {(state.kind === "waitlist"
                 ? ["C'est complet : ta demande passe en liste d'attente."]
                 : notes

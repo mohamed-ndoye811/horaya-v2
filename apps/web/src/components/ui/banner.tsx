@@ -34,7 +34,7 @@ export function Banner({
         {children}
       </p>
       {action && (
-        <div className="flex h-[30px] shrink-0 items-center rounded-full bg-surface px-3.5 text-[13px] font-semibold leading-4 text-ink hover:bg-field">
+        <div className="flex h-[30px] shrink-0 items-center rounded-full bg-surface px-3.5 text-meta font-semibold leading-4 text-ink hover:bg-field">
           {action}
         </div>
       )}

@@ -176,7 +176,7 @@ function Preview({
   const price = Number.isFinite(total) && total > 0 ? formatMoney(total) : null;
   const notes = moduleNotes(modules, timeZone);
   const noteList = notes.length > 0 && (
-    <ul className="relative flex flex-col gap-1.5 rounded-[14px] bg-field p-3.5 text-[13px] leading-[18px] text-ink/85">
+    <ul className="relative flex flex-col gap-1.5 rounded-[14px] bg-field p-3.5 text-meta leading-[18px] text-ink/85">
       <PresenceList>
         {notes.map((note) => (
           <PresenceItem as="li" key={note}>
@@ -211,7 +211,7 @@ function Preview({
             aria-selected={tab === value}
             onClick={() => setTab(value)}
             className={cn(
-              "relative isolate flex flex-1 items-center justify-center rounded-full text-[13px] font-semibold leading-4 transition-colors",
+              "relative isolate flex flex-1 items-center justify-center rounded-full text-meta font-semibold leading-4 transition-colors",
               tab === value ? "text-on-ink" : "text-ink hover:bg-field",
             )}
           >
@@ -234,7 +234,7 @@ function Preview({
             {workspaceName}
           </p>
           <p className="text-xl font-semibold leading-6 text-white">{name || "Nom du type"}</p>
-          <p className="text-[13px] leading-[17px] text-white/90">
+          <p className="text-meta leading-[17px] text-white/90">
             {[durationLabel, visible[0] ? sample(visible[0]) : null].filter(Boolean).join(" · ")}
           </p>
         </div>
@@ -258,7 +258,7 @@ function Preview({
               {(modules.equipment?.needs ?? []).map((need) => {
                 const label = itemTypeNames[need.itemTypeId] ?? "Matériel";
                 return (
-                  <p key={need.id} className="flex items-center gap-2 text-[13px] text-ink/85">
+                  <p key={need.id} className="flex items-center gap-2 text-meta text-ink/85">
                     <span
                       aria-hidden="true"
                       className={cn(
@@ -284,14 +284,14 @@ function Preview({
             </>
           )}
           {tab === "event" && modules.places?.capacity && (
-            <p className="text-[13px] font-semibold text-ink-muted">
+            <p className="text-meta font-semibold text-ink-muted">
               {modules.places.capacity} places proposées par défaut
             </p>
           )}
           {tab === "event" &&
             (described.length > 0 ? (
               <>
-                <p className="text-[13px] font-semibold text-ink-muted">
+                <p className="text-meta font-semibold text-ink-muted">
                   Section « Ce que tu décris » du formulaire d'événement
                 </p>
                 <FieldInputs
@@ -333,7 +333,7 @@ function Preview({
                   <PresenceList>
                     {visible.map((field) => (
                       <PresenceItem key={field.key} className="flex justify-between gap-4">
-                        <dt className="text-[13px] text-ink-muted">{field.label}</dt>
+                        <dt className="text-meta text-ink-muted">{field.label}</dt>
                         <dd className="text-sm font-semibold text-ink">{sample(field)}</dd>
                       </PresenceItem>
                     ))}
@@ -457,7 +457,7 @@ export function EventTypeEditor({
                 </Field>
               </div>
               <fieldset className="flex shrink-0 flex-col gap-2">
-                <legend className="mb-2 text-[13px] font-semibold leading-[17px] text-ink">
+                <legend className="mb-2 text-meta font-semibold leading-[17px] text-ink">
                   Couleur
                 </legend>
                 <input type="hidden" name="color" value={color} />
@@ -486,7 +486,7 @@ export function EventTypeEditor({
             <Field
               label="Nom des réservations"
               hint={
-                <p className="text-[13px] font-medium text-ink-muted">
+                <p className="text-meta font-medium text-ink-muted">
                   Sur la page publique et le bouton : « 3 {BOOKING_NOUN_LABELS[noun].plural} », «{" "}
                   {BOOKING_NOUN_LABELS[noun].action} ».
                 </p>
@@ -610,8 +610,8 @@ export function EventTypeEditor({
             ).map(([scope, title, hint]) => (
               <div key={scope} className="flex flex-col gap-2">
                 <p className="flex flex-wrap items-baseline gap-x-2 pb-0.5">
-                  <span className="text-[15px] font-semibold leading-5 text-ink">{title}</span>
-                  <span className="text-[13px] leading-[17px] text-ink-subtle">{hint}</span>
+                  <span className="text-ui font-semibold leading-5 text-ink">{title}</span>
+                  <span className="text-meta leading-[17px] text-ink-subtle">{hint}</span>
                 </p>
                 <FieldListEditor
                   fields={byScope(fields, scope)}

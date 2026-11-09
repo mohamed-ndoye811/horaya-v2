@@ -238,10 +238,10 @@ export function ManagedBookingPage({
           style={stagger(4)}
         >
           <span className="flex flex-col gap-0.5">
-            <span className="text-[15px] font-semibold leading-5">
+            <span className="text-ui font-semibold leading-5">
               Retrouver tes cours dans ton espace
             </span>
-            <span className="text-[13px] leading-[18px] text-ink-muted">
+            <span className="text-meta leading-[18px] text-ink-muted">
               Tes réservations, ton agenda et ton profil chez {workspace.name}, sans mot de passe.
             </span>
           </span>
@@ -322,10 +322,10 @@ export function ManagedBookingPage({
                 <StatusBadge tone={paymentPill.tone}>{paymentPill.label}</StatusBadge>
               )}
               {paymentPill?.rest && (
-                <span className="text-[13px] font-medium text-ink-muted">{paymentPill.rest}</span>
+                <span className="text-meta font-medium text-ink-muted">{paymentPill.rest}</span>
               )}
               {detail && (
-                <span className="basis-full text-[13px] font-medium text-ink-muted">{detail}</span>
+                <span className="basis-full text-meta font-medium text-ink-muted">{detail}</span>
               )}
             </span>
           </Fact>
@@ -335,7 +335,7 @@ export function ManagedBookingPage({
       <div className="reveal flex flex-col gap-4 sm:flex-row" style={stagger(6)}>
         {active && startsAt && endsAt ? (
           <div className="flex flex-1 flex-wrap items-center justify-between gap-3 rounded-[20px] bg-surface px-5 py-[18px]">
-            <h2 className="text-[15px] font-semibold leading-5 text-ink">Ajouter à ton agenda</h2>
+            <h2 className="text-ui font-semibold leading-5 text-ink">Ajouter à ton agenda</h2>
             <div className="flex gap-1.5">
               <AgendaLink href={`${manageHref}/agenda.ics`}>Apple</AgendaLink>
               <AgendaLink
@@ -358,7 +358,7 @@ export function ManagedBookingPage({
         ) : (
           <Link
             href={`/${slug}`}
-            className="flex flex-1 items-center justify-between gap-3 rounded-[20px] bg-surface px-5 py-[18px] text-[15px] font-semibold text-ink hover:bg-field"
+            className="flex flex-1 items-center justify-between gap-3 rounded-[20px] bg-surface px-5 py-[18px] text-ui font-semibold text-ink hover:bg-field"
           >
             Voir les événements à venir
             <ArrowRight />
@@ -366,7 +366,7 @@ export function ManagedBookingPage({
         )}
         {active && !started && (
           <div className="flex items-center justify-between gap-3 rounded-[20px] bg-surface px-5 py-[18px] sm:w-[300px]">
-            <h2 className="text-[15px] font-semibold leading-5 text-ink">Un empêchement ?</h2>
+            <h2 className="text-ui font-semibold leading-5 text-ink">Un empêchement ?</h2>
             <CancelBooking
               cancel={() => cancelManagedBookingAction(slug, token)}
               description={`${yourPlaces} pour « ${title} » ${agree("sera libérée", "seront libérées")} pour d'autres participants.`}
@@ -402,7 +402,7 @@ function Fact({ label, children }: { label: string; children: ReactNode }) {
   return (
     <div className="flex flex-col gap-1 border-t border-bg py-3.5 sm:min-h-[52px] sm:flex-row sm:items-center sm:py-2">
       <dt className="text-sm leading-[18px] text-ink-subtle sm:w-40 sm:shrink-0">{label}</dt>
-      <dd className="text-[15px] font-semibold leading-5 text-ink">{children}</dd>
+      <dd className="text-ui font-semibold leading-5 text-ink">{children}</dd>
     </div>
   );
 }

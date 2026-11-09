@@ -37,9 +37,9 @@ const base =
 const arrowClasses = "transition-transform group-hover:translate-x-[3px]";
 
 const sizes: Record<ButtonSize, string> = {
-  xs: "h-9 px-4 text-[13px] leading-4",
+  xs: "h-9 px-4 text-meta leading-4",
   sm: "h-10 px-4 text-sm leading-[18px]",
-  md: "h-11 px-5 text-[15px] leading-5",
+  md: "h-11 px-5 text-ui leading-5",
   lg: "h-[52px] px-6 text-base",
   xl: "h-[54px] px-[26px] text-base",
 };
@@ -242,7 +242,7 @@ export const textLinkClasses =
   "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink";
 
 /** Lien d'action de 13 px (« Modifier », « Ajouter une note », « Retirer »). */
-export const textLinkSmClasses = `${textLinkClasses} text-[13px] leading-4`;
+export const textLinkSmClasses = `${textLinkClasses} text-meta leading-4`;
 
 /**
  * Titre de ligne cliquable (nom d'un client, d'un événement dans une liste ou une fiche) :
@@ -254,5 +254,5 @@ export const rowLinkClasses =
 
 /** Lien discret des en-têtes de section (« Tous les événements → »). */
 export const monoLinkClasses =
-  "transition-colors tap-area text-[13px] font-semibold text-ink hover:text-ink-muted " +
+  "transition-colors tap-area text-meta font-semibold text-ink hover:text-ink-muted " +
   "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink";

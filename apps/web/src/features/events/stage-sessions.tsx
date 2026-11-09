@@ -108,7 +108,7 @@ export function StageSessions({
                   <span className="truncate text-sm font-semibold leading-[18px] text-ink">
                     {session.topic || `Séance ${index + 1}`}
                   </span>
-                  <span className="text-[13px] leading-[17px] text-ink-muted">
+                  <span className="text-meta leading-[17px] text-ink-muted">
                     {sessionDetails(session)}
                   </span>
                 </button>
@@ -130,7 +130,7 @@ export function StageSessions({
           <button
             type="button"
             onClick={() => setEditing("new")}
-            className="text-[13px] font-semibold leading-4 text-link hover:underline"
+            className="text-meta font-semibold leading-4 text-link hover:underline"
           >
             + Ajouter une séance
           </button>
@@ -140,7 +140,7 @@ export function StageSessions({
               onClick={() =>
                 onChange([...sessions, { ...last, date: weekAfter(last.date), topic: "" }])
               }
-              className="text-[13px] font-semibold leading-4 text-link hover:underline"
+              className="text-meta font-semibold leading-4 text-link hover:underline"
             >
               + Répéter chaque semaine
             </button>

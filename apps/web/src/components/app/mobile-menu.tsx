@@ -175,7 +175,7 @@ function PillContent({ name, dot, icon }: { name: string; dot: boolean; icon: Re
           <span className="absolute -top-1 -right-1.5 size-[9px] rounded-full border-2 border-ink bg-accent" />
         )}
       </span>
-      <span className="max-w-[180px] truncate text-[15px] font-semibold leading-5">{name}</span>
+      <span className="max-w-[180px] truncate text-ui font-semibold leading-5">{name}</span>
       <span className="flex size-5 shrink-0 items-center justify-center text-notch-idle">
         {icon}
       </span>
@@ -320,7 +320,7 @@ function Panel({
                           <span className="absolute -top-0.5 -right-0.5 size-[9px] rounded-full border-2 border-ink bg-accent" />
                         )}
                       </span>
-                      <span className="flex-1 text-[15px] font-semibold leading-[19px]">
+                      <span className="flex-1 text-ui font-semibold leading-[19px]">
                         Notifications
                       </span>
                       {unread > 0 && (
@@ -400,7 +400,7 @@ function Screens({
     .filter((link) => link.chip && isActive(pathname, link.href))
     .map((link) => link.href)[0];
   const tile =
-    "flex h-11 items-center rounded-[14px] text-[15px] font-semibold leading-[19px] transition-colors";
+    "flex h-11 items-center rounded-[14px] text-ui font-semibold leading-[19px] transition-colors";
   const tone = (current: boolean) =>
     current ? "bg-on-ink/16 text-on-ink" : "bg-white/6 text-on-ink hover:bg-white/12";
   return (
@@ -435,7 +435,7 @@ function Screens({
                     onClick={onClose}
                     aria-label={link.label}
                     aria-current={link.href === sub ? "page" : undefined}
-                    className={cn(tile, "shrink-0 px-3.5 text-[13px]", tone(link.href === sub))}
+                    className={cn(tile, "shrink-0 px-3.5 text-meta", tone(link.href === sub))}
                   >
                     {link.chip}
                   </Link>

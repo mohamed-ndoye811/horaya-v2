@@ -85,7 +85,7 @@ function ImportDialog({ onClose }: { onClose: () => void }) {
                 name="file"
                 required
                 accept=".csv,text/csv"
-                className="text-[15px] font-medium text-ink file:mr-4 file:h-10 file:rounded-full file:border file:border-line file:bg-surface file:px-4 file:text-sm file:font-semibold file:text-ink hover:file:bg-field"
+                className="text-ui font-medium text-ink file:mr-4 file:h-10 file:rounded-full file:border file:border-line file:bg-surface file:px-4 file:text-sm file:font-semibold file:text-ink hover:file:bg-field"
               />
             )}
           </Field>

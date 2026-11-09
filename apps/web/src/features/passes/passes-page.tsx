@@ -148,7 +148,7 @@ export function PassesPage({
                         <span className="truncate text-base font-bold leading-5 text-ink">
                           {plan.name}
                         </span>
-                        <span className="truncate text-[13px] leading-[17px] text-ink-muted">
+                        <span className="truncate text-meta leading-[17px] text-ink-muted">
                           {types}
                         </span>
                       </span>
@@ -159,14 +159,14 @@ export function PassesPage({
                       )}
                     </span>
                     <span className="flex items-baseline gap-2">
-                      <span className="font-headline text-[28px] leading-8 text-ink">
+                      <span className="font-headline text-subtitle text-ink">
                         {formatMoney(plan.priceCents)}
                       </span>
-                      <span className="text-[13px] leading-4 text-ink-muted">
+                      <span className="text-meta leading-4 text-ink-muted">
                         {formatMoney(Math.round(plan.priceCents / plan.sessions))} la séance
                       </span>
                     </span>
-                    <span className="flex flex-wrap gap-x-3 gap-y-1 border-t border-line-faint pt-3 text-[13px] font-medium leading-4 text-ink-soft">
+                    <span className="flex flex-wrap gap-x-3 gap-y-1 border-t border-line-faint pt-3 text-meta font-medium leading-4 text-ink-soft">
                       <span>{plural(plan.sessions, "séance")}</span>
                       <span>valable {formatValidity(plan.validityDays)}</span>
                       <span className="ml-auto text-ink-subtle">
@@ -244,7 +244,7 @@ export function PassesPage({
                   max={row.sessionsTotal}
                   label={`${row.balance} séances restantes sur ${row.sessionsTotal}`}
                 />
-                <span className="text-[13px] text-ink-muted">
+                <span className="text-meta text-ink-muted">
                   {row.name}
                   {row.expiresAt && ` · jusqu'au ${day(row.expiresAt)}`}
                 </span>
@@ -257,7 +257,7 @@ export function PassesPage({
                 cell: (row) => (
                   <span className="flex flex-col gap-0.5">
                     <span className="text-sm font-semibold text-ink">{row.customerName}</span>
-                    <span className="text-[13px] text-ink-muted">{row.name}</span>
+                    <span className="text-meta text-ink-muted">{row.name}</span>
                   </span>
                 ),
               },
@@ -287,10 +287,10 @@ export function PassesPage({
                 cell: (row) => {
                   const left = daysLeft(row.expiresAt);
                   if (row.expiresAt === null || left === null)
-                    return <span className="text-[13px] text-ink-subtle">Sans limite</span>;
+                    return <span className="text-meta text-ink-subtle">Sans limite</span>;
                   return (
                     <span className="flex items-center gap-2">
-                      <span className="text-[13px] text-ink-soft">{day(row.expiresAt)}</span>
+                      <span className="text-meta text-ink-soft">{day(row.expiresAt)}</span>
                       {left <= SOON_DAYS && (
                         <StatusBadge tone="warning" size="sm">
                           {`dans ${plural(left, "jour")}`}

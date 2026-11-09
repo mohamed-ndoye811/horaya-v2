@@ -57,10 +57,10 @@ export function CustomerPasses({
     <section className={cn(cardClasses, "relative gap-3")}>
       <h2 className="text-base font-semibold leading-5 text-ink">
         Cartes de séances
-        <span className="ml-2 text-[13px] font-normal text-ink-subtle">{passes.length}</span>
+        <span className="ml-2 text-meta font-normal text-ink-subtle">{passes.length}</span>
       </h2>
       {passes.length === 0 && (
-        <p className="text-[13px] leading-[17px] text-ink-subtle">Aucune carte pour l'instant.</p>
+        <p className="text-meta leading-[17px] text-ink-subtle">Aucune carte pour l'instant.</p>
       )}
       <PresenceList>
         {passes.map((pass) => {
@@ -96,13 +96,13 @@ export function CustomerPasses({
               {pass.movements.length > 0 && (
                 <Disclosure
                   summary={`Journal (${pass.movements.length})`}
-                  summaryClassName="text-[13px] font-semibold text-ink-muted hover:text-ink"
+                  summaryClassName="text-meta font-semibold text-ink-muted hover:text-ink"
                 >
                   <ul className="mt-2 flex flex-col">
                     {pass.movements.map((movement) => (
                       <li
                         key={movement.id}
-                        className="flex items-baseline justify-between gap-3 border-t border-line-soft py-1.5 text-[13px]"
+                        className="flex items-baseline justify-between gap-3 border-t border-line-soft py-1.5 text-meta"
                       >
                         <span className="min-w-0 text-ink-soft">
                           <span className="font-semibold text-ink">
@@ -156,7 +156,7 @@ function AdjustForm({ passId }: { passId: string }) {
   return (
     <Disclosure
       summary="Ajuster le solde"
-      summaryClassName="text-[13px] font-semibold text-ink-muted hover:text-ink"
+      summaryClassName="text-meta font-semibold text-ink-muted hover:text-ink"
     >
       <form onSubmit={onSubmit} className="mt-2 flex flex-col gap-3">
         {state.error && !state.fieldErrors && <FormAlert>{state.error}</FormAlert>}
@@ -208,7 +208,7 @@ function SellForm({ customerId, plans }: { customerId: string; plans: Data["sell
   return (
     <form onSubmit={onSubmit} className="flex flex-col gap-3 border-t border-line-faint pt-3">
       <input type="hidden" name="customerId" value={customerId} />
-      <p className="text-[13px] font-semibold text-ink">Vendre une carte</p>
+      <p className="text-meta font-semibold text-ink">Vendre une carte</p>
       {state.error && !state.fieldErrors && <FormAlert>{state.error}</FormAlert>}
       {state.success && <FormAlert tone="success">{state.success}</FormAlert>}
       <Select name="planId" aria-label="Formule" variant="compact" required defaultValue="">

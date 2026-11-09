@@ -704,7 +704,7 @@ export function DesignSystemPage() {
       <section>
         <SectionHeading title="État vide" />
         <EmptyState
-          title="Rien à l'agenda. Pour l'instant."
+          title="Ton premier atelier commence ici."
           description="Crée ton premier événement : il apparaîtra dans ton calendrier et sur ta page publique, prêt à recevoir des réservations."
           actions={
             <>

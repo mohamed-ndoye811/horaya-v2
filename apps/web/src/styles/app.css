@@ -2,7 +2,6 @@
 
 /* Polices auto-hébergées (Fontsource, importées dans __root.tsx). */
 :root {
-  --font-archivo: "Archivo Variable";
   --font-urbanist: "Urbanist Variable";
   --font-geist-mono: "Geist Mono Variable";
 }
@@ -24,7 +23,10 @@
   --color-neutral: #6b6b6b;
   --color-ink: #111111;
   --color-ink-muted: #6b6b6b;
-  --color-ink-subtle: #8a8a8a;
+  /* Texte tertiaire : 4,5:1 sur blanc (DA, planche 8). */
+  --color-ink-subtle: #767676;
+  /* Placeholders des champs seulement, jamais du texte qui porte du sens. */
+  --color-ink-placeholder: #8a8a8a;
   --color-on-ink: #f7f5f3;
   --color-link: #1f63b8;
   --color-accent: #f0975f;
@@ -60,9 +62,10 @@
   --color-warning-vivid: #f79009;
   --color-info-vivid: #2e7cf6;
 
-  --color-success: #397a5c;
+  /* Teintes d'état foncées pour passer 4,5:1 sur leur fond pâle (DA, planche 8). */
+  --color-success: #33704f;
   --color-success-bg: #e4efe9;
-  --color-warning: #9a6b12;
+  --color-warning: #86600f;
   --color-warning-bg: #f6ebd3;
   /* Texte sur fond ambre pâle (bandeaux, encadrés « à faire »). */
   --color-warning-strong: #5e4410;
@@ -84,15 +87,27 @@
   --color-today: #f6efe8;
   --color-weekend: #f4f4f2;
 
+  /* Échelle (DA, planche 2) : serrée pour l'interface, sauts francs pour les titres. */
   --text-label: 12px;
+  --text-meta: 13px;
   --text-sm: 14px;
+  --text-ui: 15px;
   --text-base: 16px;
   --text-lg: 18px;
   --text-section: 22px;
+  --text-subtitle: 28px;
+  --text-subtitle--line-height: 32px;
+  --text-title-sm: 32px;
+  --text-title-sm--line-height: 36px;
+  --text-title: 40px;
+  --text-title--line-height: 44px;
   --text-kpi: 44px;
   --text-display: 64px;
 
   --radius-dot: 999px;
+  /* Champs de saisie, et cartes blanches (DA, planche 3). */
+  --radius-field: 12px;
+  --radius-card: 24px;
 
   /*
    * Mouvement (repensé après le lot 19) : une seule courbe, douce à l'arrivée.
@@ -153,8 +168,6 @@
 }
 
 @theme inline {
-  /* Archivo remplace Sztos (maquettes Paper) : même famille de grotesque condensée, libre de droits. */
-  --font-display: var(--font-archivo), sans-serif;
   --font-ui: var(--font-urbanist), system-ui, sans-serif;
   --font-mono: var(--font-geist-mono), ui-monospace, monospace;
 }

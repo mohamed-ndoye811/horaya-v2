@@ -72,7 +72,7 @@ export function AddButton({
       className={cn(
         "inline-flex items-center gap-2 rounded-full border-[1.5px] border-dashed border-line-strong font-semibold text-ink",
         "hover:border-ink hover:bg-surface disabled:text-ink-subtle disabled:hover:border-line-strong disabled:hover:bg-transparent",
-        size === "sm" ? "h-9 px-3 text-[13px] leading-4" : "h-10 px-3.5 text-sm",
+        size === "sm" ? "h-9 px-3 text-meta leading-4" : "h-10 px-3.5 text-sm",
       )}
       {...props}
     >
@@ -105,7 +105,7 @@ export function ChoiceChips({
         <label
           key={option}
           className={cn(
-            "flex h-8 items-center rounded-full border px-3 text-[13px] font-semibold transition-colors",
+            "flex h-8 items-center rounded-full border px-3 text-meta font-semibold transition-colors",
             "has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-ink",
             tone === "danger"
               ? "border-danger text-danger hover:bg-danger-bg has-checked:bg-danger has-checked:text-white"

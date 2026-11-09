@@ -62,7 +62,7 @@ export function GiftCardSettingsPage({
               label="Montants proposés"
               error={errors.amounts}
               hint={
-                <p className="text-[13px] font-medium text-ink-muted">
+                <p className="text-meta font-medium text-ink-muted">
                   En euros, séparés par des virgules.
                 </p>
               }
@@ -125,7 +125,7 @@ export function GiftCardSettingsPage({
               label="Texte d'accompagnement"
               error={errors.message}
               hint={
-                <p className="text-[13px] font-medium text-ink-muted">
+                <p className="text-meta font-medium text-ink-muted">
                   Affiché sur la page d'achat, sur le bon et dans son e-mail (conditions, ateliers
                   concernés…).
                 </p>

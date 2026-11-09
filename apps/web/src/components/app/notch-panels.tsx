@@ -206,9 +206,7 @@ export function activeSection(pathname: string): string | undefined {
 
 export function GroupLabel({ children }: { children: ReactNode }) {
   return (
-    <div className="px-2 pb-1 text-[13px] font-semibold leading-4 text-on-ink-subtle">
-      {children}
-    </div>
+    <div className="px-2 pb-1 text-meta font-semibold leading-4 text-on-ink-subtle">{children}</div>
   );
 }
 
@@ -473,7 +471,7 @@ export function SearchPanel({
           <button
             type="button"
             onClick={onClose}
-            className="flex h-[26px] items-center rounded-lg border border-white/15 px-2 text-[13px] font-semibold leading-4 text-notch-idle hover:text-on-ink"
+            className="flex h-[26px] items-center rounded-lg border border-white/15 px-2 text-meta font-semibold leading-4 text-notch-idle hover:text-on-ink"
           >
             Échap
           </button>
@@ -489,7 +487,7 @@ export function SearchPanel({
         {!skip && (
           <div className="flex min-w-0 flex-col gap-3.5">
             {nothing && (
-              <p className="px-2 py-3 text-[15px] leading-[19px] text-on-ink-soft">
+              <p className="px-2 py-3 text-ui leading-[19px] text-on-ink-soft">
                 {searching
                   ? `Rien ne correspond à « ${trimmed} ».`
                   : "Rien à valider, aucun événement à venir."}
@@ -505,7 +503,7 @@ export function SearchPanel({
           {!sheet && (
             <div
               className={cn(
-                "flex px-2 text-[13px] leading-4 text-on-ink-subtle",
+                "flex px-2 text-meta leading-4 text-on-ink-subtle",
                 wide
                   ? "mt-auto flex-col gap-2.5 pt-3"
                   : "flex-wrap gap-4 border-t border-white/8 pt-3",
@@ -601,11 +599,11 @@ function SearchRow({
         </span>
       )}
       <span className="flex min-w-0 flex-1 flex-col gap-0.5">
-        <span className="truncate text-[15px] font-semibold leading-[19px] text-on-ink-soft">
+        <span className="truncate text-ui font-semibold leading-[19px] text-on-ink-soft">
           {choice.label}
         </span>
         {hit && (
-          <span className="truncate text-[13px] leading-4 text-on-ink-subtle">{hit.detail}</span>
+          <span className="truncate text-meta leading-4 text-on-ink-subtle">{hit.detail}</span>
         )}
       </span>
       {active && (
@@ -666,14 +664,14 @@ export function NotificationsPanel({
         {wide && (
           <span className="text-base font-semibold leading-5 text-on-ink">Notifications</span>
         )}
-        <p className="text-[13px] leading-[18px] text-on-ink-subtle">
+        <p className="text-meta leading-[18px] text-on-ink-subtle">
           Nouvelles réservations, annulations par tes clients et paiements arrivent ici. Tu choisis
           ce qui te prévient, dans l'app ou par e-mail.
         </p>
         <Link
           href="/app/parametres/notifications"
           onClick={onClose}
-          className="text-[13px] font-semibold leading-4 text-on-ink hover:text-notch-idle"
+          className="text-meta font-semibold leading-4 text-on-ink hover:text-notch-idle"
         >
           Régler mes notifications →
         </Link>
@@ -692,9 +690,9 @@ function NotificationList({
   return (
     <>
       {items === null ? (
-        <p className="px-2 py-3 text-[15px] leading-[19px] text-on-ink-subtle">Chargement…</p>
+        <p className="px-2 py-3 text-ui leading-[19px] text-on-ink-subtle">Chargement…</p>
       ) : items.length === 0 ? (
-        <p className="px-2 py-3 text-[15px] leading-[19px] text-on-ink-soft">Rien de neuf.</p>
+        <p className="px-2 py-3 text-ui leading-[19px] text-on-ink-soft">Rien de neuf.</p>
       ) : (
         <ul className="flex flex-col gap-1">
           {items.map((item) => {
@@ -712,19 +710,19 @@ function NotificationList({
                 <span className="flex min-w-0 flex-1 flex-col gap-0.5">
                   <span
                     className={cn(
-                      "truncate text-[15px] font-semibold leading-[19px]",
+                      "truncate text-ui font-semibold leading-[19px]",
                       item.unread ? "text-on-ink" : "text-on-ink-soft",
                     )}
                   >
                     {item.title}
                   </span>
                   {item.body && (
-                    <span className="truncate text-[13px] leading-4 text-on-ink-subtle">
+                    <span className="truncate text-meta leading-4 text-on-ink-subtle">
                       {item.body}
                     </span>
                   )}
                 </span>
-                <span className="shrink-0 self-start pt-0.5 text-[13px] leading-4 text-on-ink-subtle">
+                <span className="shrink-0 self-start pt-0.5 text-meta leading-4 text-on-ink-subtle">
                   {item.when}
                 </span>
               </>
@@ -784,7 +782,7 @@ export function SectionPanel({
       <div className={cn("grid gap-2", wide ? "grid-cols-3" : "grid-cols-2")}>
         {cards.map((card) => (
           <Link key={card.href} href={card.href} onClick={onClose} className={CARD}>
-            <span className="flex items-center gap-1.5 text-[15px] font-semibold leading-[19px] text-on-ink">
+            <span className="flex items-center gap-1.5 text-ui font-semibold leading-[19px] text-on-ink">
               {card.create && <PlusIcon size={14} className="shrink-0 text-accent" />}
               <span className="truncate">{card.label}</span>
               {card.pending && pending > 0 && (
@@ -793,7 +791,7 @@ export function SectionPanel({
                 </span>
               )}
             </span>
-            <span className="truncate text-[13px] leading-4 text-on-ink-subtle">{card.detail}</span>
+            <span className="truncate text-meta leading-4 text-on-ink-subtle">{card.detail}</span>
           </Link>
         ))}
       </div>
@@ -879,7 +877,7 @@ export function AccountPanel({
   }
 
   const row =
-    "flex h-11 w-full items-center rounded-[14px] px-2 text-left text-[15px] font-semibold leading-[19px] transition-colors hover:bg-white/8";
+    "flex h-11 w-full items-center rounded-[14px] px-2 text-left text-ui font-semibold leading-[19px] transition-colors hover:bg-white/8";
   return (
     <div className={wide ? "grid grid-cols-[minmax(0,1fr)_280px] gap-6" : "flex flex-col gap-3.5"}>
       {!compact && (
@@ -890,10 +888,10 @@ export function AccountPanel({
           <div className={cn("grid gap-2", wide ? "grid-cols-3" : "grid-cols-2")}>
             {(user.platformAdmin ? [...ACCOUNT_LINKS, COCKPIT_LINK] : ACCOUNT_LINKS).map((link) => (
               <Link key={link.href} href={link.href} onClick={onClose} className={CARD}>
-                <span className="truncate text-[15px] font-semibold leading-[19px] text-on-ink">
+                <span className="truncate text-ui font-semibold leading-[19px] text-on-ink">
                   {link.label}
                 </span>
-                <span className="truncate text-[13px] leading-4 text-on-ink-subtle">
+                <span className="truncate text-meta leading-4 text-on-ink-subtle">
                   {link.detail}
                 </span>
               </Link>
@@ -914,7 +912,7 @@ export function AccountPanel({
             <span className="truncate text-base font-semibold leading-5 text-on-ink">
               {user.name}
             </span>
-            <span className="truncate text-[13px] leading-4 text-on-ink-subtle">
+            <span className="truncate text-meta leading-4 text-on-ink-subtle">
               {workspace.name}
             </span>
           </span>
@@ -922,7 +920,7 @@ export function AccountPanel({
             <Link
               href="/app/plus"
               onClick={onClose}
-              className="ml-auto flex h-9 shrink-0 items-center rounded-full bg-white/8 px-3.5 text-[13px] font-semibold leading-4 text-on-ink transition-colors hover:bg-white/12"
+              className="ml-auto flex h-9 shrink-0 items-center rounded-full bg-white/8 px-3.5 text-meta font-semibold leading-4 text-on-ink transition-colors hover:bg-white/12"
             >
               Réglages
             </Link>

@@ -99,7 +99,7 @@ export function PassesShowcase({ workspace, plans }: { workspace: Workspace; pla
                 </p>
                 <p
                   className={cn(
-                    "text-[15px] font-semibold",
+                    "text-ui font-semibold",
                     highlight ? "text-[var(--brand-light)]" : "text-[var(--brand-text)]",
                   )}
                 >
@@ -108,7 +108,7 @@ export function PassesShowcase({ workspace, plans }: { workspace: Workspace; pla
               </div>
               <ul
                 className={cn(
-                  "flex flex-1 flex-col gap-2.5 border-t pt-5 text-[15px] leading-5",
+                  "flex flex-1 flex-col gap-2.5 border-t pt-5 text-ui leading-5",
                   highlight ? "border-white/12" : "border-line-faint",
                 )}
               >
@@ -175,7 +175,7 @@ export function PassesShowcase({ workspace, plans }: { workspace: Workspace; pla
           <Disclosure
             key={question}
             className="border-t border-line-faint first-of-type:border-t-0"
-            summaryClassName="flex w-full items-center justify-between gap-4 py-4 text-left text-[15px] font-semibold leading-5 text-ink"
+            summaryClassName="flex w-full items-center justify-between gap-4 py-4 text-left text-ui font-semibold leading-5 text-ink"
             summary={(open) => (
               <>
                 {question}
@@ -185,7 +185,7 @@ export function PassesShowcase({ workspace, plans }: { workspace: Workspace; pla
               </>
             )}
           >
-            <p className="pb-4 text-[15px] leading-[22px] text-ink-muted">{answer}</p>
+            <p className="pb-4 text-ui leading-[22px] text-ink-muted">{answer}</p>
           </Disclosure>
         ))}
       </section>
@@ -223,7 +223,7 @@ function CheckoutDialog({
           <Button type="submit" form={formId} variant="brand" size="lg" pending={pending} arrow>
             {pending ? "Un instant…" : `Payer ${formatMoney(plan.priceCents)}`}
           </Button>
-          <p className="text-center text-[13px] leading-[18px] text-ink-subtle">
+          <p className="text-center text-meta leading-[18px] text-ink-subtle">
             Paiement sur la page de {workspace.name}. Ta carte s'active dès réception.
           </p>
         </div>

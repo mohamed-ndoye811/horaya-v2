@@ -58,7 +58,7 @@ export function SellGiftCardDialog({
                     onClick={() => pick(value)}
                     aria-pressed={picked === value}
                     className={cn(
-                      "flex h-9 items-center rounded-full border px-3.5 text-[13px] font-semibold transition-colors",
+                      "flex h-9 items-center rounded-full border px-3.5 text-meta font-semibold transition-colors",
                       picked === value
                         ? "border-ink bg-ink text-on-ink"
                         : "border-line-soft bg-field text-ink hover:bg-line-soft",
@@ -137,7 +137,7 @@ export function SellGiftCardDialog({
         </div>
         <Disclosure
           summary={(open) => (open ? "Message" : "+ Ajouter un message")}
-          summaryClassName="self-start text-[13px] font-semibold text-ink hover:underline"
+          summaryClassName="self-start text-meta font-semibold text-ink hover:underline"
           className="flex flex-col gap-2"
         >
           <textarea

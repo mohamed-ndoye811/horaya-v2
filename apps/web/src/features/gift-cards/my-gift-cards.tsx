@@ -32,7 +32,7 @@ export function MyGiftCards({
       aria-label="Mes bons cadeaux"
       className={cn(cardShellClasses, "reveal-group gap-3 px-7 py-6", className)}
     >
-      <h2 className="text-[13px] font-semibold leading-4 text-ink-muted">Mes bons cadeaux</h2>
+      <h2 className="text-meta font-semibold leading-4 text-ink-muted">Mes bons cadeaux</h2>
       {cards.map((card) => (
         <div key={card.id} className="flex items-center justify-between gap-4">
           <div className="flex min-w-0 flex-col gap-0.5">
@@ -45,7 +45,7 @@ export function MyGiftCards({
               </p>
             )}
           </div>
-          <span className="flex h-[30px] shrink-0 items-center rounded-lg border border-dashed border-accent-strong px-2.5 font-mono text-[13px] font-medium leading-4 text-accent-strong">
+          <span className="flex h-[30px] shrink-0 items-center rounded-lg border border-dashed border-accent-strong px-2.5 font-mono text-meta font-medium leading-4 text-accent-strong">
             {card.code}
           </span>
         </div>

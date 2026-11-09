@@ -194,7 +194,7 @@ export function RentalForm({
         </div>
         <div className="flex flex-col gap-0.5 px-3.5">
           <p className="text-[17px] font-semibold leading-[22px] text-on-ink">{name}</p>
-          <p className="text-[13px] leading-[17px] text-on-ink-muted">
+          <p className="text-meta leading-[17px] text-on-ink-muted">
             Réf. {reference}
             {dailyRateCents !== null ? ` · ${formatMoney(dailyRateCents)} / jour` : ""}
           </p>
@@ -213,7 +213,7 @@ export function RentalForm({
         </dl>
         <div className="flex items-end justify-between px-3.5">
           <span className="pb-1.5 text-sm leading-[18px] text-on-ink-muted">Total</span>
-          <span className="font-headline text-[40px] leading-[44px] tracking-[-0.03em] text-on-ink">
+          <span className="font-headline text-title tracking-[-0.03em] text-on-ink">
             {valid ? formatMoney(totalCents).replace(/\s?€$/, "") : "—"}
             {valid && <span className="ml-1 text-lg font-light tracking-normal">€</span>}
           </span>

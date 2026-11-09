@@ -62,8 +62,8 @@ export function SpaceAside({
           : "radial-gradient(circle at 70% 15%, color-mix(in srgb, var(--brand) 55%, transparent), transparent 65%), linear-gradient(var(--color-ink), var(--color-ink))",
       }}
     >
-      <p className="text-[13px] font-semibold leading-4 text-[var(--brand-light)]">{eyebrow}</p>
-      <p className="text-[15px] leading-[23px] text-white">{children}</p>
+      <p className="text-meta font-semibold leading-4 text-[var(--brand-light)]">{eyebrow}</p>
+      <p className="text-ui leading-[23px] text-white">{children}</p>
     </aside>
   );
 }

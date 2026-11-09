@@ -78,7 +78,7 @@ export function TimeGridCalendar({
                     {WEEKDAY_LABELS[weekdayOf(day.year, day.month, day.day)]}
                   </span>
                   {isToday ? (
-                    <span className="flex size-8 items-center justify-center rounded-full bg-ink text-[15px] font-bold leading-[18px] text-on-ink">
+                    <span className="flex size-8 items-center justify-center rounded-full bg-accent text-ui font-bold leading-[18px] text-ink">
                       {day.day}
                     </span>
                   ) : (
@@ -230,7 +230,7 @@ function EventBar({
 }) {
   const content = (
     <>
-      <span className="truncate text-[13px] font-bold leading-4 text-ink">{event.title}</span>
+      <span className="truncate text-meta font-bold leading-4 text-ink">{event.title}</span>
       {spanLabel(event, timeZone) && (
         <span className="hidden shrink-0 text-xs sm:inline">{spanLabel(event, timeZone)}</span>
       )}
@@ -273,11 +273,11 @@ function EventBlock({
   const content = compact ? (
     <>
       <span className="shrink-0 text-xs">{formatHour(event.startsAt, timeZone)}</span>
-      <span className="truncate text-[13px] font-bold leading-4 text-ink">{event.title}</span>
+      <span className="truncate text-meta font-bold leading-4 text-ink">{event.title}</span>
     </>
   ) : (
     <>
-      <span className="text-[13px] font-bold leading-[17px] text-ink">{event.title}</span>
+      <span className="text-meta font-bold leading-[17px] text-ink">{event.title}</span>
       <span className="text-xs leading-4">
         {formatTimeRange(event.startsAt, event.endsAt, timeZone)}
       </span>

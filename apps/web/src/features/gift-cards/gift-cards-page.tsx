@@ -130,7 +130,7 @@ export function GiftCardsPage({
       )}
       {nothing ? (
         <EmptyState
-          title="Pas encore de bon cadeau."
+          title="Pas encore de bon cadeau à offrir."
           description="Un bon, c'est un montant offert : le bénéficiaire le dépense en réservant chez toi, en une ou plusieurs fois, jusqu'à son échéance."
           steps={[
             "Choisis les montants proposés",
@@ -183,7 +183,7 @@ export function GiftCardsPage({
                     <span className="truncate text-sm font-semibold text-ink">
                       Pour {row.recipientName}
                     </span>
-                    <span className="truncate text-[13px] text-ink-muted">
+                    <span className="truncate text-meta text-ink-muted">
                       de {row.purchaserName} · <span className="font-mono">{row.code}</span>
                     </span>
                   </div>
@@ -201,7 +201,7 @@ export function GiftCardsPage({
                 cell: (row) => (
                   <span className="flex flex-col gap-0.5">
                     <span className="text-sm font-semibold text-ink">Pour {row.recipientName}</span>
-                    <span className="text-[13px] text-ink-muted">de {row.purchaserName}</span>
+                    <span className="text-meta text-ink-muted">de {row.purchaserName}</span>
                   </span>
                 ),
               },
@@ -211,7 +211,7 @@ export function GiftCardsPage({
                 width: 170,
                 cell: (row) => (
                   <span className="flex flex-col gap-0.5">
-                    <span className="font-mono text-[13px] font-medium text-ink">{row.code}</span>
+                    <span className="font-mono text-meta font-medium text-ink">{row.code}</span>
                     <span className="text-xs text-ink-subtle">
                       {row.source === "counter" ? "Comptoir" : "En ligne"} ·{" "}
                       {formatGiftCardDate(new Date(row.createdAt), timeZone)}
@@ -240,7 +240,7 @@ export function GiftCardsPage({
                 header: "Échéance",
                 width: 130,
                 cell: (row) => (
-                  <span className="text-[13px] text-ink-soft">
+                  <span className="text-meta text-ink-soft">
                     {row.expiresAt ? formatGiftCardDate(new Date(row.expiresAt), timeZone) : "—"}
                   </span>
                 ),

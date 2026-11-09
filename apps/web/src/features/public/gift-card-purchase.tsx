@@ -85,7 +85,7 @@ export function GiftCardPurchase({
               label="Montant libre"
               error={errors.amountCents}
               hint={
-                <p className="text-[13px] font-medium text-ink-muted">
+                <p className="text-meta font-medium text-ink-muted">
                   Entre {formatMoney(settings.minCents)} et {formatMoney(settings.maxCents)}.
                 </p>
               }
@@ -103,9 +103,7 @@ export function GiftCardPurchase({
             </Field>
           </Collapse>
           {amount !== "autre" && errors.amountCents && (
-            <p className="animate-drop text-[13px] font-semibold text-danger">
-              {errors.amountCents}
-            </p>
+            <p className="animate-drop text-meta font-semibold text-danger">{errors.amountCents}</p>
           )}
         </FormSection>
         <FormSection number={2} title="Toi">
@@ -153,7 +151,7 @@ export function GiftCardPurchase({
               label="Son e-mail (facultatif)"
               error={errors.recipientEmail}
               hint={
-                <p className="text-[13px] font-medium text-ink-muted">
+                <p className="text-meta font-medium text-ink-muted">
                   Elle recevra le bon directement. Sinon, il t'est envoyé, à toi de lui donner.
                 </p>
               }
@@ -186,10 +184,8 @@ export function GiftCardPurchase({
       </form>
       {settings.message && (
         <aside className="flex w-full shrink-0 flex-col gap-2 rounded-3xl bg-surface p-6 lg:sticky lg:top-[62px] lg:w-[360px]">
-          <p className="text-[13px] font-semibold leading-4 text-ink-muted">Bon à savoir</p>
-          <p className="whitespace-pre-line text-[15px] leading-[23px] text-ink">
-            {settings.message}
-          </p>
+          <p className="text-meta font-semibold leading-4 text-ink-muted">Bon à savoir</p>
+          <p className="whitespace-pre-line text-ui leading-[23px] text-ink">{settings.message}</p>
         </aside>
       )}
     </div>

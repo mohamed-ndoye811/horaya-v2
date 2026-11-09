@@ -35,10 +35,10 @@ export function PassBalanceCard({
   return (
     <section className={cn(inkCardClasses, "flex flex-col gap-5 rounded-3xl p-7", className)}>
       <div className="flex items-center justify-between gap-3">
-        <h2 className="text-[13px] font-semibold leading-4 text-[var(--brand-light,var(--color-on-ink-soft))]">
+        <h2 className="text-meta font-semibold leading-4 text-[var(--brand-light,var(--color-on-ink-soft))]">
           {pass.name}
         </h2>
-        <p className="text-[13px] leading-4 text-on-ink-muted">valable jusqu'au {until}</p>
+        <p className="text-meta leading-4 text-on-ink-muted">valable jusqu'au {until}</p>
       </div>
       <p className="flex items-baseline gap-2.5">
         <span className="text-[56px] font-medium leading-[56px] tracking-[-0.04em] text-on-ink">

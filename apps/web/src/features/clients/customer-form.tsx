@@ -124,7 +124,7 @@ export function CustomerForm({
               label="Étiquettes"
               error={errors.tags}
               hint={
-                <p className="text-[13px] font-medium text-ink-muted">
+                <p className="text-meta font-medium text-ink-muted">
                   Séparées par des virgules. « vip » met le client en avant.
                 </p>
               }
@@ -162,7 +162,7 @@ export function CustomerForm({
             <p className="truncate text-[17px] font-semibold leading-[22px] text-on-ink">
               {name || "Nouveau client"}
             </p>
-            <p className="truncate text-[13px] leading-[17px] text-on-ink-muted">
+            <p className="truncate text-meta leading-[17px] text-on-ink-muted">
               {[preview.email, preview.phone].filter(Boolean).join(" · ") || "Pas de contact"}
             </p>
           </div>
@@ -178,7 +178,7 @@ export function CustomerForm({
           </div>
         )}
         {!preview.email && (
-          <p className="rounded-2xl bg-white/5 px-3.5 py-3 text-[13px] leading-5 text-on-ink-muted">
+          <p className="rounded-2xl bg-white/5 px-3.5 py-3 text-meta leading-5 text-on-ink-muted">
             Sans e-mail, pas de confirmation automatique : ses réservations passeront par le
             comptoir.
           </p>

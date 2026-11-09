@@ -157,7 +157,7 @@ export function AvailabilityGrid({
                   </span>
                   <span
                     className={cn(
-                      "text-[15px] font-semibold leading-[18px]",
+                      "text-ui font-semibold leading-[18px]",
                       isToday ? "text-on-ink" : isWeekend(day) ? "text-ink-faint" : "text-ink",
                     )}
                   >
@@ -171,7 +171,7 @@ export function AvailabilityGrid({
         {units.slice(0, visibleRows).map(row)}
         {units.length > visibleRows && (
           <details className="group border-t border-line-faint">
-            <summary className="flex list-none items-center justify-center gap-2 rounded-xl px-3 py-2.5 text-[13px] font-semibold text-ink hover:bg-field [&::-webkit-details-marker]:hidden">
+            <summary className="flex list-none items-center justify-center gap-2 rounded-xl px-3 py-2.5 text-meta font-semibold text-ink hover:bg-field [&::-webkit-details-marker]:hidden">
               <span className="group-open:hidden">
                 Afficher les {units.length - visibleRows} autres exemplaires
               </span>

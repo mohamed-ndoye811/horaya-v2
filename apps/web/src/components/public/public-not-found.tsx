@@ -26,7 +26,7 @@ export function NotFoundScreen({
     >
       {wordmark && (
         <div className="flex items-center justify-between gap-4 border-b border-on-ink/25 px-5 py-6 sm:px-16 sm:py-8">
-          <Link href="/" className="font-headline text-[36px] leading-9">
+          <Link href="/" className="font-headline text-title-sm">
             Horaya
           </Link>
           <span className="hidden font-mono text-label font-semibold uppercase tracking-[0.055em] opacity-75 sm:inline">
@@ -36,15 +36,14 @@ export function NotFoundScreen({
       )}
       <div className="flex flex-1 items-end justify-between gap-16 px-5 pt-12 pb-12 sm:px-16 sm:pb-[72px]">
         <div className="flex flex-col gap-7">
+          {/* Ornement, pas un titre : seul chiffre hors de l'échelle typographique. */}
           <p
             aria-hidden="true"
             className="font-headline text-[160px] leading-[130px] sm:text-[380px] sm:leading-[300px]"
           >
             404
           </p>
-          <h1 className="font-headline text-[36px] leading-9 sm:text-[56px] sm:leading-[52px]">
-            {title}
-          </h1>
+          <h1 className="font-headline text-title-sm sm:text-display sm:leading-[60px]">{title}</h1>
           <p className="max-w-[560px] text-[17px] font-medium leading-7 opacity-85 sm:text-[19px]">
             {text}
           </p>

@@ -170,7 +170,7 @@ export function DateBlock({
       </span>
       <span
         className={cn(
-          "text-[15px] font-semibold leading-[18px] tabular-nums",
+          "text-ui font-semibold leading-[18px] tabular-nums",
           dark ? "text-on-ink" : "text-ink",
         )}
       >
@@ -195,7 +195,7 @@ export function MoneyCell({
       <span
         className={cn(
           "font-semibold leading-5 text-ink tabular-nums",
-          size === "lg" ? "text-base" : "text-[15px]",
+          size === "lg" ? "text-base" : "text-ui",
         )}
       >
         {formatMoney(cents)}

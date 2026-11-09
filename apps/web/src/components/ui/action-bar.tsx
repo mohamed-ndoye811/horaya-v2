@@ -27,7 +27,7 @@ export function ActionBar({
       {message && messageOnMobile && (
         <p
           className={cn(
-            "text-[13px] leading-[18px] text-ink-muted lg:hidden [&_strong]:text-ink",
+            "text-meta leading-[18px] text-ink-muted lg:hidden [&_strong]:text-ink",
             strong,
           )}
         >

@@ -177,7 +177,7 @@ export function CustomerDetailPage({ data }: { data: Awaited<ReturnType<typeof g
                   key={label}
                   className="flex min-h-10 items-center justify-between gap-4 border-t border-line-faint py-2"
                 >
-                  <dt className="text-[13px] leading-[17px] text-ink-subtle">{label}</dt>
+                  <dt className="text-meta leading-[17px] text-ink-subtle">{label}</dt>
                   <dd
                     className={cn(
                       "min-w-0 break-words text-right text-sm font-medium leading-[18px]",
@@ -195,7 +195,7 @@ export function CustomerDetailPage({ data }: { data: Awaited<ReturnType<typeof g
                 </div>
               ))}
               <div className="flex min-h-10 items-center justify-between gap-4 border-t border-line-faint py-2">
-                <dt className="text-[13px] leading-[17px] text-ink-subtle">Espace client</dt>
+                <dt className="text-meta leading-[17px] text-ink-subtle">Espace client</dt>
                 <dd
                   className={cn(
                     "text-right text-sm font-medium leading-[18px]",
@@ -206,7 +206,7 @@ export function CustomerDetailPage({ data }: { data: Awaited<ReturnType<typeof g
                 </dd>
               </div>
               <div className="flex min-h-10 items-center justify-between gap-4 border-t border-line-faint py-2">
-                <dt className="text-[13px] leading-[17px] text-ink-subtle">Actualités</dt>
+                <dt className="text-meta leading-[17px] text-ink-subtle">Actualités</dt>
                 <dd
                   className={cn(
                     "text-right text-sm font-medium leading-[18px]",
@@ -229,7 +229,7 @@ export function CustomerDetailPage({ data }: { data: Awaited<ReturnType<typeof g
           <section className={cn(cardClasses, "gap-2.5")}>
             <NoteForm customerId={customer.id} />
             {notes.length === 0 && (
-              <p className="text-[13px] leading-[17px] text-ink-subtle">Pas encore de note.</p>
+              <p className="text-meta leading-[17px] text-ink-subtle">Pas encore de note.</p>
             )}
             {notes.map((note) => (
               <article
@@ -264,7 +264,7 @@ export function CustomerDetailPage({ data }: { data: Awaited<ReturnType<typeof g
         <section className={cn(cardShellClasses, "min-w-0 overflow-hidden pt-1 pb-2")}>
           <h2 className="flex items-baseline gap-2 px-5 pt-4 pb-3 text-base font-semibold leading-5 text-ink">
             Historique des réservations
-            <span className="text-[13px] font-normal leading-[17px] text-ink-subtle">
+            <span className="text-meta font-normal leading-[17px] text-ink-subtle">
               {bookings.length}
             </span>
           </h2>

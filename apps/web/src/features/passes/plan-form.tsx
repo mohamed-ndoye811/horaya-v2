@@ -179,12 +179,12 @@ export function PlanDialog({
             )}
           </Field>
         </div>
-        <p className="rounded-xl bg-field px-3.5 py-2.5 text-[13px] leading-[18px] text-ink-muted [&_strong]:font-semibold [&_strong]:text-ink">
+        <p className="rounded-xl bg-field px-3.5 py-2.5 text-meta leading-[18px] text-ink-muted [&_strong]:font-semibold [&_strong]:text-ink">
           {summary}
         </p>
         {eventTypes.length > 0 && (
           <fieldset className="flex flex-col gap-2">
-            <legend className="mb-2 text-[13px] font-semibold leading-4 text-ink">
+            <legend className="mb-2 text-meta font-semibold leading-4 text-ink">
               Valable pour{" "}
               <span className="font-normal text-ink-subtle">· rien de coché : tous les types</span>
             </legend>
@@ -193,7 +193,7 @@ export function PlanDialog({
                 <label
                   key={type.id}
                   className={cn(
-                    "flex h-8 items-center rounded-full border border-line-soft bg-field px-3 text-[13px] font-semibold text-ink transition-colors hover:bg-line-soft",
+                    "flex h-8 items-center rounded-full border border-line-soft bg-field px-3 text-meta font-semibold text-ink transition-colors hover:bg-line-soft",
                     "has-checked:border-ink has-checked:bg-ink has-checked:text-on-ink",
                     "has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-ink",
                   )}
@@ -212,7 +212,7 @@ export function PlanDialog({
           </fieldset>
         )}
         {initial.id && (
-          <p className="text-[13px] leading-[18px] text-ink-subtle">
+          <p className="text-meta leading-[18px] text-ink-subtle">
             Les cartes déjà vendues gardent les conditions du jour de leur vente.
           </p>
         )}

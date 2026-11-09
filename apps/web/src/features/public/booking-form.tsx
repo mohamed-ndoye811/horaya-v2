@@ -73,7 +73,7 @@ function ExtraParticipant({
       <div className="flex items-center justify-between gap-4">
         <div className="flex min-w-0 flex-col gap-0.5">
           <span className="text-sm font-bold leading-[18px] text-ink">Participant {index + 1}</span>
-          <span className="truncate text-[13px] leading-[18px] text-ink-subtle">
+          <span className="truncate text-meta leading-[18px] text-ink-subtle">
             {summary ||
               (mandatory
                 ? "Quelques questions pour cette place."
@@ -371,7 +371,7 @@ export function BookingForm({
               label="J'ai un bon cadeau"
               error={errors.giftCardCode}
               hint={
-                <p className="text-[13px] font-medium text-ink-muted">
+                <p className="text-meta font-medium text-ink-muted">
                   Facultatif. Le montant est déduit du prix, le reste du solde est conservé.
                 </p>
               }

@@ -40,7 +40,7 @@ export function CalendarFeedSection({
 
   return (
     <FormSection number={3} title="Mon agenda">
-      <p className="text-[13px] font-medium leading-5 text-ink-muted">
+      <p className="text-meta font-medium leading-5 text-ink-muted">
         Retrouve les événements publiés de {workspaceName} dans ton agenda (Google, Apple, Outlook).
         Ils se mettent à jour tout seuls. Cette adresse est personnelle : ne la partage pas.
       </p>

@@ -62,7 +62,7 @@ function Dots({ events, muted = false }: { events: CalendarEvent[]; muted?: bool
   );
 }
 
-/** Numéro du jour, comme le mois sur ordi : rond d'encre s'il est sélectionné, cerclé si c'est aujourd'hui. */
+/** Numéro du jour : rond d'encre s'il est sélectionné, rond de feu si c'est aujourd'hui (le feu marque « maintenant »). */
 function DayNumber({
   day,
   selected,
@@ -81,7 +81,7 @@ function DayNumber({
         selected
           ? "bg-ink text-on-ink"
           : today
-            ? "text-ink ring-[1.5px] ring-ink"
+            ? "bg-accent text-ink"
             : muted
               ? "text-ink-subtle"
               : "text-ink",
