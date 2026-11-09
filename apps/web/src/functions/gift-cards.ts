@@ -21,7 +21,13 @@ const id = z.string().uuid();
 const slug = z.string().max(80);
 
 /** Liste des bons de l'espace. */
-export const giftCardsSearch = z.object({ q: searchText });
+export const giftCardsSearch = z.object({
+  q: searchText,
+  /** Filtre par statut (côté navigateur : la liste est déjà chargée). */
+  etat: z.enum(["active", "pending", "used", "expired", "cancelled"]).optional().catch(undefined),
+  /** Fenêtre « Vendre un bon » ouverte. */
+  vendre: z.literal("1").optional().catch(undefined),
+});
 export const getGiftCards = createServerFn({ method: "GET" })
   .validator(giftCardsSearch)
   .handler(({ data }) => giftCardsListPage(data.q));

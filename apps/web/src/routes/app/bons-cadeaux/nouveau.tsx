@@ -1,17 +1,8 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { PageHeader } from "@/components/app/page-header";
-import { SellGiftCardForm } from "@/features/gift-cards/sell-form";
+import { createFileRoute, redirect } from "@tanstack/react-router";
 
+/** Ancienne page de vente : la vente se fait dans une fenêtre, sur la liste des bons. */
 export const Route = createFileRoute("/app/bons-cadeaux/nouveau")({
-  head: () => ({ meta: [{ title: "Vendre un bon cadeau · Horaya" }] }),
-  component: () => (
-    <>
-      <PageHeader
-        eyebrow="Bons cadeaux / Nouveau"
-        title="Vendre un bon"
-        subtitle="Vente au comptoir : le bon est actif dès que tu notes l'encaissement."
-      />
-      <SellGiftCardForm />
-    </>
-  ),
+  beforeLoad: () => {
+    throw redirect({ href: "/app/bons-cadeaux?vendre=1" });
+  },
 });

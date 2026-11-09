@@ -179,7 +179,7 @@ export const CREATE_LINKS: NavLink[] = [
     detail: "Une séance, un stage, un atelier",
   },
   { href: "/app/clients/nouveau", label: "Client", detail: "Une nouvelle fiche" },
-  { href: "/app/bons-cadeaux/nouveau", label: "Bon cadeau", detail: "À offrir ou à vendre" },
+  { href: "/app/bons-cadeaux?vendre=1", label: "Bon cadeau", detail: "À offrir ou à vendre" },
   { href: "/app/materiel/nouveau", label: "Article", detail: "Du matériel à louer" },
 ];
 

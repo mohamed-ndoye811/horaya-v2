@@ -39,7 +39,15 @@ export async function giftCardsListPage(search: string | undefined) {
     listGiftCards(db, workspace.id, new Date(), search),
     getGiftCardSettings(db, workspace.id),
   ]);
-  return { cards, enabled: settings.enabled, timeZone, slug: workspace.slug, role: actor.role };
+  return {
+    cards,
+    enabled: settings.enabled,
+    /** Montants proposés : raccourcis de la fenêtre de vente. */
+    amountsCents: settings.amountsCents,
+    timeZone,
+    slug: workspace.slug,
+    role: actor.role,
+  };
 }
 
 export async function giftCardDetailPage(id: string) {
