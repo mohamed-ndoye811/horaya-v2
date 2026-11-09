@@ -239,6 +239,7 @@ function CheckoutDialog({
                 {...field}
                 name="firstName"
                 required
+                autoFocus
                 autoComplete="given-name"
                 className={inputClasses()}
               />

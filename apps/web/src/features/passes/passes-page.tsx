@@ -1,10 +1,10 @@
 import { PageHeader } from "@/components/app/page-header";
 import { PresenceItem, PresenceList } from "@/components/motion/presence";
 import { StatusBadge } from "@/components/ui/badge";
-import { ButtonLink } from "@/components/ui/button";
+import { Button, ButtonLink } from "@/components/ui/button";
 import { DataTable } from "@/components/ui/data-table";
 import { EmptyState } from "@/components/ui/empty-state";
-import { PlusIcon } from "@/components/ui/icons";
+import { ExternalIcon, PlusIcon } from "@/components/ui/icons";
 import { ProgressBar } from "@/components/ui/progress";
 import { cardClasses, SectionHeading } from "@/components/ui/section";
 import { MiniStat } from "@/components/ui/stat";
@@ -12,6 +12,7 @@ import type { getPassesPage } from "@/functions/passes";
 import { cn } from "@/lib/cn";
 import { formatMoney, plural } from "@/lib/format";
 import { Link } from "@/lib/navigation";
+import { toast } from "@/lib/toast";
 import { PassPaymentActions } from "./pending-pass-row";
 import { PlanDialog, type PlanFormValues } from "./plan-form";
 import { formatValidity } from "./validity";
@@ -92,7 +93,7 @@ export function PassesPage({
         />
       ) : (
         <div className="flex flex-col pb-4">
-          <div className="grid grid-cols-2 gap-3 px-4 xl:grid-cols-4">
+          <div className="grid grid-cols-2 gap-3 px-4 xl:grid-cols-[repeat(4,minmax(0,1fr))_minmax(0,1.15fr)]">
             <MiniStat
               label="Cartes en cours"
               value={active.length}
@@ -102,28 +103,19 @@ export function PassesPage({
               dark
               label="Séances à honorer"
               value={owed}
-              aside={<span className="text-on-ink-muted">payées, pas encore faites</span>}
+              aside={<span className="text-on-ink-muted">déjà payées</span>}
             />
-            <MiniStat
-              label={`Expirent sous ${SOON_DAYS} jours`}
-              value={soon}
-              aside={soon > 0 ? "pense à relancer" : "rien d'urgent"}
-            />
+            <MiniStat label="Expirent bientôt" value={soon} aside={`sous ${SOON_DAYS} jours`} />
             <MiniStat
               warning={pending.length > 0}
               label="À encaisser"
               value={pending.length}
-              aside={pending.length > 0 ? "demandées sur ta page" : "tout est réglé"}
+              aside={pending.length > 0 ? "à confirmer" : "tout est réglé"}
             />
+            {onSale && <SalesPageCard slug={slug} />}
           </div>
 
-          <SectionHeading
-            title="Formules"
-            meta={plural(plans.length, "formule")}
-            action={
-              onSale ? { label: "Voir ma page de vente", href: `/${slug}/cartes` } : undefined
-            }
-          />
+          <SectionHeading title="Formules" meta={plural(plans.length, "formule")} />
           <ul aria-label="Formules" className="grid gap-3 px-4 sm:grid-cols-2 xl:grid-cols-3">
             {plans.map((plan) => {
               const types =
@@ -307,6 +299,43 @@ export function PassesPage({
       {dialog && (
         <PlanDialog key={dialog.id ?? "nouvelle"} initial={dialog} eventTypes={eventTypes} />
       )}
+    </div>
+  );
+}
+
+/**
+ * La page où les élèves achètent leur carte, dans la ligne des chiffres : à partager (bio,
+ * messages) ou à ouvrir. Sur mobile, elle prend toute la largeur sous les chiffres.
+ */
+function SalesPageCard({ slug }: { slug: string }) {
+  const path = `/${slug}/cartes`;
+  const copy = () =>
+    navigator.clipboard
+      .writeText(`${window.location.origin}${path}`)
+      .then(() => toast("Lien de ta page de vente copié."))
+      .catch(() =>
+        toast("Copie impossible : ouvre la page et copie l'adresse.", { tone: "error" }),
+      );
+  return (
+    <div className="col-span-2 flex min-w-0 flex-col justify-between gap-3 rounded-[20px] border-[1.5px] border-dashed border-line-strong px-5 py-4 xl:col-span-1">
+      <div className="flex min-w-0 flex-col gap-1">
+        <p className="text-[13px] font-semibold leading-[17px] text-ink-subtle">Page de vente</p>
+        <p className="truncate font-mono text-[13px] leading-[18px] text-ink">horaya.app{path}</p>
+      </div>
+      <div className="flex flex-wrap gap-2">
+        <Button size="xs" onClick={copy}>
+          Copier le lien
+        </Button>
+        <ButtonLink
+          href={path}
+          target="_blank"
+          size="xs"
+          variant="secondary"
+          icon={<ExternalIcon size={12} />}
+        >
+          Ouvrir
+        </ButtonLink>
+      </div>
     </div>
   );
 }
