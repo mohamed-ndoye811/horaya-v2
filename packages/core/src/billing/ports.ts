@@ -18,6 +18,8 @@ export interface BillingRepository {
   revokeGrant(organizationId: string, grantId: string, at: Date): Promise<boolean>;
   /** Membres et invitations en attente. */
   countSeats(organizationId: string): Promise<number>;
+  /** Exemplaires de matériel, hors retirés (les postes en réparation comptent). */
+  countInventoryUnits(organizationId: string): Promise<number>;
   /** Réservations reçues (hors refusées) créées dans [from, to). */
   countBookings(organizationId: string, from: Date, to: Date): Promise<number>;
 }

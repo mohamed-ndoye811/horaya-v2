@@ -1,7 +1,7 @@
 import type { BillingAccount, BillingRepository, PlanGrant } from "@horaya/core";
 import { and, count, eq, gte, lt, ne } from "drizzle-orm";
 import type { Executor } from "../client";
-import { billing, booking, invitation, member, planGrant } from "../schema";
+import { billing, booking, invitation, itemUnit, member, planGrant } from "../schema";
 
 type BillingRow = typeof billing.$inferSelect;
 
@@ -100,6 +100,14 @@ export function billingRepository(db: Executor): BillingRepository {
           and(eq(invitation.organizationId, organizationId), eq(invitation.status, "pending")),
         );
       return (members?.value ?? 0) + (pending?.value ?? 0);
+    },
+
+    async countInventoryUnits(organizationId) {
+      const [row] = await db
+        .select({ value: count() })
+        .from(itemUnit)
+        .where(and(eq(itemUnit.organizationId, organizationId), ne(itemUnit.status, "retired")));
+      return row?.value ?? 0;
     },
 
     async countBookings(organizationId, from, to) {

@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { BillingAccount, PlanGrant } from "./model";
 import {
-  assertFeature,
+  assertInventoryRoom,
   assertMemberRoom,
   bookingUsage,
   currentPlanOf,
@@ -77,9 +77,10 @@ describe("currentPlanOf", () => {
 });
 
 describe("limites", () => {
-  it("bloque les fonctionnalités payantes en Libre", () => {
-    expect(() => assertFeature("libre", "inventory")).toThrow(PlanLimitError);
-    expect(() => assertFeature("pro", "counter")).not.toThrow();
+  it("plafonne le matériel en Libre, pas en Pro", () => {
+    expect(() => assertInventoryRoom("libre", 3, 2)).not.toThrow();
+    expect(() => assertInventoryRoom("libre", 3, 3)).toThrow(PlanLimitError);
+    expect(() => assertInventoryRoom("pro", 400, 100)).not.toThrow();
   });
 
   it("compte les places de l'équipe", () => {

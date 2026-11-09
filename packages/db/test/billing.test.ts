@@ -9,6 +9,7 @@ import {
   PlanLimitError,
   revokePlanGrant,
   setBillingRate,
+  setItemQuantity,
   startTrial,
 } from "@horaya/core";
 import { afterAll, describe, expect, it } from "vitest";
@@ -34,13 +35,16 @@ describe("formules et licences", () => {
     expect((await getCurrentPlan(deps, organizationId)).plan).toBe("libre");
   });
 
-  it("bloque le matériel en Libre, sans toucher à l'existant, et le rouvre avec une licence", async () => {
+  it("plafonne le matériel en Libre à 5 exemplaires, sans toucher à l'existant, et le rouvre avec une licence", async () => {
     const organizationId = await createOrganization("MAT", { plan: "libre" });
     const owner = await createMember(organizationId);
     const deps = testDeps();
-    await expect(createItem(deps, owner, { name: "Enceinte", quantity: 1 })).rejects.toThrow(
+    const tours = await createItem(deps, owner, { name: "Tour", quantity: 4 });
+    await expect(createItem(deps, owner, { name: "Enceinte", quantity: 2 })).rejects.toThrow(
       PlanLimitError,
     );
+    await expect(setItemQuantity(deps, owner, tours.id, 6)).rejects.toThrow(PlanLimitError);
+    await setItemQuantity(deps, owner, tours.id, 5);
 
     const grant = await grantPlan(deps, organizationId, {
       kind: "beta",

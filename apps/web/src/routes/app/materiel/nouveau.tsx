@@ -1,6 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { PageHeader } from "@/components/app/page-header";
-import { PlanUpsell, usePlanFeature } from "@/components/app/plan-upsell";
 import { ItemForm } from "@/features/inventory/item-form";
 import { getItemTypes } from "@/functions/inventory";
 
@@ -11,7 +10,6 @@ export const Route = createFileRoute("/app/materiel/nouveau")({
 });
 
 function NewItemPage() {
-  const allowed = usePlanFeature("inventory");
   const types = Route.useLoaderData();
   return (
     <>
@@ -25,27 +23,23 @@ function NewItemPage() {
           </>
         }
       />
-      {!allowed ? (
-        <PlanUpsell feature="inventory" />
-      ) : (
-        <ItemForm
-          itemId={null}
-          types={types}
-          initial={{
-            name: "",
-            reference: "",
-            typeName: "",
-            quantity: "1",
-            description: "",
-            dailyRate: "",
-            deposit: "",
-            storageLocation: "",
-            purchasedOn: "",
-            purchasePrice: "",
-            rentable: false,
-          }}
-        />
-      )}
+      <ItemForm
+        itemId={null}
+        types={types}
+        initial={{
+          name: "",
+          reference: "",
+          typeName: "",
+          quantity: "1",
+          description: "",
+          dailyRate: "",
+          deposit: "",
+          storageLocation: "",
+          purchasedOn: "",
+          purchasePrice: "",
+          rentable: false,
+        }}
+      />
     </>
   );
 }

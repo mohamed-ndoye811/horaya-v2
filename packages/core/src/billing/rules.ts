@@ -47,19 +47,6 @@ export function hasFeature(plan: PlanId, feature: PlanFeature): boolean {
   return PLANS[plan].features.includes(feature);
 }
 
-const FEATURE_LABELS: Record<PlanFeature, string> = {
-  whiteLabel: "La page publique sans logo Horaya",
-  inventory: "Le matériel",
-  counter: "Le comptoir",
-};
-
-export function assertFeature(plan: PlanId, feature: PlanFeature): void {
-  if (hasFeature(plan, feature)) return;
-  throw new PlanLimitError(
-    `${FEATURE_LABELS[feature]} fait partie de la formule Pro. Passe à Pro dans Réglages > Abonnement.`,
-  );
-}
-
 /** `count` membres et invitations en attente : peut-on en inviter un de plus ? */
 export function assertMemberRoom(plan: PlanId, count: number): void {
   const limit = PLANS[plan].limits.members;
@@ -68,6 +55,15 @@ export function assertMemberRoom(plan: PlanId, count: number): void {
     limit === 1
       ? `La formule ${PLANS[plan].name} est faite pour travailler seul. Passe à Pro pour inviter ton équipe.`
       : `La formule ${PLANS[plan].name} compte ${limit} membres au plus. Passe à la formule supérieure pour en ajouter.`,
+  );
+}
+
+/** `used` exemplaires de matériel (hors retirés) : peut-on en ajouter `adding` ? */
+export function assertInventoryRoom(plan: PlanId, used: number, adding: number): void {
+  const limit = PLANS[plan].limits.inventoryUnits;
+  if (limit === null || used + adding <= limit) return;
+  throw new PlanLimitError(
+    `La formule ${PLANS[plan].name} compte ${limit} exemplaires de matériel au plus (tu en as ${used}). Passe à Pro dans Réglages > Abonnement pour en ajouter.`,
   );
 }
 

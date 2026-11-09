@@ -1,13 +1,14 @@
 /**
  * Formules d'Horaya (décision de Moh du 2026-11-07, « l'équilibre entre l'éthique et la
- * rentabilité ») : on paie pour des besoins de pro (marque blanche, matériel, comptoir, équipe),
- * jamais pour récupérer ses données ni pour qu'un client puisse réserver.
+ * rentabilité ») : on paie pour des besoins de pro (marque blanche, équipe, volume), jamais pour
+ * récupérer ses données ni pour qu'un client puisse réserver. Depuis le 2026-11-09, on limite en
+ * quantité plutôt qu'en fonctionnalités : comptoir pour tous, matériel plafonné en Libre.
  */
 export const PLAN_IDS = ["libre", "pro", "equipe"] as const;
 export type PlanId = (typeof PLAN_IDS)[number];
 
 /** Fonctionnalités réservées aux formules payantes. */
-export const PLAN_FEATURES = ["whiteLabel", "inventory", "counter"] as const;
+export const PLAN_FEATURES = ["whiteLabel"] as const;
 export type PlanFeature = (typeof PLAN_FEATURES)[number];
 
 export const BILLING_INTERVALS = ["month", "year"] as const;
@@ -18,8 +19,15 @@ export interface Plan {
   name: string;
   /** Prix TTC en centimes ; l'annuel offre deux mois. */
   priceCents: Record<BillingInterval, number>;
-  /** `null` : illimité. Les réservations sont un quota souple (jamais refusées au client). */
-  limits: { members: number | null; bookingsPerMonth: number | null };
+  /**
+   * `null` : illimité. Les réservations sont un quota souple (jamais refusées au client) ;
+   * les exemplaires de matériel (hors retirés) bloquent l'ajout, jamais l'existant.
+   */
+  limits: {
+    members: number | null;
+    bookingsPerMonth: number | null;
+    inventoryUnits: number | null;
+  };
   features: readonly PlanFeature[];
 }
 
@@ -28,22 +36,22 @@ export const PLANS: Record<PlanId, Plan> = {
     id: "libre",
     name: "Libre",
     priceCents: { month: 0, year: 0 },
-    limits: { members: 1, bookingsPerMonth: 50 },
+    limits: { members: 1, bookingsPerMonth: 50, inventoryUnits: 5 },
     features: [],
   },
   pro: {
     id: "pro",
     name: "Pro",
     priceCents: { month: 1500, year: 15000 },
-    limits: { members: 3, bookingsPerMonth: 1000 },
-    features: ["whiteLabel", "inventory", "counter"],
+    limits: { members: 3, bookingsPerMonth: 1000, inventoryUnits: null },
+    features: ["whiteLabel"],
   },
   equipe: {
     id: "equipe",
     name: "Équipe",
     priceCents: { month: 2900, year: 29000 },
-    limits: { members: null, bookingsPerMonth: null },
-    features: ["whiteLabel", "inventory", "counter"],
+    limits: { members: null, bookingsPerMonth: null, inventoryUnits: null },
+    features: ["whiteLabel"],
   },
 };
 

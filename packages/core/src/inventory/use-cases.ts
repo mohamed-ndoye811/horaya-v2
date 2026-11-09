@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { requireFeature } from "../billing/use-cases";
+import { requireInventoryRoom } from "../billing/use-cases";
 import type { CustomerContact } from "../bookings/model";
 import { formatBookingReference, referencePeriod } from "../bookings/reference";
 import { customerContactSchema } from "../bookings/schemas";
@@ -81,6 +81,7 @@ async function insertItemWithUnits(
   { quantity, typeName, typeFields, fieldValues: rawValues, ...data }: ValidItem,
   now: Date,
 ): Promise<Item> {
+  await requireInventoryRoom(repositories, actor.organizationId, quantity, now);
   const reference =
     data.reference || (await generateReference(repositories, actor.organizationId, data.name));
   if (
@@ -126,7 +127,6 @@ export async function createItem(deps: Deps, actor: Actor, input: CreateItemInpu
   assertMemberCan(actor, "inventory", "create");
   const data = validate(createItemSchema, input);
   return deps.uow.run(async (repositories) => {
-    await requireFeature(repositories, actor.organizationId, "inventory", deps.clock.now());
     return insertItemWithUnits(repositories, actor, data, deps.clock.now());
   });
 }
@@ -164,7 +164,6 @@ export async function importItems(deps: Deps, actor: Actor, csv: string): Promis
   }
 
   return deps.uow.run(async (repositories) => {
-    await requireFeature(repositories, actor.organizationId, "inventory", deps.clock.now());
     const items: Item[] = [];
     for (const { line, data } of valid) {
       try {
@@ -256,6 +255,12 @@ export async function setItemQuantity(
     const { units } = await lockItemOrThrow(repositories, actor.organizationId, itemId);
     const active = inService(units);
     if (quantity > active.length) {
+      await requireInventoryRoom(
+        repositories,
+        actor.organizationId,
+        quantity - active.length,
+        deps.clock.now(),
+      );
       const last = Math.max(0, ...units.map(unitNumber));
       await repositories.inventory.insertUnits(
         actor.organizationId,
@@ -627,7 +632,6 @@ export async function createRentalBooking(
   const manageTokenHash = await hashToken(manageToken);
 
   return deps.uow.run(async (repositories) => {
-    await requireFeature(repositories, actor.organizationId, "inventory", deps.clock.now());
     const { item, units } = await lockItemOrThrow(repositories, actor.organizationId, data.itemId);
     const period = { startsAt: data.startsAt, endsAt: data.endsAt };
     const { free } = await pickFreeUnits(repositories, units, period, data.quantity);

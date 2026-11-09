@@ -12,7 +12,7 @@ import {
   type PlanId,
   TRIAL_DAYS,
 } from "./plans";
-import { assertFeature, assertMemberRoom, bookingUsage, currentPlanOf } from "./rules";
+import { assertInventoryRoom, assertMemberRoom, bookingUsage, currentPlanOf } from "./rules";
 
 const DAY = 24 * 60 * 60 * 1000;
 
@@ -29,14 +29,18 @@ export async function planOf(
   return currentPlanOf(account, grants, now);
 }
 
-/** Bloque une fonctionnalité payante absente de la formule (à appeler dans la transaction). */
-export async function requireFeature(
+/** Bloque l'ajout de `adding` exemplaires au-delà de la formule (à appeler dans la transaction). */
+export async function requireInventoryRoom(
   repositories: Repositories,
   organizationId: string,
-  feature: PlanFeature,
+  adding: number,
   now: Date,
 ): Promise<void> {
-  assertFeature((await planOf(repositories, organizationId, now)).plan, feature);
+  const [{ plan }, used] = await Promise.all([
+    planOf(repositories, organizationId, now),
+    repositories.billing.countInventoryUnits(organizationId),
+  ]);
+  assertInventoryRoom(plan, used, adding);
 }
 
 /** Formule en cours, sans acteur : page publique (logo Horaya), menus de l'app. */
