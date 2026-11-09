@@ -77,11 +77,14 @@ const ORDER: string[] = [
   "notifications",
   "account",
 ];
-/** Changement de panneau : l'ancien part d'un côté pendant que le nouveau arrive de l'autre. */
+/**
+ * Changement de panneau : l'ancien part d'un côté pendant que le nouveau arrive de l'autre, avec
+ * un léger flou (petite surface, le temps du mouvement ; retiré ensuite pour garder un texte net).
+ */
 const SWITCH = {
-  enter: (direction: number) => ({ opacity: 0, x: direction * 24 }),
-  center: { opacity: 1, x: 0 },
-  exit: (direction: number) => ({ opacity: 0, x: direction * -24 }),
+  enter: (direction: number) => ({ opacity: 0, x: direction * 24, filter: "blur(4px)" }),
+  center: { opacity: 1, x: 0, filter: "blur(0px)", transitionEnd: { filter: "none" } },
+  exit: (direction: number) => ({ opacity: 0, x: direction * -24, filter: "blur(4px)" }),
 };
 const SWITCH_TRANSITION = { type: "spring", visualDuration: 0.24, bounce: 0 } as const;
 
