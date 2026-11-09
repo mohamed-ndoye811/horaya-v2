@@ -317,7 +317,7 @@ export function PassesPage({
 
 /**
  * Encart sous l'en-tête : où partager la page de vente (bio, newsletter, signature), son lien et
- * de quoi le copier. Le bouton « Page de vente » de l'en-tête l'ouvre.
+ * de quoi le copier ou l'ouvrir.
  */
 function ShareSalesPage({ slug }: { slug: string }) {
   const path = `/${slug}/cartes`;
@@ -331,21 +331,32 @@ function ShareSalesPage({ slug }: { slug: string }) {
   return (
     <section className="mx-4 mb-4 flex flex-col gap-4 rounded-3xl bg-surface px-5 py-4 lg:flex-row lg:items-center lg:gap-6">
       <div className="flex min-w-0 flex-1 flex-col gap-1">
-        <h2 className="text-base font-semibold leading-5 text-ink">
+        <h2 className="text-lg font-semibold leading-6 text-ink">
           Fais connaître ta page de vente
         </h2>
-        <p className="text-sm leading-5 text-ink-muted">
+        <p className="text-[15px] font-medium leading-[22px] text-ink-soft">
           Ajoute le lien dans ta bio Instagram, ta newsletter, ta signature d'e-mail ou tes messages
           : tes élèves achètent leur carte en ligne, sans passer par toi.
         </p>
       </div>
-      <div className="flex min-w-0 items-center gap-2 rounded-full bg-field py-1 pr-1 pl-4 lg:w-[380px] lg:shrink-0">
-        <span className="min-w-0 flex-1 truncate font-mono text-[13px] text-ink">
-          horaya.app{path}
-        </span>
-        <Button size="xs" onClick={copy}>
-          Copier le lien
-        </Button>
+      <div className="flex min-w-0 flex-wrap items-center gap-2 lg:w-[500px] lg:shrink-0 lg:flex-nowrap">
+        <div className="flex min-w-0 flex-1 basis-64 items-center gap-2 rounded-full bg-field py-1 pr-1 pl-4">
+          <span className="min-w-0 flex-1 truncate font-mono text-[13px] text-ink">
+            horaya.app{path}
+          </span>
+          <Button size="xs" onClick={copy}>
+            Copier le lien
+          </Button>
+        </div>
+        <ButtonLink
+          href={path}
+          target="_blank"
+          size="xs"
+          variant="secondary"
+          icon={<ExternalIcon size={12} />}
+        >
+          Voir ma page
+        </ButtonLink>
       </div>
     </section>
   );
