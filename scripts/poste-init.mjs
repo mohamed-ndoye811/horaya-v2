@@ -26,6 +26,9 @@ const git = (...args) => execFileSync("git", args, { encoding: "utf8" }).trim();
 const root = git("rev-parse", "--show-toplevel");
 const envPath = join(root, ".env");
 if (!existsSync(envPath)) fail(`pas de .env dans ${root}`);
+// Les commandes lancées dans le nouveau poste lisent son .env : elles ne doivent pas hériter
+// de celui d'integration (tsx --env-file n'écrase pas une variable déjà définie).
+const childEnv = { ...process.env };
 loadEnvFile(envPath);
 if (process.env.POSTE !== "integration") {
   fail(`à lancer depuis le poste integration (POSTE=${process.env.POSTE ?? "absent"} ici).`);
@@ -61,8 +64,8 @@ for (const [key, value] of Object.entries(values)) {
 }
 writeFileSync(join(target, ".env"), env);
 
-execFileSync("pnpm", ["install"], { cwd: target, stdio: "inherit" });
-execFileSync("pnpm", ["poste:reset"], { cwd: target, stdio: "inherit" });
+execFileSync("pnpm", ["install"], { cwd: target, stdio: "inherit", env: childEnv });
+execFileSync("pnpm", ["poste:reset"], { cwd: target, stdio: "inherit", env: childEnv });
 
 console.info(`
 Poste ${poste} prêt : ${target}
