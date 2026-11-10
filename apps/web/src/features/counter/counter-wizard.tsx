@@ -177,6 +177,8 @@ export function CounterWizard({
   const participantFields = fieldsOfScope(event?.fields ?? [], "participant");
   const newName = `${contact.firstName} ${contact.lastName}`.trim();
   const customerName = customer?.name ?? (newName || null);
+  // Sans e-mail, aucun lien de paiement ne peut partir.
+  const hasEmail = customer ? Boolean(customer.email) : contact.email.trim() !== "";
   const chosenItems = Object.entries(quantities).filter(([, quantity]) => quantity > 0);
   const itemName = (id: string) => items?.find((item) => item.id === id)?.name ?? "Matériel";
   const needle = sessionSearch.trim().toLowerCase();
@@ -329,7 +331,9 @@ export function CounterWizard({
           ? enrolling
             ? "Payé sur place"
             : `Payé · ${METHODS.find((entry) => entry.value === method)?.label.toLowerCase()}`
-          : "Lien envoyé par e-mail";
+          : hasEmail
+            ? "Lien envoyé par e-mail"
+            : "À régler plus tard";
 
   return (
     <form
@@ -789,7 +793,11 @@ export function CounterWizard({
                   label: "Payé sur place",
                   detail: "Espèces, carte, chèque ou virement",
                 },
-                { value: false, label: "À payer", detail: "Lien envoyé avec la confirmation" },
+                {
+                  value: false,
+                  label: "À payer",
+                  detail: hasEmail ? "Lien envoyé avec la confirmation" : "À régler plus tard",
+                },
               ]}
             />
             {paid && !enrolling && (
