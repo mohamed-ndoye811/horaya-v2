@@ -26,7 +26,16 @@ function LoginPage() {
       }
       footnote={
         <>
-          En continuant, tu acceptes les conditions d'utilisation et la{" "}
+          En continuant, tu acceptes les{" "}
+          <a
+            href="/cgu"
+            target="_blank"
+            rel="noreferrer"
+            className="underline underline-offset-[3px]"
+          >
+            conditions d'utilisation
+          </a>{" "}
+          et la{" "}
           <a
             href="/confidentialite"
             target="_blank"

@@ -55,6 +55,7 @@ export function MorePage({ data }: { data: Awaited<ReturnType<typeof getMoreMenu
         >
           Ma page publique
         </Row>
+        <Row href="/aide">Aide</Row>
       </Group>
 
       <Group title="Paramètres">

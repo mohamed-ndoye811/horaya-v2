@@ -938,6 +938,11 @@ export function AccountPanel({
             <ExternalIcon size={14} className="text-notch-idle" />
           </a>
         )}
+        {!compact && (
+          <Link href="/aide" onClick={onClose} className={cn(row, "text-on-ink")}>
+            Aide
+          </Link>
+        )}
         <button
           type="button"
           onClick={signOut}
