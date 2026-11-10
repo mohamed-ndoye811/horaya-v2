@@ -1,6 +1,7 @@
 /** Compte et onboarding : logique serveur des écrans (voir functions/auth.ts). */
 import {
   assertAcceptablePassword,
+  createStarterContent,
   createWorkspaceSchema,
   DomainError,
   slugSchema,
@@ -14,8 +15,11 @@ import { db } from "./db";
 import { googleEnabled } from "./env";
 import { type FormState, toFormState } from "./form-state";
 import { joinTarget } from "./invitation";
-import { deps } from "./services";
+import { deps, requireMember } from "./services";
 import { getWorkspaceContext } from "./workspace";
+
+/** Fuseau d'un espace neuf (défaut de la colonne tenant_settings.timezone). */
+const NEW_WORKSPACE_TIMEZONE = "Europe/Paris";
 
 /** Écrans publics du compte : un utilisateur déjà connecté file vers son espace. */
 async function redirectIfSignedIn(target?: string) {
@@ -160,6 +164,12 @@ export async function createWorkspace(formData: FormData): Promise<WorkspaceForm
   }
 
   await tenantSettingsRepository(db).saveBranding(organizationId, { brandColor, sector });
+  // Séance exemple en brouillon : l'espace ne démarre pas vide. Un échec ne bloque pas l'inscription.
+  try {
+    await createStarterContent(deps, await requireMember(), sector, NEW_WORKSPACE_TIMEZONE);
+  } catch (error) {
+    console.error("createStarterContent", error);
+  }
   throw redirect({ href: "/inscription/paiements" });
 }
 
