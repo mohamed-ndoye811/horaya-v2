@@ -180,6 +180,10 @@ Fichiers : `refs/moodboard-02/`.
 
 ## Décisions
 
+- 2026-11-10 · **On garde le design actuel de l'app (v4) jusqu'à la bêta** (Moh). On ne change que
+  le logo (sablier adouci à 85 %) et la mono (Paper Mono). La DA Brume (registres B et C, trame,
+  papier) reste une piste pour la marque et la landing, mise de côté. **La trame ne touche jamais
+  les photos des clients** : le client doit voir sa photo.
 - 2026-11-10 · **Logo final (v0.5)** : sablier symétrique, angles r 2,6, **85 % de large** (à la
   hauteur des lettres), **sable d'origine** (fente + deux biseaux), lettres adoucies r 3. Fichiers :
   `logo/sable/a-a85.svg` (symbole) et `logo/sable/logo-a-a85.svg` (logotype), générés par
@@ -250,3 +254,6 @@ Fichiers : `refs/moodboard-02/`.
   « v5 · Essais » : tableau de bord v4 passé en C, landing en B dans le cadre v4 avec son notch
   (hero sablier à 72 px, fiche A/B/C en filets, l'outil annoté, trois étapes en chiffres mono,
   fin avec champ souligné).
+- 2026-11-10 · Retour au design actuel : lot logo + Paper Mono codé sur le poste fix (branche
+  `fix/logo-paper-mono`, à valider en local), DS v4 mise à jour dans Paper (planche Logo, toute la
+  mono en Paper Mono, jeton `--font-mono`).
