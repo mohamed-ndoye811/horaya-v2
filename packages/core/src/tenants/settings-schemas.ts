@@ -6,7 +6,7 @@ import { hexColorSchema } from "./workspace";
 export const DISPLAY_FONTS = [
   { value: "display", label: "Urbanist serré", tone: "affirmé" },
   { value: "ui", label: "Urbanist", tone: "moderne" },
-  { value: "mono", label: "Geist Mono", tone: "technique" },
+  { value: "mono", label: "Paper Mono", tone: "technique" },
 ] as const;
 export type DisplayFont = (typeof DISPLAY_FONTS)[number]["value"];
 

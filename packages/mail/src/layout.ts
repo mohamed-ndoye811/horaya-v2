@@ -125,7 +125,7 @@ export function renderEmail({
     : "";
   const notch = brand
     ? `${brand.logo ? `<img src="${escapeHtml(brand.logo)}" width="24" height="24" alt="" style="display:inline-block;width:24px;height:24px;border:0;border-radius:7px;vertical-align:middle;margin-right:10px">` : ""}<span style="font-size:14px;line-height:24px;font-weight:600;vertical-align:middle;color:#F7F5F3">${escapeHtml(brand.name)}</span>`
-    : `<img src="cid:${LOGOTYPE_CID}" width="88" height="14" alt="Horaya" style="display:block;width:88px;height:14px;border:0">`;
+    : `<img src="cid:${LOGOTYPE_CID}" width="85" height="14" alt="Horaya" style="display:block;width:85px;height:14px;border:0">`;
   const footer = brand
     ? `<tr><td align="center" style="padding:16px 0 0;font-size:12px;line-height:18px;color:${color.muted}">Réservations propulsées par Horaya</td></tr>`
     : "";
