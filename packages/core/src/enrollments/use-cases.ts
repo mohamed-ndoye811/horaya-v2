@@ -1,5 +1,4 @@
 import { z } from "zod";
-import { requireFeature } from "../billing/use-cases";
 import { isWithinFreeCancellation } from "../bookings/cancellation";
 import { remainingSeats, SEAT_HOLDING_STATUSES } from "../bookings/capacity";
 import {
@@ -111,9 +110,6 @@ export async function enrollInSeries(
 
   return deps.uow.run(async (repositories) => {
     const now = deps.clock.now();
-    if (actor.type === "member") {
-      await requireFeature(repositories, actor.organizationId, "counter", now);
-    }
     const series = await repositories.events.findSeries(actor.organizationId, data.seriesId);
     if (!series) throw new NotFoundError("Série", data.seriesId);
     if (!series.enrollmentEnabled) {

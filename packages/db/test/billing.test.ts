@@ -1,14 +1,19 @@
 import {
   applySubscription,
   assertSeatAvailable,
+  createCounterBooking,
+  createEvent,
+  createEventType,
   createItem,
   endSubscription,
   getBillingOverview,
   getCurrentPlan,
   grantPlan,
   PlanLimitError,
+  publishEvent,
   revokePlanGrant,
   setBillingRate,
+  setItemQuantity,
   startTrial,
 } from "@horaya/core";
 import { afterAll, describe, expect, it } from "vitest";
@@ -34,13 +39,16 @@ describe("formules et licences", () => {
     expect((await getCurrentPlan(deps, organizationId)).plan).toBe("libre");
   });
 
-  it("bloque le matériel en Libre, sans toucher à l'existant, et le rouvre avec une licence", async () => {
+  it("plafonne le matériel en Libre à 5 exemplaires, sans toucher à l'existant, et le rouvre avec une licence", async () => {
     const organizationId = await createOrganization("MAT", { plan: "libre" });
     const owner = await createMember(organizationId);
     const deps = testDeps();
-    await expect(createItem(deps, owner, { name: "Enceinte", quantity: 1 })).rejects.toThrow(
+    const tours = await createItem(deps, owner, { name: "Tour", quantity: 4 });
+    await expect(createItem(deps, owner, { name: "Enceinte", quantity: 2 })).rejects.toThrow(
       PlanLimitError,
     );
+    await expect(setItemQuantity(deps, owner, tours.id, 6)).rejects.toThrow(PlanLimitError);
+    await setItemQuantity(deps, owner, tours.id, 5);
 
     const grant = await grantPlan(deps, organizationId, {
       kind: "beta",
@@ -99,6 +107,42 @@ describe("formules et licences", () => {
     expect(overview.seats).toEqual({ used: 1, limit: null });
     expect(overview.bookings).toMatchObject({ limit: null, thisMonth: 0, over: false });
     expect(overview.canManage).toBe(true);
+  });
+
+  it("compte le quota au mois de la séance, pas de la prise de réservation", async () => {
+    const organizationId = await createOrganization("QUO", { plan: "libre" });
+    const owner = await createMember(organizationId);
+    const deps = testDeps();
+    const { id: eventTypeId } = await createEventType(deps, owner, {
+      name: "Tour",
+      color: "#D8BC66",
+    });
+    const book = async (day: string) => {
+      const [created] = await createEvent(deps, owner, {
+        eventTypeId,
+        title: `Cours ${day}`,
+        startsAt: `${day}T09:00:00Z`,
+        endsAt: `${day}T11:00:00Z`,
+        timezone: "Europe/Paris",
+        capacity: 8,
+        priceCents: 3000,
+        paymentMode: "on_site",
+      });
+      if (!created) throw new Error("événement");
+      await publishEvent(deps, owner, created.id);
+      await createCounterBooking(deps, owner, {
+        eventId: created.id,
+        seats: 1,
+        customer: { firstName: "Camille", lastName: "Roux", email: `c-${day}@mail.com` },
+      });
+    };
+    // Prises le 1er octobre : une séance en octobre, deux en novembre.
+    await book("2026-10-20");
+    await book("2026-11-03");
+    await book("2026-11-10");
+
+    const overview = await getBillingOverview(deps, owner);
+    expect(overview.bookings).toMatchObject({ limit: 100, thisMonth: 1, lastMonth: 0 });
   });
 
   it("arrête l'abonnement passé sur un produit hors Horaya, pas un autre", async () => {

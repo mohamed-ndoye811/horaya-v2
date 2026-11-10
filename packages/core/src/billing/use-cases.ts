@@ -12,7 +12,7 @@ import {
   type PlanId,
   TRIAL_DAYS,
 } from "./plans";
-import { assertFeature, assertMemberRoom, bookingUsage, currentPlanOf } from "./rules";
+import { assertInventoryRoom, assertMemberRoom, bookingUsage, currentPlanOf } from "./rules";
 
 const DAY = 24 * 60 * 60 * 1000;
 
@@ -29,14 +29,18 @@ export async function planOf(
   return currentPlanOf(account, grants, now);
 }
 
-/** Bloque une fonctionnalité payante absente de la formule (à appeler dans la transaction). */
-export async function requireFeature(
+/** Bloque l'ajout de `adding` exemplaires au-delà de la formule (à appeler dans la transaction). */
+export async function requireInventoryRoom(
   repositories: Repositories,
   organizationId: string,
-  feature: PlanFeature,
+  adding: number,
   now: Date,
 ): Promise<void> {
-  assertFeature((await planOf(repositories, organizationId, now)).plan, feature);
+  const [{ plan }, used] = await Promise.all([
+    planOf(repositories, organizationId, now),
+    repositories.billing.countInventoryUnits(organizationId),
+  ]);
+  assertInventoryRoom(plan, used, adding);
 }
 
 /** Formule en cours, sans acteur : page publique (logo Horaya), menus de l'app. */
@@ -45,13 +49,17 @@ export function getCurrentPlan(deps: Deps, organizationId: string): Promise<Curr
 }
 
 /** Début du mois civil de `date` dans le fuseau de l'espace, et du mois précédent. */
-function monthStarts(date: Date, timeZone: string): { thisMonth: Date; lastMonth: Date } {
+function monthStarts(
+  date: Date,
+  timeZone: string,
+): { thisMonth: Date; lastMonth: Date; nextMonth: Date } {
   const { year, month } = toZonedParts(date, timeZone);
   const start = (y: number, m: number) =>
     fromZonedParts({ year: y, month: m, day: 1, hour: 0, minute: 0 }, timeZone);
   return {
     thisMonth: start(year, month),
     lastMonth: month === 1 ? start(year - 1, 12) : start(year, month - 1),
+    nextMonth: month === 12 ? start(year + 1, 1) : start(year, month + 1),
   };
 }
 
@@ -78,9 +86,9 @@ async function overviewOf(
     repositories.billing.countSeats(organizationId),
   ]);
   const current = currentPlanOf(account, grants, now);
-  const { thisMonth, lastMonth } = monthStarts(now, settings.timezone);
+  const { thisMonth, lastMonth, nextMonth } = monthStarts(now, settings.timezone);
   const [usedThisMonth, usedLastMonth] = await Promise.all([
-    repositories.billing.countBookings(organizationId, thisMonth, now),
+    repositories.billing.countBookings(organizationId, thisMonth, nextMonth),
     repositories.billing.countBookings(organizationId, lastMonth, thisMonth),
   ]);
   return {

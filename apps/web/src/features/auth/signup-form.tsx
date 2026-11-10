@@ -150,7 +150,16 @@ export function SignupForm({
         required
         label={
           <span className="font-medium">
-            J'accepte les conditions d'utilisation et la{" "}
+            J'accepte les{" "}
+            <a
+              href="/cgu"
+              target="_blank"
+              rel="noreferrer"
+              className="underline underline-offset-[3px]"
+            >
+              conditions d'utilisation
+            </a>{" "}
+            et la{" "}
             <a
               href="/confidentialite"
               target="_blank"

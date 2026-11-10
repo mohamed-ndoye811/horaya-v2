@@ -26,8 +26,10 @@ type Data = Awaited<ReturnType<typeof getBillingSettings>>;
 const PERKS: Record<PlanId, string[]> = {
   libre: [
     "1 membre",
-    "50 réservations par mois",
+    "100 réservations par mois",
     "Événements et clients illimités",
+    "Comptoir, cartes de séances, bons cadeaux",
+    "Matériel : 5 exemplaires",
     "Paiement par lien, abonnement d'agenda",
     "Page publique avec le logo Horaya",
   ],
@@ -35,8 +37,7 @@ const PERKS: Record<PlanId, string[]> = {
     "3 membres",
     "1 000 réservations par mois",
     "Page publique sans logo Horaya",
-    "Matériel et location",
-    "Comptoir",
+    "Matériel et location illimités",
   ],
   equipe: [
     "Membres illimités",

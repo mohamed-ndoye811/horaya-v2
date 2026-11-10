@@ -1,5 +1,4 @@
 import { z } from "zod";
-import { requireFeature } from "../billing/use-cases";
 import { rawFieldValuesSchema } from "../fields/schemas";
 import { applyGiftCardToBooking } from "../gift-cards/use-cases";
 import { type AssignedItem, assignEventItems } from "../inventory/use-cases";
@@ -148,7 +147,6 @@ export async function createCounterBooking(
   const manageTokenHash = await hashToken(manageToken);
 
   return deps.uow.run(async (repositories) => {
-    await requireFeature(repositories, actor.organizationId, "counter", deps.clock.now());
     const locked = data.slot
       ? await lockSlotEvent(
           repositories,

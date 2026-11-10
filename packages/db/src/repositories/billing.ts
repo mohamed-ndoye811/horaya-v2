@@ -1,7 +1,7 @@
 import type { BillingAccount, BillingRepository, PlanGrant } from "@horaya/core";
-import { and, count, eq, gte, lt, ne } from "drizzle-orm";
+import { and, count, eq, gte, inArray, lt, ne, sql } from "drizzle-orm";
 import type { Executor } from "../client";
-import { billing, booking, invitation, member, planGrant } from "../schema";
+import { billing, booking, event, invitation, itemUnit, member, planGrant } from "../schema";
 
 type BillingRow = typeof billing.$inferSelect;
 
@@ -102,16 +102,28 @@ export function billingRepository(db: Executor): BillingRepository {
       return (members?.value ?? 0) + (pending?.value ?? 0);
     },
 
+    async countInventoryUnits(organizationId) {
+      const [row] = await db
+        .select({ value: count() })
+        .from(itemUnit)
+        .where(and(eq(itemUnit.organizationId, organizationId), ne(itemUnit.status, "retired")));
+      return row?.value ?? 0;
+    },
+
     async countBookings(organizationId, from, to) {
+      // Au mois de la séance (ou du début de la location), pas de la prise de réservation.
+      const happensAt = sql`coalesce(${event.startsAt}, ${booking.rentalStartsAt})`;
       const [row] = await db
         .select({ value: count() })
         .from(booking)
+        .leftJoin(event, eq(event.id, booking.eventId))
         .where(
           and(
             eq(booking.organizationId, organizationId),
-            ne(booking.status, "refused"),
-            gte(booking.createdAt, from),
-            lt(booking.createdAt, to),
+            inArray(booking.status, ["pending", "confirmed"]),
+            // Expression brute : le pilote attend des dates en texte, pas des Date.
+            gte(happensAt, from.toISOString()),
+            lt(happensAt, to.toISOString()),
           ),
         );
       return row?.value ?? 0;

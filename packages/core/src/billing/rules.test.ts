@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { BillingAccount, PlanGrant } from "./model";
 import {
-  assertFeature,
+  assertInventoryRoom,
   assertMemberRoom,
   bookingUsage,
   currentPlanOf,
@@ -77,9 +77,10 @@ describe("currentPlanOf", () => {
 });
 
 describe("limites", () => {
-  it("bloque les fonctionnalités payantes en Libre", () => {
-    expect(() => assertFeature("libre", "inventory")).toThrow(PlanLimitError);
-    expect(() => assertFeature("pro", "counter")).not.toThrow();
+  it("plafonne le matériel en Libre, pas en Pro", () => {
+    expect(() => assertInventoryRoom("libre", 3, 2)).not.toThrow();
+    expect(() => assertInventoryRoom("libre", 3, 3)).toThrow(PlanLimitError);
+    expect(() => assertInventoryRoom("pro", 400, 100)).not.toThrow();
   });
 
   it("compte les places de l'équipe", () => {
@@ -90,9 +91,9 @@ describe("limites", () => {
   });
 
   it("prévient au-delà du quota, propose la formule supérieure au deuxième mois", () => {
-    expect(bookingUsage("libre", 40, 80)).toMatchObject({ over: false, suggestUpgrade: false });
-    expect(bookingUsage("libre", 60, 20)).toMatchObject({ over: true, suggestUpgrade: false });
-    expect(bookingUsage("libre", 60, 51)).toMatchObject({ over: true, suggestUpgrade: true });
+    expect(bookingUsage("libre", 90, 150)).toMatchObject({ over: false, suggestUpgrade: false });
+    expect(bookingUsage("libre", 120, 40)).toMatchObject({ over: true, suggestUpgrade: false });
+    expect(bookingUsage("libre", 120, 101)).toMatchObject({ over: true, suggestUpgrade: true });
     expect(bookingUsage("equipe", 9999, 9999)).toMatchObject({ limit: null, over: false });
   });
 });

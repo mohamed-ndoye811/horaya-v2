@@ -11,8 +11,11 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as SlugRouteImport } from './routes/$slug'
+import { Route as AideRouteImport } from './routes/aide'
 import { Route as AppRouteImport } from './routes/app'
+import { Route as CguRouteImport } from './routes/cgu'
 import { Route as ConfidentialiteRouteImport } from './routes/confidentialite'
+import { Route as MentionsLegalesRouteImport } from './routes/mentions-legales'
 import { Route as MonEspaceRouteImport } from './routes/mon-espace'
 import { Route as SlugIndexRouteImport } from './routes/$slug/index'
 import { Route as SlugMentionsLegalesRouteImport } from './routes/$slug/mentions-legales'
@@ -108,14 +111,29 @@ const SlugRoute = SlugRouteImport.update({
   path: '/$slug',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AideRoute = AideRouteImport.update({
+  id: '/aide',
+  path: '/aide',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AppRoute = AppRouteImport.update({
   id: '/app',
   path: '/app',
   getParentRoute: () => rootRouteImport,
 } as any)
+const CguRoute = CguRouteImport.update({
+  id: '/cgu',
+  path: '/cgu',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ConfidentialiteRoute = ConfidentialiteRouteImport.update({
   id: '/confidentialite',
   path: '/confidentialite',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MentionsLegalesRoute = MentionsLegalesRouteImport.update({
+  id: '/mentions-legales',
+  path: '/mentions-legales',
   getParentRoute: () => rootRouteImport,
 } as any)
 const MonEspaceRoute = MonEspaceRouteImport.update({
@@ -557,8 +575,11 @@ const AppPlateformeEspacesIdRoute = AppPlateformeEspacesIdRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/$slug': typeof SlugRouteWithChildren
+  '/aide': typeof AideRoute
   '/app': typeof AppRouteWithChildren
+  '/cgu': typeof CguRoute
   '/confidentialite': typeof ConfidentialiteRoute
+  '/mentions-legales': typeof MentionsLegalesRoute
   '/mon-espace': typeof MonEspaceRouteWithChildren
   '/$slug/mentions-legales': typeof SlugMentionsLegalesRoute
   '/$slug/mes-reservations': typeof SlugMesReservationsRoute
@@ -646,7 +667,10 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/aide': typeof AideRoute
+  '/cgu': typeof CguRoute
   '/confidentialite': typeof ConfidentialiteRoute
+  '/mentions-legales': typeof MentionsLegalesRoute
   '/$slug/mentions-legales': typeof SlugMentionsLegalesRoute
   '/$slug/mes-reservations': typeof SlugMesReservationsRoute
   '/connexion': typeof authConnexionRoute
@@ -735,8 +759,11 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/$slug': typeof SlugRouteWithChildren
+  '/aide': typeof AideRoute
   '/app': typeof AppRouteWithChildren
+  '/cgu': typeof CguRoute
   '/confidentialite': typeof ConfidentialiteRoute
+  '/mentions-legales': typeof MentionsLegalesRoute
   '/mon-espace': typeof MonEspaceRouteWithChildren
   '/$slug/mentions-legales': typeof SlugMentionsLegalesRoute
   '/$slug/mes-reservations': typeof SlugMesReservationsRoute
@@ -827,8 +854,11 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/$slug'
+    | '/aide'
     | '/app'
+    | '/cgu'
     | '/confidentialite'
+    | '/mentions-legales'
     | '/mon-espace'
     | '/$slug/mentions-legales'
     | '/$slug/mes-reservations'
@@ -916,7 +946,10 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/aide'
+    | '/cgu'
     | '/confidentialite'
+    | '/mentions-legales'
     | '/$slug/mentions-legales'
     | '/$slug/mes-reservations'
     | '/connexion'
@@ -1004,8 +1037,11 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/$slug'
+    | '/aide'
     | '/app'
+    | '/cgu'
     | '/confidentialite'
+    | '/mentions-legales'
     | '/mon-espace'
     | '/$slug/mentions-legales'
     | '/$slug/mes-reservations'
@@ -1095,8 +1131,11 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   SlugRoute: typeof SlugRouteWithChildren
+  AideRoute: typeof AideRoute
   AppRoute: typeof AppRouteWithChildren
+  CguRoute: typeof CguRoute
   ConfidentialiteRoute: typeof ConfidentialiteRoute
+  MentionsLegalesRoute: typeof MentionsLegalesRoute
   MonEspaceRoute: typeof MonEspaceRouteWithChildren
   authConnexionRoute: typeof authConnexionRoute
   authMotDePasseOublieRoute: typeof authMotDePasseOublieRoute
@@ -1134,6 +1173,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SlugRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/aide': {
+      id: '/aide'
+      path: '/aide'
+      fullPath: '/aide'
+      preLoaderRoute: typeof AideRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/app': {
       id: '/app'
       path: '/app'
@@ -1141,11 +1187,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/cgu': {
+      id: '/cgu'
+      path: '/cgu'
+      fullPath: '/cgu'
+      preLoaderRoute: typeof CguRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/confidentialite': {
       id: '/confidentialite'
       path: '/confidentialite'
       fullPath: '/confidentialite'
       preLoaderRoute: typeof ConfidentialiteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/mentions-legales': {
+      id: '/mentions-legales'
+      path: '/mentions-legales'
+      fullPath: '/mentions-legales'
+      preLoaderRoute: typeof MentionsLegalesRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/mon-espace': {
@@ -1899,8 +1959,11 @@ const MonEspaceRouteWithChildren = MonEspaceRoute._addFileChildren(
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   SlugRoute: SlugRouteWithChildren,
+  AideRoute: AideRoute,
   AppRoute: AppRouteWithChildren,
+  CguRoute: CguRoute,
   ConfidentialiteRoute: ConfidentialiteRoute,
+  MentionsLegalesRoute: MentionsLegalesRoute,
   MonEspaceRoute: MonEspaceRouteWithChildren,
   authConnexionRoute: authConnexionRoute,
   authMotDePasseOublieRoute: authMotDePasseOublieRoute,
