@@ -154,7 +154,7 @@ export function DesignSystemPage() {
           <p className="text-base font-medium text-ink-muted">
             Urbanist 16 px — texte courant des écrans.
           </p>
-          <Eyebrow>Geist Mono 12 px — sur-titres et données</Eyebrow>
+          <Eyebrow>Paper Mono 12 px — sur-titres et données</Eyebrow>
           <Eyebrow variant="caps">Eyebrow caps</Eyebrow>
           <Eyebrow variant="mono">Eyebrow mono</Eyebrow>
           <div className={`${inkCardClasses} flex flex-col gap-3 rounded-3xl p-5`}>
