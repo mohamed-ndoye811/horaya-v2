@@ -72,7 +72,7 @@ export function EventTypesPage({
               title="Crée ton premier type d'événement."
               description="Commence par les formats que tu proposes le plus : séminaire, atelier, réunion… Chacun a sa couleur dans le calendrier."
               actions={
-                <ButtonLink href="/app/evenements/types?type=nouveau" arrow>
+                <ButtonLink href="/app/evenements/types?type=nouveau">
                   Créer mon premier type
                 </ButtonLink>
               }

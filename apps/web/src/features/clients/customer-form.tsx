@@ -60,7 +60,7 @@ export function CustomerForm({
     >
       <div className="flex min-w-0 flex-col gap-4">
         {state.error && <FormAlert>{state.error}</FormAlert>}
-        <FormSection number={1} title="Coordonnées">
+        <FormSection title="Coordonnées">
           <div className="grid gap-4 sm:grid-cols-2">
             <Field label="Prénom" required error={errors.firstName}>
               {(field) => (

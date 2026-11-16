@@ -27,12 +27,7 @@ export function InvitationPage({
           title="Déjà acceptée"
           text={`Cette invitation a déjà servi à rejoindre ${summary.organizationName}.`}
         >
-          <ButtonLink
-            href={sessionEmail ? "/app" : "/connexion"}
-            size="lg"
-            arrow
-            className="w-full"
-          >
+          <ButtonLink href={sessionEmail ? "/app" : "/connexion"} size="lg" className="w-full">
             {sessionEmail ? "Ouvrir l'espace" : "Se connecter"}
           </ButtonLink>
         </Message>
@@ -51,7 +46,7 @@ export function InvitationPage({
       return (
         <Message title={`Rejoins ${summary.organizationName}`} text={intro}>
           <div className="flex flex-col gap-3">
-            <ButtonLink href={`/inscription?invitation=${id}`} size="lg" arrow className="w-full">
+            <ButtonLink href={`/inscription?invitation=${id}`} size="lg" className="w-full">
               Créer mon compte
             </ButtonLink>
             <ButtonLink href={`/connexion?invitation=${id}`} variant="secondary" className="w-full">
@@ -83,7 +78,7 @@ export function InvitationPage({
       aside={
         <BrandAside
           title="Rejoins l'équipe."
-          lead="Ton équipe organise ses événements sur Horaya. Il ne manque plus que toi."
+          lead="Crée ton compte ou connecte-toi pour accéder à l'espace de ton équipe."
         />
       }
     >

@@ -673,7 +673,7 @@ export function NotificationsPanel({
           onClick={onClose}
           className="text-meta font-semibold leading-4 text-on-ink hover:text-notch-idle"
         >
-          Régler mes notifications →
+          Régler mes notifications
         </Link>
       </div>
     </div>

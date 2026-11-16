@@ -177,7 +177,7 @@ export function GiftCardPurchase({
           <p className="px-3 pt-1 text-sm leading-[18px] text-notch-idle sm:p-0">
             Tu paies ensuite via le lien de {workspace.name}, qui active ton bon.
           </p>
-          <Button type="submit" variant="brand" pending={pending} arrow>
+          <Button type="submit" variant="brand" pending={pending}>
             {pending ? "Un instant…" : "Continuer"}
           </Button>
         </div>

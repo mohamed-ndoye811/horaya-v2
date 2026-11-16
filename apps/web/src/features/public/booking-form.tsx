@@ -434,7 +434,7 @@ export function BookingForm({
             <span className="font-semibold text-on-ink">{recap.main}</span>
             {recap.extra && ` · ${recap.extra}`}
           </p>
-          <Button type="submit" variant="brand" pending={pending} arrow>
+          <Button type="submit" variant="brand" pending={pending}>
             {pending ? "Un instant…" : submitLabel}
           </Button>
         </div>

@@ -26,7 +26,7 @@ export function AcceptInvitation({
   return (
     <div className="flex flex-col gap-4">
       {error && <FormAlert>{error}</FormAlert>}
-      <Button size="lg" arrow pending={pending} className="w-full" onClick={() => run(accept)}>
+      <Button size="lg" pending={pending} className="w-full" onClick={() => run(accept)}>
         Rejoindre {organizationName}
       </Button>
       <Button variant="secondary" disabled={pending} className="w-full" onClick={() => run(reject)}>

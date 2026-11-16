@@ -186,7 +186,6 @@ export function WorkspaceOnboarding() {
         <Button
           size="lg"
           type="submit"
-          arrow
           pending={pending}
           disabled={
             slugStatus !== null && slugStatus !== "checking" && slugStatus.state !== "available"
@@ -229,7 +228,7 @@ function PublicPagePreview({ name, slug, color }: { name: string; slug: string; 
   return (
     <div className="flex flex-1 flex-col gap-5">
       <div className="flex items-center justify-between gap-3 text-meta">
-        <span className="font-medium text-on-ink-muted">Aperçu en direct</span>
+        <span className="font-medium text-on-ink-muted">Aperçu</span>
         <span className="flex min-w-0 items-center gap-2 font-mono text-xs text-on-ink-muted">
           <span className="size-1.5 shrink-0 rounded-full bg-success" />
           <span className="truncate">horaya.app/{slug || "ton-espace"}</span>
@@ -265,9 +264,7 @@ function PublicPagePreview({ name, slug, color }: { name: string; slug: string; 
             </span>
             <span className="flex min-w-0 flex-1 flex-col gap-0.5">
               <span className="truncate text-sm font-semibold text-ink">Ton premier événement</span>
-              <span className="truncate text-xs text-ink-subtle">
-                Il apparaîtra ici, prêt à réserver
-              </span>
+              <span className="truncate text-xs text-ink-subtle">Il apparaîtra ici</span>
             </span>
             <span
               className="flex h-8 shrink-0 items-center rounded-full px-3.5 text-xs font-bold text-white transition-colors"

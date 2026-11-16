@@ -50,7 +50,7 @@ export function PassesShowcase({ workspace, plans }: { workspace: Workspace; pla
       {[
         ["Tu choisis ta carte", `et tu la paies sur la page de paiement de ${workspace.name}.`],
         ["Elle s'active", "dès que le paiement est reçu. Tu la retrouves dans ton espace."],
-        ["Tu réserves", "en un clic, sans repayer : chaque séance est décomptée de ta carte."],
+        ["Tu réserves", "sans repayer : chaque séance est décomptée de ta carte."],
       ].map(([title, text], index) => (
         <li key={title} className="flex gap-4">
           <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-[var(--brand)] text-sm font-bold text-[var(--on-brand)]">
@@ -70,7 +70,7 @@ export function PassesShowcase({ workspace, plans }: { workspace: Workspace; pla
       <PublicHero
         eyebrow={workspace.name}
         title="Cartes de séances"
-        lead="Viens plus souvent, paie moins : tes séances réglées d'avance, à réserver en un clic."
+        lead="Des séances payées d'avance, moins chères qu'à l'unité."
         font={workspace.displayFont}
         cover={workspace.coverImageUrl}
       />
@@ -127,7 +127,7 @@ export function PassesShowcase({ workspace, plans }: { workspace: Workspace; pla
                   </li>
                 ))}
               </ul>
-              <Button variant="brand" size="lg" arrow onClick={() => setChosen(plan)}>
+              <Button variant="brand" size="lg" onClick={() => setChosen(plan)}>
                 Choisir cette carte
               </Button>
             </article>
@@ -220,7 +220,7 @@ function CheckoutDialog({
       description={`${formatMoney(plan.priceCents)} · ${plural(plan.sessions, "séance")} à ${formatMoney(perSession(plan))} · valable ${formatValidity(plan.validityDays)}`}
       footer={
         <div className="flex w-full flex-col gap-2">
-          <Button type="submit" form={formId} variant="brand" size="lg" pending={pending} arrow>
+          <Button type="submit" form={formId} variant="brand" size="lg" pending={pending}>
             {pending ? "Un instant…" : `Payer ${formatMoney(plan.priceCents)}`}
           </Button>
           <p className="text-center text-meta leading-[18px] text-ink-subtle">

@@ -25,11 +25,6 @@ export function ProfileSettingsPage({
         </>
       }
       saveBar={{
-        message: (
-          <>
-            <strong>Ton prénom</strong> s'affiche pour ton équipe et sur tes e-mails.
-          </>
-        ),
         buttons: (
           <Button type="submit" form="profile-form" variant="inverse">
             Enregistrer

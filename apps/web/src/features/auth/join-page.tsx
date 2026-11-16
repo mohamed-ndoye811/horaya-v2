@@ -25,7 +25,7 @@ export function JoinPage({
       return (
         <Message title={`Rejoins ${link.organizationName}`} text={intro}>
           <div className="flex flex-col gap-3">
-            <ButtonLink href={`/inscription?rejoindre=${token}`} size="lg" arrow className="w-full">
+            <ButtonLink href={`/inscription?rejoindre=${token}`} size="lg" className="w-full">
               Créer mon compte
             </ButtonLink>
             <ButtonLink
@@ -42,7 +42,7 @@ export function JoinPage({
     if (alreadyMember) {
       return (
         <Message title="Déjà membre" text={`Tu fais déjà partie de ${link.organizationName}.`}>
-          <ButtonLink href="/app" size="lg" arrow className="w-full">
+          <ButtonLink href="/app" size="lg" className="w-full">
             Ouvrir l'espace
           </ButtonLink>
         </Message>
@@ -60,7 +60,7 @@ export function JoinPage({
       aside={
         <BrandAside
           title="Rejoins l'équipe."
-          lead="Ton équipe organise ses événements sur Horaya. Il ne manque plus que toi."
+          lead="Crée ton compte ou connecte-toi pour accéder à l'espace de ton équipe."
         />
       }
     >

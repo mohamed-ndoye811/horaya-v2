@@ -149,7 +149,7 @@ export function ManagedBookingPage({
             channel?.kind === "link"
               ? `${fresh ? `Merci ${booking.customerFirstName}. ` : ""}${yourPlaces} pour « ${title} » ${agree("est réservée", "sont réservées")} : règle ${booking.paymentMode === "deposit" ? "l'acompte de " : ""}${formatMoney(due)} via le lien de paiement de ${workspace.name}, qui confirmera la réception par e-mail.`
               : paymentReturn === "ok"
-                ? "Stripe confirme ton paiement : ça ne prend que quelques secondes."
+                ? "Stripe confirme ton paiement."
                 : `${yourPlaces} pour « ${title} » ${agree("est retenue", "sont retenues")} le temps du paiement en ligne (${formatMoney(due)}). Sans paiement, ${agree("elle est libérée", "elles sont libérées")} au bout de 30 minutes.`,
         };
       const paidNote =
@@ -215,7 +215,7 @@ export function ManagedBookingPage({
             </ButtonLink>
           )}
           {fresh && !awaitsPayment && (
-            <ButtonLink href={manageHref} variant="inverse" size="xl" arrow>
+            <ButtonLink href={manageHref} variant="inverse" size="xl">
               Gérer ma réservation
             </ButtonLink>
           )}

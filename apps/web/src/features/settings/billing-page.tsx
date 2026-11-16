@@ -51,8 +51,8 @@ const PERKS: Record<PlanId, string[]> = {
 const PROMISES = [
   "Aucune réservation de tes clients n'est jamais refusée à cause d'un quota.",
   "Tes données restent à toi : l'export est gratuit dans toutes les formules.",
-  "Sans engagement : tu résilies en un clic, l'accès dure jusqu'à la fin de la période payée.",
-  "Pas de commission sur tes réservations, pas de frais cachés.",
+  "Sans engagement : tu résilies quand tu veux, l'accès dure jusqu'à la fin de la période payée.",
+  "Pas de commission sur tes réservations.",
 ];
 
 function sourceBadge(data: Data): { label: string; tone: Tone } {

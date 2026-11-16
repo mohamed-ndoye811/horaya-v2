@@ -73,14 +73,6 @@ export function InventoryPage({
       <PageHeader
         eyebrow="Tableau de bord / Matériel"
         title="Matériel"
-        subtitle={
-          <>
-            {stats.items} article{stats.items > 1 ? "s" : ""}.{" "}
-            <span className="text-ink">
-              {stats.outNow} en location aujourd'hui, {stats.maintenanceUnits} à réviser.
-            </span>
-          </>
-        }
         actions={
           <>
             <ImportItemsButton />
@@ -170,7 +162,7 @@ export function InventoryPage({
                 href={href({ filtre: "maintenance" })}
                 className="text-meta font-semibold leading-[17px] hover:underline"
               >
-                Planifier la maintenance →
+                Planifier la maintenance
               </Link>
             ) : (
               "Aucune intervention prévue"
@@ -183,11 +175,7 @@ export function InventoryPage({
         <EmptyState
           title="L'établi est vide : ajoute ton matériel."
           description="Ajoute ton matériel (vidéoprojecteurs, micros, mobilier…) : tu pourras le réserver pour tes événements ou le louer, sans jamais prêter deux fois le même exemplaire."
-          actions={
-            <ButtonLink href="/app/materiel/nouveau" arrow>
-              Ajouter un article
-            </ButtonLink>
-          }
+          actions={<ButtonLink href="/app/materiel/nouveau">Ajouter un article</ButtonLink>}
         />
       ) : (
         <>

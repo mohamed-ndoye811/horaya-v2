@@ -183,7 +183,8 @@ export function CalendarPage({
           : `${first.day}/${first.month} – ${last.day}/${last.month}`
         : `${WEEKDAYS[(new Date(Date.UTC(date.year, date.month - 1, date.day)).getUTCDay() + 6) % 7]?.slice(0, 3)}. ${date.day} ${SHORT_MONTHS[date.month - 1]}`;
 
-  // Sous-titre : « Juin 2026. 2 événements aujourd'hui, 6 cette semaine. »
+  // Sous-titre : « Juin 2026. 2 événements aujourd'hui. » Le total de la période est
+  // déjà dans le sur-titre.
   const todayStart = startOfDay(today, timeZone);
   const todayEnd = startOfDay(addDays(today, 1), timeZone);
   const showsToday = todayStart >= from && todayStart < to;
@@ -191,13 +192,10 @@ export function CalendarPage({
     (row) => row.startsAt < todayEnd && row.endsAt > todayStart,
   ).length;
   const monthLabel = `${capitalize(MONTHS[date.month - 1] ?? "")} ${date.year}.`;
-  const period = view === "mois" ? "ce mois-ci" : view === "semaine" ? "cette semaine" : null;
   const summary =
-    period === null
-      ? `${plural(rows.length, "événement")}.`
-      : showsToday
-        ? `${todayCount === 0 ? "Aucun événement" : plural(todayCount, "événement")} aujourd'hui, ${inMonth.length} ${period}.`
-        : `${plural(inMonth.length, "événement")} ${period}.`;
+    view !== "jour" && showsToday
+      ? `${todayCount === 0 ? "Aucun événement" : plural(todayCount, "événement")} aujourd'hui.`
+      : "";
 
   // Plage horaire : 8 h – 20 h, élargie si des événements débordent.
   const hours = rows
@@ -347,10 +345,12 @@ export function CalendarPage({
           </MonthPicker>
         }
         subtitle={
-          <Swap value={`${view}${monthLabel}${summary}`} slide={slide}>
-            {view !== "mois" && `${monthLabel} `}
-            <span className="text-ink">{summary}</span>
-          </Swap>
+          (summary || view !== "mois") && (
+            <Swap value={`${view}${monthLabel}${summary}`} slide={slide}>
+              {view !== "mois" && `${monthLabel} `}
+              <span className="text-ink">{summary}</span>
+            </Swap>
+          )
         }
         toolbar={
           <>

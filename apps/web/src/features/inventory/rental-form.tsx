@@ -219,7 +219,7 @@ export function RentalForm({
           </span>
         </div>
         <div className="flex px-3.5 *:flex-1">
-          <Button type="submit" variant="inverse" arrow pending={pending} disabled={!valid}>
+          <Button type="submit" variant="inverse" pending={pending} disabled={!valid}>
             {pending ? "Enregistrement…" : "Enregistrer la location"}
           </Button>
         </div>

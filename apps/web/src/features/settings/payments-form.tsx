@@ -51,7 +51,7 @@ export function PaymentsForm({
       {state.error && <FormAlert>{state.error}</FormAlert>}
       <div className="flex flex-col gap-4">
         <fieldset disabled={!editable} className="min-w-0">
-          <FormSection number={1} title="Réglages">
+          <FormSection title="Réglages">
             {!editable && (
               <p className="text-xs leading-4 text-ink-subtle">
                 Seuls le propriétaire et les admins peuvent modifier ces réglages.

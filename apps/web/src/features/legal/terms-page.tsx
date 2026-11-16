@@ -70,7 +70,7 @@ export function TermsPage() {
               prévenu et Horaya te propose une formule adaptée.
             </>,
             <>
-              Sans engagement : tu résilies en un clic depuis Paramètres › Abonnement. L'accès
+              Sans engagement : tu résilies à tout moment depuis Paramètres › Abonnement. L'accès
               continue jusqu'à la fin de la période déjà payée, puis l'espace revient à Libre.
             </>,
             <>

@@ -46,7 +46,7 @@ export function GiftCardSettingsPage({
       <form id="gift-card-settings-form" onSubmit={onSubmit} className="flex flex-col gap-4">
         {state.error && <FormAlert>{state.error}</FormAlert>}
         <fieldset disabled={!editable} className="min-w-0">
-          <FormSection number={1} title="Bons cadeaux">
+          <FormSection title="Bons cadeaux">
             {!editable && (
               <p className="text-xs leading-4 text-ink-subtle">
                 Seuls le propriétaire et les admins peuvent modifier ces réglages.
@@ -109,7 +109,7 @@ export function GiftCardSettingsPage({
             </div>
           </FormSection>
           <div className="h-4" />
-          <FormSection number={2} title="Validité et message">
+          <FormSection title="Validité et message">
             <Field label="Validité" error={errors.validityMonths}>
               {(field) => (
                 <AffixInput

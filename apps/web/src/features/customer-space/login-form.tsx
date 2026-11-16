@@ -39,7 +39,7 @@ export function LoginForm({
           />
         )}
       </Field>
-      <Button type="submit" variant="brand" size="lg" pending={pending} arrow>
+      <Button type="submit" variant="brand" size="lg" pending={pending}>
         {pending ? "Un instant…" : "Recevoir mon lien de connexion"}
       </Button>
       <p className="text-sm leading-5 text-ink-muted">
@@ -90,12 +90,11 @@ export function ConfirmLogin({ slug, token }: { slug: string | null; token: stri
           href={slug ? `/${slug}/mon-espace/connexion` : "/mon-espace/connexion"}
           variant="brand"
           size="lg"
-          arrow
         >
           Recevoir un nouveau lien
         </ButtonLink>
       ) : (
-        <Button type="submit" variant="brand" size="lg" pending={pending} arrow>
+        <Button type="submit" variant="brand" size="lg" pending={pending}>
           {pending ? "Connexion…" : "Me connecter"}
         </Button>
       )}

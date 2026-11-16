@@ -55,7 +55,7 @@ export function SectionHeading({
           href={action.href}
           className="tap-area text-sm font-semibold leading-[18px] text-ink transition-colors hover:text-ink-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
         >
-          {action.label} →
+          {action.label}
         </Link>
       )}
     </div>
@@ -70,7 +70,8 @@ export function FormSection({
   aside,
   children,
 }: {
-  number: number;
+  /** Ordre de l'étape, seulement dans un formulaire qui se remplit dans l'ordre. */
+  number?: number;
   title: string;
   /** Précision grise après le titre (« Rempli sur chaque événement »). */
   description?: string;
@@ -81,9 +82,11 @@ export function FormSection({
   return (
     <section className="flex flex-col gap-5 rounded-3xl bg-surface p-5 sm:p-6">
       <h2 className="flex flex-wrap items-center gap-x-2.5 gap-y-1">
-        <span className="flex size-[26px] shrink-0 items-center justify-center rounded-full bg-ink text-xs font-bold leading-[14px] text-on-ink">
-          {number}
-        </span>
+        {number !== undefined && (
+          <span className="flex size-[26px] shrink-0 items-center justify-center rounded-full bg-ink text-xs font-bold leading-[14px] text-on-ink">
+            {number}
+          </span>
+        )}
         <span className="text-lg font-semibold leading-[22px] text-ink">{title}</span>
         {description && (
           <span className="text-sm font-normal leading-[18px] text-ink-subtle">{description}</span>

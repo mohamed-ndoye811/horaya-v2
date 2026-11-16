@@ -173,7 +173,7 @@ export function SignupForm({
         }
       />
 
-      <Button size="lg" type="submit" arrow pending={pending} className="w-full">
+      <Button size="lg" type="submit" pending={pending} className="w-full">
         {pending ? "Création du compte…" : "Créer mon compte"}
       </Button>
     </form>

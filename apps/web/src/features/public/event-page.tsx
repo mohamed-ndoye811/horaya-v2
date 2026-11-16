@@ -352,7 +352,6 @@ export function PublicEventPage({
                   <ButtonLink
                     href={`/${workspace.slug}/${event.slug}/inscription`}
                     variant={bookable ? "secondary" : "brand"}
-                    arrow
                   >
                     M'inscrire au trimestre
                   </ButtonLink>
@@ -409,7 +408,7 @@ export function PublicEventPage({
                     : seats.label}
             </span>
           </p>
-          <ButtonLink href="#reserver" variant="brand" arrow>
+          <ButtonLink href="#reserver" variant="brand">
             Réserver
           </ButtonLink>
         </BottomNotch>

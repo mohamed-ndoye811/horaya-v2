@@ -90,7 +90,6 @@ export function ResetPasswordForm({ token, maskedEmail }: { token: string; maske
       <Button
         size="lg"
         type="submit"
-        arrow
         pending={pending}
         disabled={!acceptable || !matches}
         className="w-full"

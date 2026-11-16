@@ -5,7 +5,7 @@ import { Link } from "@/lib/navigation";
 
 /**
  * Pastille d'événement de la vue Mois.
- * Fond pâle de la couleur du type, filet de 3 px à gauche, heure foncée.
+ * Fond pâle de la couleur du type, heure foncée.
  * `filled` (journée entière ou plusieurs jours) : titre en gras, sans heure.
  */
 export function EventChip({
@@ -25,7 +25,6 @@ export function EventChip({
   href?: string;
 }) {
   const style: CSSProperties = {
-    borderLeftColor: color,
     backgroundColor: tintOf(color),
     color: shadeOf(color),
   };
@@ -46,7 +45,7 @@ export function EventChip({
   );
   const className = cn(
     "flex h-[22px] shrink-0 items-center gap-1.5 overflow-hidden rounded-md",
-    "border-l-[3px] px-1.5",
+    "px-1.5",
     muted && "opacity-55",
     href && "hover:brightness-95 focus-visible:outline-2 focus-visible:outline-ink",
   );

@@ -19,7 +19,6 @@ export function JoinButton({
       {error && <FormAlert>{error}</FormAlert>}
       <Button
         size="lg"
-        arrow
         pending={pending}
         className="w-full"
         onClick={() =>

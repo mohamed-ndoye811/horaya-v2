@@ -293,7 +293,7 @@ export function DesignSystemPage() {
             style={{ "--brand": "#B4532A", "--on-brand": "#ffffff" } as CSSProperties}
           >
             <Button variant="brand">Brand md</Button>
-            <Button variant="brand" size="xl" arrow>
+            <Button variant="brand" size="xl">
               Brand xl
             </Button>
             <Button variant="brand" disabled>
@@ -410,7 +410,7 @@ export function DesignSystemPage() {
                 href="#reservations"
                 className="font-bold underline decoration-1 underline-offset-[3px]"
               >
-                Traiter maintenant →
+                Traiter maintenant
               </a>
             }
           />
@@ -704,11 +704,11 @@ export function DesignSystemPage() {
       <section>
         <SectionHeading title="État vide" />
         <EmptyState
-          title="Ton premier atelier commence ici."
-          description="Crée ton premier événement : il apparaîtra dans ton calendrier et sur ta page publique, prêt à recevoir des réservations."
+          title="Aucun événement pour l'instant."
+          description="Crée ton premier événement : il apparaîtra dans ton calendrier et sur ta page publique."
           actions={
             <>
-              <Button arrow>Créer mon premier événement</Button>
+              <Button>Créer mon premier événement</Button>
               <Button variant="secondary">Importer un agenda (.ics)</Button>
             </>
           }

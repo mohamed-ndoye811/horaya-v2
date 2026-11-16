@@ -21,7 +21,7 @@ const STEPS = [
   {
     target: "breadcrumb",
     title: "À gauche : où tu es",
-    text: "Le nom de la page et son contexte, toujours au même endroit : tu sais d'un coup d'œil où tu te trouves.",
+    text: "Le nom de la page et son contexte, toujours au même endroit.",
   },
   {
     target: null,

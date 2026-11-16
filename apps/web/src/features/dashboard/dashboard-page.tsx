@@ -60,11 +60,6 @@ export function DashboardPage({ data }: { data: Awaited<ReturnType<typeof getDas
       ? `${plural(stats.pendingBookings, "réservation")} ${stats.pendingBookings > 1 ? "attendent" : "attend"} ta validation`
       : null,
   ].filter(Boolean);
-  const todoCount =
-    overview.pending.count +
-    overview.toCollect.count +
-    overview.waitlist.count +
-    overview.drafts.count;
 
   const bookingsByDay = dailySeries(overview.month.bookingsByDay, firstOfMonth, today);
   const collectedByDay = dailySeries(overview.month.collectedByDay, firstOfMonth, today);
@@ -194,7 +189,7 @@ export function DashboardPage({ data }: { data: Awaited<ReturnType<typeof getDas
           <div className="hidden flex-1 flex-col md:flex">
             <div className="grid grid-cols-[minmax(0,1fr)] xl:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)]">
               <section className="flex flex-col">
-                <SectionHeading title="À faire" meta={plural(todoCount, "action")} />
+                <SectionHeading title="À faire" />
                 <div className="px-4">
                   <TodoCards overview={overview} now={now} timeZone={timeZone} />
                 </div>

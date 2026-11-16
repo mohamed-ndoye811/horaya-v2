@@ -131,7 +131,7 @@ export function StageCard({
             C'est complet : il n'y a plus de place pour tout le stage.
           </p>
         ) : (
-          <ButtonLink href={href} variant="brand" arrow>
+          <ButtonLink href={href} variant="brand">
             Je m'inscris au stage
           </ButtonLink>
         )}

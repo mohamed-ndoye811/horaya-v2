@@ -89,14 +89,7 @@ export function BookingsPage({
       <PageHeader
         eyebrow="Tableau de bord / Réservations"
         title="Réservations"
-        subtitle={
-          <>
-            {counts.all} réservation{counts.all > 1 ? "s" : ""}.{" "}
-            <span className="text-ink">
-              {formatMoney(monthAmount)} confirmés en {MONTHS[today.month - 1]}.
-            </span>
-          </>
-        }
+        subtitle={`${formatMoney(monthAmount)} confirmés en ${MONTHS[today.month - 1]}.`}
         actions={
           <>
             {/* Sous lg, l'export passe dans un menu « … » (téléchargement : hors du routeur). */}
@@ -181,13 +174,9 @@ export function BookingsPage({
 
       {counts.all === 0 ? (
         <EmptyState
-          title="Ta première réservation t'attend."
+          title="Aucune réservation pour l'instant."
           description="Dès qu'un client réserve sur ta page publique, ou que tu inscris quelqu'un toi-même, ça apparaît ici."
-          actions={
-            <ButtonLink href="/app/reservations/nouvelle" arrow>
-              Inscrire quelqu'un
-            </ButtonLink>
-          }
+          actions={<ButtonLink href="/app/reservations/nouvelle">Inscrire quelqu'un</ButtonLink>}
         />
       ) : (
         <>
