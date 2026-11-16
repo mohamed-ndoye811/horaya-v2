@@ -139,11 +139,7 @@ export function GiftCardsPage({
             "On l'achète sur ta page, ou tu le vends au comptoir",
             "Le bénéficiaire le dépense en réservant",
           ]}
-          actions={
-            <ButtonLink href={sellHref} arrow>
-              Vendre un bon
-            </ButtonLink>
-          }
+          actions={<ButtonLink href={sellHref}>Vendre un bon</ButtonLink>}
         />
       ) : (
         <div className="flex flex-col gap-4 pb-4">

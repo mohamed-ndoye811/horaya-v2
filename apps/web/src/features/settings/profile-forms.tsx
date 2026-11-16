@@ -21,7 +21,7 @@ export function ProfileForm({
   const errors = state.fieldErrors ?? {};
   return (
     <form id="profile-form" onSubmit={onSubmit} className="flex flex-col gap-5">
-      <FormSection number={1} title="Toi">
+      <FormSection title="Toi">
         {state.error && <FormAlert>{state.error}</FormAlert>}
         <ProfilePhoto name={`${initial.firstName} ${initial.lastName}`} image={initial.image} />
         <div className="grid gap-4 sm:grid-cols-2">
@@ -91,7 +91,7 @@ export function PasswordForm() {
   const errors = state.fieldErrors ?? {};
   return (
     <form ref={formRef} onSubmit={onSubmit} className="flex flex-col gap-5">
-      <FormSection number={2} title="Mot de passe">
+      <FormSection title="Mot de passe">
         {state.error && !state.fieldErrors && <FormAlert>{state.error}</FormAlert>}
         <div className="grid items-start gap-4 sm:grid-cols-2">
           <Field label="Mot de passe actuel" required>

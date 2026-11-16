@@ -82,11 +82,11 @@ export function eventBadge(
 }
 
 const ACTIONS: Record<BookingState["kind"], { label: string; className: string }> = {
-  open: { label: "Réserver →", className: "text-[var(--brand-text)]" },
-  waitlist: { label: "Liste d'attente →", className: "text-ink" },
+  open: { label: "Réserver", className: "text-[var(--brand-text)]" },
+  waitlist: { label: "Liste d'attente", className: "text-ink" },
   full: { label: "Complet", className: "text-ink-subtle" },
-  upcoming: { label: "Voir →", className: "text-ink" },
-  closed: { label: "Voir →", className: "text-ink-subtle" },
+  upcoming: { label: "Voir", className: "text-ink" },
+  closed: { label: "Voir", className: "text-ink-subtle" },
 };
 
 /**
@@ -342,7 +342,7 @@ function EventCard({
   const badge = eventBadge(state, seats, event.requiresApproval);
   const action =
     state.kind === "open" && event.requiresApproval
-      ? { ...ACTIONS.open, label: "Demander →" }
+      ? { ...ACTIONS.open, label: "Demander" }
       : ACTIONS[state.kind];
   return (
     <Link

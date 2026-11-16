@@ -356,7 +356,7 @@ export function SlotPage({ slug, data }: { slug: string; data: Data }) {
             </span>
           </p>
           {state.error && <FormAlert>{state.error}</FormAlert>}
-          <Button type="submit" variant="brand" arrow disabled={!chosen} pending={pending}>
+          <Button type="submit" variant="brand" disabled={!chosen} pending={pending}>
             Continuer
           </Button>
           <p className="text-label leading-4 text-ink-muted">

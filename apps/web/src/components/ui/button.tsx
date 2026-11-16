@@ -1,7 +1,6 @@
 import type { ComponentProps, ReactNode } from "react";
 import { cn } from "@/lib/cn";
 import { Link } from "@/lib/navigation";
-import { ArrowRight } from "./icons";
 
 /**
  * `inverse` et `inverse-outline` : versions pour fond noir (barres d'action, cartes noires).
@@ -28,13 +27,11 @@ export type ButtonVariant =
  */
 export type ButtonSize = "xs" | "sm" | "md" | "lg" | "xl";
 
-// Pilules de la DA v4. Appui : léger enfoncement (120 ms) ; survol : la flèche avance de 3 px.
+// Pilules de la DA v4. Appui : léger enfoncement (120 ms).
 const base =
-  "group inline-flex shrink-0 items-center justify-center gap-2 whitespace-nowrap rounded-full " +
+  "inline-flex shrink-0 items-center justify-center gap-2 whitespace-nowrap rounded-full " +
   "transition-[color,background-color,border-color,scale,filter] active:scale-[0.97] active:duration-[120ms] aria-busy:animate-pulse " +
   "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink";
-
-const arrowClasses = "transition-transform group-hover:translate-x-[3px]";
 
 const sizes: Record<ButtonSize, string> = {
   xs: "h-9 px-4 text-meta leading-4",
@@ -99,8 +96,6 @@ interface ButtonProps extends ComponentProps<"button"> {
   size?: ButtonSize;
   /** Icône avant le libellé (ex. « + » de « Nouvel événement »). */
   icon?: ReactNode;
-  /** Flèche après le libellé (actions qui font avancer). */
-  arrow?: boolean;
   pending?: boolean;
   children: ReactNode;
 }
@@ -109,7 +104,6 @@ export function Button({
   variant = "primary",
   size = "md",
   icon,
-  arrow = false,
   pending = false,
   className,
   children,
@@ -127,7 +121,6 @@ export function Button({
     >
       {icon}
       {children}
-      {arrow && !pending && <ArrowRight className={arrowClasses} />}
     </button>
   );
 }
@@ -136,14 +129,12 @@ interface ButtonLinkProps extends ComponentProps<typeof Link> {
   variant?: ButtonVariant;
   size?: ButtonSize;
   icon?: ReactNode;
-  arrow?: boolean;
 }
 
 export function ButtonLink({
   variant = "primary",
   size = "md",
   icon,
-  arrow = false,
   className,
   children,
   ...props
@@ -152,7 +143,6 @@ export function ButtonLink({
     <Link className={buttonClasses({ variant, size, className })} {...props}>
       {icon}
       {children}
-      {arrow && <ArrowRight className={arrowClasses} />}
     </Link>
   );
 }
@@ -252,7 +242,7 @@ export const rowLinkClasses =
   "font-semibold text-ink hover:underline hover:decoration-1 hover:underline-offset-[3px] " +
   "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink";
 
-/** Lien discret des en-têtes de section (« Tous les événements → »). */
+/** Lien discret des en-têtes de section (« Tous les événements »). */
 export const monoLinkClasses =
   "transition-colors tap-area text-meta font-semibold text-ink hover:text-ink-muted " +
   "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink";

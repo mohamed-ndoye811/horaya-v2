@@ -96,7 +96,7 @@ export function OrganizationForm({
           </FormAlert>
         )}
         <fieldset disabled={!editable} className="flex min-w-0 flex-col gap-4">
-          <FormSection number={1} title="Identité">
+          <FormSection title="Identité">
             <div className="flex gap-5">
               <div className="hidden flex-col items-center gap-2 sm:flex">
                 {initial.logo ? (
@@ -194,7 +194,7 @@ export function OrganizationForm({
             </Field>
           </FormSection>
 
-          <FormSection number={2} title="Marque">
+          <FormSection title="Marque">
             <fieldset className="flex flex-col gap-2.5">
               <legend className="mb-2.5 text-meta font-semibold text-ink">Couleur de marque</legend>
               <div className="flex flex-wrap items-center gap-3">
@@ -279,7 +279,7 @@ export function OrganizationForm({
             </fieldset>
           </FormSection>
 
-          <FormSection number={3} title="Coordonnées & mentions légales">
+          <FormSection title="Coordonnées & mentions légales">
             <p className="-mt-1 text-meta font-medium leading-[18px] text-ink-muted">
               Affichées en bas de ta page publique (« Contact », « Mentions légales »). Laisse vide
               ce que tu ne veux pas montrer.
@@ -355,11 +355,7 @@ export function OrganizationForm({
 
       <aside className="flex w-full shrink-0 flex-col gap-3 xl:sticky xl:top-4 xl:w-[300px]">
         <div className="flex items-center justify-between px-1">
-          <p className="text-meta font-semibold leading-[17px] text-ink">Aperçu en direct</p>
-          <span className="flex items-center gap-1.5 text-xs font-semibold text-success">
-            <span aria-hidden="true" className="size-1.5 rounded-full bg-success" />
-            Live
-          </span>
+          <p className="text-meta font-semibold leading-[17px] text-ink">Aperçu</p>
         </div>
         <div className={cn(cardShellClasses, "overflow-hidden")}>
           <div
@@ -416,7 +412,7 @@ export function OrganizationForm({
           rel="noreferrer"
           className={cn(monoLinkClasses, "px-1")}
         >
-          Ouvrir la page publique →
+          Ouvrir la page publique
         </a>
       </aside>
     </div>

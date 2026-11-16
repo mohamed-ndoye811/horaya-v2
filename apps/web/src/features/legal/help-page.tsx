@@ -190,8 +190,8 @@ const GUIDES: Array<{ id: string; title: string; steps: ReactNode[]; note?: Reac
         les formules.
       </>,
       <>
-        Ta formule et tes factures sont dans <Strong>Paramètres › Abonnement</Strong> ; tu résilies
-        en un clic.
+        Ta formule et tes factures sont dans <Strong>Paramètres › Abonnement</Strong> ; tu y
+        résilies aussi.
       </>,
     ],
   },

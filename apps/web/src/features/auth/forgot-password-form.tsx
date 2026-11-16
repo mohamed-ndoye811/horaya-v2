@@ -125,7 +125,7 @@ export function ForgotPasswordForm() {
           />
         )}
       </Field>
-      <Button size="lg" type="submit" arrow pending={pending} className="w-full">
+      <Button size="lg" type="submit" pending={pending} className="w-full">
         {pending ? "Envoi…" : "Recevoir le lien"}
       </Button>
     </form>

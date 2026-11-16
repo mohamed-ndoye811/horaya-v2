@@ -29,10 +29,10 @@ function ResetPasswordPage() {
             <AuthTitle>Lien expiré</AuthTitle>
             <AuthLead>
               Ce lien n'est plus valable : il a déjà servi ou ses 30 minutes sont écoulées.
-              Demande-en un nouveau, ça prend quelques secondes.
+              Demande-en un nouveau.
             </AuthLead>
           </div>
-          <ButtonLink size="lg" href="/mot-de-passe-oublie" arrow className="w-full">
+          <ButtonLink size="lg" href="/mot-de-passe-oublie" className="w-full">
             Demander un nouveau lien
           </ButtonLink>
         </div>

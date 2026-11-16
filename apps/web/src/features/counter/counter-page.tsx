@@ -31,11 +31,7 @@ export function CounterPage({
         <EmptyState
           title="Aucune séance ouverte au comptoir."
           description="Publie d'abord un événement à venir : il apparaîtra ici pour y inscrire quelqu'un."
-          actions={
-            <ButtonLink href="/app/evenements" arrow>
-              Voir mes événements
-            </ButtonLink>
-          }
+          actions={<ButtonLink href="/app/evenements">Voir mes événements</ButtonLink>}
         />
       ) : (
         <CounterWizard

@@ -256,11 +256,10 @@ function spanLabel(event: CalendarEvent, timeZone: string): string | null {
   return `${formatWeekdayShort(event.startsAt, timeZone)} ${start} → ${formatWeekdayShort(event.endsAt, timeZone)} ${end}`;
 }
 
-/** Fond pâle, filet de 3 px et texte foncé de la couleur du type. */
+/** Fond pâle et texte foncé de la couleur du type. */
 const blockStyle = (event: CalendarEvent, style: CSSProperties): CSSProperties => ({
   ...style,
   backgroundColor: tintOf(event.color),
-  borderLeftColor: event.color,
   color: shadeOf(event.color),
 });
 
@@ -282,7 +281,7 @@ function EventBar({
     </>
   );
   const className =
-    "mx-1 flex min-w-0 items-center gap-2 overflow-hidden rounded-lg border-l-[3px] px-2.5 hover:brightness-[0.97]";
+    "mx-1 flex min-w-0 items-center gap-2 overflow-hidden rounded-lg px-2.5 hover:brightness-[0.97]";
   return event.href ? (
     <Link
       href={event.href}
@@ -312,7 +311,7 @@ function EventBlock({
   compact: boolean;
 }) {
   const className = cn(
-    "absolute flex overflow-hidden rounded-xl border-l-[3px] px-2.5 hover:brightness-[0.97]",
+    "absolute flex overflow-hidden rounded-xl px-2.5 hover:brightness-[0.97]",
     compact ? "items-center gap-1.5 py-1" : "flex-col gap-0.5 py-2",
   );
   const content = compact ? (

@@ -189,7 +189,7 @@ function Preview({
   return (
     <aside className="animate-rise flex w-full shrink-0 flex-col gap-3 lg:sticky lg:top-4 lg:w-[340px]">
       <div className="flex items-center justify-between px-1">
-        <h2 className="text-base font-semibold leading-5 text-ink">Aperçu en direct</h2>
+        <h2 className="text-base font-semibold leading-5 text-ink">Aperçu</h2>
         <span className="text-label leading-4 text-ink-subtle">suit chaque changement</span>
       </div>
       <div

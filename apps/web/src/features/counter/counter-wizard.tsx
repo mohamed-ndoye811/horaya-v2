@@ -1303,9 +1303,7 @@ function CounterDone({
         </DoneRow>
       </dl>
       <div className="flex flex-col gap-2.5 sm:flex-row">
-        <Button onClick={onRestart} arrow>
-          Nouvelle saisie
-        </Button>
+        <Button onClick={onRestart}>Nouvelle saisie</Button>
         {done.sessions ? (
           <ButtonLink href={`/app/evenements/${event.id}?onglet=serie`} variant="secondary">
             Voir les inscrits

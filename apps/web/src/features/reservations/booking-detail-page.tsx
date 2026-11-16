@@ -351,7 +351,7 @@ export function BookingDetailPage({ data }: { data: Awaited<ReturnType<typeof ge
                   href={`/app/evenements/${booking.event.id}`}
                   className={cn(rowLinkClasses, "text-sm leading-[18px]")}
                 >
-                  Voir l'événement →
+                  Voir l'événement
                 </Link>
               </div>
               <dl className="flex flex-col gap-3 sm:flex-row">
@@ -473,7 +473,7 @@ export function BookingDetailPage({ data }: { data: Awaited<ReturnType<typeof ge
           {booking.customerMessage && (
             <section className={cn(card, "gap-2.5")}>
               <CardTitle>Message du client</CardTitle>
-              <blockquote className="rounded-2xl border-l-[3px] border-line-strong bg-field px-4 py-3.5 text-ui leading-[22px] text-ink-soft">
+              <blockquote className="rounded-2xl bg-field px-4 py-3.5 text-ui leading-[22px] text-ink-soft">
                 « {booking.customerMessage} »
               </blockquote>
             </section>
@@ -658,7 +658,7 @@ export function BookingDetailPage({ data }: { data: Awaited<ReturnType<typeof ge
               href={`/app/clients/${booking.customer.id}`}
               className={cn(rowLinkClasses, "w-fit text-sm leading-[18px]")}
             >
-              Voir la fiche client →
+              Voir la fiche client
             </Link>
           </section>
           <section className={cn(card, "gap-3.5")}>

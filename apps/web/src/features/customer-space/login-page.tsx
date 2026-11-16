@@ -36,7 +36,7 @@ export function CustomerLoginPage({
         </SpaceTitle>
         <p className="text-base leading-6 text-ink-muted">
           {token
-            ? "Ton lien est prêt : un clic et tu retrouves tes réservations."
+            ? "Ouvre ton lien pour retrouver tes réservations."
             : `Tes réservations${where}, au même endroit. Pas de mot de passe : on t'envoie un lien pour te connecter.`}
         </p>
       </div>

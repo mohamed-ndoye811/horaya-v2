@@ -16,7 +16,7 @@ export function NewEventPage({ data }: { data: Awaited<ReturnType<typeof getNewE
           title="D'abord, un type d'événement."
           description="Un type donne sa couleur à l'événement et ses réglages par défaut (durée, prix, validation). Crée-en un, puis reviens ici."
           actions={
-            <ButtonLink href="/app/evenements/types?type=nouveau" arrow>
+            <ButtonLink href="/app/evenements/types?type=nouveau">
               Créer un type d'événement
             </ButtonLink>
           }

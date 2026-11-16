@@ -235,8 +235,8 @@ export function CustomerDetailPage({ data }: { data: Awaited<ReturnType<typeof g
               <article
                 key={note.id}
                 className={cn(
-                  "flex flex-col gap-1.5 rounded-[14px] border-l-[3px] px-3.5 py-3",
-                  note.pinned ? "border-warning bg-warning-bg" : "border-line-strong bg-field",
+                  "flex flex-col gap-1.5 rounded-[14px] px-3.5 py-3",
+                  note.pinned ? "bg-warning-bg" : "bg-field",
                 )}
               >
                 <p

@@ -49,7 +49,6 @@ export function SeatPicker({
         href={`${bookHref}${bookHref.includes("?") ? "&" : "?"}places=${seats}`}
         variant="brand"
         size="xl"
-        arrow
         className="w-full"
       >
         {label}

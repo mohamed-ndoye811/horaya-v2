@@ -57,7 +57,7 @@ export function LoginForm({
         <div className="flex flex-col gap-2">
           {invitation && <Eyebrow>Invitation · {invitation.organizationName}</Eyebrow>}
           <AuthTitle>Bon retour.</AuthTitle>
-          <AuthLead>Entre ton e-mail, on s'occupe du reste.</AuthLead>
+          <AuthLead>Ton e-mail d'abord, ton mot de passe ensuite.</AuthLead>
         </div>
         {googleEnabled && (
           <>
@@ -80,7 +80,7 @@ export function LoginForm({
             />
           )}
         </Field>
-        <Button size="lg" type="submit" arrow className="w-full">
+        <Button size="lg" type="submit" className="w-full">
           Continuer
         </Button>
       </form>
@@ -136,7 +136,7 @@ export function LoginForm({
         </Link>
       </div>
 
-      <Button size="lg" type="submit" arrow pending={pending} className="w-full">
+      <Button size="lg" type="submit" pending={pending} className="w-full">
         {pending ? "Connexion…" : "Se connecter"}
       </Button>
     </form>

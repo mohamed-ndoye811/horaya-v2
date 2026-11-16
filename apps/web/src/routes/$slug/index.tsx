@@ -40,9 +40,9 @@ function PublicWorkspacePage() {
       {hasPassPlans && (
         <div className="flex flex-wrap items-center justify-between gap-3 rounded-3xl bg-surface px-6 py-4">
           <p className="text-ui font-medium text-ink">
-            Tu viens régulièrement ? Une carte de séances revient moins cher à la séance.
+            Une carte de séances revient moins cher qu'à l'unité.
           </p>
-          <ButtonLink href={`/${workspace.slug}/cartes`} variant="brand" arrow>
+          <ButtonLink href={`/${workspace.slug}/cartes`} variant="brand">
             Acheter une carte
           </ButtonLink>
         </div>
@@ -57,10 +57,10 @@ function PublicWorkspacePage() {
               Offrir un bon cadeau
             </span>
             <span className="text-sm leading-5 text-ink-muted">
-              Un atelier à partager avec quelqu'un que tu aimes.
+              Un montant à offrir, valable sur toutes les réservations.
             </span>
           </span>
-          <span className="shrink-0 text-sm font-semibold text-[var(--brand-text)]">Offrir →</span>
+          <span className="shrink-0 text-sm font-semibold text-[var(--brand-text)]">Offrir</span>
         </Link>
       )}
       {slotTypes.length > 0 && (
@@ -94,7 +94,7 @@ function PublicWorkspacePage() {
                       : "Gratuit"}
                   </span>
                   <span className="text-sm font-semibold text-[var(--brand-text)]">
-                    Choisir un créneau →
+                    Choisir un créneau
                   </span>
                 </span>
               </Link>

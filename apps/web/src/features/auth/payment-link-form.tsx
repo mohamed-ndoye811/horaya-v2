@@ -49,7 +49,7 @@ export function PaymentLinkForm() {
           ))}
         </ol>
       </div>
-      <Button size="lg" type="submit" arrow pending={pending} className="w-full">
+      <Button size="lg" type="submit" pending={pending} className="w-full">
         Accéder à mon espace
       </Button>
       <a

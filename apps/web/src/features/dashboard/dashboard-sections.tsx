@@ -85,7 +85,8 @@ export function TodoCards({
 }) {
   const { pending, toCollect, waitlist, drafts } = overview;
   return (
-    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+    // Sans personne en attente, la carte disparaît : la dernière carte prend alors toute la ligne.
+    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:[&>*:last-child:nth-child(odd)]:col-span-2">
       <TodoCard
         href="/app/reservations?statut=pending"
         dot={pending.count > 0 ? "bg-white" : "bg-info"}
@@ -129,22 +130,22 @@ export function TodoCards({
           <StatusBadge tone="warning">{toCollect.onSite} sur place</StatusBadge>
         )}
       </TodoCard>
-      <TodoCard
-        href={waitlist.event ? `/app/evenements/${waitlist.event.id}` : "/app/reservations"}
-        dot="bg-info"
-        label="En liste d'attente"
-        value={waitlist.count}
-      >
-        {waitlist.event ? (
-          <span className="text-xs leading-4 text-ink-muted">
-            {waitlist.event.title}
-            {waitlist.event.capacity !== null &&
-              ` · ${waitlist.event.seatsHeld}/${waitlist.event.capacity}`}
-          </span>
-        ) : (
-          <span className="text-xs leading-4 text-ink-muted">Personne n'attend</span>
-        )}
-      </TodoCard>
+      {waitlist.count > 0 && (
+        <TodoCard
+          href={waitlist.event ? `/app/evenements/${waitlist.event.id}` : "/app/reservations"}
+          dot="bg-info"
+          label="En liste d'attente"
+          value={waitlist.count}
+        >
+          {waitlist.event && (
+            <span className="text-xs leading-4 text-ink-muted">
+              {waitlist.event.title}
+              {waitlist.event.capacity !== null &&
+                ` · ${waitlist.event.seatsHeld}/${waitlist.event.capacity}`}
+            </span>
+          )}
+        </TodoCard>
+      )}
       <TodoCard
         href={drafts.next ? `/app/evenements/${drafts.next.id}` : "/app/evenements?onglet=draft"}
         dot="bg-draft"
@@ -230,7 +231,6 @@ export function TodayCard({
     return (
       <div className="flex min-h-[244px] flex-1 flex-col items-center justify-center gap-1 rounded-[28px] bg-surface p-6 text-center">
         <p className="text-ui font-semibold text-ink">Rien au programme aujourd'hui.</p>
-        <p className="text-meta text-ink-muted">Profites-en pour préparer la suite.</p>
       </div>
     );
   }

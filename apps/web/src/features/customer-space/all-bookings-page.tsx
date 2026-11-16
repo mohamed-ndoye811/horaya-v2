@@ -41,7 +41,7 @@ export function AllBookingsPage({
               />
               <h2 className="text-lg font-semibold leading-6 text-ink">{workspace.name}</h2>
             </div>
-            <ButtonLink href={`/${workspace.slug}/mon-espace`} variant="soft" size="xs" arrow>
+            <ButtonLink href={`/${workspace.slug}/mon-espace`} variant="soft" size="xs">
               Mon espace chez {workspace.name}
             </ButtonLink>
           </div>

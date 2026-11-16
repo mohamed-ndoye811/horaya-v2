@@ -54,17 +54,14 @@ export function EventsPage({
         <PageHeader
           eyebrow="Tableau de bord / Événements"
           title="Événements"
-          subtitle="0 événement · ton agenda attend son premier rendez-vous"
           actions={newEventButton}
         />
         <EmptyState
-          title="Ton premier atelier commence ici."
-          description="Crée ton premier événement : il apparaîtra dans ton calendrier et sur ta page publique, prêt à recevoir des réservations."
+          title="Aucun événement pour l'instant."
+          description="Crée ton premier événement : il apparaîtra dans ton calendrier et sur ta page publique."
           actions={
             <>
-              <ButtonLink href="/app/evenements/nouveau" arrow>
-                Créer mon premier événement
-              </ButtonLink>
+              <ButtonLink href="/app/evenements/nouveau">Créer mon premier événement</ButtonLink>
               <ButtonLink href="/app/evenements/types" variant="secondary">
                 Préparer mes types d'événements
               </ButtonLink>
@@ -133,7 +130,6 @@ export function EventsPage({
       <PageHeader
         eyebrow="Tableau de bord / Événements"
         title="Événements"
-        subtitle={`${counts.all} événement${counts.all > 1 ? "s" : ""} · ${counts.published} à venir · ${counts.draft} brouillon${counts.draft > 1 ? "s" : ""}`}
         actions={
           // Types, liens et cartes : dans le menu Événements du notch (et du menu mobile).
           <div className="hidden lg:flex">{newEventButton}</div>

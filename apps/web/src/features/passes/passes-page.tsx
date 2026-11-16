@@ -98,9 +98,7 @@ export function PassesPage({
             "Chaque réservation décompte une séance",
           ]}
           actions={
-            <ButtonLink href="/app/cartes?formule=nouvelle" arrow>
-              Créer ma première formule
-            </ButtonLink>
+            <ButtonLink href="/app/cartes?formule=nouvelle">Créer ma première formule</ButtonLink>
           }
         />
       ) : (

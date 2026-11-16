@@ -31,11 +31,6 @@ export function OrganizationSettingsPage({
       saveBar={
         editable
           ? {
-              message: (
-                <>
-                  <strong>Tes réglages</strong> s'appliquent à ta page publique et à tes e-mails.
-                </>
-              ),
               buttons: (
                 <>
                   <ButtonLink href="/app/parametres/organisation" variant="inverse-outline">

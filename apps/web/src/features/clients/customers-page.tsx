@@ -73,18 +73,6 @@ export function CustomersPage({
       <PageHeader
         eyebrow="Tableau de bord / Clients"
         title="Clients"
-        subtitle={
-          <>
-            {stats.total} client{stats.total > 1 ? "s" : ""}.{" "}
-            <span className="text-ink">
-              {stats.newThisMonth} nouveau{stats.newThisMonth > 1 ? "x" : ""} ce mois-ci
-              {stats.returnRate !== null
-                ? `, ${stats.returnRate} % reviennent au moins une fois`
-                : ""}
-              .
-            </span>
-          </>
-        }
         actions={
           <>
             <ButtonLink
@@ -186,11 +174,7 @@ export function CustomersPage({
         <EmptyState
           title="Ton carnet de clients est encore vierge."
           description="Chaque personne qui réserve devient un client, avec son historique. Tu peux aussi en ajouter à la main."
-          actions={
-            <ButtonLink href="/app/clients/nouveau" arrow>
-              Ajouter un client
-            </ButtonLink>
-          }
+          actions={<ButtonLink href="/app/clients/nouveau">Ajouter un client</ButtonLink>}
         />
       ) : (
         <>

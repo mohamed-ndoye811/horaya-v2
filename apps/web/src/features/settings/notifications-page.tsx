@@ -15,11 +15,6 @@ export function NotificationsSettingsPage({
       breadcrumb="Notifications"
       subtitle="Ce qui te prévient, par e-mail ou dans l'app"
       saveBar={{
-        message: (
-          <>
-            <strong>Tes préférences</strong> ne changent que pour toi.
-          </>
-        ),
         buttons: (
           <>
             <ButtonLink href="/app/parametres/notifications" variant="inverse-outline">

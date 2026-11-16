@@ -65,9 +65,9 @@ function SampleEvents() {
 export function BrandAside({
   title = (
     <>
-      Planifie
+      Ton agenda,
       <br />
-      avec style.
+      ta page publique.
     </>
   ),
   lead = "Tes réservations, tes événements, ton matériel : dans un seul agenda, sous ta marque.",

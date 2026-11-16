@@ -37,7 +37,7 @@ function PassThanksPage() {
         </p>
         <div className="flex flex-col gap-2.5 sm:flex-row">
           {link && (
-            <ButtonLink href={link} variant="brand" size="lg" arrow>
+            <ButtonLink href={link} variant="brand" size="lg">
               Payer ma carte
             </ButtonLink>
           )}

@@ -20,7 +20,7 @@ function PaymentsStepPage() {
             <>
               Tes clients paient
               <br />
-              en un clic.
+              par ton lien.
             </>
           }
           lead="Un bouton « Payer » dans chaque confirmation, vers ton propre lien de paiement. L'argent arrive directement chez toi."

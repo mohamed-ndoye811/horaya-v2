@@ -66,7 +66,7 @@ export function CustomerHomePage({
               {intro}
             </p>
           </div>
-          <ButtonLink href={book} variant="brand" arrow className="max-lg:hidden">
+          <ButtonLink href={book} variant="brand" className="max-lg:hidden">
             Réserver un cours
           </ButtonLink>
         </div>
@@ -160,7 +160,7 @@ export function CustomerHomePage({
             <p className="text-ui leading-[22px] text-ink-muted">
               Tes prochaines réservations chez {workspace.name} apparaîtront ici.
             </p>
-            <ButtonLink href={book} variant="brand" size="sm" arrow>
+            <ButtonLink href={book} variant="brand" size="sm">
               Voir les événements
             </ButtonLink>
           </div>
@@ -222,7 +222,7 @@ export function CustomerHomePage({
       {/* Mobile (8.6) : barre du bas, solde de carte (lot 31) puis « Réserver ». */}
       <div className="lg:hidden">
         <ActionBar message={slots.barMessage}>
-          <ButtonLink href={book} variant="brand" arrow>
+          <ButtonLink href={book} variant="brand">
             Réserver
           </ButtonLink>
         </ActionBar>
